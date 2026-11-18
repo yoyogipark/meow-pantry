@@ -32,7 +32,7 @@
     },
     activeTab: 'pantry',
     statusFilter: 'in_stock', // 'in_stock' | 'expiring' | 'expired' | 'empty'
-    attrFilter: 'all',        // 'all' | 'opened' | 'fresh' | 'pal_love' | 'group_food' | 'group_supp' | 'group_med'
+    attrFilter: 'all',        // 'all' | 'opened' | 'fresh' | 'pal_love' | 'group_food' | 'group_care'
     catFilter: 'all',
     brandFilter: 'all',
     sortBy: 'exp_asc',
@@ -271,10 +271,11 @@
   };
 
   Domain.recordConsumedUnits = function (target, amountConsumed, customDateStr, historyNote) {
-    if (!target) return;
+    if (!target) return 0;
     var curQty = Utils.round2(Number(target.quantity) || 0);
-    if (curQty <= 0) return;
-    var used = Number(amountConsumed) > 0 ? Utils.round2(Number(amountConsumed)) : 1;
+    if (curQty <= 0) return 0;
+    var used = Math.min(curQty, Number(amountConsumed) > 0 ? Utils.round2(Number(amountConsumed)) : 1);
+    if (used <= 0) return 0;
     var nextRem = Math.max(0, Utils.round2(curQty - used));
     var opDate = Utils.normalizeDateStr(customDateStr) || Utils.getTodayStr();
     var unitOpenedDate = target.openedDate || target.archivedOpenedDate || opDate;
@@ -350,6 +351,7 @@
       note: historyNote || (nextRem > 0 ? ('核销吃完 ' + used + (target.unit || '件') + '，余 ' + nextRem + (target.unit || '件')) : '本批次已全部吃完归档'),
       isSample: Boolean(target.isSample)
     });
+    return used;
   };
 
   // Fixed bug: properly clears finishedDate & recreates empty_<id> shadow archive if restoring final unit of a multi-unit batch!
@@ -364,6 +366,8 @@
     if (dUnit > 0) {
       var beforeQ = Utils.round2(Number(target.quantity) || 0);
       var wasFinishedBatch = (beforeQ <= 0);
+      var restorePartial = dFrac > 0 && dFrac < 0.98;
+      if (restorePartial && beforeQ > 0 && target.isOpened) return false;
       var restoredQ = Utils.round2(beforeQ + dUnit);
       target.quantity = restoredQ;
       target.eatenCount = Math.max(0, Utils.round2((Number(target.eatenCount) || 0) - dUnit));
@@ -372,13 +376,13 @@
         target.consumedCount = 0;
       }
 
-      if (dFrac > 0 && dFrac < 0.98) {
+      if (restorePartial) {
         target.isOpened = true;
         target.openRemainFraction = Utils.round2(dFrac);
         if (!target.openedDate) {
           target.openedDate = lg.date || target.archivedOpenedDate || Utils.getTodayStr();
         }
-      } else {
+      } else if (!target.isOpened || wasFinishedBatch) {
         target.isOpened = false;
         target.openRemainFraction = 0;
         target.openedDate = '';
@@ -429,8 +433,11 @@
 
     if (dFrac > 0) {
       var curRem = (target.isOpened && Number(target.openRemainFraction) > 0) ? Number(target.openRemainFraction) : 0;
+      // A fractional deduction can only be returned to a package still open.
+      if (curRem <= 0 || Number(target.quantity) <= 0) return false;
       var restoredRem = Utils.round2(curRem + dFrac);
-      if (restoredRem >= 0.96) {
+      if (restoredRem > 1) return false;
+      if (restoredRem === 1) {
         target.isOpened = false;
         target.openedDate = '';
         target.openRemainFraction = 0;

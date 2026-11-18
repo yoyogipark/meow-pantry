@@ -49,6 +49,25 @@
     document.body.removeChild(ta);
   }
 
+  var lastActiveDayStr = Utils.getTodayStr();
+  var followToday = true;
+
+  function selectLogDate(date) {
+    MP.state.selectedLogDate = date;
+    followToday = date === Utils.getTodayStr();
+  }
+
+  function clearPantryFilters() {
+    var st = MP.state;
+    st.statusFilter = 'in_stock';
+    st.attrFilter = 'all';
+    st.catFilter = 'all';
+    st.brandFilter = 'all';
+    st.searchQuery = '';
+    st.pantryPage = 1;
+    document.getElementById('searchInput').value = '';
+  }
+
   function handleDeleteFeedingLog(logId) {
     var st = MP.state;
     var targetLog = st.logs.find(function (lg) { return lg.id === logId; });
@@ -60,14 +79,14 @@
       var existsIdx = st.logs.findIndex(function (lg) { return lg.id === logId; });
       if (existsIdx === -1) return;
       var freshLog = st.logs[existsIdx];
-      var reverted = false;
-      if (doRevert && freshLog) {
-        reverted = Domain.revertConsumedFromLog(freshLog);
+      if (doRevert && !Domain.revertConsumedFromLog(freshLog)) {
+        UI.showToast('无法安全退回库存，记录已保留。取消勾选退回库存后可仅删除记录。');
+        return;
       }
       st.logs = st.logs.filter(function (lg) { return lg.id !== logId; });
       Storage.saveToStorage();
       UI.renderAll();
-      UI.showToast(reverted ? '已删除记录并退回对应库存余量' : '已删除该条饮食记录');
+      UI.showToast(doRevert ? '已删除记录并退回对应库存余量' : '已删除该条饮食记录');
     }, revertOpt);
   }
 
@@ -104,7 +123,7 @@
       UI.showToast('示例体验数据已清空');
     });
 
-    // 3. Pantry Status Cards, Secondary Attribute Pills, Category Pills & Search/Sort
+    // 3. Pantry Status Cards, Attribute Select, Category Pills & Search/Sort
     var statusCards = document.querySelectorAll('[data-status-filter]');
     for (var i = 0; i < statusCards.length; i++) {
       statusCards[i].addEventListener('click', function () {
@@ -120,16 +139,11 @@
       st.pantryPage = 1;
       UI.renderAll();
     });
-    document.getElementById('clearPantryFiltersBtn').addEventListener('click', function () {
-      st.statusFilter = 'in_stock';
-      st.attrFilter = 'all';
-      st.catFilter = 'all';
-      st.brandFilter = 'all';
-      st.searchQuery = '';
-      st.pantryPage = 1;
-      document.getElementById('searchInput').value = '';
+    function resetPantryFilters() {
+      clearPantryFilters();
       UI.renderAll();
-    });
+    }
+    document.getElementById('clearPantryFiltersBtn').addEventListener('click', resetPantryFilters);
 
     document.getElementById('categoryBar').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-cat]');
@@ -154,16 +168,7 @@
       st.pantryPage = 1;
       UI.renderPantryList();
     });
-    document.getElementById('resetFiltersBtn').addEventListener('click', function () {
-      st.statusFilter = 'in_stock';
-      st.attrFilter = 'all';
-      st.catFilter = 'all';
-      st.brandFilter = 'all';
-      st.searchQuery = '';
-      st.pantryPage = 1;
-      document.getElementById('searchInput').value = '';
-      UI.renderAll();
-    });
+    document.getElementById('resetFiltersBtn').addEventListener('click', resetPantryFilters);
 
     document.getElementById('pantryDisplayToggle').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-display-mode]');
@@ -285,7 +290,7 @@
             ? { label: '同时记入今日饮食记录（' + portionLabel + '；若放坏丢弃请取消勾选）', defaultChecked: true }
             : null;
           UI.openConfirm('用完/吃完 1 ' + uName + '？', confirmDesc, '确认核销 1 ' + uName, function (alsoLogMeal) {
-            Domain.recordConsumedUnits(target, 1, Utils.getTodayStr());
+            if (!Domain.recordConsumedUnits(target, 1, Utils.getTodayStr())) return;
             if (alsoLogMeal) {
               Domain.appendFeedingLog({
                 date: Utils.getTodayStr(),
@@ -312,8 +317,8 @@
             ? { label: '同时记入今日饮食记录（' + portionLabel + '；若放坏丢弃请取消勾选）', defaultChecked: true }
             : null;
           UI.openConfirm('标记已吃完/用完？', lastDesc, '确认核销归档', function (alsoLogMeal) {
-            var usedCount = curQ > 0 ? curQ : 1;
-            Domain.recordConsumedUnits(target, usedCount, Utils.getTodayStr());
+            var usedCount = Domain.recordConsumedUnits(target, curQ, Utils.getTodayStr());
+            if (!usedCount) return;
             if (alsoLogMeal) {
               Domain.appendFeedingLog({
                 date: Utils.getTodayStr(),
@@ -376,20 +381,20 @@
     });
 
     document.getElementById('prevDayBtn').addEventListener('click', function () {
-      st.selectedLogDate = Utils.shiftDaysFromDate(st.selectedLogDate || Utils.getTodayStr(), -1);
+      selectLogDate(Utils.shiftDaysFromDate(st.selectedLogDate || Utils.getTodayStr(), -1));
       UI.renderDailyView();
     });
     document.getElementById('nextDayBtn').addEventListener('click', function () {
-      st.selectedLogDate = Utils.shiftDaysFromDate(st.selectedLogDate || Utils.getTodayStr(), 1);
+      selectLogDate(Utils.shiftDaysFromDate(st.selectedLogDate || Utils.getTodayStr(), 1));
       UI.renderDailyView();
     });
     document.getElementById('goTodayBtn').addEventListener('click', function () {
-      st.selectedLogDate = Utils.getTodayStr();
+      selectLogDate(Utils.getTodayStr());
       UI.renderDailyView();
     });
     document.getElementById('dailyDatePicker').addEventListener('change', function () {
       if (this.value) {
-        st.selectedLogDate = this.value;
+        selectLogDate(this.value);
         UI.renderDailyView();
       }
     });
@@ -407,7 +412,7 @@
     document.getElementById('recentSevenDaysList').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-jump-date]');
       if (!btn) return;
-      st.selectedLogDate = btn.getAttribute('data-jump-date');
+      selectLogDate(btn.getAttribute('data-jump-date'));
       st.dailyViewMode = 'day';
       UI.renderDailyView();
       window.scrollTo(0, 0);
@@ -506,7 +511,7 @@
       }
       var jumpBtn = ev.target.closest('[data-jump-date]');
       if (jumpBtn) {
-        st.selectedLogDate = jumpBtn.getAttribute('data-jump-date');
+        selectLogDate(jumpBtn.getAttribute('data-jump-date'));
         st.dailyViewMode = 'day';
         UI.renderDailyView();
         window.scrollTo(0, 0);
@@ -584,7 +589,7 @@
           if (st.logs[k].id === editLogId) {
             st.logs[k].date = fDate;
             st.logs[k].mealSlot = fSlot;
-            st.logs[k].itemId = fItemId;
+            if (!st.logs[k].deductedUnit && !st.logs[k].deductedFrac) st.logs[k].itemId = fItemId;
             st.logs[k].category = fCat;
             st.logs[k].brand = fBrand;
             st.logs[k].name = fName;
@@ -595,7 +600,7 @@
             break;
           }
         }
-        st.selectedLogDate = fDate;
+        selectLogDate(fDate);
         Storage.saveToStorage();
         UI.closeFeedModal();
         UI.renderAll();
@@ -620,8 +625,7 @@
             var nextRemFrac = Utils.round2(startRem - usedFrac);
             if (nextRemFrac <= 0.08) {
               if (!stItem.openedDate) stItem.openedDate = fDate;
-              Domain.recordConsumedUnits(stItem, 1, fDate, '记喂食（' + fAmount + '）吃完整' + (stItem.unit || '罐') + '自动核销');
-              actualDeductedUnit = 1;
+              actualDeductedUnit = Domain.recordConsumedUnits(stItem, 1, fDate, '记喂食（' + fAmount + '）吃完整' + (stItem.unit || '罐') + '自动核销');
               actualDeductedFrac = startRem;
               splitToastSuffix = '（本' + (stItem.unit || '罐') + '已吃完并自动核销库存）';
             } else {
@@ -649,8 +653,8 @@
               splitToastSuffix = '（本' + (stItem.unit || '罐') + remStr + '）';
             }
           } else if (deduct && curQ > 0) {
-            Domain.recordConsumedUnits(stItem, 1, fDate, '记喂食同步扣减 1 ' + (stItem.unit || '件'));
-            actualDeductedUnit = 1;
+            actualDeductedFrac = stItem.isOpened ? Number(stItem.openRemainFraction) || 0 : 0;
+            actualDeductedUnit = Domain.recordConsumedUnits(stItem, 1, fDate, '记喂食同步扣减 1 ' + (stItem.unit || '件'));
             splitToastSuffix = '（已同步扣减 1 ' + (stItem.unit || '件') + '库存）';
           }
         }
@@ -671,7 +675,7 @@
         deductedFrac: actualDeductedFrac
       });
 
-      st.selectedLogDate = fDate;
+      selectLogDate(fDate);
       Storage.saveToStorage();
       UI.closeFeedModal();
       UI.renderAll();
@@ -705,10 +709,8 @@
       var btn = ev.target.closest('[data-jump-cat]');
       if (!btn) return;
       var catKey = btn.getAttribute('data-jump-cat');
+      clearPantryFilters();
       st.catFilter = catKey;
-      st.statusFilter = 'in_stock';
-      st.attrFilter = 'all';
-      st.pantryPage = 1;
       UI.renderAll();
       UI.switchTab('pantry');
       UI.showToast('已筛选分类：' + (MP.CATEGORIES[catKey] ? MP.CATEGORIES[catKey].label : catKey));
@@ -718,8 +720,7 @@
       var btn = ev.target.closest('[data-jump-health]');
       if (!btn) return;
       var hk = btn.getAttribute('data-jump-health');
-      st.catFilter = 'all';
-      st.pantryPage = 1;
+      clearPantryFilters();
       if (hk === 'opened') {
         st.statusFilter = 'in_stock';
         st.attrFilter = 'opened';
@@ -787,11 +788,8 @@
       var btn = ev.target.closest('[data-jump-brand]');
       if (!btn) return;
       var brandName = btn.getAttribute('data-jump-brand');
+      clearPantryFilters();
       st.brandFilter = brandName;
-      st.statusFilter = 'in_stock';
-      st.attrFilter = 'all';
-      st.catFilter = 'all';
-      st.pantryPage = 1;
       UI.renderAll();
       UI.switchTab('pantry');
       UI.showToast('已筛选品牌：' + brandName);
@@ -1223,7 +1221,7 @@
     if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
 
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('./sw.js').then(function (reg) {
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function (reg) {
         // Proactively check for updated sw.js when online
         if (reg.waiting) {
           reg.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -1242,7 +1240,14 @@
     });
   };
 
-  var lastActiveDayStr = Utils.getTodayStr();
+  function refreshToday() {
+    var today = Utils.getTodayStr();
+    if (today === lastActiveDayStr) return false;
+    lastActiveDayStr = today;
+    if (followToday) selectLogDate(today);
+    UI.renderAll();
+    return true;
+  }
 
   App.init = function () {
     UI.syncStaticBrandIcons();
@@ -1251,27 +1256,13 @@
       UI.renderAll();
     });
     App.registerServiceWorker();
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', function () {
-        if (!document.hidden) {
-          var nowDay = Utils.getTodayStr();
-          if (nowDay !== lastActiveDayStr) {
-            lastActiveDayStr = nowDay;
-            st_syncToday();
-          } else {
-            UI.renderAll();
-          }
-        }
-      });
-    }
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && !refreshToday()) UI.renderAll();
+    });
+    window.setInterval(function () {
+      if (!document.hidden) refreshToday();
+    }, 60000);
   };
-
-  function st_syncToday() {
-    if (MP.state.selectedLogDate === Utils.shiftDaysFromToday(-1)) {
-      MP.state.selectedLogDate = Utils.getTodayStr();
-    }
-    UI.renderAll();
-  }
 
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
