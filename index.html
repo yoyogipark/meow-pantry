@@ -892,7 +892,11 @@
   <div id="confirmModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
     <div class="modal-sheet p-5" style="padding:20px;max-width:400px;">
       <h3 id="confirmTitle" class="text-base font-bold text-stone-900 mb-1.5" style="margin:0 0 6px 0;font-size:17px;">确认操作</h3>
-      <p id="confirmMessage" class="text-sm text-stone-600 mb-5" style="margin:0 0 18px 0;font-size:14px;color:#57534E;"></p>
+      <p id="confirmMessage" class="text-sm text-stone-600 mb-4" style="margin:0 0 14px 0;font-size:14px;color:#57534E;line-height:1.5;"></p>
+      <label id="confirmExtraOptionWrap" class="hidden-view" style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:14px;border-radius:11px;background:#FFF7ED;border:1px solid #FED7AA;cursor:pointer;">
+        <input id="confirmExtraCheckbox" type="checkbox" style="width:18px;height:18px;accent-color:#EA580C;flex-shrink:0;">
+        <span id="confirmExtraLabel" style="font-size:12px;font-weight:700;color:#7C2D12;line-height:1.35;">同时记入今日饮食盘点</span>
+      </label>
       <div class="flex gap-2.5" style="display:flex;gap:10px;">
         <button id="confirmCancelBtn" type="button" class="ios-btn ios-btn-secondary w-1/2" style="width:50%;">取消</button>
         <button id="confirmOkBtn" type="button" class="ios-btn ios-btn-primary w-1/2" style="width:50%;background:#DC2626;box-shadow:none;">确定</button>
@@ -1669,10 +1673,32 @@
         }, 2200);
       }
 
-      function openConfirm(title, message, okLabel, onConfirm) {
+      function isSingleServingUnit(item) {
+        if (!item) return false;
+        var u = item.unit || '';
+        var c = item.category || '';
+        // Bulk multi-day packages (袋/包/盒/瓶 or dry kibble / freeze-dried bags / supplement bottles) are NOT eaten in a single meal!
+        if (c === 'dry' || c === 'freeze' || c === 'supp') return false;
+        if (u === '袋' || u === '包' || u === '盒' || u === '瓶') return false;
+        // Single cans (罐), single tubes/pipettes (支), single tablets (粒) are typically consumed in 1 day/session
+        return true;
+      }
+
+      function openConfirm(title, message, okLabel, onConfirm, extraOpt) {
         document.getElementById('confirmTitle').textContent = title;
         document.getElementById('confirmMessage').textContent = message;
         document.getElementById('confirmOkBtn').textContent = okLabel || '确定';
+        var extraWrap = document.getElementById('confirmExtraOptionWrap');
+        var extraChk = document.getElementById('confirmExtraCheckbox');
+        var extraLbl = document.getElementById('confirmExtraLabel');
+        if (extraOpt && extraOpt.label) {
+          extraWrap.classList.remove('hidden-view');
+          extraChk.checked = Boolean(extraOpt.defaultChecked);
+          extraLbl.textContent = extraOpt.label;
+        } else {
+          extraWrap.classList.add('hidden-view');
+          extraChk.checked = false;
+        }
         pendingConfirmFn = onConfirm;
         document.getElementById('confirmModalBackdrop').classList.remove('hidden-view');
       }
@@ -3371,42 +3397,63 @@
           } else if (action === 'consume-one' || action === 'mark-empty') {
             var curQ = Number(target.quantity) || 0;
             var uName = target.unit || '件';
+            var singleServe = isSingleServingUnit(target);
+            var portionLabel = '1' + uName + (target.spec ? (' (' + target.spec + ')') : '');
+
             if (curQ > 1) {
               var nextRem = Math.max(0, Math.round((curQ - 1) * 100) / 100);
-              var confirmDesc = '在库将减为 ' + nextRem + ' ' + uName + '（恢复未拆封状态），同时在顶部【已吃完】列表自动累加 1 ' + uName + '「' + target.brand + ' ' + target.name + '」，并同步记入今日饮食盘点。';
-              openConfirm('吃完 1 ' + uName + '？', confirmDesc, '确认吃完 1 ' + uName, function () {
+              var confirmDesc = singleServe
+                ? ('在库将减为 ' + nextRem + ' ' + uName + '（恢复未拆封），同时在顶部【已吃完】自动累加 1 ' + uName + '「' + target.brand + ' ' + target.name + '」。')
+                : ('这 1 ' + uName + '「' + target.brand + ' ' + target.name + '」已空袋/用完，在库将减为 ' + nextRem + ' ' + uName + '，并同步累加到顶部【已吃完】归档（大包装空袋不会把整' + uName + '塞进今日单顿食量）。');
+              var extraOpt = singleServe
+                ? { label: '同时将「' + portionLabel + '」记入今日饮食盘点', defaultChecked: true }
+                : null;
+              openConfirm('用完/吃完 1 ' + uName + '？', confirmDesc, '确认吃完 1 ' + uName, function (alsoLogMeal) {
                 recordConsumedUnits(target, 1);
-                appendFeedingLog({
-                  date: getTodayStr(),
-                  mealSlot: target.category === 'med' ? '🩺 用药/护理' : getCurrentMealSlot(),
-                  itemId: target.id,
-                  category: target.category,
-                  brand: target.brand,
-                  name: target.name,
-                  amount: '1' + uName + (target.spec ? (' (' + target.spec + ')') : ''),
-                  note: '吃完 1 ' + uName + '（余 ' + nextRem + uName + '在库）'
-                });
+                if (alsoLogMeal) {
+                  appendFeedingLog({
+                    date: getTodayStr(),
+                    mealSlot: target.category === 'med' ? '🩺 用药/护理' : getCurrentMealSlot(),
+                    itemId: target.id,
+                    category: target.category,
+                    brand: target.brand,
+                    name: target.name,
+                    amount: portionLabel,
+                    note: '吃完 1 ' + uName + '（余 ' + nextRem + uName + '在库）'
+                  });
+                }
                 saveToStorage();
                 renderAll();
-                showToast('在库余 ' + nextRem + uName + '，已同步记入「已吃完」与今日盘点');
-              });
+                showToast(alsoLogMeal
+                  ? ('在库余 ' + nextRem + uName + '，已记入「已吃完」与今日盘点')
+                  : ('在库余 ' + nextRem + uName + '，这 1 ' + uName + '已归入「已吃完」')
+                );
+              }, extraOpt);
             } else {
-              openConfirm('吃完最后 ' + curQ + ' ' + uName + '？', '确认后「' + target.brand + ' ' + target.name + '」将完整移入顶部【已吃完】列表并记入今日饮食盘点。', '确认吃完', function () {
+              var lastDesc = singleServe
+                ? ('确认后这最后 ' + curQ + ' ' + uName + '「' + target.brand + ' ' + target.name + '」将完整移入顶部【已吃完】列表。')
+                : ('这' + uName + '「' + target.brand + ' ' + target.name + '」终于见底啦！确认后将移入顶部【已吃完】历史归档（不会把整' + uName + '算作今日一顿吃掉；平时记单顿克数请点「🐾 记喂食」）。');
+              var lastExtraOpt = singleServe
+                ? { label: '同时将「' + portionLabel + '」记入今日饮食盘点', defaultChecked: true }
+                : null;
+              openConfirm('标记这' + uName + '已吃完？', lastDesc, '确认吃完归档', function (alsoLogMeal) {
                 recordConsumedUnits(target, curQ > 0 ? curQ : 1);
-                appendFeedingLog({
-                  date: getTodayStr(),
-                  mealSlot: target.category === 'med' ? '🩺 用药/护理' : getCurrentMealSlot(),
-                  itemId: target.id,
-                  category: target.category,
-                  brand: target.brand,
-                  name: target.name,
-                  amount: curQ + uName + (target.spec ? (' (' + target.spec + ')') : ''),
-                  note: '本批次全部吃完归档'
-                });
+                if (alsoLogMeal) {
+                  appendFeedingLog({
+                    date: getTodayStr(),
+                    mealSlot: target.category === 'med' ? '🩺 用药/护理' : getCurrentMealSlot(),
+                    itemId: target.id,
+                    category: target.category,
+                    brand: target.brand,
+                    name: target.name,
+                    amount: portionLabel,
+                    note: '吃完归档'
+                  });
+                }
                 saveToStorage();
                 renderAll();
-                showToast('已记入今日盘点并归入「已吃完」');
-              });
+                showToast(alsoLogMeal ? '已记入今日盘点并归入「已吃完」' : '已空袋归档至顶部「已吃完」列表');
+              }, lastExtraOpt);
             }
           } else if (action === 'log-feed') {
             openFeedModal(target.id, getTodayStr());
@@ -3717,8 +3764,9 @@
         });
         document.getElementById('confirmOkBtn').addEventListener('click', function () {
           var fn = pendingConfirmFn;
+          var checked = document.getElementById('confirmExtraCheckbox').checked;
           closeConfirm();
-          if (typeof fn === 'function') fn();
+          if (typeof fn === 'function') fn(checked);
         });
       }
 
