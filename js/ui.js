@@ -47,9 +47,10 @@
 
   UI.consumePendingConfirm = function () {
     var fn = pendingConfirmFn;
+    if (!fn) return;
     var checked = document.getElementById('confirmExtraCheckbox').checked;
     UI.closeConfirm();
-    if (typeof fn === 'function') fn(checked);
+    fn(checked);
   };
 
   UI.syncAllDateDisplays = function () {
@@ -212,24 +213,26 @@
       cards[i].classList.toggle('selected', key === st.statusFilter);
     }
 
-    // Secondary Attribute Filter Strip (Shown when viewing active stock, hidden in empty archive)
-    var attrBar = document.getElementById('attrFilterBar');
-    if (attrBar) {
+    // Sync integrated status/group dropdown inside the existing filter card
+    var attrSel = document.getElementById('attrFilterSelect');
+    if (attrSel) {
       if (st.statusFilter === 'empty') {
-        attrBar.classList.add('hidden-view');
+        attrSel.disabled = true;
+        attrSel.style.opacity = '0.55';
+        attrSel.value = 'all';
       } else {
-        attrBar.classList.remove('hidden-view');
-        var attrDefs = [
-          { key: 'all', label: '全部批次 (' + cStock + ')' },
-          { key: 'opened', label: '🔓 已拆封 (' + cOpened + ')' },
-          { key: 'fresh', label: '✅ 效期充裕 (' + cFresh + ')' },
-          { key: 'pal_love', label: '😍 超爱吃 (' + cLove + ')' },
-          { key: 'group_food', label: '🍽️ 仅普通食品' },
-          { key: 'group_care', label: '💊 营养/药品 (' + cCare + ')' }
+        attrSel.disabled = false;
+        attrSel.style.opacity = '1';
+        var optMap = [
+          { val: 'all',        txt: '📋 全部状态 (' + cStock + ')' },
+          { val: 'opened',     txt: '🔓 已拆封 (' + cOpened + ')' },
+          { val: 'fresh',      txt: '✅ 效期充裕 (' + cFresh + ')' },
+          { val: 'group_food', txt: '🍽️ 普通食品' },
+          { val: 'group_care', txt: '💊 营养/药品 (' + cCare + ')' }
         ];
-        attrBar.innerHTML = attrDefs.map(function (d) {
-          var isAct = (st.attrFilter === d.key);
-          return '<button type="button" data-attr-filter="' + d.key + '" class="subfilter-chip' + (isAct ? ' active' : '') + '">' + d.label + '</button>';
+        attrSel.innerHTML = optMap.map(function (o) {
+          var selAttr = st.attrFilter === o.val ? ' selected' : '';
+          return '<option value="' + o.val + '"' + selAttr + '>' + o.txt + '</option>';
         }).join('');
       }
     }
@@ -245,7 +248,6 @@
 
     if (st.attrFilter === 'opened' && !it.isOpened) return false;
     if (st.attrFilter === 'fresh' && ev.status !== 'fresh') return false;
-    if (st.attrFilter === 'pal_love' && !(it.palatability === 'love' && ev.group === 'food')) return false;
     if (st.attrFilter === 'group_food' && ev.group !== 'food') return false;
     if (st.attrFilter === 'group_care' && ev.group === 'food') return false;
     return true;
@@ -351,6 +353,20 @@
       var isAct = (dm === st.pantryDisplayMode);
       dBtns[dIdx].style.background = isAct ? '#1C1917' : 'transparent';
       dBtns[dIdx].style.color = isAct ? '#FFFFFF' : '#57534E';
+    }
+
+    var hasExtraFilter = (st.statusFilter !== 'in_stock' || st.attrFilter !== 'all' || st.catFilter !== 'all' || st.brandFilter !== 'all' || Boolean(q));
+    var summaryBar = document.getElementById('activeFilterSummaryBar');
+    var summaryTxt = document.getElementById('filterResultCountText');
+    if (summaryBar && summaryTxt) {
+      if (hasExtraFilter) {
+        var displayCount = st.statusFilter === 'empty' ? Domain.groupEmptyItemsByProduct(filtered).length : filtered.length;
+        var unitWord = st.statusFilter === 'empty' ? '款产品' : '批商品';
+        summaryTxt.textContent = '当前筛选结果：共 ' + displayCount + ' ' + unitWord;
+        summaryBar.classList.remove('hidden-view');
+      } else {
+        summaryBar.classList.add('hidden-view');
+      }
     }
 
     if (filtered.length === 0) {
@@ -549,7 +565,7 @@
     }
 
     if (st.pantryDisplayMode === 'compact') {
-      listEl.style.gap = '7px';
+      listEl.style.gap = '8px';
       listEl.innerHTML = pagedItems.map(function (it) {
         var ev = Domain.evaluateItem(it);
         var catInfo = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
@@ -557,43 +573,51 @@
         var unitStr = Utils.escapeHtml(it.unit || '件');
         var badgeBg = '#DCFCE7';
         var badgeText = '#15803D';
-        var badgeLabel = ev.expDays !== null ? (ev.expDays + '天') : '有效';
+        var badgeLabel = ev.expDays !== null ? (ev.expDays === 0 ? '今天到期' : ('剩' + ev.expDays + '天')) : '有效期内';
+
         if (ev.status === 'expired') {
           badgeBg = '#FEE2E2'; badgeText = '#DC2626';
-          badgeLabel = (ev.expDays !== null && ev.expDays < 0) ? ('过期' + Math.abs(ev.expDays) + '天') : '开封超期';
+          badgeLabel = (ev.expDays !== null && ev.expDays < 0)
+            ? ('已过期' + Math.abs(ev.expDays) + '天')
+            : ('开封超期' + Math.abs(ev.openRemaining || 0) + '天');
+        } else if (it.isOpened && ev.openRemaining !== null && (ev.expDays === null || ev.openRemaining <= ev.expDays)) {
+          badgeBg = ev.openRemaining <= 5 ? '#FEF3C7' : '#FFF7ED';
+          badgeText = ev.openRemaining <= 5 ? '#B45309' : '#C2410C';
+          badgeLabel = ev.openRemaining === 0 ? '开封今天到期' : ('保鲜剩' + ev.openRemaining + '天');
         } else if (ev.status === 'expiring') {
           badgeBg = '#FEF3C7'; badgeText = '#B45309';
-          badgeLabel = ev.expDays === 0 ? '今日到期' : ('剩' + ev.expDays + '天');
+          badgeLabel = ev.expDays === 0 ? '今天到期' : ('剩' + ev.expDays + '天');
         }
+
         var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit || '罐') : '';
         var openDot = it.isOpened && ev.status !== 'empty'
-          ? '<span style="font-size:10px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;">🔓' + (fracTxtCompact || '1拆') + '</span>'
+          ? '<span style="font-size:10px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;white-space:nowrap;">🔓' + (fracTxtCompact || '已拆') + '</span>'
           : '';
         var palIcon = it.palatability === 'love' ? (it.category === 'med' ? '✅' : '😍') : (it.palatability === 'coax' ? (it.category === 'med' ? '💦' : '🥺') : (it.palatability === 'meh' ? (it.category === 'med' ? '⚠️' : '😒') : ''));
 
+        var compactMeta = ['<span>到期 ' + Utils.escapeHtml(it.expDate || '—') + '</span>'];
+        if (it.spec) compactMeta.push('<span>' + Utils.escapeHtml(it.spec) + '</span>');
+        if (it.location) compactMeta.push('<span>📍' + Utils.escapeHtml(it.location) + '</span>');
+
         return (
-          '<div class="ios-card" style="padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<div data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
-              '<div style="display:flex;align-items:center;gap:5px;min-width:0;">' +
-                '<span style="font-size:14px;flex-shrink:0;">' + catInfo.icon + '</span>' +
-                '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;flex-shrink:0;">' + Utils.escapeHtml(it.brand) + '</span>' +
-                '<strong style="font-size:13.5px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(it.name) + '</strong>' +
+          '<div class="ios-card" style="padding:10px 12px;border-radius:14px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;">' +
+              '<div style="display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;">' +
+                '<span style="font-size:13.5px;flex-shrink:0;">' + catInfo.icon + '</span>' +
+                '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + Utils.escapeHtml(it.brand) + '</span>' +
                 (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
                 openDot +
               '</div>' +
-              '<div style="font-size:11px;color:#78716C;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-                '<span>到期 ' + Utils.escapeHtml(it.expDate || '—') + '</span>' +
-                (it.spec ? ('<span>· ' + Utils.escapeHtml(it.spec) + '</span>') : '') +
-                (it.location ? ('<span>· 📍' + Utils.escapeHtml(it.location) + '</span>') : '') +
+              '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
+                '<span style="background:' + badgeBg + ';color:' + badgeText + ';padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:800;white-space:nowrap;">' + badgeLabel + '</span>' +
+                '<span style="background:#F5F5F4;border:1px solid #E7E5E4;color:#1C1917;padding:2px 7px;border-radius:8px;font-size:11.5px;font-weight:800;white-space:nowrap;">余' + qtyNum + unitStr + '</span>' +
+                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:3px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🐾喂</button>' +
+                '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" class="edit-only" style="padding:3px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">编辑</button>' +
               '</div>' +
             '</div>' +
-            '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
-              '<span style="background:' + badgeBg + ';color:' + badgeText + ';padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;">' + badgeLabel + '</span>' +
-              '<span style="background:#F5F5F4;border:1px solid #E7E5E4;color:#1C1917;padding:3px 7px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;">' +
-                '余' + qtyNum + unitStr + (Number(it.eatenCount) > 0 ? ('·吃' + Number(it.eatenCount)) : '') +
-              '</span>' +
-              '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:4px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;">🐾喂</button>' +
-              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" class="edit-only" style="padding:4px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
+            '<div data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="cursor:pointer;">' +
+              '<div class="compact-title">' + Utils.escapeHtml(it.name) + '</div>' +
+              '<div class="compact-meta-row">' + compactMeta.join('') + '</div>' +
             '</div>' +
           '</div>'
         );
@@ -618,9 +642,9 @@
           : ('开封超期 ' + Math.abs(ev.openRemaining || 0) + ' 天');
       } else if (ev.status === 'expiring') {
         badgeBg = '#FEF3C7'; badgeText = '#B45309'; barColor = '#F59E0B';
-        badgeLabel = ev.expDays === 0 ? '今天到期！' : ('剩 ' + ev.expDays + ' 天到期');
+        badgeLabel = ev.expDays === 0 ? '今天到期' : ('剩 ' + ev.expDays + ' 天到期');
       } else {
-        badgeLabel = ev.expDays !== null ? ('剩 ' + ev.expDays + ' 天') : '有效期内';
+        badgeLabel = ev.expDays !== null ? ('剩 ' + ev.expDays + ' 天到期') : '有效期内';
       }
 
       var shelfText = it.shelfLifeValue
@@ -643,16 +667,15 @@
       if (it.isOpened && ev.status !== 'empty') {
         var openColor = (ev.openRemaining !== null && ev.openRemaining <= 5) ? '#DC2626' : '#C2410C';
         var openMsg = ev.openRemaining !== null
-          ? (ev.openRemaining < 0 ? ('当前拆封件已超期 ' + Math.abs(ev.openRemaining) + ' 天') : ('拆封保鲜剩 ' + ev.openRemaining + ' 天'))
-          : '当前 1 ' + unitStr + '已拆封';
+          ? (ev.openRemaining < 0 ? ('已超期 ' + Math.abs(ev.openRemaining) + ' 天') : ('保鲜剩 ' + ev.openRemaining + ' 天'))
+          : '保鲜追踪中';
         var sealedLeft = Math.max(0, Utils.round2(qtyNum - 1));
-        var fracHighlight = fracBannerTxt ? (' · <strong>本' + unitStr + fracBannerTxt + '</strong>') : '';
-        var scopeTxt = qtyNum > 1
-          ? ('🔓 正在用 1 ' + unitStr + '（开封 ' + Utils.escapeHtml(it.openedDate || '今日') + fracHighlight + ' · 其余 ' + sealedLeft + unitStr + '未拆）')
-          : ('🔓 开封日：' + Utils.escapeHtml(it.openedDate || '已记录') + fracHighlight);
+        var openParts = ['🔓 已拆 1' + unitStr + (fracBannerTxt ? ('(' + fracBannerTxt + ')') : '')];
+        if (sealedLeft > 0) openParts.push('未拆 ' + sealedLeft + unitStr);
+        if (it.openedDate) openParts.push('开封 ' + Utils.escapeHtml(it.openedDate));
         openedBannerHtml =
-          '<div style="margin-top:8px;padding:6px 10px;border-radius:10px;background:#FFF7ED;border:1px dashed #FDBA74;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;">' +
-            '<span style="color:#7C2D12;">' + scopeTxt + '</span>' +
+          '<div style="margin-top:8px;padding:6px 9px;border-radius:10px;background:#FFF7ED;border:1px dashed #FDBA74;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;">' +
+            '<span style="color:#7C2D12;">' + openParts.join(' · ') + '</span>' +
             '<strong style="color:' + openColor + ';white-space:nowrap;">' + openMsg + '</strong>' +
           '</div>';
       }
@@ -683,16 +706,15 @@
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
             thumbHtml +
             '<div style="min-width:0;flex:1;">' +
-              '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">' +
-                '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px;">' +
-                  '<span style="background:' + catBadgeBg + ';color:' + catBadgeCol + ';padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
-                  '<span style="background:#FFEDD5;color:#9A3412;padding:2px 8px;border-radius:8px;font-size:11.5px;font-weight:700;">' + Utils.escapeHtml(it.brand) + '</span>' +
-                  palHtml +
-                  lastFedHtml +
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;">' +
+                '<div style="display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden;">' +
+                  '<span style="background:' + catBadgeBg + ';color:' + catBadgeCol + ';padding:2px 6px;border-radius:7px;font-size:10.5px;font-weight:700;white-space:nowrap;flex-shrink:0;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
+                  '<span style="background:#FFEDD5;color:#9A3412;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + Utils.escapeHtml(it.brand) + '</span>' +
                 '</div>' +
-                '<span style="white-space:nowrap;background:' + badgeBg + ';color:' + badgeText + ';padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:800;flex-shrink:0;">' + badgeLabel + '</span>' +
+                '<span style="white-space:nowrap;background:' + badgeBg + ';color:' + badgeText + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;flex-shrink:0;">' + badgeLabel + '</span>' +
               '</div>' +
-              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#1C1917;line-height:1.35;">' + Utils.escapeHtml(it.name) + '</h3>' +
+              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#1C1917;line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) + '</h3>' +
+              ((palHtml || lastFedHtml) ? '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' + palHtml + lastFedHtml + '</div>' : '') +
               (metaTags.length ? '<div style="margin-top:4px;font-size:11.5px;color:#78716C;line-height:1.4;">' + metaTags.join(' · ') + '</div>' : '') +
             '</div>' +
           '</div>' +
@@ -719,9 +741,9 @@
                   ? '<span style="font-size:10.5px;font-weight:700;color:#15803D;background:#DCFCE7;padding:1px 6px;border-radius:6px;">已用' + Number(it.eatenCount) + unitStr + '</span>'
                   : ''
                 ) +
-                (it.isOpened && qtyNum > 1
-                  ? '<span style="font-size:10.5px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">' + Math.max(0, Utils.round2(qtyNum - 1)) + '未拆·1拆' + (fracBannerTxt ? ('(' + fracBannerTxt + ')') : '') + '</span>'
-                  : (it.isOpened && qtyNum > 0 ? '<span style="font-size:10.5px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中' + (fracBannerTxt ? ('·' + fracBannerTxt) : '') + '</span>' : '')
+                (it.isOpened && qtyNum > 0
+                  ? '<span style="font-size:10.5px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中</span>'
+                  : ''
                 ) +
               '</div>' +
               '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +

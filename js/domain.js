@@ -271,8 +271,10 @@
   };
 
   Domain.recordConsumedUnits = function (target, amountConsumed, customDateStr, historyNote) {
-    var used = Number(amountConsumed) > 0 ? Utils.round2(Number(amountConsumed)) : 1;
+    if (!target) return;
     var curQty = Utils.round2(Number(target.quantity) || 0);
+    if (curQty <= 0) return;
+    var used = Number(amountConsumed) > 0 ? Utils.round2(Number(amountConsumed)) : 1;
     var nextRem = Math.max(0, Utils.round2(curQty - used));
     var opDate = Utils.normalizeDateStr(customDateStr) || Utils.getTodayStr();
     var unitOpenedDate = target.openedDate || target.archivedOpenedDate || opDate;

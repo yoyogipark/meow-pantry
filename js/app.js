@@ -57,9 +57,12 @@
     var canRevert = targetLog.itemId && ((Number(targetLog.deductedUnit) || 0) > 0 || (Number(targetLog.deductedFrac) || 0) > 0);
     var revertOpt = canRevert ? { label: '🔄 同时退回该笔记录扣减的罐头余量 / 库存数量', defaultChecked: true } : null;
     UI.openConfirm('删除饮食记录？', '确定要删除 ' + logTitle + ' 吗？', '确认删除', function (doRevert) {
+      var existsIdx = st.logs.findIndex(function (lg) { return lg.id === logId; });
+      if (existsIdx === -1) return;
+      var freshLog = st.logs[existsIdx];
       var reverted = false;
-      if (doRevert && targetLog) {
-        reverted = Domain.revertConsumedFromLog(targetLog);
+      if (doRevert && freshLog) {
+        reverted = Domain.revertConsumedFromLog(freshLog);
       }
       st.logs = st.logs.filter(function (lg) { return lg.id !== logId; });
       Storage.saveToStorage();
@@ -112,11 +115,19 @@
       });
     }
 
-    document.getElementById('attrFilterBar').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-attr-filter]');
-      if (!btn) return;
-      st.attrFilter = btn.getAttribute('data-attr-filter');
+    document.getElementById('attrFilterSelect').addEventListener('change', function () {
+      st.attrFilter = this.value || 'all';
       st.pantryPage = 1;
+      UI.renderAll();
+    });
+    document.getElementById('clearPantryFiltersBtn').addEventListener('click', function () {
+      st.statusFilter = 'in_stock';
+      st.attrFilter = 'all';
+      st.catFilter = 'all';
+      st.brandFilter = 'all';
+      st.searchQuery = '';
+      st.pantryPage = 1;
+      document.getElementById('searchInput').value = '';
       UI.renderAll();
     });
 
@@ -1231,6 +1242,8 @@
     });
   };
 
+  var lastActiveDayStr = Utils.getTodayStr();
+
   App.init = function () {
     UI.syncStaticBrandIcons();
     App.bindEvents();
@@ -1238,7 +1251,27 @@
       UI.renderAll();
     });
     App.registerServiceWorker();
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) {
+          var nowDay = Utils.getTodayStr();
+          if (nowDay !== lastActiveDayStr) {
+            lastActiveDayStr = nowDay;
+            st_syncToday();
+          } else {
+            UI.renderAll();
+          }
+        }
+      });
+    }
   };
+
+  function st_syncToday() {
+    if (MP.state.selectedLogDate === Utils.shiftDaysFromToday(-1)) {
+      MP.state.selectedLogDate = Utils.getTodayStr();
+    }
+    UI.renderAll();
+  }
 
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
