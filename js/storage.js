@@ -404,6 +404,25 @@
       return { ok: false, error: '未检测到有效的粮仓 items 数据结构，无法导入' };
     }
 
+    var batchIds = new Map();
+    for (var item of rawItems) {
+      if (!item || typeof item !== 'object') continue;
+      if (item.purchasePackaging && !Domain.validatePackaging(item.purchasePackaging, String(item.unit || '').trim())) {
+        return { ok: false, error: '备份中存在无效的购买包装，请检查数量、单位和密封方式' };
+      }
+      if (item.flavors && !Domain.validateFlavors(item.flavors, item.purchasePackaging, Number(item.quantity), false)) {
+        return { ok: false, error: '备份中存在无效的口味配比或剩余库存' };
+      }
+      if (item.id && !batchIds.has(item.id)) batchIds.set(item.id, item);
+    }
+    for (var log of rawLogs) {
+      if (!log || typeof log !== 'object' || !log.flavorId) continue;
+      var batch = batchIds.get(log.itemId);
+      if (!Domain.validateFlavorLog(log) || (batch && !Domain.findFlavor(batch, log.flavorId))) {
+        return { ok: false, error: '备份中存在无效的喂食口味或库存回退关联' };
+      }
+    }
+
     var validItems = Domain.reconcileBatches(rawItems);
     var validLogs = rawLogs.map(Domain.sanitizeLog).filter(Boolean);
     var validHist = rawHist.map(Domain.sanitizeStockHistoryEntry).filter(Boolean);
