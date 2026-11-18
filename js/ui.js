@@ -789,8 +789,8 @@
               '<button type="button" data-action="toggle-open" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FAFAF9') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">' +
                 (it.isOpened ? ('🔓 已拆1' + unitStr) : (qtyNum > 1 ? ('🔒 拆1' + unitStr) : '🔒 记开封')) +
               '</button>' +
-              '<button type="button" data-action="consume-one" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">' +
-                (qtyNum > 1 ? ('✓ 用完1' + unitStr) : '✓ 记吃完') +
+              '<button type="button" data-action="consume-one" data-id="' + Utils.escapeHtml(it.id) + '" style="min-height:34px;padding:0 4px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:11.5px;font-weight:700;cursor:pointer;overflow-wrap:anywhere;">' +
+                '✓ ' + (catInfo.group === 'food' ? '吃完' : '用完') + Math.min(1, qtyNum) + unitStr +
               '</button>' +
               '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">✏️ 编辑</button>' +
               '<button type="button" data-action="delete" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">🗑️ 删除</button>' +
