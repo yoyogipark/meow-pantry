@@ -417,6 +417,19 @@
       </div>
     </header>
 
+    <!-- Unbacked Changes Reminder Banner -->
+    <div id="unbackedBanner" class="ios-card p-3 mb-3 hidden-view" style="padding:10px 13px;margin-bottom:12px;background:#FEF2F2;border:1px solid #FECACA;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#991B1B;">
+          <span style="font-size:14px;">⚠️</span>
+          <span id="unbackedBannerText"><strong>有未备份的改动：</strong>你已有 1 项数据变动尚未导出备份，建议备份防丢失</span>
+        </div>
+        <button id="quickBackupNowBtn" type="button" style="border:none;padding:5px 11px;border-radius:8px;background:#DC2626;color:#FFFFFF;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          立即导出备份
+        </button>
+      </div>
+    </div>
+
     <!-- Sample Data Notice Banner -->
     <div id="sampleBanner" class="ios-card p-3 mb-4 bg-amber-50/90 border-amber-200 hidden-view" style="padding:12px 14px;margin-bottom:14px;background:#FFFBEB;border-color:#FDE68A;">
       <div class="flex items-center justify-between gap-2 flex-wrap" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
@@ -650,6 +663,13 @@
 
         <!-- Visual Tier Cards Container -->
         <div id="palTierCardsList" style="display:flex;flex-direction:column;gap:9px;"></div>
+
+        <!-- Tier List Pagination Controls -->
+        <div id="tierPaginationBar" class="hidden-view" style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <button id="prevTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
+          <span id="tierPageInfoText" style="font-size:11.5px;font-weight:700;color:#57534E;">第 1 / 1 页</span>
+          <button id="nextTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+        </div>
       </div>
 
       <!-- 3. 30-Day Feeding Preferences & Top Favorites -->
@@ -673,9 +693,29 @@
 
       <!-- 5. Brand Deep Archive Directory -->
       <div class="ios-card p-4" style="padding:16px;">
-        <h2 style="margin:0 0 3px 0;font-size:16px;font-weight:800;color:#1C1917;">🏷️ 品牌囤货档案</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
+          <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🏷️ 品牌囤货档案</h2>
+          <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
+        </div>
         <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">汇总各品牌在库余量、累计消灭量、历史花费与旗下单品口碑（点击品牌可筛选库存）</p>
         <div id="brandStatsList" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        <!-- Brand Archive Pagination Controls -->
+        <div id="brandPaginationBar" class="hidden-view" style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <button id="prevBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
+            <span id="brandPageInfoText" style="font-size:11.5px;font-weight:700;color:#44403C;white-space:nowrap;">第 1 / 1 页</span>
+            <button id="nextBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;">
+            <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
+            <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background:#FFFFFF;">
+              <option value="5">5 个品牌</option>
+              <option value="10">10 个品牌</option>
+              <option value="9999">全部</option>
+            </select>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -707,7 +747,10 @@
 
       <!-- Local Data Backup & Export -->
       <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <h2 class="text-base font-bold text-stone-900 mb-1" style="margin:0 0 4px 0;font-size:16px;">💾 本地数据备份与导出</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+          <h2 class="text-base font-bold text-stone-900" style="margin:0;font-size:16px;">💾 本地数据备份与导出</h2>
+          <span id="settingsBackupBadge" style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:#FEF2F2;color:#DC2626;">⚠️ 尚未备份</span>
+        </div>
         <p class="text-xs text-stone-500 mb-3" style="margin:0 0 12px 0;font-size:12px;color:#78716C;">所有数据保存在你的手机本地（IndexedDB + LocalStorage），无需联网，零隐私上传。建议定期导出备份至 iPhone「文件 / iCloud 云盘」。</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
           <button id="exportJsonBtn" type="button" class="ios-btn ios-btn-primary px-4 py-3">
@@ -753,9 +796,9 @@
         <span>喂养看板</span>
       </button>
       <button type="button" data-nav="settings" id="navBtnSettings" class="nav-tab" style="position:relative;">
-        <div style="position:relative;display:inline-flex;">
+        <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span id="backupNoticeDot" class="hidden-view" style="position:absolute;top:-2px;right:-4px;width:8px;height:8px;border-radius:999px;background:#EA580C;box-shadow:0 0 0 2px #FFFFFF;"></span>
+          <span id="backupNoticeDot" class="hidden-view" style="position:absolute;top:-5px;right:-12px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#DC2626;color:#FFFFFF;font-size:10px;font-weight:800;line-height:16px;text-align:center;box-shadow:0 0 0 2px #FFFFFF;">1</span>
         </div>
         <span>备份设置</span>
       </button>
@@ -1504,6 +1547,10 @@
         pantryPageSize: 6,
         dailyViewMode: 'day', // 'day' | 'all'
         statsTierTab: 'love', // 'love' | 'ok' | 'coax' | 'meh' | 'med'
+        tierPage: 1,
+        tierPageSize: 5,
+        brandPage: 1,
+        brandPageSize: 5,
         logSearchQuery: '',
         logCatFilter: 'all',
         formCat: 'dry',
@@ -1533,7 +1580,10 @@
         }
       }
 
-      function saveToStorage() {
+      function saveToStorage(isSilentInit) {
+        if (!isSilentInit) {
+          state.settings.unsavedChangesCount = (Number(state.settings.unsavedChangesCount) || 0) + 1;
+        }
         var payload = JSON.stringify(state.items);
         var settingsPayload = JSON.stringify(state.settings);
         var logsPayload = JSON.stringify(state.logs);
@@ -1607,7 +1657,7 @@
             } else {
               state.items = buildSampleItems();
               state.logs = buildSampleLogs();
-              saveToStorage();
+              saveToStorage(true);
             }
             done();
             return;
@@ -1640,7 +1690,7 @@
               } else {
                 state.items = buildSampleItems();
                 state.logs = buildSampleLogs();
-                saveToStorage();
+                saveToStorage(true);
               }
               done();
             };
@@ -3028,7 +3078,9 @@
         });
 
         var tierListEl = document.getElementById('palTierCardsList');
+        var tierPagerEl = document.getElementById('tierPaginationBar');
         if (tierMatched.length === 0) {
+          if (tierPagerEl) tierPagerEl.classList.add('hidden-view');
           var emptyHintMap = {
             love: '还没有标记为「😍 超爱」的口粮，可在录入或编辑口粮时点选适口性',
             ok:   '还没有标记为「😋 正常吃」的口粮记录',
@@ -3041,7 +3093,27 @@
               '🐾 ' + (emptyHintMap[state.statsTierTab] || '暂无记录') +
             '</div>';
         } else {
-          tierListEl.innerHTML = tierMatched.map(function (prod) {
+          var tPageSize = Number(state.tierPageSize) || 5;
+          var tTotalPages = Math.max(1, Math.ceil(tierMatched.length / tPageSize));
+          if (state.tierPage > tTotalPages) state.tierPage = tTotalPages;
+          if (state.tierPage < 1) state.tierPage = 1;
+          var pagedTierItems = tierMatched.slice((state.tierPage - 1) * tPageSize, state.tierPage * tPageSize);
+
+          if (tierMatched.length > tPageSize) {
+            tierPagerEl.classList.remove('hidden-view');
+            document.getElementById('tierPageInfoText').textContent =
+              '第 ' + state.tierPage + ' / ' + tTotalPages + ' 页 (共 ' + tierMatched.length + ' 款)';
+            var tpPrev = document.getElementById('prevTierPageBtn');
+            var tpNext = document.getElementById('nextTierPageBtn');
+            tpPrev.disabled = (state.tierPage <= 1);
+            tpPrev.style.opacity = state.tierPage <= 1 ? '0.45' : '1';
+            tpNext.disabled = (state.tierPage >= tTotalPages);
+            tpNext.style.opacity = state.tierPage >= tTotalPages ? '0.45' : '1';
+          } else {
+            tierPagerEl.classList.add('hidden-view');
+          }
+
+          tierListEl.innerHTML = pagedTierItems.map(function (prod) {
             var catInfo = CATEGORIES[prod.category] || CATEGORIES.dry;
             var palBadge = getPalatabilityBadgeInfo(prod.rep);
             var coverSrc = getItemCoverSrc(prod.rep);
@@ -3200,11 +3272,38 @@
           return brandGroups[b].activeSkus - brandGroups[a].activeSkus || brandGroups[b].products.length - brandGroups[a].products.length;
         });
 
+        document.getElementById('brandTotalCountBadge').textContent = '共 ' + brandNames.length + ' 个品牌';
         var brandEl = document.getElementById('brandStatsList');
+        var brandPagerEl = document.getElementById('brandPaginationBar');
         if (brandNames.length === 0) {
+          if (brandPagerEl) brandPagerEl.classList.add('hidden-view');
           brandEl.innerHTML = '<div style="font-size:13px;color:#A8A29E;padding:8px 0;">暂无品牌记录</div>';
         } else {
-          brandEl.innerHTML = brandNames.map(function (b) {
+          var bPageSize = Number(state.brandPageSize) || 5;
+          var bTotalPages = Math.max(1, Math.ceil(brandNames.length / bPageSize));
+          if (state.brandPage > bTotalPages) state.brandPage = bTotalPages;
+          if (state.brandPage < 1) state.brandPage = 1;
+          var pagedBrandNames = brandNames.slice((state.brandPage - 1) * bPageSize, state.brandPage * bPageSize);
+
+          if (brandNames.length > 5 || bTotalPages > 1) {
+            brandPagerEl.classList.remove('hidden-view');
+            document.getElementById('brandPageInfoText').textContent =
+              '第 ' + state.brandPage + ' / ' + bTotalPages + ' 页 (共 ' + brandNames.length + ' 个品牌)';
+            var bpPrev = document.getElementById('prevBrandPageBtn');
+            var bpNext = document.getElementById('nextBrandPageBtn');
+            bpPrev.disabled = (state.brandPage <= 1);
+            bpPrev.style.opacity = state.brandPage <= 1 ? '0.45' : '1';
+            bpNext.disabled = (state.brandPage >= bTotalPages);
+            bpNext.style.opacity = state.brandPage >= bTotalPages ? '0.45' : '1';
+            var bSizeSel = document.getElementById('brandPageSizeSelect');
+            if (bSizeSel && String(bSizeSel.value) !== String(bPageSize)) {
+              bSizeSel.value = String(bPageSize);
+            }
+          } else {
+            brandPagerEl.classList.add('hidden-view');
+          }
+
+          brandEl.innerHTML = pagedBrandNames.map(function (b) {
             var g = brandGroups[b];
             var spendArr = [];
             if (g.spendCny > 0) spendArr.push('CN¥' + Math.round(g.spendCny).toLocaleString('en-US'));
@@ -3263,18 +3362,48 @@
             : 'ios-btn ios-btn-secondary';
         }
         var customPhotos = state.items.filter(function (it) { return Boolean(it.imageData); }).length;
+        var hasCustomItems = state.items.some(function (it) { return !it.isSample; }) || state.logs.some(function (lg) { return !lg.isSample; });
         var unsaved = Number(state.settings.unsavedChangesCount) || 0;
         var lastBk = state.settings.lastBackupDate || '';
-        var daysSinceBk = lastBk ? Math.abs(diffDaysFromToday(lastBk) || 0) : 999;
-        var needBackup = (unsaved >= 5) || (lastBk && daysSinceBk >= 30 && unsaved > 0);
+        var needBackup = (unsaved > 0) || (hasCustomItems && !lastBk);
+        var badgeCount = unsaved > 0 ? unsaved : (needBackup ? 1 : 0);
+
         var dotEl = document.getElementById('backupNoticeDot');
-        if (dotEl) {
-          if (needBackup) dotEl.classList.remove('hidden-view');
-          else dotEl.classList.add('hidden-view');
+        var topBanner = document.getElementById('unbackedBanner');
+        var topBannerTxt = document.getElementById('unbackedBannerText');
+        var setBadge = document.getElementById('settingsBackupBadge');
+
+        if (needBackup) {
+          if (dotEl) {
+            dotEl.textContent = badgeCount > 99 ? '99+' : String(badgeCount);
+            dotEl.classList.remove('hidden-view');
+          }
+          if (topBanner) {
+            topBanner.classList.remove('hidden-view');
+            if (topBannerTxt) {
+              topBannerTxt.innerHTML = lastBk
+                ? ('<strong>未备份提醒：</strong>自上次备份 (' + escapeHtml(lastBk) + ') 后已有 <strong>' + badgeCount + ' 项</strong>新增/修改未导出备份')
+                : ('<strong>未备份提醒：</strong>当前已有 <strong>' + badgeCount + ' 项</strong>操作尚未导出本地 JSON 备份，建议备份防丢失');
+            }
+          }
+          if (setBadge) {
+            setBadge.style.background = '#FEF2F2';
+            setBadge.style.color = '#DC2626';
+            setBadge.textContent = '⚠️ ' + badgeCount + ' 项改动未备份';
+          }
+        } else {
+          if (dotEl) dotEl.classList.add('hidden-view');
+          if (topBanner) topBanner.classList.add('hidden-view');
+          if (setBadge) {
+            setBadge.style.background = '#DCFCE7';
+            setBadge.style.color = '#15803D';
+            setBadge.textContent = lastBk ? ('✅ 已备份 (' + lastBk + ')') : '✅ 暂无未备份改动';
+          }
         }
+
         var bkNote = lastBk
-          ? ('上次备份：' + lastBk + (unsaved > 0 ? (' · 新增/改动 ' + unsaved + ' 次未备份') : ' · 已是最新备份'))
-          : (unsaved > 0 ? ('已录入/改动 ' + unsaved + ' 次 · 建议导出一份 JSON 备份防丢') : '本地双引擎存储已就绪');
+          ? ('上次备份：' + lastBk + (unsaved > 0 ? (' · 有 ' + unsaved + ' 项改动待备份') : ' · 已是最新备份'))
+          : (needBackup ? ('有 ' + badgeCount + ' 项改动待导出 JSON 备份') : '本地双引擎存储已就绪');
         document.getElementById('storageStatusText').textContent =
           '本地已存 ' + state.items.length + ' 条库存与 ' + state.logs.length + ' 条喂食记录（含 ' + customPhotos + ' 张实拍图）· ' + bkNote;
       }
@@ -3630,8 +3759,8 @@
       function exportJsonBackup() {
         state.settings.lastBackupDate = getTodayStr();
         state.settings.unsavedChangesCount = 0;
-        saveToStorage();
-        renderSettingsView();
+        saveToStorage(true);
+        renderAll();
         var backupObj = {
           app: '喵喵粮仓',
           version: 2,
@@ -3961,7 +4090,6 @@
             }
           }
 
-          state.settings.unsavedChangesCount = (Number(state.settings.unsavedChangesCount) || 0) + 1;
           state.selectedLogDate = fDate;
           saveToStorage();
           closeFeedModal();
@@ -4344,7 +4472,6 @@
             showToast('新批次已入库');
           }
 
-          state.settings.unsavedChangesCount = (Number(state.settings.unsavedChangesCount) || 0) + 1;
           saveToStorage();
           closeItemModal();
           renderAll();
@@ -4375,10 +4502,40 @@
           showToast(state.pantryDisplayMode === 'compact' ? '已切换为「极简清单」视图' : '已切换为「详细卡片」视图');
         });
 
+        document.getElementById('quickBackupNowBtn').addEventListener('click', exportJsonBackup);
+
         document.getElementById('palTierTabBar').addEventListener('click', function (ev) {
           var btn = ev.target.closest('[data-tier-tab]');
           if (!btn) return;
           state.statsTierTab = btn.getAttribute('data-tier-tab');
+          state.tierPage = 1;
+          renderStatsView();
+        });
+
+        document.getElementById('prevTierPageBtn').addEventListener('click', function () {
+          if (state.tierPage > 1) {
+            state.tierPage -= 1;
+            renderStatsView();
+          }
+        });
+        document.getElementById('nextTierPageBtn').addEventListener('click', function () {
+          state.tierPage += 1;
+          renderStatsView();
+        });
+
+        document.getElementById('prevBrandPageBtn').addEventListener('click', function () {
+          if (state.brandPage > 1) {
+            state.brandPage -= 1;
+            renderStatsView();
+          }
+        });
+        document.getElementById('nextBrandPageBtn').addEventListener('click', function () {
+          state.brandPage += 1;
+          renderStatsView();
+        });
+        document.getElementById('brandPageSizeSelect').addEventListener('change', function () {
+          state.brandPageSize = parseInt(this.value, 10) || 5;
+          state.brandPage = 1;
           renderStatsView();
         });
 
@@ -4459,7 +4616,9 @@
                     state.logs = parsed.logs;
                   }
                   applyLoadedSettings(parsed.settings);
-                  saveToStorage();
+                  state.settings.lastBackupDate = getTodayStr();
+                  state.settings.unsavedChangesCount = 0;
+                  saveToStorage(true);
                   renderAll();
                   switchTab('pantry');
                   showToast('成功恢复 ' + incoming.length + ' 条记录');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meow-pantry-pwa-v20';
+const CACHE_NAME = 'meow-pantry-pwa-v21';
 const CORE_ASSETS = [
   './',
   './index.html',
