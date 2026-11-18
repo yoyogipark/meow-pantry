@@ -614,29 +614,68 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 3: STATS & BRANDS ==================== -->
+    <!-- ==================== TAB 3: STATS, PALATABILITY TIER LIST & BRAND ARCHIVES (红黑图鉴) ==================== -->
     <section id="viewStats" class="hidden-view space-y-4">
-      <!-- Category Breakdown -->
+      <!-- 1. Category Breakdown + Stock Health Bar + Consumption Speed -->
       <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <div class="flex items-center justify-between mb-3" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <h2 class="text-base font-bold text-stone-900" style="margin:0;font-size:16px;">📊 分类库存盘点</h2>
-          <span id="totalValueBadge" class="text-xs font-semibold text-orange-700 bg-orange-100 px-2.5 py-1 rounded-full" style="font-size:12px;background:#FFEDD5;color:#C2410C;padding:4px 10px;border-radius:999px;">估算总值 ¥0</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <div>
+            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📊 全仓盘点与消耗总览</h2>
+            <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">在库余量、历史消灭量与保质期健康度</p>
+          </div>
+          <span id="totalValueBadge" style="font-size:12px;font-weight:700;background:#FFEDD5;color:#C2410C;padding:4px 10px;border-radius:999px;white-space:nowrap;">在库总值 ¥0</span>
         </div>
-        <div id="categoryStatsGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
+        <div id="categoryStatsGrid" class="grid-safe" style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px;"></div>
+        <div id="stockHealthBox" style="margin-top:12px;padding-top:11px;border-top:1px solid #F5F5F4;"></div>
       </div>
 
-      <!-- Priority Feeding Queue (FEFO) -->
+      <!-- 2. Interactive Palatability Archive (适口性口碑档案) -->
       <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <h2 class="text-base font-bold text-stone-900 mb-1" style="margin:0 0 4px 0;font-size:16px;">🍽️ 近期优先投喂建议</h2>
-        <p class="text-xs text-stone-500 mb-3" style="margin:0 0 12px 0;font-size:12px;color:#78716C;">结合「开封后保鲜期」与「未开封保质期」自动排序，避免浪费</p>
-        <div id="priorityFeedList" class="space-y-2" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+          <div>
+            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🐾 适口性口碑档案</h2>
+            <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">按平时试吃反馈归类，复购选粮更直观</p>
+          </div>
+          <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
+        </div>
+
+        <!-- 5-Tier Filter Pills -->
+        <div id="palTierTabBar" class="no-scrollbar" style="display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">
+          <button type="button" data-tier-tab="love" class="pill-chip active" style="padding:6px 11px;font-size:12px;">😍 超爱吃</button>
+          <button type="button" data-tier-tab="ok" class="pill-chip" style="padding:6px 11px;font-size:12px;">😋 正常吃</button>
+          <button type="button" data-tier-tab="coax" class="pill-chip" style="padding:6px 11px;font-size:12px;">🥺 需哄吃</button>
+          <button type="button" data-tier-tab="meh" class="pill-chip" style="padding:6px 11px;font-size:12px;">😒 不爱吃</button>
+          <button type="button" data-tier-tab="med" class="pill-chip" style="padding:6px 11px;font-size:12px;">🩺 药品反应</button>
+        </div>
+
+        <!-- Visual Tier Cards Container -->
+        <div id="palTierCardsList" style="display:flex;flex-direction:column;gap:9px;"></div>
       </div>
 
-      <!-- Brand & Palatability Directory -->
+      <!-- 3. 30-Day Feeding Preferences & Top Favorites -->
+      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+          <div>
+            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📈 近 30 天饮食偏好排行</h2>
+            <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">根据每日盘点自动统计主子近期最常吃什么</p>
+          </div>
+          <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">近30天 0 顿</span>
+        </div>
+        <div id="recent30PrefBox"></div>
+      </div>
+
+      <!-- 4. Priority Feeding Queue (FEFO) -->
+      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
+        <h2 style="margin:0 0 3px 0;font-size:16px;font-weight:800;color:#1C1917;">🍽️ 近期优先投喂建议</h2>
+        <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">结合「拆封后保鲜期」与「未开封保质期」自动排序，避免浪费</p>
+        <div id="priorityFeedList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <!-- 5. Brand Deep Archive Directory -->
       <div class="ios-card p-4" style="padding:16px;">
-        <h2 class="text-base font-bold text-stone-900 mb-1" style="margin:0 0 4px 0;font-size:16px;">🏷️ 品牌囤货与适口性红黑榜</h2>
-        <p class="text-xs text-stone-500 mb-3" style="margin:0 0 12px 0;font-size:12px;color:#78716C;">记录主子爱吃/不吃的品牌口味，下次大促回购不踩雷</p>
-        <div id="brandStatsList" class="space-y-2.5" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <h2 style="margin:0 0 3px 0;font-size:16px;font-weight:800;color:#1C1917;">🏷️ 品牌囤货档案</h2>
+        <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">汇总各品牌在库余量、累计消灭量、历史花费与旗下单品口碑（点击品牌可筛选库存）</p>
+        <div id="brandStatsList" style="display:flex;flex-direction:column;gap:10px;"></div>
       </div>
     </section>
 
@@ -711,7 +750,7 @@
       </button>
       <button type="button" data-nav="stats" id="navBtnStats" class="nav-tab">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg>
-        <span>品牌盘点</span>
+        <span>喂养看板</span>
       </button>
       <button type="button" data-nav="settings" id="navBtnSettings" class="nav-tab" style="position:relative;">
         <div style="position:relative;display:inline-flex;">
@@ -1464,6 +1503,7 @@
         pantryPage: 1,
         pantryPageSize: 6,
         dailyViewMode: 'day', // 'day' | 'all'
+        statsTierTab: 'love', // 'love' | 'ok' | 'coax' | 'meh' | 'med'
         logSearchQuery: '',
         logCatFilter: 'all',
         formCat: 'dry',
@@ -2813,28 +2853,87 @@
         document.getElementById('feedModalBackdrop').classList.add('hidden-view');
       }
 
-      // ==================== RENDER STATS & BRANDS VIEW ====================
+      // ==================== RENDER STATS, PALATABILITY TIER LIST & BRAND ARCHIVES ====================
+      function aggregateUniqueProducts() {
+        var map = {};
+        var list = [];
+        state.items.forEach(function (it) {
+          var key = getProductGroupKey(it);
+          var q = Number(it.quantity) || 0;
+          var eaten = q <= 0 ? (Number(it.consumedCount) || Number(it.lastQuantity) || 0) : 0;
+          if (!map[key]) {
+            map[key] = {
+              key: key,
+              rep: it,
+              category: it.category || 'dry',
+              brand: (it.brand || '未命名品牌').trim(),
+              name: (it.name || '未命名').trim(),
+              spec: it.spec || '',
+              unit: it.unit || '件',
+              palatability: it.palatability || '',
+              inStockQty: 0,
+              eatenQty: 0,
+              batchCount: 0,
+              totalDays: 0,
+              daysUnits: 0
+            };
+            list.push(map[key]);
+          }
+          var entry = map[key];
+          if (!it.sourceBatchId) {
+            entry.batchCount += 1;
+          }
+          entry.inStockQty = Math.round((entry.inStockQty + q) * 100) / 100;
+          entry.eatenQty = Math.round((entry.eatenQty + eaten) * 100) / 100;
+          if (it.palatability) entry.palatability = it.palatability;
+          if (it.imageData && !entry.rep.imageData) entry.rep = it;
+          if (q <= 0) {
+            var cDays = calcConsumeDays(it.archivedOpenedDate || it.openedDate, it.finishedDate);
+            if (cDays !== null && eaten > 0) {
+              entry.totalDays += cDays;
+              entry.daysUnits += eaten;
+            }
+          }
+        });
+        return list;
+      }
+
       function renderStatsView() {
         var totalCny = 0;
         var totalJpy = 0;
         var catStats = {};
         Object.keys(CATEGORIES).forEach(function (k) {
-          catStats[k] = { skus: 0, totalQty: 0, unit: CATEGORIES[k].defaultUnit };
+          catStats[k] = { skus: 0, totalQty: 0, eatenQty: 0, unit: CATEGORIES[k].defaultUnit, daysSum: 0, daysUnits: 0 };
         });
+
+        var freshBatches = 0;
+        var openedBatches = 0;
+        var expiringBatches = 0;
+        var expiredBatches = 0;
 
         state.items.forEach(function (it) {
           var q = Number(it.quantity) || 0;
+          var ck = catStats[it.category] ? it.category : 'dry';
+          var ev = evaluateItem(it);
           if (q > 0) {
             if (it.price) {
-              if (it.currency === 'JPY') {
-                totalJpy += q * Number(it.price);
-              } else {
-                totalCny += q * Number(it.price);
-              }
+              if (it.currency === 'JPY') totalJpy += q * Number(it.price);
+              else totalCny += q * Number(it.price);
             }
-            var ck = catStats[it.category] ? it.category : 'dry';
             catStats[ck].skus += 1;
-            catStats[ck].totalQty += q;
+            catStats[ck].totalQty = Math.round((catStats[ck].totalQty + q) * 100) / 100;
+            if (it.isOpened) openedBatches += 1;
+            if (ev.status === 'expired') expiredBatches += 1;
+            else if (ev.status === 'expiring') expiringBatches += 1;
+            else freshBatches += 1;
+          } else {
+            var used = Number(it.consumedCount) || Number(it.lastQuantity) || 1;
+            catStats[ck].eatenQty = Math.round((catStats[ck].eatenQty + used) * 100) / 100;
+            var cd = calcConsumeDays(it.archivedOpenedDate || it.openedDate, it.finishedDate);
+            if (cd !== null) {
+              catStats[ck].daysSum += cd;
+              catStats[ck].daysUnits += used;
+            }
           }
         });
 
@@ -2844,19 +2943,194 @@
         document.getElementById('totalValueBadge').textContent =
           valParts.length ? ('在库总值 ' + valParts.join(' + ')) : '在库总值 ¥0';
 
+        // 1A. Category Grid (Shows both In-Stock and Cumulative Eaten!)
         var catGridHtml = Object.keys(CATEGORIES).map(function (k) {
           var c = CATEGORIES[k];
           var st = catStats[k];
+          var avgStr = st.daysUnits > 0 ? (' · 均' + Math.max(1, Math.round(st.daysSum / st.daysUnits)) + '天/' + c.defaultUnit) : '';
           return (
-            '<div style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
-              '<div style="font-size:13px;font-weight:700;color:#44403C;">' + c.icon + ' ' + c.label + '</div>' +
-              '<div style="margin-top:4px;font-size:20px;font-weight:800;color:#1C1917;">' + st.totalQty + ' <span style="font-size:12px;font-weight:600;color:#78716C;">' + c.defaultUnit + ' (' + st.skus + '款)</span></div>' +
+            '<div style="padding:11px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+                '<span style="font-size:12.5px;font-weight:700;color:#44403C;">' + c.icon + ' ' + c.label + '</span>' +
+                '<span style="font-size:11px;color:#78716C;">' + st.skus + '批在库</span>' +
+              '</div>' +
+              '<div style="margin-top:4px;font-size:18px;font-weight:800;color:#1C1917;">' + st.totalQty + ' <span style="font-size:12px;font-weight:600;color:#78716C;">' + c.defaultUnit + '</span></div>' +
+              '<div style="margin-top:2px;font-size:11px;color:' + (st.eatenQty > 0 ? '#15803D' : '#A8A29E') + ';font-weight:600;">' +
+                '累计已吃 ' + st.eatenQty + ' ' + c.defaultUnit + avgStr +
+              '</div>' +
             '</div>'
           );
         }).join('');
         document.getElementById('categoryStatsGrid').innerHTML = catGridHtml;
 
-        // Priority Feeding Queue (Top 5 urgent active items)
+        // 1B. Stock Health Bar (Fresh vs Expiring vs Expired + Opened count)
+        var totalActiveBatches = freshBatches + expiringBatches + expiredBatches;
+        var healthEl = document.getElementById('stockHealthBox');
+        if (totalActiveBatches === 0) {
+          healthEl.innerHTML = '<div style="font-size:12px;color:#A8A29E;">当前暂无在库批次</div>';
+        } else {
+          var pFresh = Math.round((freshBatches / totalActiveBatches) * 100);
+          var pWarn = Math.round((expiringBatches / totalActiveBatches) * 100);
+          var pExp = Math.max(0, 100 - pFresh - pWarn);
+          healthEl.innerHTML =
+            '<div style="display:flex;align-items:center;justify-content:space-between;font-size:11.5px;margin-bottom:6px;flex-wrap:wrap;gap:4px;">' +
+              '<span style="font-weight:700;color:#44403C;">🛡️ 保质期健康度（共 ' + totalActiveBatches + ' 批在库，其中 ' + openedBatches + ' 批已拆封）</span>' +
+              '<div style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;">' +
+                '<span style="color:#15803D;">● 充裕 ' + freshBatches + '</span>' +
+                '<span style="color:#D97706;">● 临期 ' + expiringBatches + '</span>' +
+                (expiredBatches > 0 ? '<span style="color:#DC2626;">● 过期 ' + expiredBatches + '</span>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div style="width:100%;height:8px;border-radius:999px;background:#F5F5F4;overflow:hidden;display:flex;">' +
+              (pFresh > 0 ? '<div style="width:' + pFresh + '%;background:#16A34A;height:100%;"></div>' : '') +
+              (pWarn > 0 ? '<div style="width:' + pWarn + '%;background:#F59E0B;height:100%;"></div>' : '') +
+              (pExp > 0 ? '<div style="width:' + pExp + '%;background:#DC2626;height:100%;"></div>' : '') +
+            '</div>';
+        }
+
+        // 2. Interactive Palatability Red/Black Tier List (主子适口性红黑榜图鉴)
+        var uniqueProducts = aggregateUniqueProducts();
+        var tierCounts = { love: 0, ok: 0, coax: 0, meh: 0, med: 0 };
+        var evaluatedTotal = 0;
+        uniqueProducts.forEach(function (prod) {
+          if (!prod.palatability) return;
+          evaluatedTotal += 1;
+          if (prod.category === 'med') {
+            tierCounts.med += 1;
+          } else if (tierCounts[prod.palatability] !== undefined) {
+            tierCounts[prod.palatability] += 1;
+          }
+        });
+        document.getElementById('tierTotalEvaluatedBadge').textContent = '已评 ' + evaluatedTotal + ' 款单品';
+
+        var tierLabels = {
+          love: '😍 超爱吃',
+          ok:   '😋 正常吃',
+          coax: '🥺 需哄吃',
+          meh:  '😒 不爱吃',
+          med:  '🩺 药品反应'
+        };
+        var tabBtns = document.querySelectorAll('#palTierTabBar [data-tier-tab]');
+        for (var tIdx = 0; tIdx < tabBtns.length; tIdx++) {
+          var tk = tabBtns[tIdx].getAttribute('data-tier-tab');
+          tabBtns[tIdx].textContent = tierLabels[tk] + ' (' + (tierCounts[tk] || 0) + ')';
+          if (tk === state.statsTierTab) {
+            tabBtns[tIdx].classList.add('active');
+          } else {
+            tabBtns[tIdx].classList.remove('active');
+          }
+        }
+
+        var tierMatched = uniqueProducts.filter(function (prod) {
+          if (!prod.palatability) return false;
+          if (state.statsTierTab === 'med') return prod.category === 'med';
+          return prod.category !== 'med' && prod.palatability === state.statsTierTab;
+        });
+
+        var tierListEl = document.getElementById('palTierCardsList');
+        if (tierMatched.length === 0) {
+          var emptyHintMap = {
+            love: '还没有标记为「😍 超爱」的口粮，可在录入或编辑口粮时点选适口性',
+            ok:   '还没有标记为「😋 正常吃」的口粮记录',
+            coax: '太棒了，目前没有需要哄骗才肯吃的口粮',
+            meh:  '太棒了，目前还没有踩雷不吃的黑名单口粮',
+            med:  '还没有记录过「🩺 药品」的给药耐受度反应'
+          };
+          tierListEl.innerHTML =
+            '<div style="padding:22px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#78716C;font-size:12.5px;">' +
+              '🐾 ' + (emptyHintMap[state.statsTierTab] || '暂无记录') +
+            '</div>';
+        } else {
+          tierListEl.innerHTML = tierMatched.map(function (prod) {
+            var catInfo = CATEGORIES[prod.category] || CATEGORIES.dry;
+            var palBadge = getPalatabilityBadgeInfo(prod.rep);
+            var coverSrc = getItemCoverSrc(prod.rep);
+            var stockTag = prod.inStockQty > 0
+              ? '<span style="font-size:11px;font-weight:700;color:#15803D;background:#DCFCE7;padding:2px 7px;border-radius:6px;">在库 ' + prod.inStockQty + escapeHtml(prod.unit) + '</span>'
+              : '<span style="font-size:11px;font-weight:700;color:#78716C;background:#E7E5E4;padding:2px 7px;border-radius:6px;">已断货/吃完</span>';
+            var avgTxt = prod.daysUnits > 0
+              ? (' · 均 ' + Math.max(1, Math.round(prod.totalDays / prod.daysUnits)) + '天/' + escapeHtml(prod.unit))
+              : '';
+
+            return (
+              '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;">' +
+                '<img src="' + coverSrc + '" alt="' + escapeHtml(prod.name) + '" style="width:48px;height:48px;border-radius:11px;object-fit:cover;border:1px solid #E7E5E4;flex-shrink:0;background:#FFF;">' +
+                '<div style="min-width:0;flex:1;">' +
+                  '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">' +
+                    '<span style="font-size:10.5px;font-weight:700;color:#44403C;background:#E7E5E4;padding:1px 6px;border-radius:5px;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
+                    '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 7px;border-radius:5px;">' + escapeHtml(prod.brand) + '</span>' +
+                    (palBadge ? '<span style="font-size:10.5px;font-weight:700;background:' + palBadge.bg + ';color:' + palBadge.text + ';padding:1px 7px;border-radius:999px;">' + palBadge.label + '</span>' : '') +
+                  '</div>' +
+                  '<div style="font-size:14px;font-weight:800;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+                    escapeHtml(prod.name) + (prod.spec ? (' <span style="font-size:11.5px;font-weight:500;color:#78716C;">(' + escapeHtml(prod.spec) + ')</span>') : '') +
+                  '</div>' +
+                  '<div style="margin-top:3px;font-size:11px;color:#57534E;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                    stockTag +
+                    '<span>累计吃过 ' + prod.eatenQty + escapeHtml(prod.unit) + avgTxt + '</span>' +
+                  '</div>' +
+                '</div>' +
+                '<button type="button" data-tier-restock="' + escapeHtml(prod.rep.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">＋复购</button>' +
+              '</div>'
+            );
+          }).join('');
+        }
+
+        // 3. 30-Day Feeding Preferences & Top Favorites (Linked with state.logs)
+        var cutoffStr = shiftDaysFromToday(-30);
+        var recentLogs = state.logs.filter(function (lg) {
+          return String(lg.date || '') >= cutoffStr;
+        });
+        document.getElementById('recent30CountBadge').textContent = '近30天 ' + recentLogs.length + ' 次记录';
+
+        var prefBox = document.getElementById('recent30PrefBox');
+        if (recentLogs.length === 0) {
+          prefBox.innerHTML = '<div style="font-size:12.5px;color:#A8A29E;padding:8px 0;">近期暂无喂食日志，去「每日盘点」记几笔就能看到主子的宠幸排行啦</div>';
+        } else {
+          var favMap = {};
+          var catLogCount = {};
+          recentLogs.forEach(function (lg) {
+            var ck = lg.category || 'dry';
+            catLogCount[ck] = (catLogCount[ck] || 0) + 1;
+            var fk = (lg.brand || '') + ' · ' + (lg.name || '');
+            if (!favMap[fk]) {
+              favMap[fk] = { title: fk, category: ck, count: 0, lastDate: lg.date || '' };
+            }
+            favMap[fk].count += 1;
+            if (String(lg.date || '') > favMap[fk].lastDate) favMap[fk].lastDate = lg.date;
+          });
+
+          var topFavs = Object.keys(favMap).map(function (k) { return favMap[k]; }).sort(function (a, b) {
+            return b.count - a.count;
+          }).slice(0, 3);
+
+          var catPillsHtml = Object.keys(CATEGORIES).filter(function (k) { return catLogCount[k] > 0; }).map(function (k) {
+            var ci = CATEGORIES[k];
+            var pct = Math.round((catLogCount[k] / recentLogs.length) * 100);
+            return '<span style="background:#FAFAF9;border:1px solid #E7E5E4;color:#44403C;padding:3px 9px;border-radius:8px;font-size:11.5px;font-weight:700;">' + ci.icon + ' ' + ci.label + ' ' + catLogCount[k] + '次 (' + pct + '%)</span>';
+          }).join('');
+
+          var medals = ['🥇', '🥈', '🥉'];
+          var topRowsHtml = topFavs.map(function (fav, idx) {
+            var ci = CATEGORIES[fav.category] || CATEGORIES.dry;
+            return (
+              '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
+                '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
+                  '<span style="font-size:15px;">' + (medals[idx] || '🐾') + '</span>' +
+                  '<span style="font-size:11px;background:#E7E5E4;color:#44403C;padding:1px 6px;border-radius:5px;flex-shrink:0;">' + ci.icon + ci.label + '</span>' +
+                  '<strong style="font-size:13px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(fav.title) + '</strong>' +
+                '</div>' +
+                '<span style="font-size:12px;font-weight:800;color:#EA580C;white-space:nowrap;">喂过 ' + fav.count + ' 次</span>' +
+              '</div>'
+            );
+          }).join('');
+
+          prefBox.innerHTML =
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">' + catPillsHtml + '</div>' +
+            '<div style="font-size:11.5px;font-weight:700;color:#78716C;margin-bottom:6px;">👑 近期常吃 TOP 3 单品</div>' +
+            '<div style="display:flex;flex-direction:column;gap:6px;">' + topRowsHtml + '</div>';
+        }
+
+        // 4. Priority Feeding Queue (Top 5 urgent active items)
         var activeItems = state.items.filter(function (it) { return (Number(it.quantity) || 0) > 0; });
         activeItems.sort(function (a, b) {
           return evaluateItem(a).effectiveDays - evaluateItem(b).effectiveDays;
@@ -2895,22 +3169,35 @@
           }).join('');
         }
 
-        // Brand Directory (Deduplicate SKU names & support 1-tap jump to Pantry filtered by brand)
+        // 5. Brand Deep Archive Cards (In-stock vs eaten, CNY/JPY spend, color-coded SKU palatability pills)
         var brandGroups = {};
-        state.items.forEach(function (it) {
-          var b = (it.brand || '未命名品牌').trim();
+        uniqueProducts.forEach(function (prod) {
+          var b = prod.brand;
           if (!brandGroups[b]) {
-            brandGroups[b] = { totalSkus: 0, activeQty: 0, loved: [], coax: [], hated: [] };
+            brandGroups[b] = { products: [], activeSkus: 0, totalEatenUnits: 0, spendCny: 0, spendJpy: 0 };
           }
-          brandGroups[b].totalSkus += 1;
-          if ((Number(it.quantity) || 0) > 0) brandGroups[b].activeQty += 1;
-          if (it.palatability === 'love' && brandGroups[b].loved.indexOf(it.name) === -1) brandGroups[b].loved.push(it.name);
-          if (it.palatability === 'coax' && brandGroups[b].coax.indexOf(it.name) === -1) brandGroups[b].coax.push(it.name);
-          if (it.palatability === 'meh' && brandGroups[b].hated.indexOf(it.name) === -1) brandGroups[b].hated.push(it.name);
+          brandGroups[b].products.push(prod);
+          if (prod.inStockQty > 0) brandGroups[b].activeSkus += 1;
+          brandGroups[b].totalEatenUnits = Math.round((brandGroups[b].totalEatenUnits + prod.eatenQty) * 100) / 100;
+        });
+
+        // Calculate total historical + active spend per brand
+        state.items.forEach(function (it) {
+          if (it.sourceBatchId) return; // avoid double counting linked empty shadow records
+          var b = (it.brand || '未命名品牌').trim();
+          if (!brandGroups[b]) return;
+          var price = Number(it.price) || 0;
+          if (price <= 0) return;
+          var totalUnitsInBatch = (Number(it.quantity) || 0) + (Number(it.eatenCount) || (Number(it.quantity) <= 0 ? (Number(it.consumedCount) || Number(it.lastQuantity) || 1) : 0));
+          if (it.currency === 'JPY') {
+            brandGroups[b].spendJpy += price * totalUnitsInBatch;
+          } else {
+            brandGroups[b].spendCny += price * totalUnitsInBatch;
+          }
         });
 
         var brandNames = Object.keys(brandGroups).sort(function (a, b) {
-          return brandGroups[b].activeQty - brandGroups[a].activeQty || brandGroups[b].totalSkus - brandGroups[a].totalSkus;
+          return brandGroups[b].activeSkus - brandGroups[a].activeSkus || brandGroups[b].products.length - brandGroups[a].products.length;
         });
 
         var brandEl = document.getElementById('brandStatsList');
@@ -2919,15 +3206,38 @@
         } else {
           brandEl.innerHTML = brandNames.map(function (b) {
             var g = brandGroups[b];
+            var spendArr = [];
+            if (g.spendCny > 0) spendArr.push('CN¥' + Math.round(g.spendCny).toLocaleString('en-US'));
+            if (g.spendJpy > 0) spendArr.push(Math.round(g.spendJpy).toLocaleString('en-US') + '円');
+            var spendBadge = spendArr.length ? (' · 累计购入 ' + spendArr.join(' + ')) : '';
+
+            var skuPillsHtml = g.products.map(function (prod) {
+              var ci = CATEGORIES[prod.category] || CATEGORIES.dry;
+              var pInfo = getPalatabilityBadgeInfo(prod.rep);
+              var pillBg = pInfo ? pInfo.bg : '#FFFFFF';
+              var pillColor = pInfo ? pInfo.text : '#57534E';
+              var palEmoji = prod.palatability === 'love' ? (prod.category === 'med' ? '✅ ' : '😍 ')
+                : (prod.palatability === 'ok' ? (prod.category === 'med' ? '💊 ' : '😋 ')
+                : (prod.palatability === 'coax' ? (prod.category === 'med' ? '💦 ' : '🥺 ')
+                : (prod.palatability === 'meh' ? (prod.category === 'med' ? '⚠️ ' : '😒 ') : '')));
+              var stockDot = prod.inStockQty > 0 ? (' (余' + prod.inStockQty + prod.unit + ')') : ' (已吃完)';
+              return (
+                '<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:8px;font-size:11.5px;font-weight:600;background:' + pillBg + ';color:' + pillColor + ';border:1px solid rgba(0,0,0,0.06);">' +
+                  palEmoji + ci.icon + escapeHtml(prod.name) + escapeHtml(stockDot) +
+                '</span>'
+              );
+            }).join('');
+
             return (
-              '<button type="button" data-jump-brand="' + escapeHtml(b) + '" style="width:100%;text-align:left;padding:11px 13px;border-radius:12px;background:#FAFAF9;border:1px solid #E7E5E4;cursor:pointer;display:block;">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
-                  '<strong style="font-size:14px;color:#1C1917;">🏷️ ' + escapeHtml(b) + '</strong>' +
-                  '<span style="font-size:12px;font-weight:700;color:#EA580C;">在库 ' + g.activeQty + ' 款 (共记 ' + g.totalSkus + ' 批) ▶</span>' +
+              '<button type="button" data-jump-brand="' + escapeHtml(b) + '" style="width:100%;text-align:left;padding:12px 14px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;cursor:pointer;display:block;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                  '<strong style="font-size:14.5px;color:#1C1917;">🏷️ ' + escapeHtml(b) + '</strong>' +
+                  '<span style="font-size:12px;font-weight:700;color:#EA580C;">在库 ' + g.activeSkus + ' 款 / 共 ' + g.products.length + ' 款 ▶</span>' +
                 '</div>' +
-                (g.loved.length ? '<div style="margin-top:5px;font-size:12px;color:#15803D;">😍 超爱/顺利：' + escapeHtml(g.loved.join('、')) + '</div>' : '') +
-                (g.coax.length ? '<div style="margin-top:3px;font-size:12px;color:#B45309;">🥺 需哄/抗拒：' + escapeHtml(g.coax.join('、')) + '</div>' : '') +
-                (g.hated.length ? '<div style="margin-top:3px;font-size:12px;color:#DC2626;">😒 避雷/不适：' + escapeHtml(g.hated.join('、')) + '</div>' : '') +
+                '<div style="margin-top:3px;font-size:11.5px;color:#78716C;">' +
+                  '累计已消灭 ' + g.totalEatenUnits + ' 件' + escapeHtml(spendBadge) +
+                '</div>' +
+                '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">' + skuPillsHtml + '</div>' +
               '</button>'
             );
           }).join('');
@@ -4063,6 +4373,23 @@
           saveToStorage();
           renderPantryList();
           showToast(state.pantryDisplayMode === 'compact' ? '已切换为「极简清单」视图' : '已切换为「详细卡片」视图');
+        });
+
+        document.getElementById('palTierTabBar').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-tier-tab]');
+          if (!btn) return;
+          state.statsTierTab = btn.getAttribute('data-tier-tab');
+          renderStatsView();
+        });
+
+        document.getElementById('palTierCardsList').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-tier-restock]');
+          if (!btn) return;
+          var itemId = btn.getAttribute('data-tier-restock');
+          var target = state.items.find(function (x) { return x.id === itemId; });
+          if (target) {
+            openRestockModal(target);
+          }
         });
 
         document.getElementById('priorityFeedList').addEventListener('click', function (ev) {
