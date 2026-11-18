@@ -1072,6 +1072,11 @@
       return st.items.find(function (item) { return item.id === id; });
     }
 
+    document.getElementById('correctedUnit').addEventListener('change', function () {
+      var item = editingItem();
+      UI.syncUnitCorrection(item ? item.unit : '');
+    });
+
     document.getElementById('correctUnitBtn').addEventListener('click', function () {
       var item = editingItem();
       var unit = document.getElementById('correctedUnit').value;

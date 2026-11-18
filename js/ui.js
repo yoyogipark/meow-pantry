@@ -1750,6 +1750,15 @@
     }, document.getElementById('fieldUnit').value);
   };
 
+  UI.syncUnitCorrection = function (currentUnit) {
+    var current = document.getElementById('currentStockUnit');
+    var target = document.getElementById('correctedUnit');
+    if (current.value !== currentUnit) target.value = '';
+    current.value = currentUnit;
+    document.getElementById('correctUnitBtn').disabled =
+      !current.value || !target.value || current.value === target.value;
+  };
+
   UI.syncPurchasePackaging = function () {
     var enabled = document.getElementById('fieldPackagingEnabled').checked;
     var editing = Boolean(document.getElementById('fieldId').value);
@@ -1769,6 +1778,7 @@
     var correction = document.getElementById('unitCorrectionFields');
     var item = editing && MP.state.items.find(function (entry) { return entry.id === document.getElementById('fieldId').value; });
     correction.classList.toggle('hidden-view', !item || Boolean(item.sourceBatchId));
+    UI.syncUnitCorrection(item ? item.unit : '');
     ['fieldPackCount', 'fieldPackOuterUnit', 'fieldPackSize'].forEach(function (id) {
       document.getElementById(id).disabled = !enabled || editing;
     });
