@@ -410,7 +410,7 @@
           <input id="globalEditModeToggle" type="checkbox" style="width:15px;height:15px;accent-color:#EA580C;margin:0;cursor:pointer;">
           <span id="globalEditModeText">编辑模式</span>
         </label>
-        <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary edit-only" style="height:38px;min-height:38px;padding:0 13px;font-size:13px;white-space:nowrap;flex-shrink:0;">
+        <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary" style="height:38px;min-height:38px;padding:0 13px;font-size:13px;white-space:nowrap;flex-shrink:0;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           <span>记囤货</span>
         </button>
@@ -523,7 +523,7 @@
         <p id="emptyStateDesc" class="text-xs text-stone-500 mb-4" style="margin:0 0 16px 0;font-size:13px;color:#78716C;">点击右上角「记囤货」添加猫粮、罐头或冻干，自动推算过期日。</p>
         <div class="flex justify-center gap-2" style="display:flex;justify-content:center;gap:8px;">
           <button id="resetFiltersBtn" type="button" class="ios-btn ios-btn-secondary px-4">重置筛选</button>
-          <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-primary px-4 edit-only">+ 立即录入</button>
+          <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-primary px-4">+ 立即录入</button>
         </div>
       </div>
     </main>
@@ -537,7 +537,7 @@
             <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📅 每日饮食盘点</h2>
             <p id="dailyDateLabel" style="margin:2px 0 0 0;font-size:12px;color:#78716C;white-space:nowrap;">查看主子每天吃了什么</p>
           </div>
-          <button id="openQuickFeedBtn" type="button" class="ios-btn ios-btn-primary edit-only" style="min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap;">
+          <button id="openQuickFeedBtn" type="button" class="ios-btn ios-btn-primary" style="min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap;">
             <span>＋ 记一笔喂食</span>
           </button>
         </div>
@@ -713,8 +713,11 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg>
         <span>品牌盘点</span>
       </button>
-      <button type="button" data-nav="settings" id="navBtnSettings" class="nav-tab">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <button type="button" data-nav="settings" id="navBtnSettings" class="nav-tab" style="position:relative;">
+        <div style="position:relative;display:inline-flex;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span id="backupNoticeDot" class="hidden-view" style="position:absolute;top:-2px;right:-4px;width:8px;height:8px;border-radius:999px;background:#EA580C;box-shadow:0 0 0 2px #FFFFFF;"></span>
+        </div>
         <span>备份设置</span>
       </button>
     </div>
@@ -886,14 +889,15 @@
           </div>
         </div>
 
-        <!-- Palatability + Storage Location + Notes -->
+        <!-- Palatability (4 tiers for Food) / Medicine Tolerance (4 tiers for 🩺 药品) -->
         <div>
-          <label class="block text-xs font-bold text-stone-700 mb-1.5" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;">猫咪适口性记录</label>
-          <div id="palatabilityGroup" class="grid grid-cols-4 gap-1.5" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-            <button type="button" data-pal="" class="pill-chip active" style="padding:7px 4px;font-size:12px;">未测</button>
-            <button type="button" data-pal="love" class="pill-chip" style="padding:7px 4px;font-size:12px;">😍 超爱</button>
-            <button type="button" data-pal="ok" class="pill-chip" style="padding:7px 4px;font-size:12px;">🙂 一般</button>
-            <button type="button" data-pal="meh" class="pill-chip" style="padding:7px 4px;font-size:12px;">😒 不吃</button>
+          <label id="palatabilityFieldTitle" class="block text-xs font-bold text-stone-700 mb-1.5" style="display:block;font-size:12px;font-weight:700;margin-bottom:6px;">猫咪适口性记录</label>
+          <div id="palatabilityGroup" class="grid-safe" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;">
+            <button type="button" data-pal="" class="pill-chip active" style="padding:7px 2px;font-size:11.5px;text-align:center;">未测</button>
+            <button type="button" data-pal="love" id="palBtnLove" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">😍 超爱</button>
+            <button type="button" data-pal="ok" id="palBtnOk" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">😋 正常</button>
+            <button type="button" data-pal="coax" id="palBtnCoax" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">🥺 需哄</button>
+            <button type="button" data-pal="meh" id="palBtnMeh" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">😒 不吃</button>
           </div>
         </div>
 
@@ -1143,10 +1147,21 @@
       }
 
       var PALATABILITY = {
-        love: { label: '😍 超爱吃', bg: '#DCFCE7', text: '#15803D' },
-        ok:   { label: '🙂 正常吃', bg: '#F5F5F4', text: '#57534E' },
-        meh:  { label: '😒 不爱吃', bg: '#FEE2E2', text: '#B91C1C' }
+        love: { label: '😍 超爱吃', medLabel: '✅ 顺利无异常', bg: '#DCFCE7', text: '#15803D' },
+        ok:   { label: '😋 正常吃', medLabel: '💊 顺畅好喂',   bg: '#E0F2FE', text: '#0369A1' },
+        coax: { label: '🥺 需哄骗', medLabel: '💦 抗拒/流口水', bg: '#FEF3C7', text: '#B45309' },
+        meh:  { label: '😒 不爱吃', medLabel: '⚠️ 软便/不适',   bg: '#FEE2E2', text: '#B91C1C' }
       };
+
+      function getPalatabilityBadgeInfo(item) {
+        if (!item || !item.palatability || !PALATABILITY[item.palatability]) return null;
+        var p = PALATABILITY[item.palatability];
+        return {
+          label: item.category === 'med' ? p.medLabel : p.label,
+          bg: p.bg,
+          text: p.text
+        };
+      }
 
       var COMMON_BRANDS = ['渴望 Orijen', '爱肯拿 Acana', '巅峰 ZiwiPeak', 'K9 Natural', '大宠爱 Revolution', '博来恩 Broadline', '海乐妙 Milprazon', '爱沃克 Advocate', '百利 Instinct', '法米娜 Farmina', '小李子 Leonardo', '鲜朗', '诚实一口'];
 
@@ -1434,7 +1449,9 @@
         settings: {
           warnDays: 60,
           showImages: true,
-          defaultCurrency: 'CNY'
+          defaultCurrency: 'CNY',
+          lastBackupDate: '',
+          unsavedChangesCount: 0
         },
         activeTab: 'pantry',
         statusFilter: 'in_stock', // 'in_stock' | 'expiring' | 'expired' | 'empty'
@@ -1519,6 +1536,12 @@
         }
         if (pSet.pantryDisplayMode === 'compact' || pSet.pantryDisplayMode === 'card') {
           state.pantryDisplayMode = pSet.pantryDisplayMode;
+        }
+        if (typeof pSet.lastBackupDate === 'string') {
+          state.settings.lastBackupDate = pSet.lastBackupDate;
+        }
+        if (typeof pSet.unsavedChangesCount === 'number') {
+          state.settings.unsavedChangesCount = pSet.unsavedChangesCount;
         }
       }
 
@@ -2103,11 +2126,10 @@
             var rep = grp.latestItem;
             var catInfo = CATEGORIES[rep.category] || CATEGORIES.dry;
             var unitStr = escapeHtml(rep.unit || '件');
-            var palHtml = '';
-            if (rep.palatability && PALATABILITY[rep.palatability]) {
-              var p = PALATABILITY[rep.palatability];
-              palHtml = '<span style="background:' + p.bg + ';color:' + p.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + p.label + '</span>';
-            }
+            var palInfoRep = getPalatabilityBadgeInfo(rep);
+            var palHtml = palInfoRep
+              ? '<span style="background:' + palInfoRep.bg + ';color:' + palInfoRep.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + palInfoRep.label + '</span>'
+              : '';
             var coverSrc = getItemCoverSrc(rep);
             var realTag = rep.imageData
               ? '<span style="position:absolute;bottom:3px;right:3px;background:rgba(28,25,23,0.75);color:#FFF;font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;">实拍</span>'
@@ -2262,7 +2284,7 @@
             var openDot = it.isOpened && ev.status !== 'empty'
               ? '<span style="font-size:10px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;">🔓1拆</span>'
               : '';
-            var palIcon = it.palatability === 'love' ? '😍' : (it.palatability === 'meh' ? '😒' : '');
+            var palIcon = it.palatability === 'love' ? (it.category === 'med' ? '✅' : '😍') : (it.palatability === 'coax' ? (it.category === 'med' ? '💦' : '🥺') : (it.palatability === 'meh' ? (it.category === 'med' ? '⚠️' : '😒') : ''));
 
             return (
               '<div class="ios-card" style="padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
@@ -2289,7 +2311,7 @@
                     ) +
                   '</span>' +
                   (ev.status !== 'empty'
-                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" class="edit-only" title="记喂食" style="padding:4px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;">喂</button>'
+                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" title="记喂食" style="padding:4px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;">🐾喂</button>'
                     : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" class="edit-only" title="同款复购" style="padding:4px 7px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>'
                   ) +
                   '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:4px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
@@ -2336,11 +2358,10 @@
             ? (it.shelfLifeValue + (it.shelfLifeUnit === 'days' ? '天' : '个月'))
             : '—';
 
-          var palHtml = '';
-          if (it.palatability && PALATABILITY[it.palatability]) {
-            var p = PALATABILITY[it.palatability];
-            palHtml = '<span style="background:' + p.bg + ';color:' + p.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + p.label + '</span>';
-          }
+          var palInfo = getPalatabilityBadgeInfo(it);
+          var palHtml = palInfo
+            ? '<span style="background:' + palInfo.bg + ';color:' + palInfo.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + palInfo.label + '</span>'
+            : '';
 
           var qtyNum = Number(it.quantity) || 0;
           var unitStr = escapeHtml(it.unit || '件');
@@ -2431,19 +2452,19 @@
                       )
                   ) +
                 '</div>' +
-                '<div class="edit-only" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' +
+                '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' +
                   (ev.status !== 'empty'
-                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;">🐾 记喂食</button>' +
-                      '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FFFFFF') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;">' +
+                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;">🐾 记喂食</button>' +
+                      '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 9px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FFFFFF') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;">' +
                         (it.isOpened ? '🔓 1' + unitStr + '已拆' : (qtyNum > 1 ? '🔒 拆封1' + unitStr : '🔒 记开封')) +
                       '</button>' +
-                      '<button type="button" data-action="consume-one" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:12px;font-weight:700;cursor:pointer;">' +
+                      '<button type="button" data-action="consume-one" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 9px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:12px;font-weight:700;cursor:pointer;">' +
                         (qtyNum > 1 ? ('✓ 吃完1' + unitStr) : '✓ 记吃完') +
                       '</button>'
-                    : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;">＋ 同款复购入库</button>'
+                    : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 10px;border-radius:9px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;">＋ 同款复购入库</button>'
                   ) +
-                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:12px;font-weight:700;cursor:pointer;">编辑</button>' +
-                  '<button type="button" data-action="delete" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;">删除</button>' +
+                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:12px;font-weight:700;cursor:pointer;">编辑</button>' +
+                  '<button type="button" data-action="delete" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 9px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;">删除</button>' +
                 '</div>' +
               '</div>' +
             '</article>'
@@ -2731,7 +2752,11 @@
       function openFeedModal(itemId, customDate) {
         document.getElementById('feedModalTitle').textContent = '🐾 记录每日喂食';
         document.getElementById('feedLogEditId').value = '';
-        document.getElementById('feedDeductBox').classList.remove('hidden-view');
+        if (state.editMode) {
+          document.getElementById('feedDeductBox').classList.remove('hidden-view');
+        } else {
+          document.getElementById('feedDeductBox').classList.add('hidden-view');
+        }
         var dateToUse = customDate || (state.activeTab === 'daily' ? state.selectedLogDate : getTodayStr());
         document.getElementById('feedDateInput').value = dateToUse;
         document.getElementById('feedMealSlot').value = getCurrentMealSlot();
@@ -2856,32 +2881,36 @@
               tagColor = ev.status === 'expiring' ? '#D97706' : '#57534E';
             }
             return (
-              '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;background:#FAFAF9;">' +
-                '<div style="min-width:0;">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:12px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
+                '<div style="min-width:0;flex:1;">' +
                   '<div style="font-size:13px;font-weight:700;color:#1C1917;">' + (idx + 1) + '. [' + escapeHtml(it.brand) + '] ' + escapeHtml(it.name) + '</div>' +
                   '<div style="font-size:11px;color:' + tagColor + ';font-weight:600;margin-top:2px;">' + reason + '</div>' +
                 '</div>' +
-                '<span style="font-size:12px;font-weight:700;color:#44403C;white-space:nowrap;">余 ' + Number(it.quantity) + escapeHtml(it.unit || '') + '</span>' +
+                '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+                  '<span style="font-size:12px;font-weight:700;color:#44403C;white-space:nowrap;">余 ' + Number(it.quantity) + escapeHtml(it.unit || '') + '</span>' +
+                  '<button type="button" data-priority-feed="' + escapeHtml(it.id) + '" style="padding:5px 9px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">🐾 记喂食</button>' +
+                '</div>' +
               '</div>'
             );
           }).join('');
         }
 
-        // Brand Directory
+        // Brand Directory (Deduplicate SKU names & support 1-tap jump to Pantry filtered by brand)
         var brandGroups = {};
         state.items.forEach(function (it) {
           var b = (it.brand || '未命名品牌').trim();
           if (!brandGroups[b]) {
-            brandGroups[b] = { totalSkus: 0, activeQty: 0, loved: [], hated: [] };
+            brandGroups[b] = { totalSkus: 0, activeQty: 0, loved: [], coax: [], hated: [] };
           }
           brandGroups[b].totalSkus += 1;
           if ((Number(it.quantity) || 0) > 0) brandGroups[b].activeQty += 1;
-          if (it.palatability === 'love') brandGroups[b].loved.push(it.name);
-          if (it.palatability === 'meh') brandGroups[b].hated.push(it.name);
+          if (it.palatability === 'love' && brandGroups[b].loved.indexOf(it.name) === -1) brandGroups[b].loved.push(it.name);
+          if (it.palatability === 'coax' && brandGroups[b].coax.indexOf(it.name) === -1) brandGroups[b].coax.push(it.name);
+          if (it.palatability === 'meh' && brandGroups[b].hated.indexOf(it.name) === -1) brandGroups[b].hated.push(it.name);
         });
 
         var brandNames = Object.keys(brandGroups).sort(function (a, b) {
-          return brandGroups[b].totalSkus - brandGroups[a].totalSkus;
+          return brandGroups[b].activeQty - brandGroups[a].activeQty || brandGroups[b].totalSkus - brandGroups[a].totalSkus;
         });
 
         var brandEl = document.getElementById('brandStatsList');
@@ -2891,14 +2920,15 @@
           brandEl.innerHTML = brandNames.map(function (b) {
             var g = brandGroups[b];
             return (
-              '<div style="padding:11px 13px;border-radius:12px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+              '<button type="button" data-jump-brand="' + escapeHtml(b) + '" style="width:100%;text-align:left;padding:11px 13px;border-radius:12px;background:#FAFAF9;border:1px solid #E7E5E4;cursor:pointer;display:block;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
                   '<strong style="font-size:14px;color:#1C1917;">🏷️ ' + escapeHtml(b) + '</strong>' +
-                  '<span style="font-size:12px;color:#78716C;">共记录 ' + g.totalSkus + ' 款 (在库 ' + g.activeQty + ' 款)</span>' +
+                  '<span style="font-size:12px;font-weight:700;color:#EA580C;">在库 ' + g.activeQty + ' 款 (共记 ' + g.totalSkus + ' 批) ▶</span>' +
                 '</div>' +
-                (g.loved.length ? '<div style="margin-top:5px;font-size:12px;color:#15803D;">😍 爱吃：' + escapeHtml(g.loved.join('、')) + '</div>' : '') +
-                (g.hated.length ? '<div style="margin-top:3px;font-size:12px;color:#DC2626;">😒 避雷：' + escapeHtml(g.hated.join('、')) + '</div>' : '') +
-              '</div>'
+                (g.loved.length ? '<div style="margin-top:5px;font-size:12px;color:#15803D;">😍 超爱/顺利：' + escapeHtml(g.loved.join('、')) + '</div>' : '') +
+                (g.coax.length ? '<div style="margin-top:3px;font-size:12px;color:#B45309;">🥺 需哄/抗拒：' + escapeHtml(g.coax.join('、')) + '</div>' : '') +
+                (g.hated.length ? '<div style="margin-top:3px;font-size:12px;color:#DC2626;">😒 避雷/不适：' + escapeHtml(g.hated.join('、')) + '</div>' : '') +
+              '</button>'
             );
           }).join('');
         }
@@ -2923,8 +2953,20 @@
             : 'ios-btn ios-btn-secondary';
         }
         var customPhotos = state.items.filter(function (it) { return Boolean(it.imageData); }).length;
+        var unsaved = Number(state.settings.unsavedChangesCount) || 0;
+        var lastBk = state.settings.lastBackupDate || '';
+        var daysSinceBk = lastBk ? Math.abs(diffDaysFromToday(lastBk) || 0) : 999;
+        var needBackup = (unsaved >= 5) || (lastBk && daysSinceBk >= 30 && unsaved > 0);
+        var dotEl = document.getElementById('backupNoticeDot');
+        if (dotEl) {
+          if (needBackup) dotEl.classList.remove('hidden-view');
+          else dotEl.classList.add('hidden-view');
+        }
+        var bkNote = lastBk
+          ? ('上次备份：' + lastBk + (unsaved > 0 ? (' · 新增/改动 ' + unsaved + ' 次未备份') : ' · 已是最新备份'))
+          : (unsaved > 0 ? ('已录入/改动 ' + unsaved + ' 次 · 建议导出一份 JSON 备份防丢') : '本地双引擎存储已就绪');
         document.getElementById('storageStatusText').textContent =
-          '本地已存 ' + state.items.length + ' 条记录（含 ' + customPhotos + ' 张实拍压缩图 · 预警线 ' + state.settings.warnDays + ' 天）';
+          '本地已存 ' + state.items.length + ' 条库存与 ' + state.logs.length + ' 条喂食记录（含 ' + customPhotos + ' 张实拍图）· ' + bkNote;
       }
 
       // ==================== NAVIGATION ====================
@@ -2996,6 +3038,24 @@
           }
         }
         syncModalPhotoUI();
+        var palTitle = document.getElementById('palatabilityFieldTitle');
+        var bLove = document.getElementById('palBtnLove');
+        var bOk = document.getElementById('palBtnOk');
+        var bCoax = document.getElementById('palBtnCoax');
+        var bMeh = document.getElementById('palBtnMeh');
+        if (catKey === 'med') {
+          if (palTitle) palTitle.textContent = '🩺 给药反应与耐受度记录（选填）';
+          if (bLove) bLove.textContent = '✅ 无异常';
+          if (bOk) bOk.textContent = '💊 好喂';
+          if (bCoax) bCoax.textContent = '💦 抗拒';
+          if (bMeh) bMeh.textContent = '⚠️ 不适';
+        } else {
+          if (palTitle) palTitle.textContent = '🐾 猫咪适口性记录（4档选填）';
+          if (bLove) bLove.textContent = '😍 超爱';
+          if (bOk) bOk.textContent = '😋 正常';
+          if (bCoax) bCoax.textContent = '🥺 需哄';
+          if (bMeh) bMeh.textContent = '😒 不吃';
+        }
       }
 
       function syncModalPhotoUI(kbHint) {
@@ -3258,6 +3318,10 @@
       }
 
       function exportJsonBackup() {
+        state.settings.lastBackupDate = getTodayStr();
+        state.settings.unsavedChangesCount = 0;
+        saveToStorage();
+        renderSettingsView();
         var backupObj = {
           app: '喵喵粮仓',
           version: 2,
@@ -3278,7 +3342,7 @@
           var ev = evaluateItem(it);
           var catName = (CATEGORIES[it.category] || CATEGORIES.dry).label;
           var shelfStr = it.shelfLifeValue ? (it.shelfLifeValue + (it.shelfLifeUnit === 'days' ? '天' : '个月')) : '';
-          var palStr = it.palatability && PALATABILITY[it.palatability] ? PALATABILITY[it.palatability].label : '';
+          var palObj = getPalatabilityBadgeInfo(it); var palStr = palObj ? palObj.label : '';
           rows.push([
             catName,
             it.brand || '',
@@ -3587,6 +3651,7 @@
             }
           }
 
+          state.settings.unsavedChangesCount = (Number(state.settings.unsavedChangesCount) || 0) + 1;
           state.selectedLogDate = fDate;
           saveToStorage();
           closeFeedModal();
@@ -3689,7 +3754,7 @@
           var btn = ev.target.closest('[data-action]');
           if (!btn) return;
           var action = btn.getAttribute('data-action');
-          if (action !== 'preview-img' && !state.editMode) {
+          if (action !== 'preview-img' && action !== 'log-feed' && !state.editMode) {
             return;
           }
           var id = btn.getAttribute('data-id');
@@ -3969,6 +4034,7 @@
             showToast('新批次已入库');
           }
 
+          state.settings.unsavedChangesCount = (Number(state.settings.unsavedChangesCount) || 0) + 1;
           saveToStorage();
           closeItemModal();
           renderAll();
@@ -3997,6 +4063,25 @@
           saveToStorage();
           renderPantryList();
           showToast(state.pantryDisplayMode === 'compact' ? '已切换为「极简清单」视图' : '已切换为「详细卡片」视图');
+        });
+
+        document.getElementById('priorityFeedList').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-priority-feed]');
+          if (!btn) return;
+          openFeedModal(btn.getAttribute('data-priority-feed'), getTodayStr());
+        });
+
+        document.getElementById('brandStatsList').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-jump-brand]');
+          if (!btn) return;
+          var brandName = btn.getAttribute('data-jump-brand');
+          state.brandFilter = brandName;
+          state.statusFilter = 'in_stock';
+          state.catFilter = 'all';
+          state.pantryPage = 1;
+          renderAll();
+          switchTab('pantry');
+          showToast('已筛选品牌：' + brandName);
         });
 
         document.getElementById('medReminderBanner').addEventListener('click', function (ev) {
