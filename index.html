@@ -12,7 +12,7 @@
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
   <script src="https://cdn.tailwindcss.com/3.4.17" defer></script>
-  <link rel="stylesheet" href="./css/styles.css?v=36">
+  <link rel="stylesheet" href="./css/styles.css?v=37">
 </head>
 <body>
 
@@ -655,15 +655,23 @@
         </div>
 
         <details id="unitCorrectionFields" class="purchase-packaging hidden-view">
-          <summary>更正库存计数单位</summary>
-          <p class="purchase-packaging-note">仅用于同一计数对象的单位更正，件数保持不变。</p>
-          <label for="correctedUnit">新库存单位</label>
-          <select id="correctedUnit" class="ios-input">
-            <option value="">请选择</option>
-            <option>袋</option><option>罐</option><option>包</option><option>盒</option>
-            <option>支</option><option>粒</option><option>瓶</option><option>杯</option>
-          </select>
-          <button type="button" id="correctUnitBtn" class="ios-btn ios-btn-secondary">更正单位</button>
+          <summary>库存单位更正</summary>
+          <p class="purchase-packaging-note">仅更正计数单位，库存数量保持不变。</p>
+          <div class="unit-correction-grid">
+            <label for="currentStockUnit">当前单位
+              <input id="currentStockUnit" class="ios-input" type="text" readonly>
+            </label>
+            <label for="correctedUnit">更正为
+              <select id="correctedUnit" class="ios-input">
+                <option value="">请选择</option>
+                <option>袋</option><option>罐</option><option>包</option><option>盒</option>
+                <option>支</option><option>粒</option><option>瓶</option><option>杯</option>
+              </select>
+            </label>
+          </div>
+          <div class="unit-correction-actions">
+            <button type="button" id="correctUnitBtn" class="ios-btn" disabled>确认更正</button>
+          </div>
         </details>
 
         <div class="purchase-packaging">
@@ -1025,13 +1033,13 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=36"></script>
-  <script src="./js/constants.js?v=36"></script>
-  <script src="./js/utils.js?v=36"></script>
-  <script src="./js/domain.js?v=36"></script>
-  <script src="./js/storage.js?v=36"></script>
-  <script src="./js/stats.js?v=36"></script>
-  <script src="./js/ui.js?v=36"></script>
-  <script src="./js/app.js?v=36"></script>
+  <script src="./js/covers.js?v=37"></script>
+  <script src="./js/constants.js?v=37"></script>
+  <script src="./js/utils.js?v=37"></script>
+  <script src="./js/domain.js?v=37"></script>
+  <script src="./js/storage.js?v=37"></script>
+  <script src="./js/stats.js?v=37"></script>
+  <script src="./js/ui.js?v=37"></script>
+  <script src="./js/app.js?v=37"></script>
 </body>
 </html>
