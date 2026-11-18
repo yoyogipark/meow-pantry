@@ -12,7 +12,7 @@
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
   <script src="https://cdn.tailwindcss.com/3.4.17" defer></script>
-  <link rel="stylesheet" href="./css/styles.css?v=30">
+  <link rel="stylesheet" href="./css/styles.css?v=31">
 </head>
 <body>
 
@@ -630,6 +630,7 @@
               <option value="支">支</option>
               <option value="粒">粒</option>
               <option value="瓶">瓶</option>
+              <option value="杯">杯</option>
             </select>
           </div>
           <div>
@@ -669,8 +670,22 @@
                 <input id="fieldPackSize" type="number" min="1" step="1" inputmode="numeric" value="8" class="ios-input">
               </label>
             </div>
+            <label class="purchase-packaging-toggle flavor-control">密封方式
+              <select id="fieldPackSeal" class="ios-input">
+                <option value="independent">各件独立密封</option>
+                <option value="shared">共用一个密封包装</option>
+              </select>
+            </label>
+            <label class="purchase-packaging-toggle flavor-control">
+              <input id="fieldMixedFlavors" type="checkbox">混合口味
+            </label>
+            <div id="flavorFields" class="hidden-view">
+              <div id="flavorRows"></div>
+              <button id="addFlavorBtn" type="button" class="ios-btn ios-btn-secondary">＋添加口味</button>
+              <p id="flavorSummary" class="purchase-packaging-preview" role="status"></p>
+            </div>
             <p id="purchasePackagingPreview" class="purchase-packaging-preview" role="status"></p>
-            <p class="purchase-packaging-note">开封保鲜按单个内包装计时。</p>
+            <p class="purchase-packaging-note">独立包装分别计时，共用密封包装按整批计时。</p>
           </div>
         </div>
 
@@ -816,6 +831,18 @@
         <div>
           <label for="feedStockSelect" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">选择在库商品（或下方手动输入）</label>
           <select id="feedStockSelect" class="ios-input" style="background-color:#FFFFFF;"></select>
+          <div id="feedFlavorFields" class="hidden-view flavor-control">
+            <label for="feedFlavorSelect">实际喂食口味</label>
+            <select id="feedFlavorSelect" class="ios-input"></select>
+            <label for="feedFlavorPal">适口性</label>
+            <select id="feedFlavorPal" class="ios-input">
+              <option value="">未评价</option><option value="love">超爱吃</option><option value="ok">一般</option>
+              <option value="coax">需哄喂</option><option value="meh">不爱吃</option>
+            </select>
+            <button id="openFlavorBtn" type="button" class="ios-btn ios-btn-secondary">记录开封</button>
+            <button id="discardFlavorBtn" type="button" class="ios-btn ios-btn-secondary edit-only">仅核销 1 件</button>
+            <small id="feedFlavorHint"></small>
+          </div>
         </div>
 
         <div class="grid-safe" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:8px;">
@@ -965,13 +992,13 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=30"></script>
-  <script src="./js/constants.js?v=30"></script>
-  <script src="./js/utils.js?v=30"></script>
-  <script src="./js/domain.js?v=30"></script>
-  <script src="./js/storage.js?v=30"></script>
-  <script src="./js/stats.js?v=30"></script>
-  <script src="./js/ui.js?v=30"></script>
-  <script src="./js/app.js?v=30"></script>
+  <script src="./js/covers.js?v=31"></script>
+  <script src="./js/constants.js?v=31"></script>
+  <script src="./js/utils.js?v=31"></script>
+  <script src="./js/domain.js?v=31"></script>
+  <script src="./js/storage.js?v=31"></script>
+  <script src="./js/stats.js?v=31"></script>
+  <script src="./js/ui.js?v=31"></script>
+  <script src="./js/app.js?v=31"></script>
 </body>
 </html>
