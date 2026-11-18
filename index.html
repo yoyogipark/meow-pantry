@@ -1602,6 +1602,48 @@
         }
       }
 
+      function getProductGroupKey(it) {
+        if (!it) return '';
+        var c = String(it.category || 'dry').trim().toLowerCase();
+        var b = String(it.brand || '').trim().toLowerCase();
+        var n = String(it.name || '').trim().toLowerCase();
+        var s = String(it.spec || '').trim().toLowerCase();
+        var u = String(it.unit || '件').trim().toLowerCase();
+        return c + '||' + b + '||' + n + '||' + s + '||' + u;
+      }
+
+      function groupEmptyItemsByProduct(emptyItems) {
+        var map = {};
+        var groups = [];
+        emptyItems.forEach(function (it) {
+          var key = getProductGroupKey(it);
+          var batchUsed = Number(it.consumedCount) || Number(it.lastQuantity) || 1;
+          if (!map[key]) {
+            map[key] = {
+              groupKey: key,
+              latestItem: it,
+              totalConsumed: 0,
+              batches: []
+            };
+            groups.push(map[key]);
+          }
+          map[key].totalConsumed = Math.round((map[key].totalConsumed + batchUsed) * 100) / 100;
+          map[key].batches.push(it);
+          // Prefer keeping the batch with a custom photo or newer production/finished date as the representative header item
+          var curRep = map[key].latestItem;
+          if ((!curRep.imageData && it.imageData) || String(it.finishedDate || it.prodDate || '') > String(curRep.finishedDate || curRep.prodDate || '')) {
+            map[key].latestItem = it;
+          }
+        });
+        // Sort batches inside each product newest-first
+        groups.forEach(function (g) {
+          g.batches.sort(function (a, b) {
+            return String(b.finishedDate || b.prodDate || '').localeCompare(String(a.finishedDate || a.prodDate || ''));
+          });
+        });
+        return groups;
+      }
+
       // ==================== ITEM EXPIRY & FRESHNESS EVALUATION ====================
       function evaluateItem(item) {
         var expDays = diffDaysFromToday(item.expDate);
@@ -1782,18 +1824,19 @@
         var cStock = 0;
         var cExpiring = 0;
         var cExpired = 0;
-        var cEmpty = 0;
+        var emptyItems = [];
 
         state.items.forEach(function (it) {
           var ev = evaluateItem(it);
           if (ev.status === 'empty') {
-            cEmpty += 1;
+            emptyItems.push(it);
           } else {
             cStock += 1;
             if (ev.status === 'expiring') cExpiring += 1;
             if (ev.status === 'expired') cExpired += 1;
           }
         });
+        var cEmpty = groupEmptyItemsByProduct(emptyItems).length;
 
         document.getElementById('countInStock').textContent = String(cStock);
         document.getElementById('countExpiring').textContent = String(cExpiring);
@@ -1813,16 +1856,26 @@
 
       function renderCategoryPills() {
         var counts = { all: 0, dry: 0, can: 0, freeze: 0, treat: 0, supp: 0, med: 0 };
-        state.items.forEach(function (it) {
-          var ev = evaluateItem(it);
-          var matchStatus =
-            (state.statusFilter === 'in_stock' && ev.status !== 'empty') ||
-            (state.statusFilter === ev.status);
-          if (matchStatus) {
+        if (state.statusFilter === 'empty') {
+          var emptyOnly = state.items.filter(function (it) { return evaluateItem(it).status === 'empty'; });
+          var grouped = groupEmptyItemsByProduct(emptyOnly);
+          grouped.forEach(function (g) {
+            var cat = g.latestItem.category;
             counts.all += 1;
-            if (counts[it.category] !== undefined) counts[it.category] += 1;
-          }
-        });
+            if (counts[cat] !== undefined) counts[cat] += 1;
+          });
+        } else {
+          state.items.forEach(function (it) {
+            var ev = evaluateItem(it);
+            var matchStatus =
+              (state.statusFilter === 'in_stock' && ev.status !== 'empty') ||
+              (state.statusFilter === ev.status);
+            if (matchStatus) {
+              counts.all += 1;
+              if (counts[it.category] !== undefined) counts[it.category] += 1;
+            }
+          });
+        }
 
         var btns = document.querySelectorAll('#categoryBar [data-cat]');
         for (var i = 0; i < btns.length; i++) {
@@ -1908,6 +1961,152 @@
         }
         emptyEl.classList.add('hidden-view');
 
+        // Sync Display Mode Toggle UI (⊞ 详细 vs ☰ 极简)
+        var dBtns = document.querySelectorAll('#pantryDisplayToggle [data-display-mode]');
+        for (var dIdx = 0; dIdx < dBtns.length; dIdx++) {
+          var dm = dBtns[dIdx].getAttribute('data-display-mode');
+          var isAct = (dm === state.pantryDisplayMode);
+          dBtns[dIdx].style.background = isAct ? '#1C1917' : 'transparent';
+          dBtns[dIdx].style.color = isAct ? '#FFFFFF' : '#57534E';
+        }
+
+        // Special Product-Grouped Rendering when viewing "已吃完" (empty)
+        if (state.statusFilter === 'empty') {
+          var productGroups = groupEmptyItemsByProduct(filtered);
+          var gPageSize = Number(state.pantryPageSize) || 6;
+          var gTotal = productGroups.length;
+          var gPages = Math.max(1, Math.ceil(gTotal / gPageSize));
+          if (state.pantryPage > gPages) state.pantryPage = gPages;
+          if (state.pantryPage < 1) state.pantryPage = 1;
+          var gStart = (state.pantryPage - 1) * gPageSize;
+          var pagedGroups = productGroups.slice(gStart, gStart + gPageSize);
+
+          if (gTotal > 6 || gPages > 1) {
+            pagerEl.classList.remove('hidden-view');
+            document.getElementById('pageInfoText').textContent =
+              '第 ' + state.pantryPage + ' / ' + gPages + ' 页 (共 ' + gTotal + ' 款产品)';
+            var pBtn = document.getElementById('prevPageBtn');
+            var nBtn = document.getElementById('nextPageBtn');
+            pBtn.disabled = (state.pantryPage <= 1);
+            pBtn.style.opacity = state.pantryPage <= 1 ? '0.45' : '1';
+            nBtn.disabled = (state.pantryPage >= gPages);
+            nBtn.style.opacity = state.pantryPage >= gPages ? '0.45' : '1';
+          } else {
+            pagerEl.classList.add('hidden-view');
+          }
+
+          if (state.pantryDisplayMode === 'compact') {
+            listEl.style.gap = '7px';
+            listEl.innerHTML = pagedGroups.map(function (grp) {
+              var rep = grp.latestItem;
+              var catInfo = CATEGORIES[rep.category] || CATEGORIES.dry;
+              var unitStr = escapeHtml(rep.unit || '件');
+              var palIcon = rep.palatability === 'love' ? '😍' : (rep.palatability === 'meh' ? '😒' : '');
+              return (
+                '<div class="ios-card" style="padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+                  '<div data-action="edit" data-id="' + escapeHtml(rep.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
+                    '<div style="display:flex;align-items:center;gap:5px;min-width:0;">' +
+                      '<span style="font-size:14px;flex-shrink:0;">' + catInfo.icon + '</span>' +
+                      '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;flex-shrink:0;">' + escapeHtml(rep.brand) + '</span>' +
+                      '<strong style="font-size:13.5px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(rep.name) + '</strong>' +
+                      (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
+                    '</div>' +
+                    '<div style="font-size:11px;color:#78716C;margin-top:3px;">' +
+                      '共 ' + grp.batches.length + ' 个历史批次' + (rep.spec ? (' · 规格 ' + escapeHtml(rep.spec)) : '') +
+                    '</div>' +
+                  '</div>' +
+                  '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
+                    '<span style="background:#DCFCE7;color:#15803D;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;">累计吃 ' + grp.totalConsumed + unitStr + '</span>' +
+                    '<button type="button" data-action="restock-new" data-id="' + escapeHtml(rep.id) + '" style="padding:4px 8px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>' +
+                  '</div>' +
+                '</div>'
+              );
+            }).join('');
+            return;
+          }
+
+          listEl.style.gap = '12px';
+          listEl.innerHTML = pagedGroups.map(function (grp) {
+            var rep = grp.latestItem;
+            var catInfo = CATEGORIES[rep.category] || CATEGORIES.dry;
+            var unitStr = escapeHtml(rep.unit || '件');
+            var palHtml = '';
+            if (rep.palatability && PALATABILITY[rep.palatability]) {
+              var p = PALATABILITY[rep.palatability];
+              palHtml = '<span style="background:' + p.bg + ';color:' + p.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + p.label + '</span>';
+            }
+            var coverSrc = getItemCoverSrc(rep);
+            var realTag = rep.imageData
+              ? '<span style="position:absolute;bottom:3px;right:3px;background:rgba(28,25,23,0.75);color:#FFF;font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px;">实拍</span>'
+              : '';
+            var thumbHtml =
+              '<button type="button" data-action="preview-img" data-id="' + escapeHtml(rep.id) + '" aria-label="查看口粮图片" style="position:relative;width:64px;height:64px;padding:0;border:1px solid #E7E5E4;border-radius:14px;overflow:hidden;background:#FAFAF9;flex-shrink:0;cursor:pointer;">' +
+                '<img src="' + coverSrc + '" alt="' + escapeHtml(rep.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+                realTag +
+              '</button>';
+
+            var batchRowsHtml = grp.batches.map(function (bItem, bIdx) {
+              var bUsed = Number(bItem.consumedCount) || Number(bItem.lastQuantity) || 1;
+              var priceTxt = bItem.price ? (' · ' + formatMoney(bItem.price, bItem.currency)) : '';
+              var finishTxt = bItem.finishedDate ? (' · 吃完于 ' + escapeHtml(bItem.finishedDate)) : '';
+              return (
+                '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:#FFFFFF;border:1px solid #E7E5E4;">' +
+                  '<div style="min-width:0;flex:1;">' +
+                    '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                      '<span style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:1px 6px;border-radius:5px;">批次 #' + (grp.batches.length - bIdx) + '</span>' +
+                      '<strong style="font-size:12.5px;color:#15803D;">吃完 ' + bUsed + ' ' + unitStr + '</strong>' +
+                      '<span style="font-size:11px;color:#78716C;">' + escapeHtml(finishTxt) + escapeHtml(priceTxt) + '</span>' +
+                    '</div>' +
+                    '<div style="margin-top:3px;font-size:11px;color:#78716C;">' +
+                      '生产日 ' + escapeHtml(bItem.prodDate || '未标') + ' · 到期日 ' + escapeHtml(bItem.expDate || '—') +
+                      (bItem.batchCode ? (' · ' + escapeHtml(bItem.batchCode)) : '') +
+                    '</div>' +
+                  '</div>' +
+                  '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
+                    '<button type="button" data-action="edit" data-id="' + escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid #E7E5E4;background:#FAFAF9;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
+                    '<button type="button" data-action="delete" data-id="' + escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
+                  '</div>' +
+                '</div>'
+              );
+            }).join('');
+
+            return (
+              '<article class="ios-card p-4" style="padding:15px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:11px;">' +
+                  thumbHtml +
+                  '<div style="min-width:0;flex:1;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">' +
+                      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px;">' +
+                        '<span style="background:#F5F5F4;color:#44403C;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
+                        '<span style="background:#FFEDD5;color:#9A3412;padding:2px 9px;border-radius:8px;font-size:12px;font-weight:700;">' + escapeHtml(rep.brand) + '</span>' +
+                        palHtml +
+                      '</div>' +
+                      '<span style="white-space:nowrap;background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;flex-shrink:0;">累计吃完 ' + grp.totalConsumed + ' ' + unitStr + '</span>' +
+                    '</div>' +
+                    '<h3 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;line-height:1.35;">' + escapeHtml(rep.name) + '</h3>' +
+                    '<div style="margin-top:4px;font-size:12px;color:#78716C;">' +
+                      (rep.spec ? ('规格 ' + escapeHtml(rep.spec) + ' · ') : '') + '共归档 ' + grp.batches.length + ' 个历史批次' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+
+                '<!-- Grouped Batch History List -->' +
+                '<div style="margin-top:11px;padding:10px;border-radius:12px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
+                  '<div style="font-size:11px;font-weight:700;color:#78716C;margin-bottom:7px;">📦 历史批次吃完明细（按批次记录，总计 ' + grp.totalConsumed + ' ' + unitStr + '）</div>' +
+                  '<div style="display:flex;flex-direction:column;gap:6px;">' + batchRowsHtml + '</div>' +
+                '</div>' +
+
+                '<!-- Footer with Single Restock Button -->' +
+                '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+                  '<span style="font-size:11px;color:#78716C;">点右侧可带入同款资料录入新买的批次</span>' +
+                  '<button type="button" data-action="restock-new" data-id="' + escapeHtml(rep.id) + '" style="padding:7px 14px;border-radius:10px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">＋ 同款复购入库</button>' +
+                '</div>' +
+              '</article>'
+            );
+          }).join('');
+          return;
+        }
+
         var pageSize = Number(state.pantryPageSize) || 6;
         var totalItems = filtered.length;
         var totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -1934,15 +2133,6 @@
           }
         } else {
           pagerEl.classList.add('hidden-view');
-        }
-
-        // Sync Display Mode Toggle UI (⊞ 详细 vs ☰ 极简)
-        var dBtns = document.querySelectorAll('#pantryDisplayToggle [data-display-mode]');
-        for (var dIdx = 0; dIdx < dBtns.length; dIdx++) {
-          var dm = dBtns[dIdx].getAttribute('data-display-mode');
-          var isAct = (dm === state.pantryDisplayMode);
-          dBtns[dIdx].style.background = isAct ? '#1C1917' : 'transparent';
-          dBtns[dIdx].style.color = isAct ? '#FFFFFF' : '#57534E';
         }
 
         if (state.pantryDisplayMode === 'compact') {
