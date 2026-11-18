@@ -99,17 +99,29 @@
       width: 100%;
       max-width: 100%;
       min-width: 0;
-      min-height: 44px;
-      padding: 10px 12px;
+      height: 42px;
+      min-height: 42px;
+      padding: 8px 12px;
       border-radius: 12px;
       border: 1px solid #D6D3D1;
       background-color: #FAFAF9;
       color: #1C1917;
-      font-size: 15px;
-      line-height: 1.35;
+      font-size: 14px;
+      line-height: 24px;
       outline: none;
       box-sizing: border-box;
       transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    /* Fix iOS Safari/Chrome native <select> height inconsistency so it matches <input> pixel-for-pixel */
+    select.ios-input {
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2378716C' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 15 5 5 5-5'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 13px 13px;
+      padding-right: 24px !important;
     }
 
     /* Bulletproof iOS Safari/Chrome WebKit date wrapper (fits compact 2-column rows without overflowing) */
@@ -427,7 +439,7 @@
         <button type="button" data-cat="freeze" class="pill-chip">🍗 冻干</button>
         <button type="button" data-cat="treat" class="pill-chip">🍮 猫条零食</button>
         <button type="button" data-cat="supp" class="pill-chip">💊 营养品</button>
-        <button type="button" data-cat="med" class="pill-chip">🩺 驱虫药品</button>
+        <button type="button" data-cat="med" class="pill-chip">🩺 药品</button>
       </section>
 
       <!-- Search + Brand + Sort Controls -->
@@ -616,7 +628,7 @@
             <button type="button" data-form-cat="freeze" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🍗 冻干</button>
             <button type="button" data-form-cat="treat" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🍮 猫条零食</button>
             <button type="button" data-form-cat="supp" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">💊 营养品</button>
-            <button type="button" data-form-cat="med" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🩺 驱虫药品</button>
+            <button type="button" data-form-cat="med" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🩺 药品</button>
           </div>
         </div>
 
@@ -658,15 +670,19 @@
           </div>
         </div>
 
-        <!-- Quantity, Unit, and Price + Inline Currency Toggle (3 Columns in 1 Row!) -->
-        <div class="grid-safe" style="display:grid;grid-template-columns:0.75fr 0.75fr 1.5fr;gap:8px;">
+        <!-- Quantity, Unit, and Price + Inline Currency Toggle (Identical 20px Label Header + 42px Box Height!) -->
+        <div class="grid-safe" style="display:grid;grid-template-columns:0.75fr 0.78fr 1.47fr;gap:8px;align-items:end;">
           <div>
-            <label for="fieldQty" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">数量 <span style="color:#EA580C;">*</span></label>
-            <input id="fieldQty" type="number" min="0" step="0.5" required value="1" class="ios-input" style="min-height:42px;padding:8px 9px;font-size:14px;">
+            <div style="height:20px;display:flex;align-items:center;margin-bottom:4px;">
+              <label for="fieldQty" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">数量 <span style="color:#EA580C;">*</span></label>
+            </div>
+            <input id="fieldQty" type="number" min="0" step="0.5" required value="1" class="ios-input" style="height:42px;padding:8px 10px;font-size:14px;">
           </div>
           <div>
-            <label for="fieldUnit" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">单位</label>
-            <select id="fieldUnit" class="ios-input" style="min-height:42px;padding:8px 8px;font-size:14px;">
+            <div style="height:20px;display:flex;align-items:center;margin-bottom:4px;">
+              <label for="fieldUnit" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">单位</label>
+            </div>
+            <select id="fieldUnit" class="ios-input" style="height:42px;padding:8px 24px 8px 10px;font-size:14px;">
               <option value="袋">袋</option>
               <option value="罐">罐</option>
               <option value="包">包</option>
@@ -677,16 +693,16 @@
             </select>
           </div>
           <div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-              <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;">单价</label>
+            <div style="height:20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">单价</label>
               <div id="currencyToggleGroup" style="display:inline-flex;background:#E7E5E4;padding:1.5px;border-radius:7px;gap:1px;">
-                <button type="button" data-form-currency="CNY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;line-height:1.4;">人民币</button>
-                <button type="button" data-form-currency="JPY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;line-height:1.4;">日元</button>
+                <button type="button" data-form-currency="CNY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;line-height:1.35;">人民币</button>
+                <button type="button" data-form-currency="JPY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;line-height:1.35;">日元</button>
               </div>
             </div>
             <div style="position:relative;min-width:0;">
               <span id="pricePrefixSymbol" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#78716C;pointer-events:none;">CN¥</span>
-              <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input" style="min-height:42px;padding:8px 8px 8px 36px;font-size:14px;">
+              <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input" style="height:42px;padding:8px 8px 8px 36px;font-size:14px;">
             </div>
           </div>
         </div>
@@ -706,9 +722,9 @@
             </div>
             <div>
               <label for="fieldShelfValue" style="display:block;font-size:12px;font-weight:600;color:#44403C;margin-bottom:4px;">保质期时长</label>
-              <div class="grid-safe" style="display:grid;grid-template-columns:1.1fr 1fr;gap:4px;">
-                <input id="fieldShelfValue" type="number" min="1" max="3650" placeholder="18" class="ios-input" style="background:#FFFFFF;min-height:42px;padding:8px 6px;font-size:14px;text-align:center;">
-                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input" style="background:#FFFFFF;min-height:42px;padding:8px 4px;font-size:13px;">
+              <div class="grid-safe" style="display:grid;grid-template-columns:1fr 1.05fr;gap:5px;">
+                <input id="fieldShelfValue" type="number" min="1" max="3650" placeholder="18" class="ios-input" style="background:#FFFFFF;height:42px;padding:8px 6px;font-size:14px;text-align:center;">
+                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input" style="background:#FFFFFF;height:42px;padding:8px 22px 8px 8px;font-size:13px;">
                   <option value="months">个月</option>
                   <option value="days">天</option>
                 </select>
@@ -831,7 +847,7 @@
         freeze: { label: '冻干', icon: '🍗', defaultUnit: '包', defaultOpenDays: 60, defaultShelfMonths: 18 },
         treat:  { label: '猫条零食', icon: '🍮', defaultUnit: '盒', defaultOpenDays: 14, defaultShelfMonths: 18 },
         supp:   { label: '营养品', icon: '💊', defaultUnit: '瓶', defaultOpenDays: 90, defaultShelfMonths: 24 },
-        med:    { label: '驱虫药品', icon: '🩺', defaultUnit: '支', defaultOpenDays: 30, defaultShelfMonths: 36 }
+        med:    { label: '药品', icon: '🩺', defaultUnit: '支', defaultOpenDays: 30, defaultShelfMonths: 36 }
       };
 
       var DEFAULT_COVERS = {
@@ -1587,12 +1603,14 @@
                   '<span style="font-size:11px;font-weight:600;color:#78716C;">库存</span>' +
                   '<span style="font-size:14px;font-weight:800;color:#1C1917;">' + Number(it.quantity) + ' ' + escapeHtml(it.unit || '件') + '</span>' +
                 '</div>' +
-                '<div style="display:flex;align-items:center;gap:6px;">' +
-                  '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FFFFFF') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;">' +
-                    (it.isOpened ? '🔓 已开封' : '🔒 记开封') +
-                  '</button>' +
-                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:12px;font-weight:700;cursor:pointer;">编辑</button>' +
-                  '<button type="button" data-action="delete" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;">删除</button>' +
+                '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' +
+                  (ev.status !== 'empty'
+                    ? '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FFFFFF') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;">' + (it.isOpened ? '🔓 已开封' : '🔒 记开封') + '</button>' +
+                      '<button type="button" data-action="mark-empty" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:12px;font-weight:600;cursor:pointer;">✓ 记吃完</button>'
+                    : '<button type="button" data-action="restore-stock" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-size:12px;font-weight:700;cursor:pointer;">↺ 重新入库</button>'
+                  ) +
+                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:12px;font-weight:700;cursor:pointer;">编辑</button>' +
+                  '<button type="button" data-action="delete" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;">删除</button>' +
                 '</div>' +
               '</div>' +
             '</article>'
@@ -2185,6 +2203,19 @@
             }
             saveToStorage();
             renderAll();
+          } else if (action === 'mark-empty') {
+            openConfirm('标记为已吃完？', '「' + target.brand + ' ' + target.name + '」将移入顶部第 4 个【已吃完】分类归档，随时可点进【已吃完】查看、编辑或重新入库。', '确认吃完', function () {
+              target.lastQuantity = Number(target.quantity) > 0 ? Number(target.quantity) : 1;
+              target.quantity = 0;
+              saveToStorage();
+              renderAll();
+              showToast('已归入顶部「已吃完」列表');
+            });
+          } else if (action === 'restore-stock') {
+            target.quantity = Number(target.lastQuantity) > 0 ? Number(target.lastQuantity) : 1;
+            saveToStorage();
+            renderAll();
+            showToast('已恢复至「在库囤货」');
           } else if (action === 'preview-img') {
             openLightbox(target);
           } else if (action === 'edit') {
