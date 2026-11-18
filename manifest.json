@@ -1,0 +1,25 @@
+{
+  "name": "喵喵粮仓 · 猫咪囤货与保质期管家",
+  "short_name": "喵喵粮仓",
+  "description": "本地离线存储分类管理猫粮、罐头、冻干的生产日期、保质期、过期日与品牌适口性",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF7F2",
+  "theme_color": "#FAF7F2",
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
