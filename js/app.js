@@ -124,6 +124,12 @@
     });
 
     // 3. Pantry Status Cards, Attribute Select, Category Pills & Search/Sort
+    document.getElementById('stockDetailsBtn').addEventListener('click', function () {
+      var expanded = this.getAttribute('aria-expanded') === 'true';
+      this.setAttribute('aria-expanded', String(!expanded));
+      this.textContent = expanded ? '库存数量明细' : '收起库存明细';
+      document.getElementById('stockQuantityDetails').classList.toggle('hidden-view', expanded);
+    });
     var statusCards = document.querySelectorAll('[data-status-filter]');
     for (var i = 0; i < statusCards.length; i++) {
       statusCards[i].addEventListener('click', function () {
@@ -856,6 +862,7 @@
       var newCat = btn.getAttribute('data-form-cat');
       var isEditing = Boolean(document.getElementById('fieldId').value);
       UI.syncModalCategoryUI(newCat, !isEditing);
+      UI.syncModalUnitPriceHint();
       if (isEditing && !document.getElementById('fieldIsOpened').checked) {
         var cInfo = MP.CATEGORIES[newCat] || MP.CATEGORIES.dry;
         document.getElementById('fieldOpenLimit').value = String(cInfo.defaultOpenDays);
@@ -879,6 +886,12 @@
       if (btn) UI.syncModalPalatabilityUI(btn.getAttribute('data-pal'));
     });
 
+    ['fieldPackagingEnabled', 'fieldPackOuterUnit', 'fieldUnit'].forEach(function (id) {
+      document.getElementById(id).addEventListener('change', UI.syncModalUnitPriceHint);
+    });
+    ['fieldPackCount', 'fieldPackSize'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', UI.syncModalUnitPriceHint);
+    });
     document.getElementById('fieldPrice').addEventListener('input', UI.syncModalUnitPriceHint);
     document.getElementById('fieldSpec').addEventListener('input', UI.syncModalUnitPriceHint);
     document.getElementById('fieldProdDate').addEventListener('change', function () {
@@ -955,7 +968,16 @@
         return;
       }
 
-      var newQty = Math.max(0, Utils.round2(Number(document.getElementById('fieldQty').value) || 0));
+      var packaging = UI.readPurchasePackaging();
+      if (document.getElementById('fieldPackagingEnabled').checked && !packaging) {
+        UI.showToast('请填写有效的包装数量和内包装单位');
+        return;
+      }
+      var purchasedQty = packaging ? packaging.count * packaging.size : 0;
+      var newQty = packaging && !id
+        ? purchasedQty
+        : Math.max(0, Utils.round2(Number(document.getElementById('fieldQty').value) || 0));
+      var enteredPrice = Number(document.getElementById('fieldPrice').value) || 0;
       var openedInForm = Utils.normalizeDateStr(document.getElementById('fieldOpenedDate').value);
       var finishedInForm = Utils.normalizeDateStr(document.getElementById('fieldFinishedDate').value);
       if (newQty <= 0 && openedInForm && finishedInForm && finishedInForm < openedInForm) {
@@ -971,7 +993,8 @@
         spec: document.getElementById('fieldSpec').value.trim(),
         quantity: newQty,
         unit: document.getElementById('fieldUnit').value,
-        price: document.getElementById('fieldPrice').value ? Number(document.getElementById('fieldPrice').value) : 0,
+        purchasePackaging: packaging,
+        price: packaging ? enteredPrice / purchasedQty : enteredPrice,
         currency: st.formCurrency || 'CNY',
         prodDate: prodDate,
         shelfLifeValue: document.getElementById('fieldShelfValue').value ? Number(document.getElementById('fieldShelfValue').value) : '',
