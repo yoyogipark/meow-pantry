@@ -202,7 +202,6 @@
         var duration = stCat.durationByUnit[unit];
         return '均' + Math.max(1, Math.round(duration.days / duration.quantity)) + '天/' + Utils.escapeHtml(unit);
       }).join(' · ');
-      var eatenVerb = c.group === 'med' ? '累计已用 ' : (c.group === 'supp' ? '累计已喂 ' : '累计已吃 ');
       return (
         '<button type="button" data-jump-cat="' + k + '" class="clickable-stat-tile" style="text-align:left;padding:11px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;width:100%;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:4px;">' +
@@ -211,7 +210,7 @@
           '</div>' +
           '<div style="margin-top:4px;font-size:' + (Object.keys(stCat.stockByUnit).length > 1 ? '14' : '18') + 'px;font-weight:800;color:#1C1917;overflow-wrap:anywhere;">' + Utils.escapeHtml(stockText || '无库存') + '</div>' +
           '<div style="margin-top:2px;font-size:11px;color:' + (eatenText ? '#15803D' : '#A8A29E') + ';font-weight:600;overflow-wrap:anywhere;">' +
-            eatenVerb + Utils.escapeHtml(eatenText || '0') + (avgText ? ' · ' + avgText : '') +
+            '累计已核销 ' + Utils.escapeHtml(eatenText || '0') + (avgText ? ' · ' + avgText : '') +
           '</div>' +
         '</button>'
       );
@@ -479,7 +478,6 @@
         var avgTxt = prod.daysUnits > 0
           ? (' · 均 ' + Math.max(1, Math.round(prod.totalDays / prod.daysUnits)) + '天/' + Utils.escapeHtml(prod.unit))
           : '';
-        var usedVerb = prod.group === 'med' ? '累计已用 ' : '累计吃过 ';
 
         return (
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;">' +
@@ -495,7 +493,7 @@
               '</div>' +
               '<div style="margin-top:3px;font-size:11px;color:#57534E;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
                 stockTag +
-                '<span>' + usedVerb + prod.eatenQty + Utils.escapeHtml(prod.unit) + avgTxt + '</span>' +
+                '<span>累计已核销 ' + prod.eatenQty + Utils.escapeHtml(prod.unit) + avgTxt + '</span>' +
               '</div>' +
             '</div>' +
             '<button type="button" data-tier-restock="' + Utils.escapeHtml(prod.rep.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">＋复购</button>' +
@@ -507,7 +505,7 @@
     // ==================== SUB-VIEW 3A: 30-DAY FEEDING PREFERENCES (Food Strictly Separated from Supp & Med!) ====================
     var r30 = metrics.recent30;
     document.getElementById('recent30CountBadge').textContent =
-      '食品 ' + r30.food.length + ' 顿' + ((r30.supp.length + r30.med.length) > 0 ? (' · 营养/药护 ' + (r30.supp.length + r30.med.length) + ' 次') : '');
+      '已记录喂食 ' + r30.food.length + ' 顿' + ((r30.supp.length + r30.med.length) > 0 ? (' · 营养/药护 ' + (r30.supp.length + r30.med.length) + ' 次') : '');
 
     var prefBox = document.getElementById('recent30PrefBox');
     if (r30.all.length === 0) {
@@ -558,7 +556,7 @@
                 '<span style="font-size:11px;background:#E7E5E4;color:#44403C;padding:1px 6px;border-radius:5px;flex-shrink:0;">' + ci.icon + ci.label + '</span>' +
                 '<strong style="font-size:13px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(fav.title) + (ratings ? ' · ' + Utils.escapeHtml(ratings) : '') + '</strong>' +
               '</div>' +
-              '<span style="font-size:12px;font-weight:800;color:#EA580C;white-space:nowrap;">吃过 ' + fav.count + ' 顿</span>' +
+              '<span style="font-size:12px;font-weight:800;color:#EA580C;white-space:nowrap;">已记录喂食 ' + fav.count + ' 顿</span>' +
             '</div>'
           );
         }).join('');
@@ -676,9 +674,9 @@
         var consParts = [];
         var foodConsumed = formatUnitQuantities(g.foodEatenUnits);
         var careConsumed = formatUnitQuantities(g.careUsedUnits);
-        if (foodConsumed) consParts.push('累计已吃 ' + foodConsumed);
-        if (careConsumed) consParts.push('用完营养/药品 ' + careConsumed);
-        var consText = consParts.length ? consParts.join(' · ') : '暂无吃完归档';
+        if (foodConsumed) consParts.push('累计已核销 ' + foodConsumed);
+        if (careConsumed) consParts.push('营养/药品已核销 ' + careConsumed);
+        var consText = consParts.length ? consParts.join(' · ') : '暂无核销归档';
 
         var skuPillsHtml = g.products.map(function (prod) {
           var ci = MP.CATEGORIES[prod.category] || MP.CATEGORIES.dry;
