@@ -124,15 +124,18 @@
       padding-right: 24px !important;
     }
 
-    /* Bulletproof iOS Safari/Chrome WebKit date wrapper (fits compact 2-column rows without overflowing) */
+    /* Bulletproof iOS Date Box: custom centered text span + transparent native <input type="date"> overlay */
     .ios-date-wrap {
+      position: relative;
       display: flex;
       align-items: center;
+      justify-content: center;
       width: 100%;
       max-width: 100%;
       min-width: 0;
+      height: 42px;
       min-height: 42px;
-      padding: 0 9px;
+      padding: 0 10px;
       border-radius: 12px;
       border: 1px solid #D6D3D1;
       background-color: #FFFFFF;
@@ -146,51 +149,33 @@
       box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
     }
 
-    .ios-date-wrap input[type="date"] {
-      -webkit-appearance: none;
-      appearance: none;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      flex: 1 1 0%;
-      width: 100% !important;
-      max-width: 100% !important;
-      min-width: 0 !important;
-      height: 40px !important;
-      line-height: 40px !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      border: 0 !important;
-      outline: none !important;
-      background: transparent !important;
-      color: #1C1917;
-      font-size: 13.5px;
-      font-weight: 600;
-      font-family: inherit;
-      text-align: center !important;
-      box-sizing: border-box;
-    }
-
-    .ios-date-wrap input[type="date"]::-webkit-date-and-time-value {
-      display: inline-flex;
+    .ios-date-display {
+      display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
       height: 100%;
-      min-height: 40px;
-      line-height: 40px;
-      text-align: center;
-      margin: 0 !important;
-      padding: 0 !important;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #1C1917;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      user-select: none;
     }
 
-    .ios-date-wrap input[type="date"]::-webkit-datetime-edit {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      line-height: 1;
+    .ios-date-wrap input[type="date"] {
+      position: absolute;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
       padding: 0 !important;
+      border: 0 !important;
+      opacity: 0.001;
+      cursor: pointer;
+      z-index: 2;
     }
 
     input[type="date"].ios-input::-webkit-date-and-time-value {
@@ -226,7 +211,7 @@
       max-width: 680px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       height: 62px;
     }
 
@@ -483,7 +468,53 @@
       </div>
     </main>
 
-    <!-- ==================== TAB 2: STATS & BRANDS ==================== -->
+    <!-- ==================== TAB 2: DAILY FEEDING LOG (每日盘点) ==================== -->
+    <section id="viewDaily" class="hidden-view space-y-4">
+      <!-- Date Switcher & Quick Add Bar -->
+      <div class="ios-card p-4" style="padding:15px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
+          <div>
+            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📅 每日饮食盘点</h2>
+            <p id="dailyDateLabel" style="margin:2px 0 0 0;font-size:12px;color:#78716C;white-space:nowrap;">查看主子每天吃了什么</p>
+          </div>
+          <button id="openQuickFeedBtn" type="button" class="ios-btn ios-btn-primary" style="min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap;">
+            <span>＋ 记一笔喂食</span>
+          </button>
+        </div>
+
+        <!-- Prev Day / Date Picker / Next Day / Today -->
+        <div class="grid-safe" style="display:grid;grid-template-columns:auto 1fr auto auto;gap:6px;align-items:center;">
+          <button id="prevDayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;white-space:nowrap;">◀ 前一天</button>
+          <div class="ios-date-wrap" style="height:40px;min-height:40px;">
+            <span id="dailyDatePickerText" class="ios-date-display" style="font-weight:700;">📅 选择日期</span>
+            <input id="dailyDatePicker" type="date" aria-label="选择盘点日期">
+          </div>
+          <button id="nextDayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;white-space:nowrap;">后一天 ▶</button>
+          <button id="goTodayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;color:#EA580C;border-color:#FED7AA;background:#FFF7ED;white-space:nowrap;">今天</button>
+        </div>
+
+        <!-- Selected Day Summary Pills -->
+        <div id="dailySummaryBar" style="margin-top:12px;padding-top:11px;border-top:1px solid #F5F5F4;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Selected Day Feeding Timeline -->
+      <div class="ios-card p-4" style="padding:15px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <h3 style="margin:0;font-size:15px;font-weight:800;color:#1C1917;">🍽️ 当日喂食明细</h3>
+          <span id="dailyTotalCountBadge" style="font-size:12px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;">共 0 顿</span>
+        </div>
+        <div id="dailyFeedTimeline" style="display:flex;flex-direction:column;gap:9px;"></div>
+      </div>
+
+      <!-- Recent 7 Days Overview -->
+      <div class="ios-card p-4" style="padding:15px;">
+        <h3 style="margin:0 0 4px 0;font-size:15px;font-weight:800;color:#1C1917;">🗓️ 最近 7 天饮食速览</h3>
+        <p style="margin:0 0 10px 0;font-size:12px;color:#78716C;">点击任意一天可快速切换查看当日详情</p>
+        <div id="recentSevenDaysList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: STATS & BRANDS ==================== -->
     <section id="viewStats" class="hidden-view space-y-4">
       <!-- Category Breakdown -->
       <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
@@ -596,6 +627,10 @@
       <button type="button" data-nav="pantry" id="navBtnPantry" class="nav-tab active">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"/><path d="M12 3v6"/></svg>
         <span>粮仓库存</span>
+      </button>
+      <button type="button" data-nav="daily" id="navBtnDaily" class="nav-tab">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+        <span>每日盘点</span>
       </button>
       <button type="button" data-nav="stats" id="navBtnStats" class="nav-tab">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg>
@@ -718,7 +753,7 @@
           <div class="grid-safe" style="display:grid;grid-template-columns:1.18fr 1fr;gap:8px;margin-bottom:8px;">
             <div>
               <label for="fieldProdDate" style="display:block;font-size:12px;font-weight:600;color:#44403C;margin-bottom:4px;">生产日期 (MFG)</label>
-              <div class="ios-date-wrap"><input id="fieldProdDate" type="date"></div>
+              <div class="ios-date-wrap"><span id="fieldProdDateText" class="ios-date-display">选择日期</span><input id="fieldProdDate" type="date"></div>
             </div>
             <div>
               <label for="fieldShelfValue" style="display:block;font-size:12px;font-weight:600;color:#44403C;margin-bottom:4px;">保质期时长</label>
@@ -748,7 +783,7 @@
               <label for="fieldExpDate" style="font-size:12px;font-weight:800;color:#1C1917;white-space:nowrap;">过期日期 (EXP) <span style="color:#EA580C;">*</span></label>
               <button id="calcProdFromExpBtn" type="button" style="font-size:11px;color:#C2410C;text-decoration:underline;background:none;border:none;padding:0;cursor:pointer;white-space:nowrap;">进口粮仅有到期日？点此反推生产日</button>
             </div>
-            <div class="ios-date-wrap"><input id="fieldExpDate" type="date" required style="font-weight:700;"></div>
+            <div class="ios-date-wrap"><span id="fieldExpDateText" class="ios-date-display" style="font-weight:800;">选择日期</span><input id="fieldExpDate" type="date" required></div>
           </div>
         </div>
 
@@ -761,7 +796,7 @@
           <div id="openedExtraFields" class="grid-safe hidden-view" style="margin-top:10px;display:grid;grid-template-columns:1.18fr 1fr;gap:8px;">
             <div>
               <label for="fieldOpenedDate" style="display:block;font-size:11px;color:#57534E;margin-bottom:4px;">开封日期</label>
-              <div class="ios-date-wrap" style="min-height:38px;"><input id="fieldOpenedDate" type="date" style="height:36px;"></div>
+              <div class="ios-date-wrap" style="height:38px;min-height:38px;"><span id="fieldOpenedDateText" class="ios-date-display">选择日期</span><input id="fieldOpenedDate" type="date"></div>
             </div>
             <div>
               <label for="fieldOpenLimit" style="display:block;font-size:11px;color:#57534E;margin-bottom:4px;">开封后建议吃完(天)</label>
@@ -831,6 +866,102 @@
     </div>
   </div>
 
+  <!-- ==================== QUICK FEED LOG MODAL (记喂食弹窗) ==================== -->
+  <div id="feedModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="feedModalTitle">
+    <div class="modal-sheet p-5" style="padding:20px;max-width:480px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 id="feedModalTitle" style="margin:0;font-size:17px;font-weight:800;color:#1C1917;">🐾 记录每日喂食</h3>
+        <button id="closeFeedModalBtn" type="button" aria-label="关闭记喂食弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;">✕</button>
+      </div>
+
+      <form id="feedForm" style="display:flex;flex-direction:column;gap:12px;">
+        <input type="hidden" id="feedItemId">
+
+        <!-- Date & Meal Time Slot -->
+        <div class="grid-safe" style="display:grid;grid-template-columns:1.15fr 1fr;gap:8px;">
+          <div>
+            <label for="feedDateInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">喂食日期</label>
+            <div class="ios-date-wrap"><span id="feedDateInputText" class="ios-date-display">选择日期</span><input id="feedDateInput" type="date" required></div>
+          </div>
+          <div>
+            <label for="feedMealSlot" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">餐次时段</label>
+            <select id="feedMealSlot" class="ios-input" style="height:42px;background:#FFFFFF;">
+              <option value="🌅 早饭">🌅 早饭</option>
+              <option value="☀️ 午间">☀️ 午间</option>
+              <option value="🌙 晚饭">🌙 晚饭</option>
+              <option value="🌌 夜宵/加餐">🌌 夜宵/加餐</option>
+              <option value="🩺 用药/护理">🩺 用药/护理</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pick from In-Stock Items -->
+        <div>
+          <label for="feedStockSelect" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">选择在库口粮/药品（或下方手动输入）</label>
+          <select id="feedStockSelect" class="ios-input" style="height:42px;background:#FFFFFF;"></select>
+        </div>
+
+        <!-- Category + Brand + Product Name (auto-filled when stock selected, or editable) -->
+        <div class="grid-safe" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:8px;">
+          <div>
+            <label for="feedCategorySelect" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">分类</label>
+            <select id="feedCategorySelect" class="ios-input" style="height:42px;background:#FFFFFF;">
+              <option value="dry">🥣 猫粮</option>
+              <option value="can">🥫 罐头</option>
+              <option value="freeze">🍗 冻干</option>
+              <option value="treat">🍮 零食</option>
+              <option value="supp">💊 营养品</option>
+              <option value="med">🩺 药品</option>
+            </select>
+          </div>
+          <div>
+            <label for="feedBrandInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品牌</label>
+            <input id="feedBrandInput" type="text" required placeholder="如：渴望 / 巅峰" class="ios-input" style="height:42px;">
+          </div>
+        </div>
+
+        <div>
+          <label for="feedNameInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品名 / 口味 <span style="color:#EA580C;">*</span></label>
+          <input id="feedNameInput" type="text" required placeholder="如：无谷鸡肉猫粮 / 马鲛鱼罐头" class="ios-input" style="height:42px;">
+        </div>
+
+        <!-- Portion Amount + Quick Portion Chips -->
+        <div>
+          <label for="feedAmountInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">投喂份量 <span style="color:#EA580C;">*</span></label>
+          <input id="feedAmountInput" type="text" required placeholder="如：50g / 半罐 / 1罐 / 1支" class="ios-input" style="height:42px;">
+          <div id="feedPortionChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+            <button type="button" data-portion="30g" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">30g</button>
+            <button type="button" data-portion="50g" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">50g</button>
+            <button type="button" data-portion="半罐" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">半罐</button>
+            <button type="button" data-portion="1罐" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1罐</button>
+            <button type="button" data-portion="15g冻干" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">15g冻干</button>
+            <button type="button" data-portion="1支" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1支</button>
+            <button type="button" data-portion="1粒" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1粒</button>
+          </div>
+        </div>
+
+        <!-- Optional Stock Deduction Checkbox -->
+        <div id="feedDeductBox" style="padding:10px 12px;border-radius:12px;background:#FFF7ED;border:1px solid #FED7AA;">
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;">
+            <span id="feedDeductLabel" style="font-size:12px;font-weight:700;color:#7C2D12;">📦 同时从库存扣减 1 件（适合整罐/整支吃完时勾选）</span>
+            <input id="feedDeductStock" type="checkbox" style="width:18px;height:18px;accent-color:#EA580C;flex-shrink:0;">
+          </label>
+        </div>
+
+        <!-- Reaction / Notes -->
+        <div>
+          <label for="feedNoteInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">光盘情况 / 便便反应备注 (选填)</label>
+          <input id="feedNoteInput" type="text" placeholder="如：秒光盘、兑了40ml温水、今日便便正常" class="ios-input" style="height:42px;">
+        </div>
+
+        <div style="display:flex;gap:10px;padding-top:4px;">
+          <button id="cancelFeedModalBtn" type="button" class="ios-btn ios-btn-secondary" style="width:34%;">取消</button>
+          <button type="submit" class="ios-btn ios-btn-primary" style="width:66%;">保存喂食记录</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     (function () {
       'use strict';
@@ -838,6 +969,7 @@
       // ==================== CONSTANTS & CATEGORIES ====================
       var STORAGE_KEY = 'meow_pantry_v1_data';
       var SETTINGS_KEY = 'meow_pantry_v1_settings';
+      var LOGS_KEY = 'meow_pantry_v1_logs';
       var IDB_NAME = 'MeowPantryLocalDB';
       var IDB_STORE = 'kv';
 
@@ -985,6 +1117,24 @@
         return formatDateObj(d);
       }
 
+      function formatCnDateText(dateStr) {
+        if (!dateStr) return '未选择';
+        var parts = String(dateStr).split('-');
+        if (parts.length !== 3) return dateStr;
+        return parts[0] + '年' + parseInt(parts[1], 10) + '月' + parseInt(parts[2], 10) + '日';
+      }
+
+      function syncAllDateDisplays() {
+        var ids = ['dailyDatePicker', 'fieldProdDate', 'fieldExpDate', 'fieldOpenedDate', 'feedDateInput'];
+        for (var i = 0; i < ids.length; i++) {
+          var inp = document.getElementById(ids[i]);
+          var txt = document.getElementById(ids[i] + 'Text');
+          if (inp && txt) {
+            txt.textContent = inp.value ? formatCnDateText(inp.value) : '选择日期';
+          }
+        }
+      }
+
       // ==================== INITIAL DEMO ITEMS ====================
       function buildSampleItems() {
         var p1 = shiftDaysFromToday(-160);
@@ -1089,6 +1239,61 @@
         ];
       }
 
+      function buildSampleLogs() {
+        var today = getTodayStr();
+        var yesterday = shiftDaysFromToday(-1);
+        return [
+          {
+            id: 'log_sample_1',
+            date: today,
+            mealSlot: '🌅 早饭',
+            itemId: 'sample_1',
+            category: 'dry',
+            brand: '渴望 Orijen',
+            name: '无谷鸡肉全期猫粮',
+            amount: '45g',
+            note: '自动喂食器出粮，全部吃完',
+            isSample: true
+          },
+          {
+            id: 'log_sample_2',
+            date: today,
+            mealSlot: '🌙 晚饭',
+            itemId: 'sample_2',
+            category: 'can',
+            brand: '巅峰 ZiwiPeak',
+            name: '新西兰马鲛鱼羊肉主食罐',
+            amount: '半罐 (85g)',
+            note: '兑温水骗水成功，适口性超好',
+            isSample: true
+          },
+          {
+            id: 'log_sample_3',
+            date: yesterday,
+            mealSlot: '🌅 早饭',
+            itemId: 'sample_1',
+            category: 'dry',
+            brand: '渴望 Orijen',
+            name: '无谷鸡肉全期猫粮',
+            amount: '50g',
+            note: '日常主粮',
+            isSample: true
+          },
+          {
+            id: 'log_sample_4',
+            date: yesterday,
+            mealSlot: '🌌 夜宵/加餐',
+            itemId: 'sample_3',
+            category: 'freeze',
+            brand: 'K9 Natural',
+            name: '鸡肉羊心主食冻干',
+            amount: '15g',
+            note: '复水当夜宵',
+            isSample: true
+          }
+        ];
+      }
+
       // ==================== STATE ====================
       var CURRENCIES = {
         CNY: { code: 'CNY', label: '人民币', prefix: 'CN¥', unitWord: '元' },
@@ -1108,6 +1313,8 @@
 
       var state = {
         items: [],
+        logs: [],
+        selectedLogDate: getTodayStr(),
         settings: {
           warnDays: 60,
           showImages: true,
@@ -1149,6 +1356,7 @@
       function saveToStorage() {
         var payload = JSON.stringify(state.items);
         var settingsPayload = JSON.stringify(state.settings);
+        var logsPayload = JSON.stringify(state.logs);
         openIDB(function (db) {
           if (!db) return;
           try {
@@ -1156,10 +1364,12 @@
             var store = tx.objectStore(IDB_STORE);
             store.put(payload, STORAGE_KEY);
             store.put(settingsPayload, SETTINGS_KEY);
+            store.put(logsPayload, LOGS_KEY);
           } catch (e) {}
         });
         try {
           window.localStorage.setItem(SETTINGS_KEY, settingsPayload);
+          window.localStorage.setItem(LOGS_KEY, logsPayload);
           window.localStorage.setItem(STORAGE_KEY, payload);
         } catch (err) {
           // If localStorage hits 5MB quota due to many photos, save lightweight copy without base64 while IndexedDB keeps full photos
@@ -1186,21 +1396,25 @@
       function loadFromStorage(done) {
         var lsItems = null;
         var lsSettings = null;
+        var lsLogs = null;
         try {
           var raw = window.localStorage.getItem(STORAGE_KEY);
           var rawSet = window.localStorage.getItem(SETTINGS_KEY);
+          var rawLogs = window.localStorage.getItem(LOGS_KEY);
           if (raw) lsItems = JSON.parse(raw);
           if (rawSet) lsSettings = JSON.parse(rawSet);
+          if (rawLogs) lsLogs = JSON.parse(rawLogs);
         } catch (e) {}
 
-        // Prefer IndexedDB first so full compressed photos are preserved beyond 5MB
         openIDB(function (db) {
           if (!db) {
             if (Array.isArray(lsItems)) {
               state.items = lsItems;
+              state.logs = Array.isArray(lsLogs) ? lsLogs : [];
               applyLoadedSettings(lsSettings);
             } else {
               state.items = buildSampleItems();
+              state.logs = buildSampleLogs();
               saveToStorage();
             }
             done();
@@ -1211,33 +1425,42 @@
             var store = tx.objectStore(IDB_STORE);
             var reqItems = store.get(STORAGE_KEY);
             var reqSet = store.get(SETTINGS_KEY);
+            var reqLogs = store.get(LOGS_KEY);
             tx.oncomplete = function () {
               var idbItems = null;
               var idbSet = null;
+              var idbLogs = null;
               try {
                 if (reqItems.result) idbItems = JSON.parse(reqItems.result);
                 if (reqSet.result) idbSet = JSON.parse(reqSet.result);
+                if (reqLogs.result) idbLogs = JSON.parse(reqLogs.result);
               } catch (err2) {}
 
               if (Array.isArray(idbItems)) {
                 state.items = idbItems;
+                var hasAnySample = state.items.some(function (x) { return Boolean(x.isSample); });
+                state.logs = Array.isArray(idbLogs) ? idbLogs : (Array.isArray(lsLogs) ? lsLogs : (hasAnySample ? buildSampleLogs() : []));
                 applyLoadedSettings(idbSet || lsSettings);
               } else if (Array.isArray(lsItems)) {
                 state.items = lsItems;
+                state.logs = Array.isArray(lsLogs) ? lsLogs : [];
                 applyLoadedSettings(lsSettings);
               } else {
                 state.items = buildSampleItems();
+                state.logs = buildSampleLogs();
                 saveToStorage();
               }
               done();
             };
             tx.onerror = function () {
               state.items = Array.isArray(lsItems) ? lsItems : buildSampleItems();
+              state.logs = Array.isArray(lsLogs) ? lsLogs : buildSampleLogs();
               applyLoadedSettings(lsSettings);
               done();
             };
           } catch (e) {
             state.items = Array.isArray(lsItems) ? lsItems : buildSampleItems();
+            state.logs = Array.isArray(lsLogs) ? lsLogs : buildSampleLogs();
             applyLoadedSettings(lsSettings);
             done();
           }
@@ -1336,6 +1559,7 @@
         renderCategoryPills();
         renderBrandDropdown();
         renderPantryList();
+        renderDailyView();
         renderStatsView();
         renderSettingsView();
       }
@@ -1615,7 +1839,8 @@
                 '</div>' +
                 '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' +
                   (ev.status !== 'empty'
-                    ? '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FFFFFF') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;">' +
+                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;">🐾 记喂食</button>' +
+                      '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FFFFFF') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;">' +
                         (it.isOpened ? '🔓 1' + unitStr + '已拆' : (qtyNum > 1 ? '🔒 拆封1' + unitStr : '🔒 记开封')) +
                       '</button>' +
                       '<button type="button" data-action="consume-one" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:12px;font-weight:700;cursor:pointer;">' +
@@ -1632,6 +1857,190 @@
         }).join('');
 
         listEl.innerHTML = cardsHtml;
+      }
+
+      // ==================== RENDER DAILY FEEDING LOG VIEW (每日盘点) ====================
+      function getWeekdayName(dateStr) {
+        var dt = parseLocalDate(dateStr);
+        if (!dt) return '';
+        var names = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        return names[dt.getDay()];
+      }
+
+      function getCurrentMealSlot() {
+        var hr = new Date().getHours();
+        if (hr < 10) return '🌅 早饭';
+        if (hr < 15) return '☀️ 午间';
+        if (hr < 21) return '🌙 晚饭';
+        return '🌌 夜宵/加餐';
+      }
+
+      function appendFeedingLog(entry) {
+        state.logs.unshift({
+          id: 'log_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+          date: entry.date || getTodayStr(),
+          mealSlot: entry.mealSlot || getCurrentMealSlot(),
+          itemId: entry.itemId || '',
+          category: entry.category || 'dry',
+          brand: entry.brand || '',
+          name: entry.name || '',
+          amount: entry.amount || '1份',
+          note: entry.note || '',
+          isSample: false
+        });
+      }
+
+      function renderDailyView() {
+        var selDate = state.selectedLogDate || getTodayStr();
+        var picker = document.getElementById('dailyDatePicker');
+        if (picker && picker.value !== selDate) {
+          picker.value = selDate;
+        }
+        syncAllDateDisplays();
+
+        var todayStr = getTodayStr();
+        var diff = diffDaysFromToday(selDate);
+        var relTag = diff === 0 ? '（今天）' : (diff === -1 ? '（昨天）' : (diff === 1 ? '（明天）' : ''));
+        document.getElementById('dailyDateLabel').textContent =
+          selDate + ' ' + getWeekdayName(selDate) + relTag;
+
+        var dayLogs = state.logs.filter(function (lg) { return lg.date === selDate; });
+        document.getElementById('dailyTotalCountBadge').textContent = '共 ' + dayLogs.length + ' 次记录';
+
+        // Category count pills for the selected date
+        var catCounts = {};
+        dayLogs.forEach(function (lg) {
+          var c = lg.category || 'dry';
+          catCounts[c] = (catCounts[c] || 0) + 1;
+        });
+        var summaryEl = document.getElementById('dailySummaryBar');
+        var catKeys = Object.keys(CATEGORIES).filter(function (k) { return catCounts[k] > 0; });
+        if (catKeys.length === 0) {
+          summaryEl.innerHTML = '<span style="font-size:12px;color:#A8A29E;">当日暂无投喂记录，可点击右上角「＋ 记一笔喂食」或在粮仓卡片上点「🐾 记喂食」</span>';
+        } else {
+          summaryEl.innerHTML = catKeys.map(function (k) {
+            var info = CATEGORIES[k] || CATEGORIES.dry;
+            return '<span style="background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;">' + info.icon + ' ' + info.label + ' × ' + catCounts[k] + '次</span>';
+          }).join('');
+        }
+
+        // Day Timeline
+        var timelineEl = document.getElementById('dailyFeedTimeline');
+        if (dayLogs.length === 0) {
+          timelineEl.innerHTML =
+            '<div style="padding:24px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#78716C;font-size:13px;">' +
+              '🐾 这天还没有记录主子吃过什么哦' +
+            '</div>';
+        } else {
+          timelineEl.innerHTML = dayLogs.map(function (lg) {
+            var catInfo = CATEGORIES[lg.category] || CATEGORIES.dry;
+            return (
+              '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
+                '<div style="min-width:0;flex:1;">' +
+                  '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">' +
+                    '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:2px 8px;border-radius:7px;">' + escapeHtml(lg.mealSlot || '🍽️ 投喂') + '</span>' +
+                    '<span style="font-size:11px;font-weight:700;color:#44403C;background:#E7E5E4;padding:2px 7px;border-radius:7px;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
+                    '<span style="font-size:12px;font-weight:800;color:#15803D;background:#DCFCE7;padding:2px 8px;border-radius:7px;">份量：' + escapeHtml(lg.amount || '1份') + '</span>' +
+                  '</div>' +
+                  '<div style="font-size:14px;font-weight:800;color:#1C1917;">[' + escapeHtml(lg.brand) + '] ' + escapeHtml(lg.name) + '</div>' +
+                  (lg.note ? '<div style="margin-top:3px;font-size:12px;color:#57534E;">💬 ' + escapeHtml(lg.note) + '</div>' : '') +
+                '</div>' +
+                '<button type="button" data-del-log="' + escapeHtml(lg.id) + '" aria-label="删除此条喂食记录" style="padding:5px 8px;border-radius:8px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;">删除</button>' +
+              '</div>'
+            );
+          }).join('');
+        }
+
+        // Recent 7 Days Overview List
+        var sevenHtml = [];
+        for (var dOffset = 0; dOffset >= -6; dOffset--) {
+          var dStr = shiftDaysFromToday(dOffset);
+          var dLogs = state.logs.filter(function (lg) { return lg.date === dStr; });
+          var isSelected = (dStr === selDate);
+          var dayTitle = dOffset === 0 ? (dStr + ' (今天)') : (dOffset === -1 ? (dStr + ' (昨天)') : (dStr + ' ' + getWeekdayName(dStr)));
+          var itemsPreview = dLogs.length === 0
+            ? '<span style="color:#A8A29E;">未记录</span>'
+            : dLogs.map(function (lg) {
+                var ci = CATEGORIES[lg.category] || CATEGORIES.dry;
+                return ci.icon + escapeHtml(lg.brand) + '(' + escapeHtml(lg.amount) + ')';
+              }).join(' · ');
+
+          sevenHtml.push(
+            '<button type="button" data-jump-date="' + dStr + '" style="width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1.5px solid ' + (isSelected ? '#EA580C' : '#F5F5F4') + ';background:' + (isSelected ? '#FFF7ED' : '#FAFAF9') + ';cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+              '<div style="min-width:0;flex:1;">' +
+                '<div style="font-size:13px;font-weight:800;color:#1C1917;">' + dayTitle + '</div>' +
+                '<div style="font-size:12px;color:#57534E;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + itemsPreview + '</div>' +
+              '</div>' +
+              '<span style="font-size:12px;font-weight:700;color:' + (dLogs.length > 0 ? '#EA580C' : '#A8A29E') + ';white-space:nowrap;">' + dLogs.length + ' 次 ▶</span>' +
+            '</button>'
+          );
+        }
+        document.getElementById('recentSevenDaysList').innerHTML = sevenHtml.join('');
+      }
+
+      function populateFeedStockDropdown(selectedItemId) {
+        var sel = document.getElementById('feedStockSelect');
+        var active = state.items.filter(function (it) { return (Number(it.quantity) || 0) > 0; });
+        var html = '<option value="">-- 手动填写或从下方在库口粮中选择 --</option>';
+        active.forEach(function (it) {
+          var ci = CATEGORIES[it.category] || CATEGORIES.dry;
+          var isSel = (selectedItemId && it.id === selectedItemId) ? ' selected' : '';
+          html += '<option value="' + escapeHtml(it.id) + '"' + isSel + '>' + ci.icon + ' [' + escapeHtml(it.brand) + '] ' + escapeHtml(it.name) + ' (余' + Number(it.quantity) + escapeHtml(it.unit || '') + ')</option>';
+        });
+        sel.innerHTML = html;
+      }
+
+      function applyFeedStockSelection(itemId) {
+        var target = null;
+        for (var i = 0; i < state.items.length; i++) {
+          if (state.items[i].id === itemId) { target = state.items[i]; break; }
+        }
+        document.getElementById('feedItemId').value = target ? target.id : '';
+        if (target) {
+          document.getElementById('feedCategorySelect').value = target.category || 'dry';
+          document.getElementById('feedBrandInput').value = target.brand || '';
+          document.getElementById('feedNameInput').value = target.name || '';
+          var defaultPortion = '50g';
+          if (target.category === 'can') defaultPortion = target.spec ? ('1罐 (' + target.spec + ')') : '1罐';
+          if (target.category === 'freeze') defaultPortion = '15g';
+          if (target.category === 'treat') defaultPortion = '1支';
+          if (target.category === 'supp') defaultPortion = '5cm / 1份';
+          if (target.category === 'med') defaultPortion = '1' + (target.unit || '支');
+          document.getElementById('feedAmountInput').value = defaultPortion;
+          document.getElementById('feedDeductLabel').textContent =
+            '📦 同时从库存扣减 1 ' + (target.unit || '件') + '（当前余 ' + Number(target.quantity) + (target.unit || '件') + '）';
+        } else {
+          document.getElementById('feedDeductLabel').textContent = '📦 同时从库存扣减 1 件（仅从上方选择在库商品时生效）';
+        }
+      }
+
+      function openFeedModal(itemId, customDate) {
+        var dateToUse = customDate || (state.activeTab === 'daily' ? state.selectedLogDate : getTodayStr());
+        document.getElementById('feedDateInput').value = dateToUse;
+        document.getElementById('feedMealSlot').value = getCurrentMealSlot();
+        document.getElementById('feedDeductStock').checked = false;
+        document.getElementById('feedNoteInput').value = '';
+        populateFeedStockDropdown(itemId || '');
+        if (itemId) {
+          applyFeedStockSelection(itemId);
+        } else {
+          var firstActive = state.items.find(function (it) { return (Number(it.quantity) || 0) > 0; });
+          if (firstActive) {
+            document.getElementById('feedStockSelect').value = firstActive.id;
+            applyFeedStockSelection(firstActive.id);
+          } else {
+            document.getElementById('feedItemId').value = '';
+            document.getElementById('feedBrandInput').value = '';
+            document.getElementById('feedNameInput').value = '';
+            document.getElementById('feedAmountInput').value = '50g';
+          }
+        }
+        syncAllDateDisplays();
+        document.getElementById('feedModalBackdrop').classList.remove('hidden-view');
+      }
+
+      function closeFeedModal() {
+        document.getElementById('feedModalBackdrop').classList.add('hidden-view');
       }
 
       // ==================== RENDER STATS & BRANDS VIEW ====================
@@ -1779,11 +2188,13 @@
         state.activeTab = tabName;
         var views = {
           pantry: document.getElementById('viewPantry'),
+          daily: document.getElementById('viewDaily'),
           stats: document.getElementById('viewStats'),
           settings: document.getElementById('viewSettings')
         };
         var navs = {
           pantry: document.getElementById('navBtnPantry'),
+          daily: document.getElementById('navBtnDaily'),
           stats: document.getElementById('navBtnStats'),
           settings: document.getElementById('navBtnSettings')
         };
@@ -1920,6 +2331,7 @@
           if (!document.getElementById('fieldOpenedDate').value) {
             document.getElementById('fieldOpenedDate').value = getTodayStr();
           }
+          syncAllDateDisplays();
         } else {
           box.classList.add('hidden-view');
         }
@@ -1934,6 +2346,7 @@
           if (computed) {
             document.getElementById('fieldExpDate').value = computed;
             document.getElementById('dateCalcHint').textContent = '已由生产日+保质期自动算出过期日';
+            syncAllDateDisplays();
           }
         }
       }
@@ -1966,6 +2379,7 @@
         syncModalPalatabilityUI('');
         syncOpenedFieldsVisibility();
         renderQuickBrandChips();
+        syncAllDateDisplays();
 
         document.getElementById('itemModalBackdrop').classList.remove('hidden-view');
       }
@@ -2004,6 +2418,7 @@
         syncModalPalatabilityUI(item.palatability || '');
         syncOpenedFieldsVisibility();
         renderQuickBrandChips();
+        syncAllDateDisplays();
 
         document.getElementById('itemModalBackdrop').classList.remove('hidden-view');
       }
@@ -2045,6 +2460,7 @@
         syncOpenedFieldsVisibility();
         renderQuickBrandChips();
 
+        syncAllDateDisplays();
         document.getElementById('itemModalBackdrop').classList.remove('hidden-view');
         showToast('已带入同款资料，请确认新批次日期与数量');
       }
@@ -2069,10 +2485,11 @@
       function exportJsonBackup() {
         var backupObj = {
           app: '喵喵粮仓',
-          version: 1,
+          version: 2,
           exportedAt: new Date().toISOString(),
           settings: state.settings,
-          items: state.items
+          items: state.items,
+          logs: state.logs
         };
         var fname = '喵喵粮仓备份_' + getTodayStr() + '.json';
         triggerFileDownload(fname, JSON.stringify(backupObj, null, 2), 'application/json;charset=utf-8');
@@ -2163,8 +2580,122 @@
       function bindEvents() {
         // Bottom Nav
         document.getElementById('navBtnPantry').addEventListener('click', function () { switchTab('pantry'); });
+        document.getElementById('navBtnDaily').addEventListener('click', function () { switchTab('daily'); });
         document.getElementById('navBtnStats').addEventListener('click', function () { switchTab('stats'); });
         document.getElementById('navBtnSettings').addEventListener('click', function () { switchTab('settings'); });
+
+        // Daily Log Tab Controls & Quick Feed Modal
+        document.getElementById('openQuickFeedBtn').addEventListener('click', function () {
+          openFeedModal('', state.selectedLogDate);
+        });
+        document.getElementById('closeFeedModalBtn').addEventListener('click', closeFeedModal);
+        document.getElementById('cancelFeedModalBtn').addEventListener('click', closeFeedModal);
+        document.getElementById('feedModalBackdrop').addEventListener('click', function (ev) {
+          if (ev.target === document.getElementById('feedModalBackdrop')) closeFeedModal();
+        });
+
+        document.getElementById('prevDayBtn').addEventListener('click', function () {
+          var cur = parseLocalDate(state.selectedLogDate || getTodayStr());
+          if (!cur) cur = new Date();
+          cur.setDate(cur.getDate() - 1);
+          state.selectedLogDate = formatDateObj(cur);
+          renderDailyView();
+        });
+        document.getElementById('nextDayBtn').addEventListener('click', function () {
+          var cur = parseLocalDate(state.selectedLogDate || getTodayStr());
+          if (!cur) cur = new Date();
+          cur.setDate(cur.getDate() + 1);
+          state.selectedLogDate = formatDateObj(cur);
+          renderDailyView();
+        });
+        document.getElementById('goTodayBtn').addEventListener('click', function () {
+          state.selectedLogDate = getTodayStr();
+          renderDailyView();
+        });
+        document.getElementById('dailyDatePicker').addEventListener('change', function () {
+          if (this.value) {
+            state.selectedLogDate = this.value;
+            renderDailyView();
+          }
+        });
+
+        document.getElementById('dailyFeedTimeline').addEventListener('click', function (ev) {
+          var delBtn = ev.target.closest('[data-del-log]');
+          if (!delBtn) return;
+          var logId = delBtn.getAttribute('data-del-log');
+          state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
+          saveToStorage();
+          renderDailyView();
+          showToast('已删除该条喂食记录');
+        });
+
+        document.getElementById('recentSevenDaysList').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-jump-date]');
+          if (!btn) return;
+          state.selectedLogDate = btn.getAttribute('data-jump-date');
+          renderDailyView();
+          window.scrollTo(0, 0);
+        });
+
+        document.getElementById('feedStockSelect').addEventListener('change', function () {
+          applyFeedStockSelection(this.value);
+        });
+
+        document.getElementById('feedPortionChips').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-portion]');
+          if (!btn) return;
+          document.getElementById('feedAmountInput').value = btn.getAttribute('data-portion');
+        });
+
+        document.getElementById('feedForm').addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          var fDate = document.getElementById('feedDateInput').value || getTodayStr();
+          var fSlot = document.getElementById('feedMealSlot').value;
+          var fItemId = document.getElementById('feedItemId').value;
+          var fCat = document.getElementById('feedCategorySelect').value;
+          var fBrand = document.getElementById('feedBrandInput').value.trim();
+          var fName = document.getElementById('feedNameInput').value.trim();
+          var fAmount = document.getElementById('feedAmountInput').value.trim();
+          var fNote = document.getElementById('feedNoteInput').value.trim();
+          var deduct = document.getElementById('feedDeductStock').checked;
+
+          if (!fBrand || !fName || !fAmount) {
+            showToast('请填写品牌、品名和投喂份量');
+            return;
+          }
+
+          appendFeedingLog({
+            date: fDate,
+            mealSlot: fSlot,
+            itemId: fItemId,
+            category: fCat,
+            brand: fBrand,
+            name: fName,
+            amount: fAmount,
+            note: fNote
+          });
+
+          if (deduct && fItemId) {
+            for (var i = 0; i < state.items.length; i++) {
+              if (state.items[i].id === fItemId) {
+                var curQ = Number(state.items[i].quantity) || 0;
+                if (curQ > 0) {
+                  state.items[i].lastQuantity = curQ;
+                  state.items[i].quantity = Math.max(0, Math.round((curQ - 1) * 100) / 100);
+                  state.items[i].isOpened = false;
+                  state.items[i].openedDate = '';
+                }
+                break;
+              }
+            }
+          }
+
+          state.selectedLogDate = fDate;
+          saveToStorage();
+          closeFeedModal();
+          renderAll();
+          showToast('已记入 ' + fDate + ' 饮食盘点');
+        });
 
         // Open/Close Add Modal
         document.getElementById('openAddModalBtn').addEventListener('click', openAddModal);
@@ -2178,6 +2709,7 @@
         // Clear Sample Banner
         document.getElementById('clearSamplesBtn').addEventListener('click', function () {
           state.items = state.items.filter(function (it) { return !it.isSample; });
+          state.logs = state.logs.filter(function (lg) { return !lg.isSample; });
           saveToStorage();
           renderAll();
           showToast('示例数据已清空');
@@ -2270,25 +2802,47 @@
               var confirmDesc = target.isOpened
                 ? ('将核销当前拆封的 1 ' + uName + '「' + target.brand + ' ' + target.name + '」，剩余 ' + nextRem + ' ' + uName + '自动恢复为【未拆封】状态。')
                 : ('将扣减 1 ' + uName + '「' + target.brand + ' ' + target.name + '」，库存变为剩余 ' + nextRem + ' ' + uName + '。');
-              openConfirm('吃完 1 ' + uName + '？', confirmDesc, '确认吃完 1 ' + uName, function () {
+              openConfirm('吃完 1 ' + uName + '？', confirmDesc + '（将自动记入今日饮食盘点）', '确认吃完 1 ' + uName, function () {
                 target.quantity = nextRem;
                 target.isOpened = false;
                 target.openedDate = '';
+                appendFeedingLog({
+                  date: getTodayStr(),
+                  mealSlot: target.category === 'med' ? '🩺 用药/护理' : getCurrentMealSlot(),
+                  itemId: target.id,
+                  category: target.category,
+                  brand: target.brand,
+                  name: target.name,
+                  amount: '1' + uName + (target.spec ? (' (' + target.spec + ')') : ''),
+                  note: '从库存核销 1 ' + uName
+                });
                 saveToStorage();
                 renderAll();
-                showToast('已吃完 1 ' + uName + '，剩余 ' + nextRem + ' ' + uName + '未拆封');
+                showToast('已吃完 1 ' + uName + ' 并记入今日盘点');
               });
             } else {
-              openConfirm('标记为全部吃完？', '这是最后 ' + curQ + ' ' + uName + '「' + target.brand + ' ' + target.name + '」，确认后将归入顶部【已吃完】历史列表；下次复购同款时可在【已吃完】里一键带入资料新建批次。', '确认吃完', function () {
+              openConfirm('标记为全部吃完？', '这是最后 ' + curQ + ' ' + uName + '「' + target.brand + ' ' + target.name + '」，确认后将自动记入今日盘点并归入顶部【已吃完】历史列表。', '确认吃完', function () {
                 target.lastQuantity = curQ > 0 ? curQ : 1;
                 target.quantity = 0;
                 target.isOpened = false;
                 target.openedDate = '';
+                appendFeedingLog({
+                  date: getTodayStr(),
+                  mealSlot: target.category === 'med' ? '🩺 用药/护理' : getCurrentMealSlot(),
+                  itemId: target.id,
+                  category: target.category,
+                  brand: target.brand,
+                  name: target.name,
+                  amount: curQ + uName + (target.spec ? (' (' + target.spec + ')') : ''),
+                  note: '本批次全部吃完归档'
+                });
                 saveToStorage();
                 renderAll();
-                showToast('已归入顶部「已吃完」列表');
+                showToast('已记入今日盘点并归入「已吃完」');
               });
             }
+          } else if (action === 'log-feed') {
+            openFeedModal(target.id, getTodayStr());
           } else if (action === 'restock-new' || action === 'restore-stock') {
             openRestockModal(target);
           } else if (action === 'preview-img') {
@@ -2340,7 +2894,13 @@
           syncModalPalatabilityUI(btn.getAttribute('data-pal'));
         });
 
-        document.getElementById('fieldProdDate').addEventListener('change', autoComputeExpDate);
+        document.getElementById('fieldProdDate').addEventListener('change', function () {
+          autoComputeExpDate();
+          syncAllDateDisplays();
+        });
+        document.getElementById('fieldExpDate').addEventListener('change', syncAllDateDisplays);
+        document.getElementById('fieldOpenedDate').addEventListener('change', syncAllDateDisplays);
+        document.getElementById('feedDateInput').addEventListener('change', syncAllDateDisplays);
         document.getElementById('fieldShelfValue').addEventListener('input', autoComputeExpDate);
         document.getElementById('fieldShelfUnit').addEventListener('change', autoComputeExpDate);
 
@@ -2360,6 +2920,7 @@
             if (backProd) {
               document.getElementById('fieldProdDate').value = backProd;
               document.getElementById('dateCalcHint').textContent = '已反推生产日期';
+              syncAllDateDisplays();
             }
           }
         });
@@ -2376,6 +2937,7 @@
           if (prod) {
             document.getElementById('fieldProdDate').value = prod;
             document.getElementById('dateCalcHint').textContent = '已根据到期日反推出生产日期';
+            syncAllDateDisplays();
             showToast('已自动反推生产日期：' + prod);
           }
         });
@@ -2475,6 +3037,9 @@
                 '确认恢复',
                 function () {
                   state.items = incoming;
+                  if (Array.isArray(parsed.logs)) {
+                    state.logs = parsed.logs;
+                  }
                   applyLoadedSettings(parsed.settings);
                   saveToStorage();
                   renderAll();
@@ -2491,8 +3056,9 @@
         });
 
         document.getElementById('clearAllDataBtn').addEventListener('click', function () {
-          openConfirm('清空全部库存？', '此操作将删除本地所有记录，建议清空前先导出 JSON 备份。', '确认清空', function () {
+          openConfirm('清空全部库存与日志？', '此操作将删除本地所有库存与每日喂食记录，建议清空前先导出 JSON 备份。', '确认清空', function () {
             state.items = [];
+            state.logs = [];
             saveToStorage();
             renderAll();
             showToast('本地数据已全部清空');
