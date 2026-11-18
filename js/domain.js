@@ -73,6 +73,27 @@
     return /^(袋|罐|包|盒|箱|支|瓶|件|桶|杯|听|袋装)$/.test(unit);
   };
 
+  Domain.canCorrectStockUnit = function (item, unit) {
+    var countingUnit = /^(盒|杯|罐|袋|包|支|粒|瓶|件|听|袋装)$/;
+    return Boolean(item && !item.sourceBatchId && item.unit !== unit &&
+      countingUnit.test(item.unit) && countingUnit.test(unit) && Number.isSafeInteger(item.quantity));
+  };
+
+  Domain.correctStockUnit = function (item, unit) {
+    if (!Domain.canCorrectStockUnit(item, unit)) return false;
+    var previousUnit = item.unit;
+    item.unit = unit;
+    state.items.forEach(function (archive) {
+      if (archive.sourceBatchId === item.id && archive.quantity === 0) archive.unit = unit;
+    });
+    Domain.appendStockHistory({
+      action: 'adjust', itemId: item.id, category: item.category, brand: item.brand,
+      name: item.name, unit: unit, beforeQty: item.quantity, afterQty: item.quantity,
+      deltaText: previousUnit + ' → ' + unit, note: '更正库存计数单位，件数不变', isSample: item.isSample
+    });
+    return true;
+  };
+
   Domain.validatePackaging = function (raw, innerUnit) {
     // 组 and 提 remain valid for existing records and imported backups.
     if (!raw || !/^(盒|袋|桶|箱|组|提)$/.test(raw.outerUnit)) return null;
@@ -420,7 +441,7 @@
     return true;
   };
 
-  Domain.recordConsumedUnits = function (target, amountConsumed, customDateStr, historyNote) {
+  Domain.recordConsumedUnits = function (target, amountConsumed, customDateStr, historyNote, adjustment) {
     if (!target) return 0;
     var curQty = Utils.round2(Number(target.quantity) || 0);
     if (curQty <= 0) return 0;
@@ -431,7 +452,7 @@
     var unitOpenedDate = target.openedDate || target.archivedOpenedDate || opDate;
 
     target.eatenCount = Utils.round2((Number(target.eatenCount) || 0) + used);
-    target.lastEatenDate = opDate;
+    if (!adjustment) target.lastEatenDate = opDate;
     if (unitOpenedDate && !target.archivedOpenedDate) {
       target.archivedOpenedDate = unitOpenedDate;
     }
@@ -491,7 +512,7 @@
 
     Domain.appendStockHistory({
       date: opDate,
-      action: 'consume',
+      action: adjustment ? 'adjust' : 'consume',
       itemId: target.id,
       category: target.category,
       brand: target.brand,
@@ -507,7 +528,7 @@
   };
 
   // Fixed bug: properly clears finishedDate & recreates empty_<id> shadow archive if restoring final unit of a multi-unit batch!
-  Domain.revertConsumedFromLog = function (lg) {
+  Domain.revertConsumedFromLog = function (lg, adjustmentNote) {
     if (!lg || !lg.itemId) return false;
     if (lg.flavorId) return revertFlavorFeeding(lg);
     var target = state.items.find(function (x) { return x.id === lg.itemId; });
@@ -570,7 +591,7 @@
 
       Domain.appendStockHistory({
         date: Utils.getTodayStr(),
-        action: 'revert',
+        action: adjustmentNote ? 'adjust' : 'revert',
         itemId: target.id,
         category: target.category,
         brand: target.brand,
@@ -579,7 +600,7 @@
         deltaText: '+' + dUnit + uLabel + (target.openRemainFraction > 0 ? ('(' + Utils.formatRemainFractionText(target.openRemainFraction, uLabel) + ')') : ''),
         beforeQty: beforeQ,
         afterQty: restoredQ,
-        note: '删除饮食记录并退回库存（原记录 ' + (lg.date || '') + ' ' + (lg.amount || '') + '）'
+        note: adjustmentNote || ('删除饮食记录并退回库存（原记录 ' + (lg.date || '') + ' ' + (lg.amount || '') + '）')
       });
       return true;
     }
@@ -628,6 +649,38 @@
       deltaText: text, note: '口味：' + flavor.name, isSample: item.isSample
     });
   }
+
+  Domain.adjustFlavorStock = function (item, flavor, whole, percent, reason) {
+    if (!item || item.sourceBatchId || !flavor || !item.flavors || !item.flavors.includes(flavor) ||
+        !Number.isSafeInteger(whole) || whole < 0 || !Number.isFinite(percent) || percent < 0 || percent > 100 ||
+        (percent > 0 && !flavor.openedDate)) return false;
+    var opened = percent > 0;
+    var qty = whole + Number(opened);
+    if (qty > flavor.perPack * item.purchasePackaging.count) return false;
+    var fraction = opened && percent < 100 ? percent / 100 : 0;
+    var previousPercent = flavor.openedDate ? Utils.round2((flavor.openRemainFraction || 1) * 100) : 0;
+    var delta = qty - flavor.quantity;
+    if (!delta && previousPercent === percent) return false;
+
+    var note = '口味：' + flavor.name + ' · ' + flavor.quantity + ' → ' + qty + item.unit +
+      ' · 开封单件余量 ' + previousPercent + '% → ' + percent + '%' + (reason ? ' · ' + reason : '');
+    if (delta > 0 && !Domain.revertConsumedFromLog({ itemId: item.id, deductedUnit: delta }, note)) return false;
+    flavor.quantity = qty;
+    flavor.openRemainFraction = fraction;
+    if (!opened) flavor.openedDate = '';
+    flavor.revision = nextFlavorRevision();
+
+    if (delta < 0) {
+      Domain.recordConsumedUnits(item, -delta, Utils.getTodayStr(), note, true);
+    } else if (!delta) {
+      Domain.appendStockHistory({
+        action: 'adjust', itemId: item.id, category: item.category, brand: item.brand, name: item.name,
+        unit: item.unit, beforeQty: item.quantity, afterQty: item.quantity,
+        deltaText: '开封单件余量 ' + previousPercent + '% → ' + percent + '%', note: note, isSample: item.isSample
+      });
+    }
+    return true;
+  };
 
   Domain.openFlavor = function (item, flavor, date) {
     var shared = Domain.hasSharedSeal(item);
