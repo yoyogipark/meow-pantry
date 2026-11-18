@@ -456,6 +456,24 @@
       <!-- Items List Container -->
       <section id="pantryList" class="space-y-3" style="display:flex;flex-direction:column;gap:12px;"></section>
 
+      <!-- Pantry Pagination Controls -->
+      <div id="pantryPaginationBar" class="ios-card p-3 mt-3 hidden-view" style="padding:10px 12px;margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button id="prevPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;">◀ 上一页</button>
+          <span id="pageInfoText" style="font-size:12px;font-weight:700;color:#44403C;padding:0 4px;white-space:nowrap;">第 1 / 1 页</span>
+          <button id="nextPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;">下一页 ▶</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页显示</span>
+          <select id="pageSizeSelect" aria-label="每页显示条数" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background:#FFFFFF;">
+            <option value="6">6 条</option>
+            <option value="10">10 条</option>
+            <option value="20">20 条</option>
+            <option value="9999">全部</option>
+          </select>
+        </div>
+      </div>
+
       <!-- Empty State -->
       <div id="emptyStateBox" class="ios-card p-8 text-center hidden-view" style="padding:36px 20px;text-align:center;">
         <div style="font-size:40px;margin-bottom:8px;">🐾</div>
@@ -470,7 +488,7 @@
 
     <!-- ==================== TAB 2: DAILY FEEDING LOG (每日盘点) ==================== -->
     <section id="viewDaily" class="hidden-view space-y-4">
-      <!-- Date Switcher & Quick Add Bar -->
+      <!-- Top Header & View Mode Switcher -->
       <div class="ios-card p-4" style="padding:15px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
           <div>
@@ -482,35 +500,75 @@
           </button>
         </div>
 
-        <!-- Prev Day / Date Picker / Next Day / Today -->
-        <div class="grid-safe" style="display:grid;grid-template-columns:auto 1fr auto auto;gap:6px;align-items:center;">
-          <button id="prevDayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;white-space:nowrap;">◀ 前一天</button>
-          <div class="ios-date-wrap" style="height:40px;min-height:40px;">
-            <span id="dailyDatePickerText" class="ios-date-display" style="font-weight:700;">📅 选择日期</span>
-            <input id="dailyDatePicker" type="date" aria-label="选择盘点日期">
+        <!-- Mode Toggle: Single Day vs All Dates History -->
+        <div id="dailyModeSwitch" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#F5F5F4;padding:3px;border-radius:12px;border:1px solid #E7E5E4;">
+          <button type="button" data-daily-mode="day" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;">📅 按日查看</button>
+          <button type="button" data-daily-mode="all" id="allDatesModeBtn" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;">📚 全部日期记录</button>
+        </div>
+
+        <!-- Single Day Controls (Hidden when in All-Dates mode) -->
+        <div id="singleDayControlsBox" style="margin-top:12px;">
+          <div class="grid-safe" style="display:grid;grid-template-columns:auto 1fr auto auto;gap:6px;align-items:center;">
+            <button id="prevDayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;white-space:nowrap;">◀ 前一天</button>
+            <div class="ios-date-wrap" style="height:40px;min-height:40px;">
+              <span id="dailyDatePickerText" class="ios-date-display" style="font-weight:700;">📅 选择日期</span>
+              <input id="dailyDatePicker" type="date" aria-label="选择盘点日期">
+            </div>
+            <button id="nextDayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;white-space:nowrap;">后一天 ▶</button>
+            <button id="goTodayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;color:#EA580C;border-color:#FED7AA;background:#FFF7ED;white-space:nowrap;">今天</button>
           </div>
-          <button id="nextDayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;white-space:nowrap;">后一天 ▶</button>
-          <button id="goTodayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;color:#EA580C;border-color:#FED7AA;background:#FFF7ED;white-space:nowrap;">今天</button>
+          <!-- Selected Day Summary Pills -->
+          <div id="dailySummaryBar" style="margin-top:12px;padding-top:11px;border-top:1px solid #F5F5F4;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
         </div>
 
-        <!-- Selected Day Summary Pills -->
-        <div id="dailySummaryBar" style="margin-top:12px;padding-top:11px;border-top:1px solid #F5F5F4;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
-      </div>
-
-      <!-- Selected Day Feeding Timeline -->
-      <div class="ios-card p-4" style="padding:15px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <h3 style="margin:0;font-size:15px;font-weight:800;color:#1C1917;">🍽️ 当日喂食明细</h3>
-          <span id="dailyTotalCountBadge" style="font-size:12px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;">共 0 顿</span>
+        <!-- All Dates Filter Controls (Shown when in All-Dates mode) -->
+        <div id="allDatesControlsBox" class="hidden-view" style="margin-top:12px;">
+          <div class="grid-safe" style="display:grid;grid-template-columns:1.25fr 1fr;gap:8px;">
+            <input id="logHistorySearchInput" type="search" placeholder="搜索品牌、口味或备注..." class="ios-input" style="height:38px;min-height:38px;font-size:13px;background:#FFFFFF;">
+            <select id="logHistoryCatSelect" aria-label="按分类筛选饮食记录" class="ios-input" style="height:38px;min-height:38px;font-size:13px;background:#FFFFFF;">
+              <option value="all">全部分类</option>
+              <option value="dry">🥣 猫粮</option>
+              <option value="can">🥫 罐头</option>
+              <option value="freeze">🍗 冻干</option>
+              <option value="treat">🍮 零食</option>
+              <option value="supp">💊 营养品</option>
+              <option value="med">🩺 药品</option>
+            </select>
+          </div>
         </div>
-        <div id="dailyFeedTimeline" style="display:flex;flex-direction:column;gap:9px;"></div>
       </div>
 
-      <!-- Recent 7 Days Overview -->
-      <div class="ios-card p-4" style="padding:15px;">
-        <h3 style="margin:0 0 4px 0;font-size:15px;font-weight:800;color:#1C1917;">🗓️ 最近 7 天饮食速览</h3>
-        <p style="margin:0 0 10px 0;font-size:12px;color:#78716C;">点击任意一天可快速切换查看当日详情</p>
-        <div id="recentSevenDaysList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <!-- Mode A: Single Day Subviews -->
+      <div id="dailySingleDayView">
+        <!-- Selected Day Feeding Timeline -->
+        <div class="ios-card p-4" style="padding:15px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <h3 style="margin:0;font-size:15px;font-weight:800;color:#1C1917;">🍽️ 当日喂食明细</h3>
+            <span id="dailyTotalCountBadge" style="font-size:12px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;">共 0 次记录</span>
+          </div>
+          <div id="dailyFeedTimeline" style="display:flex;flex-direction:column;gap:9px;"></div>
+        </div>
+
+        <!-- Recent 7 Days Overview -->
+        <div class="ios-card p-4" style="padding:15px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <h3 style="margin:0;font-size:15px;font-weight:800;color:#1C1917;">🗓️ 最近 7 天饮食速览</h3>
+            <button id="jumpToAllDatesBtn" type="button" style="font-size:12px;font-weight:700;color:#EA580C;background:none;border:none;padding:0;cursor:pointer;">查看全部历史 ▶</button>
+          </div>
+          <p style="margin:0 0 10px 0;font-size:12px;color:#78716C;">点击任意一天可快速切换查看当日详情</p>
+          <div id="recentSevenDaysList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+
+      <!-- Mode B: All Dates Grouped Archive View -->
+      <div id="dailyAllDatesView" class="hidden-view">
+        <div class="ios-card p-4" style="padding:15px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h3 style="margin:0;font-size:15px;font-weight:800;color:#1C1917;">📚 全部日期饮食归档</h3>
+            <span id="allDatesStatsBadge" style="font-size:12px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;">共 0 天 · 0 条</span>
+          </div>
+          <div id="allDatesArchiveList" style="display:flex;flex-direction:column;gap:14px;"></div>
+        </div>
       </div>
     </section>
 
@@ -1326,6 +1384,11 @@
         brandFilter: 'all',
         sortBy: 'exp_asc',
         searchQuery: '',
+        pantryPage: 1,
+        pantryPageSize: 6,
+        dailyViewMode: 'day', // 'day' | 'all'
+        logSearchQuery: '',
+        logCatFilter: 'all',
         formCat: 'dry',
         formPal: '',
         formImage: '',
@@ -1390,6 +1453,9 @@
         if (typeof pSet.showImages === 'boolean') state.settings.showImages = pSet.showImages;
         if (pSet.defaultCurrency === 'JPY' || pSet.defaultCurrency === 'CNY') {
           state.settings.defaultCurrency = pSet.defaultCurrency;
+        }
+        if (typeof pSet.pantryPageSize === 'number' && pSet.pantryPageSize > 0) {
+          state.pantryPageSize = pSet.pantryPageSize;
         }
       }
 
@@ -1708,15 +1774,45 @@
 
         var listEl = document.getElementById('pantryList');
         var emptyEl = document.getElementById('emptyStateBox');
+        var pagerEl = document.getElementById('pantryPaginationBar');
 
         if (filtered.length === 0) {
           listEl.innerHTML = '';
           emptyEl.classList.remove('hidden-view');
+          pagerEl.classList.add('hidden-view');
           return;
         }
         emptyEl.classList.add('hidden-view');
 
-        var cardsHtml = filtered.map(function (it) {
+        var pageSize = Number(state.pantryPageSize) || 6;
+        var totalItems = filtered.length;
+        var totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+        if (state.pantryPage > totalPages) state.pantryPage = totalPages;
+        if (state.pantryPage < 1) state.pantryPage = 1;
+
+        var startIdx = (state.pantryPage - 1) * pageSize;
+        var pagedItems = filtered.slice(startIdx, startIdx + pageSize);
+
+        // Show pagination bar whenever total items > 6 or multiple pages exist
+        if (totalItems > 6 || totalPages > 1) {
+          pagerEl.classList.remove('hidden-view');
+          document.getElementById('pageInfoText').textContent =
+            '第 ' + state.pantryPage + ' / ' + totalPages + ' 页 (共 ' + totalItems + ' 款)';
+          var prevBtn = document.getElementById('prevPageBtn');
+          var nextBtn = document.getElementById('nextPageBtn');
+          prevBtn.disabled = (state.pantryPage <= 1);
+          prevBtn.style.opacity = state.pantryPage <= 1 ? '0.45' : '1';
+          nextBtn.disabled = (state.pantryPage >= totalPages);
+          nextBtn.style.opacity = state.pantryPage >= totalPages ? '0.45' : '1';
+          var sizeSel = document.getElementById('pageSizeSelect');
+          if (sizeSel && String(sizeSel.value) !== String(pageSize)) {
+            sizeSel.value = String(pageSize);
+          }
+        } else {
+          pagerEl.classList.add('hidden-view');
+        }
+
+        var cardsHtml = pagedItems.map(function (it) {
           var ev = evaluateItem(it);
           var catInfo = CATEGORIES[it.category] || CATEGORIES.dry;
           var badgeBg = '#DCFCE7';
@@ -1976,6 +2072,105 @@
           );
         }
         document.getElementById('recentSevenDaysList').innerHTML = sevenHtml.join('');
+
+        // Sync Mode Switcher UI (Single Day vs All Dates)
+        var isAllMode = (state.dailyViewMode === 'all');
+        var modeBtns = document.querySelectorAll('#dailyModeSwitch [data-daily-mode]');
+        for (var m = 0; m < modeBtns.length; m++) {
+          var mKey = modeBtns[m].getAttribute('data-daily-mode');
+          var active = (mKey === state.dailyViewMode);
+          modeBtns[m].style.background = active ? '#1C1917' : 'transparent';
+          modeBtns[m].style.color = active ? '#FFFFFF' : '#57534E';
+        }
+        var allBtn = document.getElementById('allDatesModeBtn');
+        if (allBtn) {
+          allBtn.textContent = '📚 全部日期记录 (' + state.logs.length + ')';
+        }
+
+        if (isAllMode) {
+          document.getElementById('singleDayControlsBox').classList.add('hidden-view');
+          document.getElementById('dailySingleDayView').classList.add('hidden-view');
+          document.getElementById('allDatesControlsBox').classList.remove('hidden-view');
+          document.getElementById('dailyAllDatesView').classList.remove('hidden-view');
+          renderAllDatesArchive();
+        } else {
+          document.getElementById('singleDayControlsBox').classList.remove('hidden-view');
+          document.getElementById('dailySingleDayView').classList.remove('hidden-view');
+          document.getElementById('allDatesControlsBox').classList.add('hidden-view');
+          document.getElementById('dailyAllDatesView').classList.add('hidden-view');
+        }
+      }
+
+      function renderAllDatesArchive() {
+        var q = (state.logSearchQuery || '').trim().toLowerCase();
+        var catF = state.logCatFilter || 'all';
+
+        var matched = state.logs.filter(function (lg) {
+          if (catF !== 'all' && lg.category !== catF) return false;
+          if (q) {
+            var hay = [lg.date, lg.mealSlot, lg.brand, lg.name, lg.amount, lg.note].join(' ').toLowerCase();
+            if (hay.indexOf(q) === -1) return false;
+          }
+          return true;
+        });
+
+        var byDate = {};
+        matched.forEach(function (lg) {
+          var d = lg.date || '未知日期';
+          if (!byDate[d]) byDate[d] = [];
+          byDate[d].push(lg);
+        });
+
+        var sortedDates = Object.keys(byDate).sort(function (a, b) {
+          return String(b).localeCompare(String(a));
+        });
+
+        document.getElementById('allDatesStatsBadge').textContent =
+          '共 ' + sortedDates.length + ' 天 · ' + matched.length + ' 条记录';
+
+        var listEl = document.getElementById('allDatesArchiveList');
+        if (sortedDates.length === 0) {
+          listEl.innerHTML =
+            '<div style="padding:28px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#78716C;font-size:13px;">' +
+              '🐾 没有找到匹配的喂食记录' +
+            '</div>';
+          return;
+        }
+
+        listEl.innerHTML = sortedDates.map(function (dStr) {
+          var items = byDate[dStr];
+          var diff = diffDaysFromToday(dStr);
+          var rel = diff === 0 ? ' (今天)' : (diff === -1 ? ' (昨天)' : '');
+          var dayHeader = dStr + ' ' + getWeekdayName(dStr) + rel;
+
+          var rowsHtml = items.map(function (lg) {
+            var catInfo = CATEGORIES[lg.category] || CATEGORIES.dry;
+            return (
+              '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;background:#FFFFFF;border:1px solid #E7E5E4;">' +
+                '<div style="min-width:0;flex:1;">' +
+                  '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">' +
+                    '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 7px;border-radius:6px;">' + escapeHtml(lg.mealSlot || '🍽️ 投喂') + '</span>' +
+                    '<span style="font-size:11px;font-weight:700;color:#44403C;background:#F5F5F4;padding:1px 6px;border-radius:6px;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
+                    '<span style="font-size:11px;font-weight:800;color:#15803D;background:#DCFCE7;padding:1px 7px;border-radius:6px;">' + escapeHtml(lg.amount || '1份') + '</span>' +
+                  '</div>' +
+                  '<div style="font-size:13px;font-weight:800;color:#1C1917;">[' + escapeHtml(lg.brand) + '] ' + escapeHtml(lg.name) + '</div>' +
+                  (lg.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">💬 ' + escapeHtml(lg.note) + '</div>' : '') +
+                '</div>' +
+                '<button type="button" data-del-log="' + escapeHtml(lg.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;">删除</button>' +
+              '</div>'
+            );
+          }).join('');
+
+          return (
+            '<div style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;">' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+                '<button type="button" data-jump-date="' + escapeHtml(dStr) + '" style="background:none;border:none;padding:0;font-size:14px;font-weight:800;color:#1C1917;cursor:pointer;text-align:left;">📅 ' + escapeHtml(dayHeader) + '</button>' +
+                '<span style="font-size:11px;font-weight:700;color:#78716C;">共 ' + items.length + ' 次</span>' +
+              '</div>' +
+              '<div style="display:flex;flex-direction:column;gap:7px;">' + rowsHtml + '</div>' +
+            '</div>'
+          );
+        }).join('');
       }
 
       function populateFeedStockDropdown(selectedItemId) {
@@ -2633,8 +2828,51 @@
           var btn = ev.target.closest('[data-jump-date]');
           if (!btn) return;
           state.selectedLogDate = btn.getAttribute('data-jump-date');
+          state.dailyViewMode = 'day';
           renderDailyView();
           window.scrollTo(0, 0);
+        });
+
+        document.getElementById('dailyModeSwitch').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-daily-mode]');
+          if (!btn) return;
+          state.dailyViewMode = btn.getAttribute('data-daily-mode');
+          renderDailyView();
+        });
+
+        document.getElementById('jumpToAllDatesBtn').addEventListener('click', function () {
+          state.dailyViewMode = 'all';
+          renderDailyView();
+          window.scrollTo(0, 0);
+        });
+
+        document.getElementById('logHistorySearchInput').addEventListener('input', function () {
+          state.logSearchQuery = this.value || '';
+          renderAllDatesArchive();
+        });
+
+        document.getElementById('logHistoryCatSelect').addEventListener('change', function () {
+          state.logCatFilter = this.value || 'all';
+          renderAllDatesArchive();
+        });
+
+        document.getElementById('allDatesArchiveList').addEventListener('click', function (ev) {
+          var delBtn = ev.target.closest('[data-del-log]');
+          if (delBtn) {
+            var logId = delBtn.getAttribute('data-del-log');
+            state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
+            saveToStorage();
+            renderDailyView();
+            showToast('已删除该条喂食记录');
+            return;
+          }
+          var jumpBtn = ev.target.closest('[data-jump-date]');
+          if (jumpBtn) {
+            state.selectedLogDate = jumpBtn.getAttribute('data-jump-date');
+            state.dailyViewMode = 'day';
+            renderDailyView();
+            window.scrollTo(0, 0);
+          }
         });
 
         document.getElementById('feedStockSelect').addEventListener('change', function () {
@@ -2720,6 +2958,7 @@
         for (var i = 0; i < statusCards.length; i++) {
           statusCards[i].addEventListener('click', function () {
             state.statusFilter = this.getAttribute('data-status-filter');
+            state.pantryPage = 1;
             renderAll();
           });
         }
@@ -2729,20 +2968,24 @@
           var btn = ev.target.closest('[data-cat]');
           if (!btn) return;
           state.catFilter = btn.getAttribute('data-cat');
+          state.pantryPage = 1;
           renderAll();
         });
 
-        // Search, Brand, Sort
+        // Search, Brand, Sort & Pagination
         document.getElementById('searchInput').addEventListener('input', function () {
           state.searchQuery = this.value || '';
+          state.pantryPage = 1;
           renderPantryList();
         });
         document.getElementById('brandFilterSelect').addEventListener('change', function () {
           state.brandFilter = this.value;
+          state.pantryPage = 1;
           renderPantryList();
         });
         document.getElementById('sortSelect').addEventListener('change', function () {
           state.sortBy = this.value;
+          state.pantryPage = 1;
           renderPantryList();
         });
         document.getElementById('resetFiltersBtn').addEventListener('click', function () {
@@ -2750,8 +2993,29 @@
           state.catFilter = 'all';
           state.brandFilter = 'all';
           state.searchQuery = '';
+          state.pantryPage = 1;
           document.getElementById('searchInput').value = '';
           renderAll();
+        });
+
+        document.getElementById('prevPageBtn').addEventListener('click', function () {
+          if (state.pantryPage > 1) {
+            state.pantryPage -= 1;
+            renderPantryList();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+        document.getElementById('nextPageBtn').addEventListener('click', function () {
+          state.pantryPage += 1;
+          renderPantryList();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        document.getElementById('pageSizeSelect').addEventListener('change', function () {
+          state.pantryPageSize = parseInt(this.value, 10) || 6;
+          state.settings.pantryPageSize = state.pantryPageSize;
+          state.pantryPage = 1;
+          saveToStorage();
+          renderPantryList();
         });
 
         // Pantry List Card Delegated Actions (-1, +1, open, edit, delete)
