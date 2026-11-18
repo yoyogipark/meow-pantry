@@ -289,6 +289,35 @@
       display: none !important;
     }
 
+    body:not(.is-edit-mode) .edit-only {
+      display: none !important;
+    }
+
+    .mode-switch-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      border: 1.5px solid #E7E5E4;
+      background: #FFFFFF;
+      color: #57534E;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    body.is-edit-mode .mode-switch-pill {
+      background: #FFF7ED;
+      border-color: #EA580C;
+      color: #C2410C;
+      box-shadow: 0 2px 8px rgba(234, 88, 12, 0.15);
+    }
+
     .pill-chip {
       white-space: nowrap;
       padding: 7px 14px;
@@ -376,10 +405,16 @@
           <p id="headerSubtitle" class="text-xs text-stone-500" style="margin:2px 0 0 0;font-size:12px;color:#78716C;">本地离线存储 · 保质期与品牌管家</p>
         </div>
       </div>
-      <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary px-4 py-2.5" style="padding:10px 15px;white-space:nowrap;flex-shrink:0;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        <span>记囤货</span>
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        <label for="globalEditModeToggle" class="mode-switch-pill" title="勾选后开启增删改操作，平时关闭防误触">
+          <input id="globalEditModeToggle" type="checkbox" style="width:15px;height:15px;accent-color:#EA580C;margin:0;cursor:pointer;">
+          <span id="globalEditModeText">编辑模式</span>
+        </label>
+        <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary edit-only" style="height:38px;min-height:38px;padding:0 13px;font-size:13px;white-space:nowrap;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span>记囤货</span>
+        </button>
+      </div>
     </header>
 
     <!-- Sample Data Notice Banner -->
@@ -388,7 +423,7 @@
         <div class="text-xs text-amber-900" style="font-size:12px;color:#78350F;">
           <strong>示例体验中：</strong>已预置 4 条猫粮/罐头/冻干示例，可直接增减库存或录入你的囤货。
         </div>
-        <button id="clearSamplesBtn" type="button" class="text-xs font-bold text-amber-800 bg-amber-200/70 px-2.5 py-1.5 rounded-lg" style="border:none;padding:5px 10px;border-radius:8px;background:#FDE68A;color:#92400E;font-size:12px;font-weight:700;cursor:pointer;">
+        <button id="clearSamplesBtn" type="button" class="edit-only" class="text-xs font-bold text-amber-800 bg-amber-200/70 px-2.5 py-1.5 rounded-lg" style="border:none;padding:5px 10px;border-radius:8px;background:#FDE68A;color:#92400E;font-size:12px;font-weight:700;cursor:pointer;">
           一键清空示例
         </button>
       </div>
@@ -488,7 +523,7 @@
         <p id="emptyStateDesc" class="text-xs text-stone-500 mb-4" style="margin:0 0 16px 0;font-size:13px;color:#78716C;">点击右上角「记囤货」添加猫粮、罐头或冻干，自动推算过期日。</p>
         <div class="flex justify-center gap-2" style="display:flex;justify-content:center;gap:8px;">
           <button id="resetFiltersBtn" type="button" class="ios-btn ios-btn-secondary px-4">重置筛选</button>
-          <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-primary px-4">+ 立即录入</button>
+          <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-primary px-4 edit-only">+ 立即录入</button>
         </div>
       </div>
     </main>
@@ -502,7 +537,7 @@
             <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📅 每日饮食盘点</h2>
             <p id="dailyDateLabel" style="margin:2px 0 0 0;font-size:12px;color:#78716C;white-space:nowrap;">查看主子每天吃了什么</p>
           </div>
-          <button id="openQuickFeedBtn" type="button" class="ios-btn ios-btn-primary" style="min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap;">
+          <button id="openQuickFeedBtn" type="button" class="ios-btn ios-btn-primary edit-only" style="min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap;">
             <span>＋ 记一笔喂食</span>
           </button>
         </div>
@@ -655,7 +690,7 @@
         </div>
         <div class="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between" style="margin-top:12px;padding-top:12px;border-top:1px solid #F5F5F4;display:flex;justify-content:space-between;align-items:center;">
           <span id="storageStatusText" class="text-xs text-stone-400" style="font-size:12px;color:#A8A29E;">本地双引擎存储已就绪</span>
-          <button id="clearAllDataBtn" type="button" class="text-xs font-semibold text-red-600 bg-transparent border-0 cursor-pointer" style="font-size:12px;color:#DC2626;background:none;border:none;cursor:pointer;">清空全部数据</button>
+          <button id="clearAllDataBtn" type="button" class="text-xs font-semibold text-red-600 bg-transparent border-0 cursor-pointer edit-only" style="font-size:12px;color:#DC2626;background:none;border:none;cursor:pointer;">清空全部数据</button>
         </div>
       </div>
 
@@ -829,10 +864,10 @@
           </div>
         </div>
 
-        <!-- Opened Status Toggle (2 Columns on 1 Row when expanded) -->
+        <!-- Opened Status / Finished Batch Dates -->
         <div style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;overflow:hidden;">
-          <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-            <span style="font-size:13px;font-weight:700;color:#1C1917;">🔓 当前有 1 件已拆封（单独追踪开封保鲜期，其余仍为未拆）</span>
+          <label id="openedCheckboxLabelWrap" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+            <span id="openedCheckboxTitle" style="font-size:13px;font-weight:700;color:#1C1917;">🔓 当前有 1 件已拆封（单独追踪开封保鲜期，其余仍为未拆）</span>
             <input id="fieldIsOpened" type="checkbox" style="width:20px;height:20px;accent-color:#EA580C;flex-shrink:0;">
           </label>
           <div id="openedExtraFields" class="grid-safe hidden-view" style="margin-top:10px;display:grid;grid-template-columns:1.18fr 1fr;gap:8px;">
@@ -840,9 +875,13 @@
               <label for="fieldOpenedDate" style="display:block;font-size:11px;color:#57534E;margin-bottom:4px;">开封日期</label>
               <div class="ios-date-wrap" style="height:38px;min-height:38px;"><span id="fieldOpenedDateText" class="ios-date-display">选择日期</span><input id="fieldOpenedDate" type="date"></div>
             </div>
-            <div>
+            <div id="openLimitColWrap">
               <label for="fieldOpenLimit" style="display:block;font-size:11px;color:#57534E;margin-bottom:4px;">开封后建议吃完(天)</label>
-              <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input" style="background:#FFF;min-height:38px;padding:6px 10px;font-size:13px;">
+              <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input" style="background:#FFF;height:38px;min-height:38px;padding:6px 10px;font-size:13px;">
+            </div>
+            <div id="finishedDateColWrap" class="hidden-view">
+              <label for="fieldFinishedDate" style="display:block;font-size:11px;color:#57534E;margin-bottom:4px;">吃完日期（自动算耗时天数）</label>
+              <div class="ios-date-wrap" style="height:38px;min-height:38px;"><span id="fieldFinishedDateText" class="ios-date-display">选择日期</span><input id="fieldFinishedDate" type="date"></div>
             </div>
           </div>
         </div>
@@ -1192,8 +1231,17 @@
         return parts[0] + '年' + parseInt(parts[1], 10) + '月' + parseInt(parts[2], 10) + '日';
       }
 
+      function calcConsumeDays(openStr, finishStr) {
+        var dOpen = parseLocalDate(openStr);
+        var dFin = parseLocalDate(finishStr);
+        if (!dOpen || !dFin) return null;
+        var diff = Math.round((dFin.getTime() - dOpen.getTime()) / 86400000);
+        if (diff < 0) return null;
+        return diff === 0 ? 1 : diff;
+      }
+
       function syncAllDateDisplays() {
-        var ids = ['dailyDatePicker', 'fieldProdDate', 'fieldExpDate', 'fieldOpenedDate', 'feedDateInput'];
+        var ids = ['dailyDatePicker', 'fieldProdDate', 'fieldExpDate', 'fieldOpenedDate', 'fieldFinishedDate', 'feedDateInput'];
         for (var i = 0; i < ids.length; i++) {
           var inp = document.getElementById(ids[i]);
           var txt = document.getElementById(ids[i] + 'Text');
@@ -1394,6 +1442,7 @@
         brandFilter: 'all',
         sortBy: 'exp_asc',
         searchQuery: '',
+        editMode: false, // Default read-only mode on open to prevent accidental edits
         pantryDisplayMode: 'card', // 'card' | 'compact'
         pantryPage: 1,
         pantryPageSize: 6,
@@ -1553,9 +1602,13 @@
         var curQty = Number(target.quantity) || 0;
         var nextRem = Math.max(0, Math.round((curQty - used) * 100) / 100);
         var today = getTodayStr();
+        var unitOpenedDate = target.openedDate || target.archivedOpenedDate || '';
 
         target.eatenCount = Math.round(((Number(target.eatenCount) || 0) + used) * 100) / 100;
         target.lastEatenDate = today;
+        if (unitOpenedDate && !target.archivedOpenedDate) {
+          target.archivedOpenedDate = unitOpenedDate;
+        }
 
         // Check if there is already a linked finished archive card for this batch
         var linkedArchive = null;
@@ -1575,6 +1628,9 @@
             linkedArchive.consumedCount = target.eatenCount;
             linkedArchive.lastQuantity = target.eatenCount;
             linkedArchive.finishedDate = today;
+            if (unitOpenedDate && !linkedArchive.archivedOpenedDate) {
+              linkedArchive.archivedOpenedDate = unitOpenedDate;
+            }
           } else {
             var archiveCopy = Object.assign({}, target, {
               id: 'empty_' + target.id,
@@ -1582,23 +1638,26 @@
               quantity: 0,
               consumedCount: target.eatenCount,
               lastQuantity: target.eatenCount,
+              archivedOpenedDate: unitOpenedDate,
               finishedDate: today,
               isOpened: false,
-              openedDate: ''
+              openedDate: unitOpenedDate
             });
             state.items.push(archiveCopy);
           }
         } else {
-          // Final unit eaten! Remove any temporary linkedArchive so the batch itself becomes the single complete archive record
+          // Final unit eaten! Keep any first opened date from linkedArchive if present
+          var finalOpenDate = unitOpenedDate || (linkedArchive && (linkedArchive.archivedOpenedDate || linkedArchive.openedDate)) || '';
           if (linkedArchive) {
             state.items = state.items.filter(function (x) { return x.id !== linkedArchive.id; });
           }
           target.lastQuantity = target.eatenCount;
           target.consumedCount = target.eatenCount;
+          target.archivedOpenedDate = finalOpenDate;
+          target.openedDate = finalOpenDate;
           target.finishedDate = today;
           target.quantity = 0;
           target.isOpened = false;
-          target.openedDate = '';
         }
       }
 
@@ -1792,7 +1851,7 @@
               '<strong>🩺 用药/驱虫备忘：</strong>[' + escapeHtml(topRem.brand) + '] ' + escapeHtml(topRem.name) +
               ' · 上次 ' + escapeHtml(topRem.date) + ' · <span style="font-weight:800;color:' + toneColor + ';">下次 ' + statusTxt + '</span>' +
             '</div>' +
-            '<button type="button" data-dismiss-rem="' + escapeHtml(topRem.id) + '" style="border:none;padding:4px 9px;border-radius:7px;background:#DCFCE7;color:#15803D;font-size:11px;font-weight:700;cursor:pointer;">✓ 已知晓/完成</button>' +
+            '<button type="button" class="edit-only" data-dismiss-rem="' + escapeHtml(topRem.id) + '" style="border:none;padding:4px 9px;border-radius:7px;background:#DCFCE7;color:#15803D;font-size:11px;font-weight:700;cursor:pointer;">✓ 已知晓/完成</button>' +
           '</div>';
       }
 
@@ -1806,7 +1865,21 @@
         }
       }
 
+      function syncEditModeUI() {
+        var chk = document.getElementById('globalEditModeToggle');
+        var lbl = document.getElementById('globalEditModeText');
+        if (chk) chk.checked = Boolean(state.editMode);
+        if (state.editMode) {
+          document.body.classList.add('is-edit-mode');
+          if (lbl) lbl.textContent = '编辑中';
+        } else {
+          document.body.classList.remove('is-edit-mode');
+          if (lbl) lbl.textContent = '编辑模式';
+        }
+      }
+
       function renderHeaderSubtitle() {
+        syncEditModeUI();
         var activeCount = 0;
         var brandsSet = {};
         state.items.forEach(function (it) {
@@ -1817,7 +1890,7 @@
         });
         var brandTotal = Object.keys(brandsSet).length;
         document.getElementById('headerSubtitle').textContent =
-          '在库 ' + activeCount + ' 款口粮 · 涵盖 ' + brandTotal + ' 个品牌 · 本地离线已保存';
+          '在库 ' + activeCount + ' 款 · ' + brandTotal + ' 个品牌 · ' + (state.editMode ? '✏️ 编辑模式已开启' : '🔒 只读浏览模式');
       }
 
       function renderStatusCounts() {
@@ -2017,7 +2090,7 @@
                   '</div>' +
                   '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
                     '<span style="background:#DCFCE7;color:#15803D;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;">累计吃 ' + grp.totalConsumed + unitStr + '</span>' +
-                    '<button type="button" data-action="restock-new" data-id="' + escapeHtml(rep.id) + '" style="padding:4px 8px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>' +
+                    '<button type="button" data-action="restock-new" data-id="' + escapeHtml(rep.id) + '" class="edit-only" style="padding:4px 8px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>' +
                   '</div>' +
                 '</div>'
               );
@@ -2045,30 +2118,62 @@
                 realTag +
               '</button>';
 
+            var totalDaysSum = 0;
+            var totalUnitsWithDays = 0;
+
             var batchRowsHtml = grp.batches.map(function (bItem, bIdx) {
               var bUsed = Number(bItem.consumedCount) || Number(bItem.lastQuantity) || 1;
               var priceTxt = bItem.price ? (' · ' + formatMoney(bItem.price, bItem.currency)) : '';
-              var finishTxt = bItem.finishedDate ? (' · 吃完于 ' + escapeHtml(bItem.finishedDate)) : '';
+              var bOpen = bItem.archivedOpenedDate || bItem.openedDate || '';
+              var bFin = bItem.finishedDate || '';
+              var cDays = calcConsumeDays(bOpen, bFin);
+              if (cDays !== null) {
+                totalDaysSum += cDays;
+                totalUnitsWithDays += bUsed;
+              }
+
+              var durationBadgeHtml = '';
+              if (cDays !== null) {
+                durationBadgeHtml = '<span style="font-size:11px;font-weight:800;color:#9A3412;background:#FFEDD5;padding:1px 7px;border-radius:6px;">⏱️ 共吃 ' + cDays + ' 天</span>';
+              }
+
+              var openFinishLine = '';
+              if (bOpen && bFin) {
+                openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:#44403C;font-weight:600;">🔓 开封 ' + escapeHtml(bOpen) + ' → ✓ 吃完 ' + escapeHtml(bFin) + '</div>';
+              } else if (bFin) {
+                openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:#57534E;">✓ 吃完于 ' + escapeHtml(bFin) + ' <span style="color:#A8A29E;font-size:11px;">(点编辑补开封日可算耗时)</span></div>';
+              } else if (bOpen) {
+                openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:#57534E;">🔓 开封于 ' + escapeHtml(bOpen) + ' <span style="color:#A8A29E;font-size:11px;">(点编辑补吃完日可算耗时)</span></div>';
+              } else {
+                openFinishLine = '<div class="edit-only" style="margin-top:3px;font-size:11px;color:#A8A29E;">💡 点右侧「编辑」可补填开封日与吃完日，自动计算吃了多少天</div>';
+              }
+
               return (
                 '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:#FFFFFF;border:1px solid #E7E5E4;">' +
                   '<div style="min-width:0;flex:1;">' +
                     '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
                       '<span style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:1px 6px;border-radius:5px;">批次 #' + (grp.batches.length - bIdx) + '</span>' +
                       '<strong style="font-size:12.5px;color:#15803D;">吃完 ' + bUsed + ' ' + unitStr + '</strong>' +
-                      '<span style="font-size:11px;color:#78716C;">' + escapeHtml(finishTxt) + escapeHtml(priceTxt) + '</span>' +
+                      durationBadgeHtml +
+                      (priceTxt ? '<span style="font-size:11px;color:#78716C;">' + escapeHtml(priceTxt) + '</span>' : '') +
                     '</div>' +
-                    '<div style="margin-top:3px;font-size:11px;color:#78716C;">' +
+                    openFinishLine +
+                    '<div style="margin-top:2px;font-size:11px;color:#78716C;">' +
                       '生产日 ' + escapeHtml(bItem.prodDate || '未标') + ' · 到期日 ' + escapeHtml(bItem.expDate || '—') +
                       (bItem.batchCode ? (' · ' + escapeHtml(bItem.batchCode)) : '') +
                     '</div>' +
                   '</div>' +
-                  '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
+                  '<div class="edit-only" style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
                     '<button type="button" data-action="edit" data-id="' + escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid #E7E5E4;background:#FAFAF9;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
                     '<button type="button" data-action="delete" data-id="' + escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
                   '</div>' +
                 '</div>'
               );
             }).join('');
+
+            var avgTxt = totalUnitsWithDays > 0
+              ? (' · ⚡ 平均每' + unitStr + '吃 ' + Math.max(1, Math.round(totalDaysSum / totalUnitsWithDays)) + ' 天')
+              : '';
 
             return (
               '<article class="ios-card p-4" style="padding:15px;">' +
@@ -2085,7 +2190,7 @@
                     '</div>' +
                     '<h3 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;line-height:1.35;">' + escapeHtml(rep.name) + '</h3>' +
                     '<div style="margin-top:4px;font-size:12px;color:#78716C;">' +
-                      (rep.spec ? ('规格 ' + escapeHtml(rep.spec) + ' · ') : '') + '共归档 ' + grp.batches.length + ' 个历史批次' +
+                      (rep.spec ? ('规格 ' + escapeHtml(rep.spec) + ' · ') : '') + '共归档 ' + grp.batches.length + ' 个历史批次' + avgTxt +
                     '</div>' +
                   '</div>' +
                 '</div>' +
@@ -2096,8 +2201,8 @@
                   '<div style="display:flex;flex-direction:column;gap:6px;">' + batchRowsHtml + '</div>' +
                 '</div>' +
 
-                '<!-- Footer with Single Restock Button -->' +
-                '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+                '<!-- Footer with Single Restock Button (Shown in Edit Mode) -->' +
+                '<div class="edit-only" style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
                   '<span style="font-size:11px;color:#78716C;">点右侧可带入同款资料录入新买的批次</span>' +
                   '<button type="button" data-action="restock-new" data-id="' + escapeHtml(rep.id) + '" style="padding:7px 14px;border-radius:10px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">＋ 同款复购入库</button>' +
                 '</div>' +
@@ -2184,10 +2289,10 @@
                     ) +
                   '</span>' +
                   (ev.status !== 'empty'
-                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" title="记喂食" style="padding:4px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;">喂</button>'
-                    : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" title="同款复购" style="padding:4px 7px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>'
+                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" class="edit-only" title="记喂食" style="padding:4px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;">喂</button>'
+                    : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" class="edit-only" title="同款复购" style="padding:4px 7px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>'
                   ) +
-                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" style="padding:4px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
+                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:4px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
                 '</div>' +
               '</div>'
             );
@@ -2326,7 +2431,7 @@
                       )
                   ) +
                 '</div>' +
-                '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' +
+                '<div class="edit-only" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' +
                   (ev.status !== 'empty'
                     ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;">🐾 记喂食</button>' +
                       '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FFFFFF') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;">' +
@@ -2448,7 +2553,7 @@
                   (lg.note ? '<div style="margin-top:3px;font-size:12px;color:#57534E;">💬 ' + escapeHtml(lg.note) + '</div>' : '') +
                   (lg.nextDueDate ? '<div style="margin-top:3px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒日：' + escapeHtml(lg.nextDueDate) + '</div>' : '') +
                 '</div>' +
-                '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
+                '<div class="edit-only" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
                   '<button type="button" data-edit-log="' + escapeHtml(lg.id) + '" style="padding:5px 8px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">编辑</button>' +
                   '<button type="button" data-del-log="' + escapeHtml(lg.id) + '" aria-label="删除此条喂食记录" style="padding:5px 8px;border-radius:8px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
                 '</div>' +
@@ -2567,7 +2672,7 @@
                   (lg.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">💬 ' + escapeHtml(lg.note) + '</div>' : '') +
                   (lg.nextDueDate ? '<div style="margin-top:2px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒：' + escapeHtml(lg.nextDueDate) + '</div>' : '') +
                 '</div>' +
-                '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
+                '<div class="edit-only" style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
                   '<button type="button" data-edit-log="' + escapeHtml(lg.id) + '" style="padding:4px 7px;border-radius:7px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">编辑</button>' +
                   '<button type="button" data-del-log="' + escapeHtml(lg.id) + '" style="padding:4px 7px;border-radius:7px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
                 '</div>' +
@@ -2963,8 +3068,33 @@
       }
 
       function syncOpenedFieldsVisibility() {
+        var qtyVal = Number(document.getElementById('fieldQty').value);
+        var isEditingFinished = Boolean(document.getElementById('fieldId').value) && qtyVal <= 0;
         var checked = document.getElementById('fieldIsOpened').checked;
         var box = document.getElementById('openedExtraFields');
+        var titleEl = document.getElementById('openedCheckboxTitle');
+        var chkEl = document.getElementById('fieldIsOpened');
+        var limitCol = document.getElementById('openLimitColWrap');
+        var finCol = document.getElementById('finishedDateColWrap');
+
+        if (isEditingFinished) {
+          titleEl.textContent = '📦 历史批次开封日与吃完日（自动计算一共吃了多少天）';
+          chkEl.classList.add('hidden-view');
+          box.classList.remove('hidden-view');
+          limitCol.classList.add('hidden-view');
+          finCol.classList.remove('hidden-view');
+          if (!document.getElementById('fieldFinishedDate').value) {
+            document.getElementById('fieldFinishedDate').value = getTodayStr();
+          }
+          syncAllDateDisplays();
+          return;
+        }
+
+        titleEl.textContent = '🔓 当前有 1 件已拆封（单独追踪开封保鲜期，其余仍为未拆）';
+        chkEl.classList.remove('hidden-view');
+        limitCol.classList.remove('hidden-view');
+        finCol.classList.add('hidden-view');
+
         if (checked) {
           box.classList.remove('hidden-view');
           if (!document.getElementById('fieldOpenedDate').value) {
@@ -3005,6 +3135,7 @@
         document.getElementById('fieldExpDate').value = addShelfLife(getTodayStr(), 18, 'months');
         document.getElementById('fieldIsOpened').checked = false;
         document.getElementById('fieldOpenedDate').value = '';
+        document.getElementById('fieldFinishedDate').value = '';
         document.getElementById('fieldLocation').value = '';
         document.getElementById('fieldBatch').value = '';
         document.getElementById('fieldNotes').value = '';
@@ -3045,7 +3176,8 @@
         document.getElementById('fieldShelfUnit').value = item.shelfLifeUnit || 'months';
         document.getElementById('fieldExpDate').value = item.expDate || '';
         document.getElementById('fieldIsOpened').checked = Boolean(item.isOpened);
-        document.getElementById('fieldOpenedDate').value = item.openedDate || '';
+        document.getElementById('fieldOpenedDate').value = item.openedDate || item.archivedOpenedDate || '';
+        document.getElementById('fieldFinishedDate').value = item.finishedDate || '';
         document.getElementById('fieldOpenLimit').value = String(item.openDaysLimit || 45);
         document.getElementById('fieldLocation').value = item.location || '';
         document.getElementById('fieldBatch').value = item.batchCode || '';
@@ -3089,6 +3221,7 @@
 
         document.getElementById('fieldIsOpened').checked = false;
         document.getElementById('fieldOpenedDate').value = '';
+        document.getElementById('fieldFinishedDate').value = '';
         document.getElementById('fieldOpenLimit').value = String(item.openDaysLimit || (CATEGORIES[item.category] || CATEGORIES.dry).defaultOpenDays || 45);
         document.getElementById('fieldLocation').value = item.location || '';
         document.getElementById('fieldBatch').value = '';
@@ -3461,6 +3594,13 @@
           showToast(nextDue ? ('已记录喂食，将于 ' + nextDue + ' 提醒下次用药') : ('已记入 ' + fDate + ' 饮食盘点'));
         });
 
+        // Global Read-Only vs Edit Mode Toggle
+        document.getElementById('globalEditModeToggle').addEventListener('change', function () {
+          state.editMode = Boolean(this.checked);
+          renderHeaderSubtitle();
+          showToast(state.editMode ? '✏️ 已进入编辑模式，可增删改库存与喂食记录' : '🔒 已锁定为只读浏览模式，防止误触');
+        });
+
         // Open/Close Add Modal
         document.getElementById('openAddModalBtn').addEventListener('click', openAddModal);
         document.getElementById('emptyAddBtn').addEventListener('click', openAddModal);
@@ -3544,11 +3684,14 @@
           renderPantryList();
         });
 
-        // Pantry List Card Delegated Actions (-1, +1, open, edit, delete)
+        // Pantry List Card Delegated Actions (Preview image always allowed; mutations require Edit Mode)
         document.getElementById('pantryList').addEventListener('click', function (ev) {
           var btn = ev.target.closest('[data-action]');
           if (!btn) return;
           var action = btn.getAttribute('data-action');
+          if (action !== 'preview-img' && !state.editMode) {
+            return;
+          }
           var id = btn.getAttribute('data-id');
           var target = null;
           for (var idx = 0; idx < state.items.length; idx++) {
@@ -3704,6 +3847,8 @@
         });
         document.getElementById('fieldExpDate').addEventListener('change', syncAllDateDisplays);
         document.getElementById('fieldOpenedDate').addEventListener('change', syncAllDateDisplays);
+        document.getElementById('fieldFinishedDate').addEventListener('change', syncAllDateDisplays);
+        document.getElementById('fieldQty').addEventListener('input', syncOpenedFieldsVisibility);
         document.getElementById('feedDateInput').addEventListener('change', syncAllDateDisplays);
         document.getElementById('fieldShelfValue').addEventListener('input', autoComputeExpDate);
         document.getElementById('fieldShelfUnit').addEventListener('change', autoComputeExpDate);
@@ -3774,8 +3919,14 @@
             shelfLifeValue: document.getElementById('fieldShelfValue').value ? Number(document.getElementById('fieldShelfValue').value) : '',
             shelfLifeUnit: document.getElementById('fieldShelfUnit').value,
             expDate: expDate,
-            isOpened: document.getElementById('fieldIsOpened').checked,
-            openedDate: document.getElementById('fieldIsOpened').checked ? (document.getElementById('fieldOpenedDate').value || getTodayStr()) : '',
+            isOpened: (Math.max(0, Number(document.getElementById('fieldQty').value) || 0) > 0) ? document.getElementById('fieldIsOpened').checked : false,
+            openedDate: (Math.max(0, Number(document.getElementById('fieldQty').value) || 0) <= 0)
+              ? (document.getElementById('fieldOpenedDate').value || '')
+              : (document.getElementById('fieldIsOpened').checked ? (document.getElementById('fieldOpenedDate').value || getTodayStr()) : ''),
+            archivedOpenedDate: document.getElementById('fieldOpenedDate').value || '',
+            finishedDate: (Math.max(0, Number(document.getElementById('fieldQty').value) || 0) <= 0)
+              ? (document.getElementById('fieldFinishedDate').value || getTodayStr())
+              : '',
             openDaysLimit: Number(document.getElementById('fieldOpenLimit').value) || 45,
             palatability: state.formPal,
             location: document.getElementById('fieldLocation').value.trim(),
@@ -3790,8 +3941,10 @@
                 var prevIt = state.items[pIdx];
                 if (prevIt.eatenCount) record.eatenCount = prevIt.eatenCount;
                 if (prevIt.consumedCount) record.consumedCount = prevIt.consumedCount;
+                if (prevIt.lastQuantity) record.lastQuantity = prevIt.lastQuantity;
                 if (prevIt.sourceBatchId) record.sourceBatchId = prevIt.sourceBatchId;
-                if (prevIt.finishedDate) record.finishedDate = prevIt.finishedDate;
+                if (!record.finishedDate && prevIt.finishedDate) record.finishedDate = prevIt.finishedDate;
+                if (!record.archivedOpenedDate && prevIt.archivedOpenedDate) record.archivedOpenedDate = prevIt.archivedOpenedDate;
                 break;
               }
             }
