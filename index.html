@@ -607,16 +607,7 @@
 
     <!-- ==================== TAB 3: SETTINGS & BACKUP ==================== -->
     <section id="viewSettings" class="hidden-view space-y-4">
-      <!-- Card Thumbnail Display Toggle -->
-      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <label class="flex items-center justify-between cursor-pointer" style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;">
-          <div>
-            <h2 class="text-base font-bold text-stone-900" style="margin:0 0 3px 0;font-size:16px;">🖼️ 列表显示口粮配图</h2>
-            <p class="text-xs text-stone-500" style="margin:0;font-size:12px;color:#78716C;">开启后展示实拍缩略图或分类插画（点击小图可放大查看喷码）；关闭则切换极简纯文字列表</p>
-          </div>
-          <input id="toggleShowImages" type="checkbox" checked class="w-5 h-5 accent-orange-600" style="width:22px;height:22px;flex-shrink:0;">
-        </label>
-      </div>
+
 
       <!-- Warning Threshold Setting -->
       <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
@@ -1552,6 +1543,61 @@
         });
       }
 
+      // ==================== MULTI-UNIT CONSUMPTION ARCHIVE HELPER ====================
+      function recordConsumedUnits(target, amountConsumed) {
+        var used = Number(amountConsumed) > 0 ? Number(amountConsumed) : 1;
+        var curQty = Number(target.quantity) || 0;
+        var nextRem = Math.max(0, Math.round((curQty - used) * 100) / 100);
+        var today = getTodayStr();
+
+        target.eatenCount = Math.round(((Number(target.eatenCount) || 0) + used) * 100) / 100;
+        target.lastEatenDate = today;
+
+        // Check if there is already a linked finished archive card for this batch
+        var linkedArchive = null;
+        for (var i = 0; i < state.items.length; i++) {
+          if (state.items[i].id !== target.id && state.items[i].sourceBatchId === target.id && (Number(state.items[i].quantity) || 0) <= 0) {
+            linkedArchive = state.items[i];
+            break;
+          }
+        }
+
+        if (nextRem > 0) {
+          // Partial consumption (e.g., 6 cans -> 5 in stock, and 1 in "已吃完")
+          target.quantity = nextRem;
+          target.isOpened = false;
+          target.openedDate = '';
+          if (linkedArchive) {
+            linkedArchive.consumedCount = target.eatenCount;
+            linkedArchive.lastQuantity = target.eatenCount;
+            linkedArchive.finishedDate = today;
+          } else {
+            var archiveCopy = Object.assign({}, target, {
+              id: 'empty_' + target.id,
+              sourceBatchId: target.id,
+              quantity: 0,
+              consumedCount: target.eatenCount,
+              lastQuantity: target.eatenCount,
+              finishedDate: today,
+              isOpened: false,
+              openedDate: ''
+            });
+            state.items.push(archiveCopy);
+          }
+        } else {
+          // Final unit eaten! Remove any temporary linkedArchive so the batch itself becomes the single complete archive record
+          if (linkedArchive) {
+            state.items = state.items.filter(function (x) { return x.id !== linkedArchive.id; });
+          }
+          target.lastQuantity = target.eatenCount;
+          target.consumedCount = target.eatenCount;
+          target.finishedDate = today;
+          target.quantity = 0;
+          target.isOpened = false;
+          target.openedDate = '';
+        }
+      }
+
       // ==================== ITEM EXPIRY & FRESHNESS EVALUATION ====================
       function evaluateItem(item) {
         var expDays = diffDaysFromToday(item.expDate);
@@ -1915,7 +1961,12 @@
                 '</div>' +
                 '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
                   '<span style="background:' + badgeBg + ';color:' + badgeText + ';padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;">' + badgeLabel + '</span>' +
-                  '<span style="background:#F5F5F4;border:1px solid #E7E5E4;color:#1C1917;padding:3px 7px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;">' + qtyNum + unitStr + '</span>' +
+                  '<span style="background:#F5F5F4;border:1px solid #E7E5E4;color:#1C1917;padding:3px 7px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;">' +
+                    (ev.status === 'empty'
+                      ? ('已吃' + (Number(it.consumedCount) || Number(it.lastQuantity) || 1) + unitStr)
+                      : ('余' + qtyNum + unitStr + (Number(it.eatenCount) > 0 ? ('·已吃' + Number(it.eatenCount)) : ''))
+                    ) +
+                  '</span>' +
                   (ev.status !== 'empty'
                     ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" title="记喂食" style="padding:4px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;">喂</button>'
                     : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" title="同款复购" style="padding:4px 7px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>'
@@ -2042,12 +2093,21 @@
 
               '<!-- Card Actions Footer (Read-Only Stock Breakdown + Per-Unit Open/Consume) -->' +
               '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
-                '<div style="display:inline-flex;align-items:center;gap:5px;background:#F5F5F4;border:1px solid #E7E5E4;border-radius:10px;padding:5px 10px;" title="点击右侧「编辑」可直接修改总库存数">' +
-                  '<span style="font-size:11px;font-weight:600;color:#78716C;">库存</span>' +
-                  '<span style="font-size:14px;font-weight:800;color:#1C1917;">' + qtyNum + ' ' + unitStr + '</span>' +
-                  (it.isOpened && qtyNum > 1
-                    ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">' + Math.max(0, Math.round((qtyNum - 1) * 100) / 100) + '未拆 · 1拆封</span>'
-                    : (it.isOpened && qtyNum > 0 ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中</span>' : '')
+                '<div style="display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;background:#F5F5F4;border:1px solid #E7E5E4;border-radius:10px;padding:5px 10px;" title="点击右侧「编辑」可直接修改库存数">' +
+                  (ev.status === 'empty'
+                    ? '<span style="font-size:11px;font-weight:600;color:#78716C;">累计吃完</span>' +
+                      '<span style="font-size:14px;font-weight:800;color:#15803D;">' + (Number(it.consumedCount) || Number(it.lastQuantity) || 1) + ' ' + unitStr + '</span>' +
+                      (it.finishedDate ? '<span style="font-size:11px;color:#78716C;">(' + escapeHtml(it.finishedDate) + ')</span>' : '')
+                    : '<span style="font-size:11px;font-weight:600;color:#78716C;">在库</span>' +
+                      '<span style="font-size:14px;font-weight:800;color:#1C1917;">' + qtyNum + ' ' + unitStr + '</span>' +
+                      (Number(it.eatenCount) > 0
+                        ? '<span style="font-size:11px;font-weight:700;color:#15803D;background:#DCFCE7;padding:1px 6px;border-radius:6px;">已吃' + Number(it.eatenCount) + unitStr + '</span>'
+                        : ''
+                      ) +
+                      (it.isOpened && qtyNum > 1
+                        ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">' + Math.max(0, Math.round((qtyNum - 1) * 100) / 100) + '未拆·1拆封</span>'
+                        : (it.isOpened && qtyNum > 0 ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中</span>' : '')
+                      )
                   ) +
                 '</div>' +
                 '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' +
@@ -2541,7 +2601,6 @@
             ? 'ios-btn ios-btn-primary'
             : 'ios-btn ios-btn-secondary';
         }
-        document.getElementById('toggleShowImages').checked = (state.settings.showImages !== false);
         var customPhotos = state.items.filter(function (it) { return Boolean(it.imageData); }).length;
         document.getElementById('storageStatusText').textContent =
           '本地已存 ' + state.items.length + ' 条记录（含 ' + customPhotos + ' 张实拍压缩图 · 预警线 ' + state.settings.warnDays + ' 天）';
@@ -3025,10 +3084,14 @@
           var delBtn = ev.target.closest('[data-del-log]');
           if (!delBtn) return;
           var logId = delBtn.getAttribute('data-del-log');
-          state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
-          saveToStorage();
-          renderAll();
-          showToast('已删除该条喂食记录');
+          var targetLog = state.logs.find(function (lg) { return lg.id === logId; });
+          var logTitle = targetLog ? ('「' + targetLog.brand + ' ' + targetLog.name + ' (' + targetLog.amount + ')」') : '这条喂食记录';
+          openConfirm('删除喂食记录？', '确定要从每日盘点中删除 ' + logTitle + ' 吗？删除后不可恢复。', '确认删除', function () {
+            state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
+            saveToStorage();
+            renderAll();
+            showToast('已删除该条喂食记录');
+          });
         });
 
         document.getElementById('recentSevenDaysList').addEventListener('click', function (ev) {
@@ -3072,10 +3135,14 @@
           var delBtn = ev.target.closest('[data-del-log]');
           if (delBtn) {
             var logId = delBtn.getAttribute('data-del-log');
-            state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
-            saveToStorage();
-            renderAll();
-            showToast('已删除该条喂食记录');
+            var targetLog = state.logs.find(function (lg) { return lg.id === logId; });
+            var logTitle = targetLog ? ('「' + targetLog.date + ' ' + targetLog.brand + ' ' + targetLog.name + '」') : '这条喂食记录';
+            openConfirm('删除喂食记录？', '确定要删除 ' + logTitle + ' 吗？删除后不可恢复。', '确认删除', function () {
+              state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
+              saveToStorage();
+              renderAll();
+              showToast('已删除该条喂食记录');
+            });
             return;
           }
           var jumpBtn = ev.target.closest('[data-jump-date]');
@@ -3164,10 +3231,7 @@
               if (state.items[i].id === fItemId) {
                 var curQ = Number(state.items[i].quantity) || 0;
                 if (curQ > 0) {
-                  state.items[i].lastQuantity = curQ;
-                  state.items[i].quantity = Math.max(0, Math.round((curQ - 1) * 100) / 100);
-                  state.items[i].isOpened = false;
-                  state.items[i].openedDate = '';
+                  recordConsumedUnits(state.items[i], 1);
                 }
                 break;
               }
@@ -3309,13 +3373,9 @@
             var uName = target.unit || '件';
             if (curQ > 1) {
               var nextRem = Math.max(0, Math.round((curQ - 1) * 100) / 100);
-              var confirmDesc = target.isOpened
-                ? ('将核销当前拆封的 1 ' + uName + '「' + target.brand + ' ' + target.name + '」，剩余 ' + nextRem + ' ' + uName + '自动恢复为【未拆封】状态。')
-                : ('将扣减 1 ' + uName + '「' + target.brand + ' ' + target.name + '」，库存变为剩余 ' + nextRem + ' ' + uName + '。');
-              openConfirm('吃完 1 ' + uName + '？', confirmDesc + '（将自动记入今日饮食盘点）', '确认吃完 1 ' + uName, function () {
-                target.quantity = nextRem;
-                target.isOpened = false;
-                target.openedDate = '';
+              var confirmDesc = '在库将减为 ' + nextRem + ' ' + uName + '（恢复未拆封状态），同时在顶部【已吃完】列表自动累加 1 ' + uName + '「' + target.brand + ' ' + target.name + '」，并同步记入今日饮食盘点。';
+              openConfirm('吃完 1 ' + uName + '？', confirmDesc, '确认吃完 1 ' + uName, function () {
+                recordConsumedUnits(target, 1);
                 appendFeedingLog({
                   date: getTodayStr(),
                   mealSlot: target.category === 'med' ? '🩺 用药/护理' : getCurrentMealSlot(),
@@ -3324,18 +3384,15 @@
                   brand: target.brand,
                   name: target.name,
                   amount: '1' + uName + (target.spec ? (' (' + target.spec + ')') : ''),
-                  note: '从库存核销 1 ' + uName
+                  note: '吃完 1 ' + uName + '（余 ' + nextRem + uName + '在库）'
                 });
                 saveToStorage();
                 renderAll();
-                showToast('已吃完 1 ' + uName + ' 并记入今日盘点');
+                showToast('在库余 ' + nextRem + uName + '，已同步记入「已吃完」与今日盘点');
               });
             } else {
-              openConfirm('标记为全部吃完？', '这是最后 ' + curQ + ' ' + uName + '「' + target.brand + ' ' + target.name + '」，确认后将自动记入今日盘点并归入顶部【已吃完】历史列表。', '确认吃完', function () {
-                target.lastQuantity = curQ > 0 ? curQ : 1;
-                target.quantity = 0;
-                target.isOpened = false;
-                target.openedDate = '';
+              openConfirm('吃完最后 ' + curQ + ' ' + uName + '？', '确认后「' + target.brand + ' ' + target.name + '」将完整移入顶部【已吃完】列表并记入今日饮食盘点。', '确认吃完', function () {
+                recordConsumedUnits(target, curQ > 0 ? curQ : 1);
                 appendFeedingLog({
                   date: getTodayStr(),
                   mealSlot: target.category === 'med' ? '🩺 用药/护理' : getCurrentMealSlot(),
@@ -3490,6 +3547,18 @@
             imageData: state.formImage || '',
             isSample: false
           };
+          if (id) {
+            for (var pIdx = 0; pIdx < state.items.length; pIdx++) {
+              if (state.items[pIdx].id === id) {
+                var prevIt = state.items[pIdx];
+                if (prevIt.eatenCount) record.eatenCount = prevIt.eatenCount;
+                if (prevIt.consumedCount) record.consumedCount = prevIt.consumedCount;
+                if (prevIt.sourceBatchId) record.sourceBatchId = prevIt.sourceBatchId;
+                if (prevIt.finishedDate) record.finishedDate = prevIt.finishedDate;
+                break;
+              }
+            }
+          }
 
           if (id) {
             for (var i = 0; i < state.items.length; i++) {
@@ -3634,12 +3703,7 @@
           showToast('已恢复分类默认插画');
         });
 
-        document.getElementById('toggleShowImages').addEventListener('change', function () {
-          state.settings.showImages = Boolean(this.checked);
-          saveToStorage();
-          renderAll();
-          showToast(state.settings.showImages ? '已开启列表配图展示' : '已切换为紧凑文字模式');
-        });
+
 
         document.getElementById('closeLightboxBtn').addEventListener('click', closeLightbox);
         document.getElementById('photoPreviewBackdrop').addEventListener('click', function (ev) {
