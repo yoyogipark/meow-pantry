@@ -197,6 +197,8 @@
     var product = item || log;
     return {
       brand: product.brand,
+      category: product.category,
+      subtype: product.subtype || '',
       name: product.name + (log.flavorName ? ' · ' + log.flavorName : '')
     };
   };
@@ -498,7 +500,7 @@
       deltaText: '-' + used + (target.unit || '件'),
       beforeQty: curQty,
       afterQty: nextRem,
-      note: historyNote || (nextRem > 0 ? ('核销吃完 ' + used + (target.unit || '件') + '，余 ' + nextRem + (target.unit || '件')) : '本批次已全部吃完归档'),
+      note: historyNote || (nextRem > 0 ? ('核销 ' + used + (target.unit || '件') + '，余 ' + nextRem + (target.unit || '件')) : '本批次已全部核销归档'),
       isSample: Boolean(target.isSample)
     });
     return used;
@@ -642,7 +644,7 @@
     return true;
   };
 
-  Domain.feedFlavor = function (item, flavor, fraction, finish, date) {
+  Domain.feedFlavor = function (item, flavor, fraction, finish, date, inventoryOnly) {
     if (!flavor || flavor.quantity <= 0 || item.quantity <= 0) return null;
     var remaining = flavor.openRemainFraction || 1;
     var used = finish ? remaining : fraction;
@@ -663,7 +665,7 @@
     flavor.openedDate = after > 0 ? flavor.openedDate || date : '';
     if (after <= 0) {
       flavor.quantity -= 1;
-      Domain.recordConsumedUnits(item, 1, date, '喂食并用完 1' + item.unit + ' · ' + flavor.name);
+      Domain.recordConsumedUnits(item, 1, date, (inventoryOnly ? '仅核销 1' : '喂食并用完 1') + item.unit + ' · ' + flavor.name);
     } else {
       item.lastEatenDate = date;
       flavorHistory(item, flavor, 'partial', date, '单件剩余 ' + Utils.round2(after * 100) + '%');
@@ -804,6 +806,7 @@
       mealSlot: entry.mealSlot || Utils.getCurrentMealSlot(),
       itemId: entry.itemId || '',
       category: entry.category || 'dry',
+      subtype: entry.subtype || undefined,
       brand: entry.brand || '',
       name: entry.name || '',
       amount: entry.amount || '1份',

@@ -21,6 +21,16 @@
     }, 2300);
   };
 
+  UI.syncRedemptionPortion = function () {
+    var stock = document.getElementById('confirmStockQuantity');
+    var input = document.getElementById('confirmMealQuantity');
+    var multiple = Number(stock.value) > 1;
+    var visible = multiple && document.getElementById('confirmExtraCheckbox').checked;
+    document.getElementById('confirmMealQuantityWrap').classList.toggle('hidden-view', !visible);
+    input.max = multiple ? stock.value : '';
+    input.value = '';
+  };
+
   UI.openConfirm = function (title, message, okLabel, onConfirm, extraOpt) {
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmMessage').textContent = message;
@@ -36,6 +46,15 @@
       extraWrap.classList.add('hidden-view');
       extraChk.checked = false;
     }
+    var stock = document.getElementById('confirmStockQuantity');
+    var redemption = extraOpt && extraOpt.redemption;
+    stock.options.length = 0;
+    if (redemption) {
+      if (redemption.quantity > 1 && !redemption.all) stock.add(new Option('1' + redemption.unit, '1'));
+      stock.add(new Option('剩余全部 ' + redemption.quantity + redemption.unit, redemption.quantity));
+    }
+    document.getElementById('confirmStockQuantityWrap').classList.toggle('hidden-view', !redemption || stock.options.length < 2);
+    UI.syncRedemptionPortion();
     pendingConfirmFn = onConfirm;
     document.getElementById('confirmModalBackdrop').classList.remove('hidden-view');
   };
@@ -49,8 +68,16 @@
     var fn = pendingConfirmFn;
     if (!fn) return;
     var checked = document.getElementById('confirmExtraCheckbox').checked;
+    var quantity = Number(document.getElementById('confirmStockQuantity').value);
+    var mealInput = document.getElementById('confirmMealQuantity');
+    var mealQuantity = checked && quantity > 1 ? Number(mealInput.value) : quantity;
+    if (checked && quantity > 1 && (!Number.isInteger(mealQuantity) || mealQuantity < 1 || mealQuantity > quantity)) {
+      UI.showToast('请填写实际补记件数，不能超过核销数量');
+      mealInput.focus();
+      return;
+    }
     UI.closeConfirm();
-    fn(checked);
+    fn(checked, quantity, mealQuantity);
   };
 
   UI.syncAllDateDisplays = function () {
@@ -886,13 +913,13 @@
     } else {
       timelineEl.innerHTML = dayLogs.map(function (lg) {
         var product = Domain.resolveLogProduct(lg);
-        var catInfo = MP.CATEGORIES[lg.category] || MP.CATEGORIES.dry;
+        var catInfo = MP.CATEGORIES[product.category] || MP.CATEGORIES.dry;
         return (
           '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
             '<div style="min-width:0;flex:1;">' +
               '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">' +
                 '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:2px 8px;border-radius:7px;">' + Utils.escapeHtml(lg.mealSlot || '🍽️ 投喂') + '</span>' +
-                '<span style="font-size:11px;font-weight:700;color:#44403C;background:#E7E5E4;padding:2px 7px;border-radius:7px;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
+                '<span style="font-size:11px;font-weight:700;color:#44403C;background:#E7E5E4;padding:2px 7px;border-radius:7px;">' + catInfo.icon + ' ' + Utils.escapeHtml(catInfo.label + (product.subtype ? ' · ' + product.subtype : '')) + '</span>' +
                 '<span style="font-size:12px;font-weight:800;color:#15803D;background:#DCFCE7;padding:2px 8px;border-radius:7px;">份量：' + Utils.escapeHtml(lg.amount || '1份') + '</span>' +
               '</div>' +
               '<div style="font-size:14px;font-weight:800;color:#1C1917;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
@@ -917,9 +944,9 @@
       var itemsPreview = dLogs.length === 0
         ? '<span style="color:#A8A29E;">未记录</span>'
         : dLogs.map(function (lg) {
-            var ci = MP.CATEGORIES[lg.category] || MP.CATEGORIES.dry;
             var product = Domain.resolveLogProduct(lg);
-            return ci.icon + Utils.escapeHtml([product.brand, product.name].filter(Boolean).join(' ')) + '(' + Utils.escapeHtml(lg.amount) + ')';
+            var ci = MP.CATEGORIES[product.category] || MP.CATEGORIES.dry;
+            return ci.icon + Utils.escapeHtml([product.brand, product.name, product.subtype].filter(Boolean).join(' ')) + '(' + Utils.escapeHtml(lg.amount) + ')';
           }).join(' · ');
 
       sevenHtml.push(
@@ -985,7 +1012,7 @@
       else if (catF !== 'all' && catF !== 'group_food' && lg.category !== catF) return false;
       if (q) {
         var product = Domain.resolveLogProduct(lg);
-        var hay = [lg.date, lg.mealSlot, product.brand, product.name, lg.amount, lg.note].join(' ').toLowerCase();
+        var hay = [lg.date, lg.mealSlot, product.brand, product.name, (MP.CATEGORIES[product.category] || MP.CATEGORIES.dry).label, product.subtype, lg.amount, lg.note].join(' ').toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       return true;
@@ -1048,13 +1075,13 @@
 
       var rowsHtml = items.map(function (lg) {
         var product = Domain.resolveLogProduct(lg);
-        var catInfo = MP.CATEGORIES[lg.category] || MP.CATEGORIES.dry;
+        var catInfo = MP.CATEGORIES[product.category] || MP.CATEGORIES.dry;
         return (
           '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;background:#FFFFFF;border:1px solid #E7E5E4;">' +
             '<div style="min-width:0;flex:1;">' +
               '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">' +
                 '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 7px;border-radius:6px;">' + Utils.escapeHtml(lg.mealSlot || '🍽️ 投喂') + '</span>' +
-                '<span style="font-size:11px;font-weight:700;color:#44403C;background:#F5F5F4;padding:1px 6px;border-radius:6px;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
+                '<span style="font-size:11px;font-weight:700;color:#44403C;background:#F5F5F4;padding:1px 6px;border-radius:6px;">' + catInfo.icon + ' ' + Utils.escapeHtml(catInfo.label + (product.subtype ? ' · ' + product.subtype : '')) + '</span>' +
                 '<span style="font-size:11px;font-weight:800;color:#15803D;background:#DCFCE7;padding:1px 7px;border-radius:6px;">' + Utils.escapeHtml(lg.amount || '1份') + '</span>' +
               '</div>' +
               '<div style="font-size:13px;font-weight:800;color:#1C1917;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
@@ -1153,8 +1180,8 @@
       document.getElementById('feedDeductStock').checked = false;
       if (afterRem <= 0.08) {
         splitAutoInfo.innerHTML = curRemFrac > 0
-          ? ('✅ <strong>本' + u + '刚好全部吃完！</strong>保存后将自动核销这 1 ' + u + '并归入【已吃完】，其余未拆库存不受影响。')
-          : ('✅ <strong>整' + u + '核销：</strong>保存后将自动从库存扣减 1 ' + u + '并归入【已吃完】。');
+          ? ('✅ <strong>本' + u + '刚好全部吃完！</strong>保存后将自动核销这 1 ' + u + '并归入【已核销】，其余未拆库存不受影响。')
+          : ('✅ <strong>整' + u + '核销：</strong>保存后将自动从库存扣减 1 ' + u + '并归入【已核销】。');
       } else {
         var afterTxt = Utils.formatRemainFractionText(afterRem, u);
         splitAutoInfo.innerHTML = '🔓 <strong>分顿自动追踪：</strong>保存后这 1 ' + u + '将标为【拆封中 · ' + afterTxt + '】（暂不扣整' + u + '，下次吃完剩余时自动核销）。';

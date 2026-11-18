@@ -87,10 +87,19 @@
         return;
       }
       st.logs = st.logs.filter(function (lg) { return lg.id !== logId; });
-      Storage.saveToStorage();
+      Storage.saveToStorage(false, function (ok) {
+        if (ok) UI.showToast(doRevert ? '已删除记录并退回对应库存余量' : '已删除该条饮食记录');
+      });
       UI.renderAll();
-      UI.showToast(doRevert ? '已删除记录并退回对应库存余量' : '已删除该条饮食记录');
     }, revertOpt);
+  }
+
+  function redemptionMealAmount(item, quantity, fraction) {
+    var unit = item.unit || '件';
+    if (fraction >= 1 || quantity < 1) return quantity + unit;
+    var remainder = Utils.formatRemainFractionText(fraction, unit).replace(/^余/, '剩余');
+    var portion = Utils.computePortionGramLabel(remainder, fraction, item.spec);
+    return quantity > 1 ? (quantity - 1) + unit + ' + ' + portion : portion;
   }
 
   App.bindEvents = function () {
@@ -229,8 +238,7 @@
 
       if (target.flavors && ['toggle-open', 'consume-one', 'mark-empty'].indexOf(action) !== -1) {
         UI.openFeedModal(target.id, Utils.getTodayStr());
-        if (action !== 'toggle-open') document.getElementById('feedAmountInput').value = '吃完';
-        UI.showToast(action === 'toggle-open' ? '选择口味后点「记录开封」' : '请选择要吃完的口味');
+        UI.showToast(action === 'toggle-open' ? '选择口味后点「记录开封」' : '选择口味后点「核销1件」');
         return;
       }
 
@@ -287,73 +295,38 @@
         UI.renderAll();
       } else if (action === 'consume-one' || action === 'mark-empty') {
         var curQ = Number(target.quantity) || 0;
-        var uName = target.unit || '件';
-        var singleServe = Domain.isSingleServingUnit(target);
-        var remFracVal = (target.isOpened && Number(target.openRemainFraction) > 0 && Number(target.openRemainFraction) < 0.98)
-          ? Number(target.openRemainFraction)
-          : 1;
-        var remFracText = remFracVal < 0.98 ? Utils.formatRemainFractionText(remFracVal, uName).replace(/^余/, '剩余') : ('1' + uName);
-        var portionLabel = remFracVal < 0.98
-          ? Utils.computePortionGramLabel(remFracText, remFracVal, target.spec)
-          : ('1' + uName + (target.spec ? (' (' + target.spec + ')') : ''));
-
-        if (curQ > 1) {
-          var nextRem = Math.max(0, Utils.round2(curQ - 1));
-          var confirmDesc = singleServe
-            ? ('在库将减为 ' + nextRem + ' ' + uName + '（恢复未拆封），并在顶部【已吃完】累加 1 ' + uName + '「' + target.brand + ' ' + target.name + '」。')
-            : ('这 1 ' + uName + '「' + target.brand + ' ' + target.name + '」已空袋/用完，在库将减为 ' + nextRem + ' ' + uName + '，并累加到【已吃完】归档。');
-          var extraOpt = singleServe
-            ? { label: '同时记入今日饮食记录（' + portionLabel + '；若放坏丢弃请取消勾选）', defaultChecked: true }
-            : null;
-          UI.openConfirm('用完/吃完 1 ' + uName + '？', confirmDesc, '确认核销 1 ' + uName, function (alsoLogMeal) {
-            if (!Domain.recordConsumedUnits(target, 1, Utils.getTodayStr())) return;
-            if (alsoLogMeal) {
-              Domain.appendFeedingLog({
-                date: Utils.getTodayStr(),
-                mealSlot: target.category === 'med' ? '🩺 用药/护理' : Utils.getCurrentMealSlot(),
-                itemId: target.id,
-                category: target.category,
-                brand: target.brand,
-                name: target.name,
-                amount: portionLabel,
-                note: '核销 1 ' + uName + '（余 ' + nextRem + uName + '在库）',
-                deductedUnit: 1,
-                deductedFrac: remFracVal
-              });
-            }
-            Storage.saveToStorage();
-            UI.renderAll();
-            UI.showToast(alsoLogMeal ? ('在库余 ' + nextRem + uName + '，已记入饮食记录与「已吃完」') : ('在库余 ' + nextRem + uName + '，已归入「已吃完」'));
-          }, extraOpt);
-        } else {
-          var lastDesc = singleServe
-            ? ('确认后这最后 ' + curQ + ' ' + uName + '「' + target.brand + ' ' + target.name + '」将移入顶部【已吃完】列表。')
-            : ('这' + uName + '「' + target.brand + ' ' + target.name + '」已用完，确认后移入顶部【已吃完】归档。');
-          var lastExtraOpt = singleServe
-            ? { label: '同时记入今日饮食记录（' + portionLabel + '；若放坏丢弃请取消勾选）', defaultChecked: true }
-            : null;
-          UI.openConfirm('标记已吃完/用完？', lastDesc, '确认核销归档', function (alsoLogMeal) {
-            var usedCount = Domain.recordConsumedUnits(target, curQ, Utils.getTodayStr());
-            if (!usedCount) return;
-            if (alsoLogMeal) {
-              Domain.appendFeedingLog({
-                date: Utils.getTodayStr(),
-                mealSlot: target.category === 'med' ? '🩺 用药/护理' : Utils.getCurrentMealSlot(),
-                itemId: target.id,
-                category: target.category,
-                brand: target.brand,
-                name: target.name,
-                amount: portionLabel,
-                note: '用完归档',
-                deductedUnit: usedCount,
-                deductedFrac: remFracVal
-              });
-            }
-            Storage.saveToStorage();
-            UI.renderAll();
-            UI.showToast(alsoLogMeal ? '已记入饮食记录并归入「已吃完」' : '已归档至顶部「已吃完」列表');
-          }, lastExtraOpt);
-        }
+        if (curQ <= 0) return;
+        var unit = target.unit || '件';
+        var fraction = target.isOpened && Number(target.openRemainFraction) > 0 ? Number(target.openRemainFraction) : 1;
+        UI.openConfirm('确认库存核销？', '核销后将减少库存并更新归档。只有勾选且确认实际份量，才补记今日喂食。', '确认核销', function (alsoLogMeal, quantity, mealQuantity) {
+          if (!st.items.includes(target) || Number(target.quantity) !== curQ) {
+            UI.showToast('库存已变化，请重新核销');
+            return;
+          }
+          var today = Utils.getTodayStr();
+          var usedCount = Domain.recordConsumedUnits(target, quantity, today);
+          if (!usedCount) return;
+          if (alsoLogMeal) {
+            var confirmed = Math.min(usedCount, mealQuantity);
+            var amount = redemptionMealAmount(target, confirmed, fraction);
+            Domain.appendFeedingLog({
+              date: today,
+              mealSlot: target.category === 'med' ? '🩺 用药/护理' : Utils.getCurrentMealSlot(),
+              itemId: target.id, category: target.category, subtype: target.subtype,
+              brand: target.brand, name: target.name, amount: amount,
+              note: '库存核销 ' + usedCount + unit + '，仅补记确认喂食的份量',
+              deductedUnit: confirmed, deductedFrac: fraction
+            });
+          }
+          Storage.saveToStorage(false, function (ok) {
+            if (ok) UI.showToast(alsoLogMeal ? '已核销库存并补记喂食' : '已核销库存');
+          });
+          UI.renderAll();
+        }, {
+          label: Domain.isSingleServingUnit(target) ? '同时记入今日饮食记录（核销一件时补记 ' + redemptionMealAmount(target, Math.min(1, curQ), fraction) + '）' : '',
+          defaultChecked: false,
+          redemption: { quantity: curQ, unit: unit, all: action === 'mark-empty' }
+        });
       } else if (action === 'delete') {
         UI.openConfirm('删除这条批次记录？', '将移除「' + target.brand + ' ' + target.name + '」，删除后不可撤销。', '确认删除', function () {
           var oldQty = Number(target.quantity) || 0;
@@ -468,6 +441,7 @@
               mealSlot: srcLog.mealSlot,
               itemId: srcLog.itemId,
               category: srcLog.category,
+              subtype: srcLog.subtype,
               brand: srcLog.brand,
               name: srcLog.name,
               flavorId: srcLog.flavorId,
@@ -559,13 +533,28 @@
       var item = selectedFeedItem();
       var flavor = UI.getFeedFlavor(item);
       if (!st.editMode || !flavor) return;
-      UI.openConfirm('仅核销库存？', '将扣减 1' + item.unit + '「' + flavor.name + '」，并记入库存流水。', '确认核销', function () {
-        if (!st.items.includes(item) || !Domain.feedFlavor(item, flavor, 0, true, Utils.getTodayStr())) return;
-        Storage.saveToStorage();
+      var amount = redemptionMealAmount(item, 1, flavor.openRemainFraction || 1);
+      UI.openConfirm('确认库存核销？', '将扣减 1' + item.unit + '「' + flavor.name + '」，并记入库存流水。', '确认核销', function (alsoLogMeal) {
+        if (!st.items.includes(item) || !item.flavors.includes(flavor)) return;
+        var today = Utils.getTodayStr();
+        var change = Domain.feedFlavor(item, flavor, 0, true, today, !alsoLogMeal);
+        if (!change) return;
+        if (alsoLogMeal) {
+          Domain.appendFeedingLog({
+            date: today, itemId: item.id, category: item.category, subtype: item.subtype,
+            brand: item.brand, name: item.name, amount: amount,
+            mealSlot: item.category === 'med' ? '🩺 用药/护理' : Utils.getCurrentMealSlot(),
+            note: '库存核销时补记', deductedUnit: change.units, deductedFrac: change.fraction,
+            flavorId: flavor.id, flavorName: flavor.name,
+            flavorPalatability: flavor.palatability, flavorChange: change
+          });
+        }
         UI.closeFeedModal();
         UI.renderAll();
-        UI.showToast('已核销该口味的 1' + item.unit);
-      });
+        Storage.saveToStorage(false, function (ok) {
+          if (ok) UI.showToast(alsoLogMeal ? '已核销该口味并补记喂食' : '已核销该口味');
+        });
+      }, { label: '同时记入今日饮食记录（' + amount + '）', defaultChecked: false });
     });
     document.getElementById('feedStockSelect').addEventListener('change', function () {
       UI.applyFeedStockSelection(this.value);
@@ -639,6 +628,7 @@
             st.logs[k].date = fDate;
             st.logs[k].mealSlot = fSlot;
             if (!st.logs[k].flavorId && !st.logs[k].deductedUnit && !st.logs[k].deductedFrac) st.logs[k].itemId = fItemId;
+            if (st.logs[k].category !== fCat) delete st.logs[k].subtype;
             st.logs[k].category = fCat;
             st.logs[k].brand = fBrand;
             st.logs[k].name = fName;
@@ -650,10 +640,11 @@
           }
         }
         selectLogDate(fDate);
-        Storage.saveToStorage();
+        Storage.saveToStorage(false, function (ok) {
+          if (ok) UI.showToast('饮食记录修改已保存');
+        });
         UI.closeFeedModal();
         UI.renderAll();
-        UI.showToast('饮食记录修改已保存');
         return;
       }
 
@@ -735,6 +726,7 @@
         mealSlot: fSlot,
         itemId: fItemId,
         category: fCat,
+        subtype: stItem && stItem.category === fCat ? stItem.subtype : undefined,
         brand: fBrand,
         name: fName,
         amount: fAmount,
@@ -750,10 +742,11 @@
       });
 
       selectLogDate(fDate);
-      Storage.saveToStorage();
+      Storage.saveToStorage(false, function (ok) {
+        if (ok) UI.showToast(nextDue ? ('已记录用药，将于 ' + nextDue + ' 提醒下次护理') : ('已记入 ' + fDate + ' 饮食记录' + splitToastSuffix));
+      });
       UI.closeFeedModal();
       UI.renderAll();
-      UI.showToast(nextDue ? ('已记录用药，将于 ' + nextDue + ' 提醒下次护理') : ('已记入 ' + fDate + ' 饮食记录' + splitToastSuffix));
     });
 
     // 7. Stats View Interactions & Drill-Down Filtering to Pantry
@@ -1173,7 +1166,6 @@
         if (record.quantity > 0 && st.statusFilter === 'empty') {
           st.statusFilter = 'in_stock';
         }
-        UI.showToast('修改已保存');
       } else {
         record.lastQuantity = newQty;
         st.items.unshift(record);
@@ -1192,10 +1184,11 @@
         if (record.quantity > 0 && st.statusFilter === 'empty') {
           st.statusFilter = 'in_stock';
         }
-        UI.showToast(isRestockMode ? '同款新批次已复购入库' : '新批次已入库');
       }
 
-      Storage.saveToStorage();
+      Storage.saveToStorage(false, function (ok) {
+        if (ok) UI.showToast(id ? '修改已保存' : (isRestockMode ? '同款新批次已复购入库' : '新批次已入库'));
+      });
       UI.closeItemModal();
       UI.renderAll();
     });
@@ -1289,7 +1282,8 @@
           '校验通过：包含 ' + check.items.length + ' 条批次记录、' + check.logs.length + ' 条饮食记录与 ' + check.stockHistory.length + ' 条库存流水。请选择导入方式（即使选全量覆盖，系统也会自动保存覆盖前本地快照供随时撤回）：',
           '确认导入',
           function (useSmartMerge) {
-            Storage.applyBackupData(check, useSmartMerge, function () {
+            Storage.applyBackupData(check, useSmartMerge, function (ok) {
+              if (!ok) return;
               UI.renderAll();
               UI.switchTab('pantry');
               UI.showToast(useSmartMerge ? '已智能合并备份数据' : ('已恢复 ' + check.items.length + ' 条记录（需要可点设置页撤回）'));
@@ -1312,11 +1306,11 @@
         '将恢复到上次全量导入前的本地数据快照（快照时间：' + (st.storageHealth.preRestoreSnapshotTime || '最近一次') + '）。',
         '确认撤回恢复',
         function () {
-          Storage.restorePreRestoreSnapshot(function (ok) {
+          Storage.restorePreRestoreSnapshot(function (ok, writeFailed) {
             if (ok) {
               UI.renderAll();
               UI.showToast('已成功恢复到覆盖前的本地快照数据');
-            } else {
+            } else if (!writeFailed) {
               UI.showToast('未找到可用的本地快照');
             }
           });
@@ -1326,7 +1320,8 @@
 
     document.getElementById('clearAllDataBtn').addEventListener('click', function () {
       UI.openConfirm('清空全部本地数据？', '此操作仅在你确认后清空库存、饮食记录与流水（清空前会自动保留一份本地恢复快照，也建议先导出 JSON 备份）。', '确认清空', function () {
-        Storage.savePreRestoreSnapshot(function () {
+        Storage.savePreRestoreSnapshot(function (ok) {
+          if (!ok) return;
           st.items = [];
           st.logs = [];
           st.stockHistory = [];
@@ -1341,6 +1336,8 @@
     document.getElementById('confirmModalBackdrop').addEventListener('click', function (ev) {
       if (ev.target === document.getElementById('confirmModalBackdrop')) UI.closeConfirm();
     });
+    document.getElementById('confirmStockQuantity').addEventListener('change', UI.syncRedemptionPortion);
+    document.getElementById('confirmExtraCheckbox').addEventListener('change', UI.syncRedemptionPortion);
     document.getElementById('confirmOkBtn').addEventListener('click', UI.consumePendingConfirm);
   };
 

@@ -94,6 +94,13 @@
     delete st.settings.showImages;
   };
 
+  function showStorageWriteWarning(message) {
+    var warning = global.document && global.document.getElementById('storageWriteWarning');
+    if (!warning) return;
+    warning.textContent = message || '';
+    warning.classList.toggle('hidden-view', !message);
+  }
+
   Storage.saveToStorage = function (isSilentInit, onComplete) {
     var st = MP.state;
     if (!isSilentInit) {
@@ -113,12 +120,14 @@
     var fullSettingsPayload = JSON.stringify(Object.assign({}, st.settings, { lsSlimMode: false }));
 
     // 1. Synchronous LocalStorage write (with automatic photo-stripping fallback if 5MB quota exceeded)
+    var localComplete = false;
     try {
       global.localStorage.setItem(MP.STORAGE_KEYS.LOGS, logsPayload);
       global.localStorage.setItem(MP.STORAGE_KEYS.STOCK_HISTORY, histPayload);
       try {
         global.localStorage.setItem(MP.STORAGE_KEYS.ITEMS, itemsPayload);
         global.localStorage.setItem(MP.STORAGE_KEYS.SETTINGS, fullSettingsPayload);
+        localComplete = true;
       } catch (quotaErr) {
         var slimItems = st.items.map(function (it) {
           var copy = Object.assign({}, it);
@@ -133,10 +142,18 @@
       st.storageHealth.lsAvailable = false;
     }
 
+    function finish(idbComplete) {
+      var ok = localComplete || idbComplete;
+      if (st.settings.lastSavedAt === nowTs) {
+        showStorageWriteWarning(ok ? '' : '本地保存未完成，刷新前请导出 JSON 备份。当前修改或图片可能只在本次会话中可用。');
+      }
+      if (typeof onComplete === 'function') onComplete(ok);
+    }
+
     // 2. Asynchronous IndexedDB full write (retains full compressed photos up to hundreds of MB)
     Storage.openIDB(function (db) {
       if (!db) {
-        if (typeof onComplete === 'function') onComplete(false);
+        finish(false);
         return;
       }
       try {
@@ -147,13 +164,13 @@
         store.put(logsPayload, MP.STORAGE_KEYS.LOGS);
         store.put(histPayload, MP.STORAGE_KEYS.STOCK_HISTORY);
         tx.oncomplete = function () {
-          if (typeof onComplete === 'function') onComplete(true);
+          finish(true);
         };
-        tx.onerror = function () {
-          if (typeof onComplete === 'function') onComplete(false);
+        tx.onabort = function () {
+          finish(false);
         };
       } catch (txErr) {
-        if (typeof onComplete === 'function') onComplete(false);
+        finish(false);
       }
     });
   };
@@ -309,31 +326,40 @@
       stockHistory: st.stockHistory.slice()
     };
     var rawSnap = JSON.stringify(snapObj);
-    st.storageHealth.hasPreRestoreSnapshot = true;
-    st.storageHealth.preRestoreSnapshotTime = snapObj.savedAt;
+    var localSaved = false;
+    function finish(ok) {
+      if (ok) {
+        st.storageHealth.hasPreRestoreSnapshot = true;
+        st.storageHealth.preRestoreSnapshotTime = snapObj.savedAt;
+      } else {
+        showStorageWriteWarning('保护快照保存失败，已取消覆盖操作。');
+      }
+      if (typeof callback === 'function') callback(ok);
+    }
 
     try {
       global.localStorage.setItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT, rawSnap);
+      localSaved = true;
     } catch (e) {
       // Ignore if localStorage 5MB is full; IndexedDB below will store full snapshot
     }
 
     Storage.openIDB(function (db) {
       if (!db) {
-        if (typeof callback === 'function') callback();
+        finish(localSaved);
         return;
       }
       try {
         var tx = db.transaction(MP.IDB_CONFIG.STORE, 'readwrite');
         tx.objectStore(MP.IDB_CONFIG.STORE).put(rawSnap, MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT);
         tx.oncomplete = function () {
-          if (typeof callback === 'function') callback();
+          finish(true);
         };
-        tx.onerror = function () {
-          if (typeof callback === 'function') callback();
+        tx.onabort = function () {
+          finish(localSaved);
         };
       } catch (err) {
-        if (typeof callback === 'function') callback();
+        finish(localSaved);
       }
     });
   };
@@ -350,8 +376,8 @@
         ? snap.stockHistory.map(Domain.sanitizeStockHistoryEntry).filter(Boolean)
         : [];
       Storage.applyLoadedSettings(snap.settings);
-      Storage.saveToStorage(false, function () {
-        if (typeof callback === 'function') callback(true);
+      Storage.saveToStorage(false, function (ok) {
+        if (typeof callback === 'function') callback(ok, !ok);
       });
     }
 
@@ -449,8 +475,8 @@
       }
       st.settings.lastBackupDate = Utils.getTodayStr();
       st.settings.unsavedChangesCount = 0;
-      Storage.saveToStorage(true, function () {
-        if (typeof onDone === 'function') onDone();
+      Storage.saveToStorage(true, function (ok) {
+        if (typeof onDone === 'function') onDone(ok);
       });
     }
 
@@ -499,7 +525,11 @@
       finishImport();
     } else {
       // Save automatic pre-restore snapshot before full overwrite so user never loses local data accidentally!
-      Storage.savePreRestoreSnapshot(function () {
+      Storage.savePreRestoreSnapshot(function (ok) {
+        if (!ok) {
+          if (typeof onDone === 'function') onDone(false);
+          return;
+        }
         st.items = Domain.reconcileBatches(incomingItems);
         st.logs = incomingLogs;
         st.stockHistory = incomingHist.slice(0, MP.MAX_STOCK_HISTORY);
@@ -555,7 +585,7 @@
   }
 
   Storage.exportItemsCsv = function () {
-    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已用/吃完', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '渠道/批次', '备注'];
+    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已核销', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '渠道/批次', '备注'];
     var rows = [headers];
     MP.state.items.forEach(function (it) {
       if (it.sourceBatchId && (Number(it.quantity) || 0) <= 0) return; // avoid duplicating shadow row already counted on active batch's eatenCount
