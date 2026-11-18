@@ -12,7 +12,7 @@
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
   <script src="https://cdn.tailwindcss.com/3.4.17" defer></script>
-  <link rel="stylesheet" href="./css/styles.css?v=29">
+  <link rel="stylesheet" href="./css/styles.css?v=30">
 </head>
 <body>
 
@@ -83,9 +83,10 @@
         <button type="button" data-status-filter="in_stock" class="status-card selected" id="statCardStock">
           <div style="font-size:11px;color:#78716C;font-weight:600;">在库批次</div>
           <div id="countInStock" style="font-size:20px;font-weight:800;color:#1C1917;margin-top:2px;">0</div>
+          <div id="countStockPieces" class="stock-piece-count">共0件</div>
         </button>
         <button type="button" data-status-filter="expiring" class="status-card" id="statCardExpiring">
-          <div style="font-size:11px;color:#D97706;font-weight:700;">临期/急吃</div>
+          <div style="font-size:11px;color:#D97706;font-weight:700;">临期</div>
           <div id="countExpiring" style="font-size:20px;font-weight:800;color:#D97706;margin-top:2px;">0</div>
         </button>
         <button type="button" data-status-filter="expired" class="status-card" id="statCardExpired">
@@ -97,6 +98,11 @@
           <div id="countEmpty" style="font-size:20px;font-weight:800;color:#57534E;margin-top:2px;">0</div>
         </button>
       </section>
+
+      <div class="stock-details-entry">
+        <button id="stockDetailsBtn" type="button" class="ios-btn ios-btn-secondary" aria-expanded="false" aria-controls="stockQuantityDetails">库存数量明细</button>
+      </div>
+      <div id="stockQuantityDetails" class="ios-card stock-quantity-details hidden-view"></div>
 
       <!-- Category Horizontal Pills -->
       <section id="categoryBar" class="no-scrollbar" style="display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;">
@@ -608,13 +614,13 @@
         <div class="grid-safe" style="display:grid;grid-template-columns:0.75fr 0.78fr 1.47fr;gap:8px;align-items:end;">
           <div>
             <div style="height:20px;display:flex;align-items:center;margin-bottom:4px;">
-              <label for="fieldQty" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">数量 <span style="color:#EA580C;">*</span></label>
+              <label id="fieldQtyLabel" for="fieldQty" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">数量 <span style="color:#EA580C;">*</span></label>
             </div>
             <input id="fieldQty" type="number" min="0" step="0.5" required value="1" class="ios-input">
           </div>
           <div>
             <div style="height:20px;display:flex;align-items:center;margin-bottom:4px;">
-              <label for="fieldUnit" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">单位</label>
+              <label id="fieldUnitLabel" for="fieldUnit" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">单位</label>
             </div>
             <select id="fieldUnit" class="ios-input">
               <option value="袋">袋</option>
@@ -628,7 +634,7 @@
           </div>
           <div>
             <div style="height:20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-              <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">单价 <span id="modalUnitPriceHint" style="font-size:10px;font-weight:600;color:#EA580C;"></span></label>
+              <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;"><span id="fieldPriceLabel">单价</span> <span id="modalUnitPriceHint" style="font-size:10px;font-weight:600;color:#EA580C;"></span></label>
               <div id="currencyToggleGroup" style="display:inline-flex;background:#E7E5E4;padding:1.5px;border-radius:7px;gap:1px;">
                 <button type="button" data-form-currency="CNY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;line-height:1.35;">人民币</button>
                 <button type="button" data-form-currency="JPY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;line-height:1.35;">日元</button>
@@ -638,6 +644,33 @@
               <span id="pricePrefixSymbol" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#78716C;pointer-events:none;">CN¥</span>
               <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input" style="padding-left:36px;">
             </div>
+          </div>
+        </div>
+
+        <div class="purchase-packaging">
+          <label class="purchase-packaging-toggle">
+            <input id="fieldPackagingEnabled" type="checkbox">
+            整盒／整箱包装
+          </label>
+          <div id="purchasePackagingFields" class="hidden-view">
+            <div class="grid-safe purchase-packaging-grid">
+              <label for="fieldPackCount">购买数量
+                <input id="fieldPackCount" type="number" min="1" step="1" inputmode="numeric" value="1" class="ios-input">
+              </label>
+              <label for="fieldPackOuterUnit">外包装
+                <select id="fieldPackOuterUnit" class="ios-input">
+                  <option value="盒">盒</option>
+                  <option value="箱">箱</option>
+                  <option value="组">组</option>
+                  <option value="提">提</option>
+                </select>
+              </label>
+              <label for="fieldPackSize">每包装件数
+                <input id="fieldPackSize" type="number" min="1" step="1" inputmode="numeric" value="8" class="ios-input">
+              </label>
+            </div>
+            <p id="purchasePackagingPreview" class="purchase-packaging-preview" role="status"></p>
+            <p class="purchase-packaging-note">开封保鲜按单个内包装计时。</p>
           </div>
         </div>
 
@@ -932,13 +965,13 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=29"></script>
-  <script src="./js/constants.js?v=29"></script>
-  <script src="./js/utils.js?v=29"></script>
-  <script src="./js/domain.js?v=29"></script>
-  <script src="./js/storage.js?v=29"></script>
-  <script src="./js/stats.js?v=29"></script>
-  <script src="./js/ui.js?v=29"></script>
-  <script src="./js/app.js?v=29"></script>
+  <script src="./js/covers.js?v=30"></script>
+  <script src="./js/constants.js?v=30"></script>
+  <script src="./js/utils.js?v=30"></script>
+  <script src="./js/domain.js?v=30"></script>
+  <script src="./js/storage.js?v=30"></script>
+  <script src="./js/stats.js?v=30"></script>
+  <script src="./js/ui.js?v=30"></script>
+  <script src="./js/app.js?v=30"></script>
 </body>
 </html>

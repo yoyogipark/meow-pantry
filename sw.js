@@ -1,20 +1,20 @@
 const CACHE_PREFIX = 'meow-pantry-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v29';
+const CACHE_NAME = CACHE_PREFIX + 'v30';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './css/styles.css?v=29',
-  './js/covers.js?v=29',
-  './js/constants.js?v=29',
-  './js/utils.js?v=29',
-  './js/domain.js?v=29',
-  './js/storage.js?v=29',
-  './js/stats.js?v=29',
-  './js/ui.js?v=29',
-  './js/app.js?v=29',
+  './css/styles.css?v=30',
+  './js/covers.js?v=30',
+  './js/constants.js?v=30',
+  './js/utils.js?v=30',
+  './js/domain.js?v=30',
+  './js/storage.js?v=30',
+  './js/stats.js?v=30',
+  './js/ui.js?v=30',
+  './js/app.js?v=30',
   'https://cdn.tailwindcss.com/3.4.17'
 ];
 
