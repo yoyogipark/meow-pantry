@@ -1621,7 +1621,7 @@
                       '<button type="button" data-action="consume-one" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:12px;font-weight:700;cursor:pointer;">' +
                         (qtyNum > 1 ? ('✓ 吃完1' + unitStr) : '✓ 记吃完') +
                       '</button>'
-                    : '<button type="button" data-action="restore-stock" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #BBF7D0;background:#F0FDF4;color:#15803D;font-size:12px;font-weight:700;cursor:pointer;">↺ 重新入库</button>'
+                    : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;">＋ 同款复购入库</button>'
                   ) +
                   '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:12px;font-weight:700;cursor:pointer;">编辑</button>' +
                   '<button type="button" data-action="delete" data-id="' + escapeHtml(it.id) + '" style="padding:6px 9px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;">删除</button>' +
@@ -2008,6 +2008,47 @@
         document.getElementById('itemModalBackdrop').classList.remove('hidden-view');
       }
 
+      function openRestockModal(item) {
+        if (!item) return;
+        document.getElementById('modalTitle').textContent = '同款复购入库（新建批次）';
+        // Leave fieldId empty so saving creates a brand-new batch record while keeping old finished record in history
+        document.getElementById('fieldId').value = '';
+        document.getElementById('fieldBrand').value = item.brand || '';
+        document.getElementById('fieldName').value = item.name || '';
+        document.getElementById('fieldSpec').value = item.spec || '';
+        var defaultNewQty = Number(item.lastQuantity) > 0 ? Number(item.lastQuantity) : (Number(item.quantity) > 0 ? Number(item.quantity) : 1);
+        document.getElementById('fieldQty').value = String(defaultNewQty);
+        document.getElementById('fieldUnit').value = item.unit || '袋';
+        document.getElementById('fieldPrice').value = item.price ? String(item.price) : '';
+
+        var sVal = item.shelfLifeValue ? Number(item.shelfLifeValue) : ((CATEGORIES[item.category] || CATEGORIES.dry).defaultShelfMonths || 18);
+        var sUnit = item.shelfLifeUnit || 'months';
+        var today = getTodayStr();
+        document.getElementById('fieldProdDate').value = today;
+        document.getElementById('fieldShelfValue').value = String(sVal);
+        document.getElementById('fieldShelfUnit').value = sUnit;
+        document.getElementById('fieldExpDate').value = addShelfLife(today, sVal, sUnit);
+        document.getElementById('dateCalcHint').textContent = '⚠️ 已预填同款信息，请核对新批次的生产日期与到期日';
+
+        document.getElementById('fieldIsOpened').checked = false;
+        document.getElementById('fieldOpenedDate').value = '';
+        document.getElementById('fieldOpenLimit').value = String(item.openDaysLimit || (CATEGORIES[item.category] || CATEGORIES.dry).defaultOpenDays || 45);
+        document.getElementById('fieldLocation').value = item.location || '';
+        document.getElementById('fieldBatch').value = '';
+        document.getElementById('fieldNotes').value = item.notes || '';
+
+        state.formImage = item.imageData || '';
+        document.getElementById('fieldPhotoInput').value = '';
+        syncModalCategoryUI(item.category || 'dry', false);
+        syncModalCurrencyUI(item.currency || state.settings.defaultCurrency || 'CNY');
+        syncModalPalatabilityUI(item.palatability || '');
+        syncOpenedFieldsVisibility();
+        renderQuickBrandChips();
+
+        document.getElementById('itemModalBackdrop').classList.remove('hidden-view');
+        showToast('已带入同款资料，请确认新批次日期与数量');
+      }
+
       function closeItemModal() {
         document.getElementById('itemModalBackdrop').classList.add('hidden-view');
       }
@@ -2238,7 +2279,7 @@
                 showToast('已吃完 1 ' + uName + '，剩余 ' + nextRem + ' ' + uName + '未拆封');
               });
             } else {
-              openConfirm('标记为全部吃完？', '这是最后 ' + curQ + ' ' + uName + '「' + target.brand + ' ' + target.name + '」，确认后将移入顶部第 4 个【已吃完】归档，随时可点进【已吃完】查看、编辑或重新入库。', '确认吃完', function () {
+              openConfirm('标记为全部吃完？', '这是最后 ' + curQ + ' ' + uName + '「' + target.brand + ' ' + target.name + '」，确认后将归入顶部【已吃完】历史列表；下次复购同款时可在【已吃完】里一键带入资料新建批次。', '确认吃完', function () {
                 target.lastQuantity = curQ > 0 ? curQ : 1;
                 target.quantity = 0;
                 target.isOpened = false;
@@ -2248,11 +2289,8 @@
                 showToast('已归入顶部「已吃完」列表');
               });
             }
-          } else if (action === 'restore-stock') {
-            target.quantity = Number(target.lastQuantity) > 0 ? Number(target.lastQuantity) : 1;
-            saveToStorage();
-            renderAll();
-            showToast('已恢复至「在库囤货」');
+          } else if (action === 'restock-new' || action === 'restore-stock') {
+            openRestockModal(target);
           } else if (action === 'preview-img') {
             openLightbox(target);
           } else if (action === 'edit') {
@@ -2388,13 +2426,16 @@
                 break;
               }
             }
+            if (record.quantity > 0 && state.statusFilter === 'empty') {
+              state.statusFilter = 'in_stock';
+            }
             showToast('修改已保存');
           } else {
             state.items.unshift(record);
             if (record.quantity > 0 && state.statusFilter === 'empty') {
               state.statusFilter = 'in_stock';
             }
-            showToast('新囤货已入库');
+            showToast('新批次已入库');
           }
 
           saveToStorage();
