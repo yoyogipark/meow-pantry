@@ -47,9 +47,10 @@
 
   UI.consumePendingConfirm = function () {
     var fn = pendingConfirmFn;
+    if (!fn) return;
     var checked = document.getElementById('confirmExtraCheckbox').checked;
     UI.closeConfirm();
-    if (typeof fn === 'function') fn(checked);
+    fn(checked);
   };
 
   UI.syncAllDateDisplays = function () {
@@ -174,15 +175,39 @@
       '</div>';
   };
 
+  function renderStockQuantityDetails(items) {
+    var summary = Domain.summarizeStockQuantity(items);
+    document.getElementById('countStockPieces').textContent = '共' + summary.pieces + '件';
+    var unitKeys = Array.from(new Set(Object.keys(summary.units).concat(Object.keys(summary.otherUnits))));
+    var rows = unitKeys.map(function (unit) {
+      var entry = summary.units[unit];
+      var qty = summary.otherUnits[unit];
+      var u = Utils.escapeHtml(unit);
+      var parts = entry ? ['未开封 ' + entry.sealed + u, '已开封 ' + entry.opened + u] : [];
+      if (qty) parts.push(qty + u + '（未计入总件数）');
+      return '<div><dt>' + u + '</dt><dd>' + parts.join(' · ') + '</dd></div>';
+    });
+    document.getElementById('stockQuantityDetails').innerHTML = rows.length
+      ? '<div>共' + summary.pieces + '件独立包装，已开封包装按件计。</div><dl>' + rows.join('') + '</dl>'
+      : '目前没有在库数量。';
+  }
+
+  function purchasePackagingText(item) {
+    var pack = item.purchasePackaging;
+    return pack ? Utils.escapeHtml(pack.count + pack.outerUnit + ' × ' + pack.size + item.unit) : '';
+  }
+
+  function stockProgressText(item) {
+    var pack = item.purchasePackaging;
+    return pack ? item.quantity + '/' + (pack.count * pack.size) + ' ' + Utils.escapeHtml(item.unit) : '';
+  }
+
   UI.renderStatusCounts = function () {
     var st = MP.state;
     var cStock = 0;
     var cExpiring = 0;
     var cExpired = 0;
-    var cOpened = 0;
-    var cFresh = 0;
-    var cLove = 0;
-    var cCare = 0;
+    var attrCounts = { all: 0, opened: 0, fresh: 0, pal_love: 0, group_food: 0, group_care: 0 };
     var emptyItems = [];
 
     st.items.forEach(function (it) {
@@ -193,15 +218,19 @@
         cStock += 1;
         if (ev.status === 'expiring') cExpiring += 1;
         else if (ev.status === 'expired') cExpired += 1;
-        else cFresh += 1;
-        if (it.isOpened) cOpened += 1;
-        if (it.palatability === 'love' && ev.group === 'food') cLove += 1;
-        if (ev.group !== 'food') cCare += 1;
+        if (st.statusFilter === 'in_stock' || st.statusFilter === ev.status) {
+          attrCounts.all += 1;
+          if (it.isOpened) attrCounts.opened += 1;
+          if (ev.status === 'fresh') attrCounts.fresh += 1;
+          if (it.palatability === 'love' && ev.group === 'food') attrCounts.pal_love += 1;
+          attrCounts[ev.group === 'food' ? 'group_food' : 'group_care'] += 1;
+        }
       }
     });
     var cEmpty = Domain.groupEmptyItemsByProduct(emptyItems).length;
 
     document.getElementById('countInStock').textContent = String(cStock);
+    renderStockQuantityDetails(st.items);
     document.getElementById('countExpiring').textContent = String(cExpiring);
     document.getElementById('countExpired').textContent = String(cExpired);
     document.getElementById('countEmpty').textContent = String(cEmpty);
@@ -212,27 +241,22 @@
       cards[i].classList.toggle('selected', key === st.statusFilter);
     }
 
-    // Secondary Attribute Filter Strip (Shown when viewing active stock, hidden in empty archive)
-    var attrBar = document.getElementById('attrFilterBar');
-    if (attrBar) {
-      if (st.statusFilter === 'empty') {
-        attrBar.classList.add('hidden-view');
-      } else {
-        attrBar.classList.remove('hidden-view');
-        var attrDefs = [
-          { key: 'all', label: '全部批次 (' + cStock + ')' },
-          { key: 'opened', label: '🔓 已拆封 (' + cOpened + ')' },
-          { key: 'fresh', label: '✅ 效期充裕 (' + cFresh + ')' },
-          { key: 'pal_love', label: '😍 超爱吃 (' + cLove + ')' },
-          { key: 'group_food', label: '🍽️ 仅普通食品' },
-          { key: 'group_care', label: '💊 营养/药品 (' + cCare + ')' }
-        ];
-        attrBar.innerHTML = attrDefs.map(function (d) {
-          var isAct = (st.attrFilter === d.key);
-          return '<button type="button" data-attr-filter="' + d.key + '" class="subfilter-chip' + (isAct ? ' active' : '') + '">' + d.label + '</button>';
-        }).join('');
-      }
-    }
+    var attrSel = document.getElementById('attrFilterSelect');
+    var attrLabels = {
+      all: '全部状态',
+      opened: '🔓 已拆封',
+      fresh: '✅ 效期充裕',
+      pal_love: '😍 超爱吃',
+      group_food: '🍽️ 普通食品',
+      group_care: '💊 营养/药品'
+    };
+    attrSel.disabled = st.statusFilter === 'empty';
+    attrSel.innerHTML = attrSel.disabled
+      ? '<option value="all">全部状态</option>'
+      : Object.keys(attrLabels).map(function (key) {
+        return '<option value="' + key + '">' + attrLabels[key] + ' (' + attrCounts[key] + ')</option>';
+      }).join('');
+    attrSel.value = attrSel.disabled ? 'all' : st.attrFilter;
   };
 
   function itemMatchesStatusAndAttr(it, ev) {
@@ -284,7 +308,7 @@
   UI.renderBrandDropdown = function () {
     var st = MP.state;
     var sel = document.getElementById('brandFilterSelect');
-    var brandMap = {};
+    var brandMap = Object.create(null);
     st.items.forEach(function (it) {
       if (it.sourceBatchId && (Number(it.quantity) || 0) <= 0) return;
       if (it.brand && it.brand.trim()) {
@@ -310,6 +334,15 @@
     var dAgo = Utils.diffDaysBetween(lastLog.date, Utils.getTodayStr());
     var txt = dAgo === 0 ? '今日已喂' : (dAgo === 1 ? '昨天喂过' : (dAgo > 1 && dAgo <= 60 ? (dAgo + '天前喂过') : ('上次 ' + lastLog.date)));
     return '<span style="background:#F0F9FF;color:#0369A1;padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:700;">🍽️ ' + Utils.escapeHtml(txt) + '</span>';
+  }
+
+  function formatExpiryCountdown(ev) {
+    var openingControls = ev.openRemaining !== null && (ev.expDays === null || ev.openRemaining <= ev.expDays);
+    var days = openingControls ? ev.openRemaining : ev.expDays;
+    if (days === null) return '有效期内';
+    if (days < 0) return (openingControls ? '开封超期 ' : '已过期 ') + Math.abs(days) + ' 天';
+    if (days === 0) return openingControls ? '开封今天到期' : '今天到期';
+    return (openingControls ? '开封保鲜剩 ' : '剩 ') + days + ' 天到期';
   }
 
   UI.renderPantryList = function () {
@@ -351,6 +384,16 @@
       var isAct = (dm === st.pantryDisplayMode);
       dBtns[dIdx].style.background = isAct ? '#1C1917' : 'transparent';
       dBtns[dIdx].style.color = isAct ? '#FFFFFF' : '#57534E';
+    }
+
+    var hasExtraFilter = (st.statusFilter !== 'in_stock' || st.attrFilter !== 'all' || st.catFilter !== 'all' || st.brandFilter !== 'all' || Boolean(q));
+    var summaryBar = document.getElementById('activeFilterSummaryBar');
+    var summaryTxt = document.getElementById('filterResultCountText');
+    summaryBar.classList.toggle('hidden-view', !hasExtraFilter);
+    if (hasExtraFilter) {
+      var displayCount = st.statusFilter === 'empty' ? Domain.groupEmptyItemsByProduct(filtered).length : filtered.length;
+      var unitWord = st.statusFilter === 'empty' ? '款产品' : '批商品';
+      summaryTxt.textContent = '当前筛选结果：共 ' + displayCount + ' ' + unitWord;
     }
 
     if (filtered.length === 0) {
@@ -440,6 +483,7 @@
 
         var batchRowsHtml = grp.batches.map(function (bItem, bIdx) {
           var bUsed = Number(bItem.consumedCount) || Number(bItem.lastQuantity) || 1;
+          var packTxt = purchasePackagingText(bItem);
           var priceTxt = bItem.price ? (' · ' + Utils.formatMoney(bItem.price, bItem.currency)) : '';
           var bOpen = bItem.archivedOpenedDate || bItem.openedDate || '';
           var bFin = bItem.finishedDate || '';
@@ -468,6 +512,7 @@
                   '<span style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:1px 6px;border-radius:5px;">批次 #' + (grp.batches.length - bIdx) + '</span>' +
                   '<strong style="font-size:12.5px;color:#15803D;">核销 ' + bUsed + ' ' + unitStr + '</strong>' +
                   durationBadgeHtml +
+                  (packTxt ? '<span style="font-size:11px;color:#78716C;">购入 ' + packTxt + '</span>' : '') +
                   (priceTxt ? '<span style="font-size:11px;color:#78716C;">' + Utils.escapeHtml(priceTxt) + '</span>' : '') +
                 '</div>' +
                 openFinishLine +
@@ -549,7 +594,7 @@
     }
 
     if (st.pantryDisplayMode === 'compact') {
-      listEl.style.gap = '7px';
+      listEl.style.gap = '8px';
       listEl.innerHTML = pagedItems.map(function (it) {
         var ev = Domain.evaluateItem(it);
         var catInfo = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
@@ -557,43 +602,43 @@
         var unitStr = Utils.escapeHtml(it.unit || '件');
         var badgeBg = '#DCFCE7';
         var badgeText = '#15803D';
-        var badgeLabel = ev.expDays !== null ? (ev.expDays + '天') : '有效';
+        var badgeLabel = formatExpiryCountdown(ev);
         if (ev.status === 'expired') {
           badgeBg = '#FEE2E2'; badgeText = '#DC2626';
-          badgeLabel = (ev.expDays !== null && ev.expDays < 0) ? ('过期' + Math.abs(ev.expDays) + '天') : '开封超期';
         } else if (ev.status === 'expiring') {
           badgeBg = '#FEF3C7'; badgeText = '#B45309';
-          badgeLabel = ev.expDays === 0 ? '今日到期' : ('剩' + ev.expDays + '天');
         }
+
         var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit || '罐') : '';
         var openDot = it.isOpened && ev.status !== 'empty'
-          ? '<span style="font-size:10px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;">🔓' + (fracTxtCompact || '1拆') + '</span>'
+          ? '<span style="font-size:10px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;white-space:nowrap;">🔓' + (fracTxtCompact || '已拆') + '</span>'
           : '';
         var palIcon = it.palatability === 'love' ? (it.category === 'med' ? '✅' : '😍') : (it.palatability === 'coax' ? (it.category === 'med' ? '💦' : '🥺') : (it.palatability === 'meh' ? (it.category === 'med' ? '⚠️' : '😒') : ''));
 
+        var compactMeta = ['<span>到期 ' + Utils.escapeHtml(it.expDate || '—') + '</span>'];
+        if (it.purchasePackaging) compactMeta.push('<span>购入 ' + purchasePackagingText(it) + '</span>');
+        if (it.spec) compactMeta.push('<span>' + Utils.escapeHtml(it.spec) + '</span>');
+        if (it.location) compactMeta.push('<span>📍' + Utils.escapeHtml(it.location) + '</span>');
+
         return (
-          '<div class="ios-card" style="padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-            '<div data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
-              '<div style="display:flex;align-items:center;gap:5px;min-width:0;">' +
-                '<span style="font-size:14px;flex-shrink:0;">' + catInfo.icon + '</span>' +
-                '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;flex-shrink:0;">' + Utils.escapeHtml(it.brand) + '</span>' +
-                '<strong style="font-size:13.5px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(it.name) + '</strong>' +
+          '<div class="ios-card" style="padding:10px 12px;border-radius:14px;">' +
+            '<div class="compact-card-header">' +
+              '<div class="compact-card-tags">' +
+                '<span style="font-size:13.5px;flex-shrink:0;">' + catInfo.icon + '</span>' +
+                '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + Utils.escapeHtml(it.brand) + '</span>' +
                 (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
                 openDot +
               '</div>' +
-              '<div style="font-size:11px;color:#78716C;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-                '<span>到期 ' + Utils.escapeHtml(it.expDate || '—') + '</span>' +
-                (it.spec ? ('<span>· ' + Utils.escapeHtml(it.spec) + '</span>') : '') +
-                (it.location ? ('<span>· 📍' + Utils.escapeHtml(it.location) + '</span>') : '') +
+              '<div class="compact-card-tags">' +
+                '<span style="background:' + badgeBg + ';color:' + badgeText + ';padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:800;white-space:nowrap;">' + badgeLabel + '</span>' +
+                '<span style="background:#F5F5F4;border:1px solid #E7E5E4;color:#1C1917;padding:2px 7px;border-radius:8px;font-size:11.5px;font-weight:800;white-space:nowrap;">余' + (stockProgressText(it) || qtyNum + unitStr) + '</span>' +
+                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:3px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🐾喂</button>' +
+                '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" class="edit-only" style="padding:3px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">编辑</button>' +
               '</div>' +
             '</div>' +
-            '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
-              '<span style="background:' + badgeBg + ';color:' + badgeText + ';padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;">' + badgeLabel + '</span>' +
-              '<span style="background:#F5F5F4;border:1px solid #E7E5E4;color:#1C1917;padding:3px 7px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;">' +
-                '余' + qtyNum + unitStr + (Number(it.eatenCount) > 0 ? ('·吃' + Number(it.eatenCount)) : '') +
-              '</span>' +
-              '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:4px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;">🐾喂</button>' +
-              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" class="edit-only" style="padding:4px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
+            '<div data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="cursor:pointer;">' +
+              '<div class="compact-title">' + Utils.escapeHtml(it.name) + '</div>' +
+              '<div class="compact-meta-row">' + compactMeta.join('') + '</div>' +
             '</div>' +
           '</div>'
         );
@@ -609,18 +654,12 @@
       var badgeBg = '#DCFCE7';
       var badgeText = '#15803D';
       var barColor = '#16A34A';
-      var badgeLabel = '';
+      var badgeLabel = formatExpiryCountdown(ev);
 
       if (ev.status === 'expired') {
         badgeBg = '#FEE2E2'; badgeText = '#DC2626'; barColor = '#DC2626';
-        badgeLabel = (ev.expDays !== null && ev.expDays < 0)
-          ? ('已过期 ' + Math.abs(ev.expDays) + ' 天')
-          : ('开封超期 ' + Math.abs(ev.openRemaining || 0) + ' 天');
       } else if (ev.status === 'expiring') {
         badgeBg = '#FEF3C7'; badgeText = '#B45309'; barColor = '#F59E0B';
-        badgeLabel = ev.expDays === 0 ? '今天到期！' : ('剩 ' + ev.expDays + ' 天到期');
-      } else {
-        badgeLabel = ev.expDays !== null ? ('剩 ' + ev.expDays + ' 天') : '有效期内';
       }
 
       var shelfText = it.shelfLifeValue
@@ -643,21 +682,21 @@
       if (it.isOpened && ev.status !== 'empty') {
         var openColor = (ev.openRemaining !== null && ev.openRemaining <= 5) ? '#DC2626' : '#C2410C';
         var openMsg = ev.openRemaining !== null
-          ? (ev.openRemaining < 0 ? ('当前拆封件已超期 ' + Math.abs(ev.openRemaining) + ' 天') : ('拆封保鲜剩 ' + ev.openRemaining + ' 天'))
-          : '当前 1 ' + unitStr + '已拆封';
+          ? (ev.openRemaining < 0 ? ('已超期 ' + Math.abs(ev.openRemaining) + ' 天') : ('保鲜剩 ' + ev.openRemaining + ' 天'))
+          : '保鲜追踪中';
         var sealedLeft = Math.max(0, Utils.round2(qtyNum - 1));
-        var fracHighlight = fracBannerTxt ? (' · <strong>本' + unitStr + fracBannerTxt + '</strong>') : '';
-        var scopeTxt = qtyNum > 1
-          ? ('🔓 正在用 1 ' + unitStr + '（开封 ' + Utils.escapeHtml(it.openedDate || '今日') + fracHighlight + ' · 其余 ' + sealedLeft + unitStr + '未拆）')
-          : ('🔓 开封日：' + Utils.escapeHtml(it.openedDate || '已记录') + fracHighlight);
+        var openParts = ['🔓 已拆 1' + unitStr + (fracBannerTxt ? ('(' + fracBannerTxt + ')') : '')];
+        if (sealedLeft > 0) openParts.push('未拆 ' + sealedLeft + unitStr);
+        if (it.openedDate) openParts.push('开封 ' + Utils.escapeHtml(it.openedDate));
         openedBannerHtml =
-          '<div style="margin-top:8px;padding:6px 10px;border-radius:10px;background:#FFF7ED;border:1px dashed #FDBA74;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;">' +
-            '<span style="color:#7C2D12;">' + scopeTxt + '</span>' +
+          '<div style="margin-top:8px;padding:6px 9px;border-radius:10px;background:#FFF7ED;border:1px dashed #FDBA74;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;">' +
+            '<span style="color:#7C2D12;">' + openParts.join(' · ') + '</span>' +
             '<strong style="color:' + openColor + ';white-space:nowrap;">' + openMsg + '</strong>' +
           '</div>';
       }
 
       var metaTags = [];
+      if (it.purchasePackaging) metaTags.push('购入 ' + purchasePackagingText(it));
       if (it.spec) metaTags.push('规格 ' + Utils.escapeHtml(it.spec));
       if (it.location) metaTags.push('📍 ' + Utils.escapeHtml(it.location));
       if (it.price) {
@@ -683,16 +722,15 @@
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
             thumbHtml +
             '<div style="min-width:0;flex:1;">' +
-              '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">' +
-                '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px;">' +
-                  '<span style="background:' + catBadgeBg + ';color:' + catBadgeCol + ';padding:2px 7px;border-radius:8px;font-size:11px;font-weight:700;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
-                  '<span style="background:#FFEDD5;color:#9A3412;padding:2px 8px;border-radius:8px;font-size:11.5px;font-weight:700;">' + Utils.escapeHtml(it.brand) + '</span>' +
-                  palHtml +
-                  lastFedHtml +
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px;">' +
+                '<div style="display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden;">' +
+                  '<span style="background:' + catBadgeBg + ';color:' + catBadgeCol + ';padding:2px 6px;border-radius:7px;font-size:10.5px;font-weight:700;white-space:nowrap;flex-shrink:0;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
+                  '<span style="background:#FFEDD5;color:#9A3412;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + Utils.escapeHtml(it.brand) + '</span>' +
                 '</div>' +
-                '<span style="white-space:nowrap;background:' + badgeBg + ';color:' + badgeText + ';padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:800;flex-shrink:0;">' + badgeLabel + '</span>' +
+                '<span style="white-space:nowrap;background:' + badgeBg + ';color:' + badgeText + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;flex-shrink:0;">' + badgeLabel + '</span>' +
               '</div>' +
-              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#1C1917;line-height:1.35;">' + Utils.escapeHtml(it.name) + '</h3>' +
+              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#1C1917;line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) + '</h3>' +
+              ((palHtml || lastFedHtml) ? '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' + palHtml + lastFedHtml + '</div>' : '') +
               (metaTags.length ? '<div style="margin-top:4px;font-size:11.5px;color:#78716C;line-height:1.4;">' + metaTags.join(' · ') + '</div>' : '') +
             '</div>' +
           '</div>' +
@@ -714,14 +752,14 @@
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
               '<div style="display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;background:#F5F5F4;border:1px solid #E7E5E4;border-radius:10px;padding:5px 9px;min-width:0;">' +
                 '<span style="font-size:11px;font-weight:600;color:#78716C;">在库</span>' +
-                '<span style="font-size:14px;font-weight:800;color:#1C1917;">' + qtyNum + ' ' + unitStr + '</span>' +
+                '<span style="font-size:14px;font-weight:800;color:#1C1917;">' + (stockProgressText(it) || qtyNum + ' ' + unitStr) + '</span>' +
                 (Number(it.eatenCount) > 0
                   ? '<span style="font-size:10.5px;font-weight:700;color:#15803D;background:#DCFCE7;padding:1px 6px;border-radius:6px;">已用' + Number(it.eatenCount) + unitStr + '</span>'
                   : ''
                 ) +
-                (it.isOpened && qtyNum > 1
-                  ? '<span style="font-size:10.5px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">' + Math.max(0, Utils.round2(qtyNum - 1)) + '未拆·1拆' + (fracBannerTxt ? ('(' + fracBannerTxt + ')') : '') + '</span>'
-                  : (it.isOpened && qtyNum > 0 ? '<span style="font-size:10.5px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中' + (fracBannerTxt ? ('·' + fracBannerTxt) : '') + '</span>' : '')
+                (it.isOpened && qtyNum > 0
+                  ? '<span style="font-size:10.5px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中</span>'
+                  : ''
                 ) +
               '</div>' +
               '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
@@ -1190,6 +1228,7 @@
 
   UI.openFeedModal = function (itemId, customDate) {
     document.getElementById('feedModalTitle').textContent = '🐾 记录饮食 / 营养 / 用药';
+    document.getElementById('feedStockSelect').disabled = false;
     document.getElementById('feedLogEditId').value = '';
     var dateToUse = customDate || (MP.state.activeTab === 'daily' ? MP.state.selectedLogDate : Utils.getTodayStr());
     document.getElementById('feedDateInput').value = dateToUse;
@@ -1227,6 +1266,8 @@
     document.getElementById('feedLogEditId').value = lg.id;
     document.getElementById('feedDateInput').value = lg.date || Utils.getTodayStr();
     document.getElementById('feedMealSlot').value = lg.mealSlot || '🌅 早饭';
+    // A deduction belongs to the original batch even when the meal details are edited.
+    document.getElementById('feedStockSelect').disabled = Boolean(lg.deductedUnit || lg.deductedFrac);
     UI.populateFeedStockDropdown(lg.itemId || '');
     document.getElementById('feedItemId').value = lg.itemId || '';
     document.getElementById('feedCategorySelect').value = lg.category || 'dry';
@@ -1426,7 +1467,8 @@
       btns[i].classList.toggle('active', btns[i].getAttribute('data-form-cat') === catKey);
     }
     if (applyDefaults) {
-      document.getElementById('fieldUnit').value = catInfo.defaultUnit;
+      var unitField = document.getElementById('fieldUnit');
+      if (!unitField.disabled) unitField.value = catInfo.defaultUnit;
       document.getElementById('fieldOpenLimit').value = String(catInfo.defaultOpenDays);
       if (!document.getElementById('fieldShelfValue').value) {
         document.getElementById('fieldShelfValue').value = String(catInfo.defaultShelfMonths);
@@ -1462,6 +1504,77 @@
     UI.syncModalUnitPriceHint();
   };
 
+  UI.readPurchasePackaging = function () {
+    if (!document.getElementById('fieldPackagingEnabled').checked) return null;
+    return Domain.validatePackaging({
+      count: document.getElementById('fieldPackCount').value,
+      outerUnit: document.getElementById('fieldPackOuterUnit').value,
+      size: document.getElementById('fieldPackSize').value
+    }, document.getElementById('fieldUnit').value);
+  };
+
+  UI.syncPurchasePackaging = function () {
+    var enabled = document.getElementById('fieldPackagingEnabled').checked;
+    var editing = Boolean(document.getElementById('fieldId').value);
+    var pack = UI.readPurchasePackaging();
+    var qty = document.getElementById('fieldQty');
+    var unitField = document.getElementById('fieldUnit');
+    var unit = unitField.value;
+    var total = pack ? pack.count * pack.size : 0;
+    var price = Number(document.getElementById('fieldPrice').value);
+    document.getElementById('purchasePackagingFields').classList.toggle('hidden-view', !enabled);
+    document.getElementById('fieldQtyLabel').textContent = enabled ? (editing ? '剩余数量' : '入库数量') : '数量 *';
+    document.getElementById('fieldUnitLabel').textContent = enabled ? '内包装' : '单位';
+    document.getElementById('fieldPriceLabel').textContent = enabled ? '购入总价' : '单价';
+    qty.readOnly = enabled && !editing;
+    qty.step = enabled ? '1' : '0.01';
+    unitField.disabled = enabled && editing;
+    ['fieldPackCount', 'fieldPackOuterUnit', 'fieldPackSize'].forEach(function (id) {
+      document.getElementById(id).disabled = !enabled || editing;
+    });
+    if (qty.readOnly) qty.value = total || '';
+    var preview = '';
+    if (enabled) {
+      preview = pack
+        ? pack.count + pack.outerUnit + ' × ' + pack.size + unit + ' = ' + total + unit
+        : '请输入有效的整包装数量，并选择内包装单位。';
+      if (pack && price > 0) {
+        preview += ' · 平均 ' + Utils.formatMoney(price / total, MP.state.formCurrency) + '/' + unit;
+      }
+    }
+    document.getElementById('purchasePackagingPreview').textContent = preview;
+    UI.syncOpenedFieldsVisibility();
+  };
+
+  function setPurchasePackagingForm(item) {
+    var pack = item && item.purchasePackaging;
+    var editing = Boolean(document.getElementById('fieldId').value);
+    var toggle = document.getElementById('fieldPackagingEnabled');
+    toggle.checked = Boolean(pack);
+    toggle.disabled = editing;
+    var count = document.getElementById('fieldPackCount');
+    var outer = document.getElementById('fieldPackOuterUnit');
+    var size = document.getElementById('fieldPackSize');
+    count.value = pack ? pack.count : 1;
+    outer.value = pack ? pack.outerUnit : '盒';
+    size.value = pack ? pack.size : 8;
+    count.disabled = outer.disabled = size.disabled = editing || !pack;
+    var unit = document.getElementById('fieldUnit');
+    if (item) {
+      if (!Array.from(unit.options).some(function (option) { return option.value === item.unit; })) {
+        unit.add(new Option(item.unit, item.unit));
+      }
+      unit.value = item.unit;
+    } else {
+      unit.value = (MP.CATEGORIES[MP.state.formCat] || MP.CATEGORIES.dry).defaultUnit;
+    }
+    var price = item && item.price;
+    document.getElementById('fieldPrice').value = price
+      ? String(pack ? Utils.round2(price * pack.count * pack.size) : price)
+      : '';
+    UI.syncPurchasePackaging();
+  }
+
   UI.syncModalCurrencyUI = function (curCode) {
     var cur = curCode === 'JPY' ? 'JPY' : 'CNY';
     MP.state.formCurrency = cur;
@@ -1488,7 +1601,8 @@
   UI.syncModalUnitPriceHint = function () {
     var hintEl = document.getElementById('modalUnitPriceHint');
     if (!hintEl) return;
-    if (!MP.isFoodCategory(MP.state.formCat)) {
+    UI.syncPurchasePackaging();
+    if (document.getElementById('fieldPackagingEnabled').checked || !MP.isFoodCategory(MP.state.formCat)) {
       hintEl.textContent = '';
       return;
     }
@@ -1569,7 +1683,6 @@
     document.getElementById('fieldName').value = '';
     document.getElementById('fieldSpec').value = '';
     document.getElementById('fieldQty').value = '1';
-    document.getElementById('fieldPrice').value = '';
     document.getElementById('fieldProdDate').value = Utils.getTodayStr();
     document.getElementById('fieldShelfValue').value = '18';
     document.getElementById('fieldShelfUnit').value = 'months';
@@ -1585,7 +1698,9 @@
     st.formImage = '';
     document.getElementById('fieldPhotoInput').value = '';
     var defaultCat = st.catFilter !== 'all' ? st.catFilter : 'dry';
+    document.getElementById('fieldUnit').disabled = false;
     UI.syncModalCategoryUI(defaultCat, true);
+    setPurchasePackagingForm();
     UI.autoComputeExpDate();
     UI.syncModalCurrencyUI(st.settings.defaultCurrency || 'CNY');
     UI.syncModalPalatabilityUI('');
@@ -1607,8 +1722,6 @@
     document.getElementById('fieldName').value = item.name || '';
     document.getElementById('fieldSpec').value = item.spec || '';
     document.getElementById('fieldQty').value = String(item.quantity !== undefined ? item.quantity : 1);
-    document.getElementById('fieldUnit').value = item.unit || '袋';
-    document.getElementById('fieldPrice').value = item.price ? String(item.price) : '';
     document.getElementById('fieldProdDate').value = item.prodDate || '';
     document.getElementById('fieldShelfValue').value = item.shelfLifeValue ? String(item.shelfLifeValue) : '';
     document.getElementById('fieldShelfUnit').value = item.shelfLifeUnit || 'months';
@@ -1625,6 +1738,7 @@
     MP.state.formImage = item.imageData || '';
     document.getElementById('fieldPhotoInput').value = '';
     UI.syncModalCategoryUI(item.category || 'dry', false);
+    setPurchasePackagingForm(item);
     UI.syncModalCurrencyUI(item.currency || 'CNY');
     UI.syncModalPalatabilityUI(item.palatability || '');
     UI.syncOpenedFieldsVisibility();
@@ -1644,8 +1758,6 @@
     document.getElementById('fieldSpec').value = item.spec || '';
     var defaultNewQty = Number(item.lastQuantity) > 0 ? Number(item.lastQuantity) : (Number(item.quantity) > 0 ? Number(item.quantity) : 1);
     document.getElementById('fieldQty').value = String(defaultNewQty);
-    document.getElementById('fieldUnit').value = item.unit || '袋';
-    document.getElementById('fieldPrice').value = item.price ? String(item.price) : '';
 
     var sVal = item.shelfLifeValue ? Number(item.shelfLifeValue) : ((MP.CATEGORIES[item.category] || MP.CATEGORIES.dry).defaultShelfMonths || 18);
     var sUnit = item.shelfLifeUnit || 'months';
@@ -1667,6 +1779,7 @@
     MP.state.formImage = item.imageData || '';
     document.getElementById('fieldPhotoInput').value = '';
     UI.syncModalCategoryUI(item.category || 'dry', false);
+    setPurchasePackagingForm(item);
     UI.syncModalCurrencyUI(item.currency || MP.state.settings.defaultCurrency || 'CNY');
     UI.syncModalPalatabilityUI(item.palatability || '');
     UI.syncOpenedFieldsVisibility();

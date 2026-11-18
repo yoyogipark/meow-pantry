@@ -412,3 +412,130 @@ body.is-edit-mode .mode-switch-pill {
 .clickable-stat-tile:hover {
   border-color: #FDBA74 !important;
 }
+
+.compact-card-header,
+.compact-card-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
+.compact-card-header {
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.compact-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #1C1917;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.compact-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 11px;
+  color: #78716C;
+  margin-top: 4px;
+}
+
+.compact-meta-row > span {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 359px) {
+  .app-shell {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .status-card {
+    padding: 9px 7px;
+  }
+}
+
+
+.stock-piece-count {
+  color: #78716C;
+  font-size: 10px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.stock-details-entry {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+#stockDetailsBtn {
+  min-height: 28px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.stock-quantity-details, .purchase-packaging {
+  padding: 9px 11px;
+  font-size: 12px;
+  color: #57534E;
+}
+
+.stock-quantity-details {
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+.stock-quantity-details dl {
+  margin: 4px 0;
+}
+
+.stock-quantity-details dl > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 4px 0;
+}
+
+.stock-quantity-details dd {
+  margin: 0;
+}
+
+.purchase-packaging {
+  border: 1px solid #FED7AA;
+  border-radius: 12px;
+  background: #FFF7ED;
+}
+
+.purchase-packaging-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.purchase-packaging-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.purchase-packaging-grid .ios-input {
+  margin-top: 4px;
+}
+
+.purchase-packaging-preview, .purchase-packaging-note {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.purchase-packaging-preview {
+  color: #9A3412;
+  font-weight: 700;
+}

@@ -32,7 +32,7 @@
     },
     activeTab: 'pantry',
     statusFilter: 'in_stock', // 'in_stock' | 'expiring' | 'expired' | 'empty'
-    attrFilter: 'all',        // 'all' | 'opened' | 'fresh' | 'pal_love' | 'group_food' | 'group_supp' | 'group_med'
+    attrFilter: 'all',        // 'all' | 'opened' | 'fresh' | 'pal_love' | 'group_food' | 'group_care'
     catFilter: 'all',
     brandFilter: 'all',
     sortBy: 'exp_asc',
@@ -68,6 +68,41 @@
   };
 
   // ==================== SCHEMA SANITIZERS & MIGRATORS (NON-DESTRUCTIVE) ====================
+  // Only units with an unambiguous package meaning enter the headline total.
+  Domain.isPackageUnit = function (unit) {
+    return /^(袋|罐|包|盒|箱|支|瓶|件|桶|杯|听|袋装)$/.test(unit);
+  };
+
+  Domain.validatePackaging = function (raw, innerUnit) {
+    if (!raw || !/^(盒|箱|组|提)$/.test(raw.outerUnit)) return null;
+    if (!Domain.isPackageUnit(innerUnit) && innerUnit !== '粒') return null;
+    var count = Number(raw.count);
+    var size = Number(raw.size);
+    if (!Number.isSafeInteger(count) || count < 1 || !Number.isSafeInteger(size) ||
+        size < 1 || !Number.isSafeInteger(count * size)) return null;
+    return { count: count, outerUnit: raw.outerUnit, size: size };
+  };
+
+  Domain.summarizeStockQuantity = function (items) {
+    var summary = { pieces: 0, units: Object.create(null), otherUnits: Object.create(null) };
+    items.forEach(function (it) {
+      var qty = Number(it.quantity);
+      if (!Number.isFinite(qty) || qty <= 0) return;
+      var unit = it.unit || '件';
+      if ((it.purchasePackaging || Domain.isPackageUnit(unit)) && (Number.isInteger(qty) || it.isOpened)) {
+        var entry = summary.units[unit] || (summary.units[unit] = { sealed: 0, opened: 0 });
+        var opened = it.isOpened ? 1 : 0;
+        entry.opened += opened;
+        var pieces = Math.ceil(qty);
+        entry.sealed += pieces - opened;
+        summary.pieces += pieces;
+      } else {
+        summary.otherUnits[unit] = Utils.round2((summary.otherUnits[unit] || 0) + qty);
+      }
+    });
+    return summary;
+  };
+
   Domain.sanitizeItem = function (raw, fallbackIdx) {
     if (!raw || typeof raw !== 'object') return null;
     var cat = (raw.category && MP.CATEGORIES[raw.category]) ? raw.category : 'dry';
@@ -92,6 +127,9 @@
     clean.spec = String(raw.spec || '').trim();
     clean.quantity = qty;
     clean.unit = String(raw.unit || defCat.defaultUnit).trim() || defCat.defaultUnit;
+    var purchasePackaging = Domain.validatePackaging(raw.purchasePackaging, clean.unit);
+    if (purchasePackaging) clean.purchasePackaging = purchasePackaging;
+    else delete clean.purchasePackaging;
     clean.price = Math.max(0, Number(raw.price) || 0);
     clean.currency = raw.currency === 'JPY' ? 'JPY' : 'CNY';
     clean.prodDate = Utils.normalizeDateStr(raw.prodDate);
@@ -211,6 +249,8 @@
     archiveItem.spec = activeItem.spec;
     archiveItem.unit = activeItem.unit;
     archiveItem.price = activeItem.price;
+    if (activeItem.purchasePackaging) archiveItem.purchasePackaging = Object.assign({}, activeItem.purchasePackaging);
+    else delete archiveItem.purchasePackaging;
     archiveItem.currency = activeItem.currency;
     archiveItem.prodDate = activeItem.prodDate;
     archiveItem.shelfLifeValue = activeItem.shelfLifeValue;
@@ -271,8 +311,11 @@
   };
 
   Domain.recordConsumedUnits = function (target, amountConsumed, customDateStr, historyNote) {
-    var used = Number(amountConsumed) > 0 ? Utils.round2(Number(amountConsumed)) : 1;
+    if (!target) return 0;
     var curQty = Utils.round2(Number(target.quantity) || 0);
+    if (curQty <= 0) return 0;
+    var used = Math.min(curQty, Number(amountConsumed) > 0 ? Utils.round2(Number(amountConsumed)) : 1);
+    if (used <= 0) return 0;
     var nextRem = Math.max(0, Utils.round2(curQty - used));
     var opDate = Utils.normalizeDateStr(customDateStr) || Utils.getTodayStr();
     var unitOpenedDate = target.openedDate || target.archivedOpenedDate || opDate;
@@ -348,6 +391,7 @@
       note: historyNote || (nextRem > 0 ? ('核销吃完 ' + used + (target.unit || '件') + '，余 ' + nextRem + (target.unit || '件')) : '本批次已全部吃完归档'),
       isSample: Boolean(target.isSample)
     });
+    return used;
   };
 
   // Fixed bug: properly clears finishedDate & recreates empty_<id> shadow archive if restoring final unit of a multi-unit batch!
@@ -362,6 +406,8 @@
     if (dUnit > 0) {
       var beforeQ = Utils.round2(Number(target.quantity) || 0);
       var wasFinishedBatch = (beforeQ <= 0);
+      var restorePartial = dFrac > 0 && dFrac < 0.98;
+      if (restorePartial && beforeQ > 0 && target.isOpened) return false;
       var restoredQ = Utils.round2(beforeQ + dUnit);
       target.quantity = restoredQ;
       target.eatenCount = Math.max(0, Utils.round2((Number(target.eatenCount) || 0) - dUnit));
@@ -370,13 +416,13 @@
         target.consumedCount = 0;
       }
 
-      if (dFrac > 0 && dFrac < 0.98) {
+      if (restorePartial) {
         target.isOpened = true;
         target.openRemainFraction = Utils.round2(dFrac);
         if (!target.openedDate) {
           target.openedDate = lg.date || target.archivedOpenedDate || Utils.getTodayStr();
         }
-      } else {
+      } else if (!target.isOpened || wasFinishedBatch) {
         target.isOpened = false;
         target.openRemainFraction = 0;
         target.openedDate = '';
@@ -427,8 +473,11 @@
 
     if (dFrac > 0) {
       var curRem = (target.isOpened && Number(target.openRemainFraction) > 0) ? Number(target.openRemainFraction) : 0;
+      // A fractional deduction can only be returned to a package still open.
+      if (curRem <= 0 || Number(target.quantity) <= 0) return false;
       var restoredRem = Utils.round2(curRem + dFrac);
-      if (restoredRem >= 0.96) {
+      if (restoredRem > 1) return false;
+      if (restoredRem === 1) {
         target.isOpened = false;
         target.openedDate = '';
         target.openRemainFraction = 0;
