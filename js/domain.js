@@ -89,7 +89,7 @@
     Domain.appendStockHistory({
       action: 'adjust', itemId: item.id, category: item.category, brand: item.brand,
       name: item.name, unit: unit, beforeQty: item.quantity, afterQty: item.quantity,
-      deltaText: previousUnit + ' → ' + unit, note: '更正库存计数单位，件数不变', isSample: item.isSample
+      deltaText: previousUnit + ' → ' + unit, note: '更正库存计数单位，件数不变', isSample: item.isSample, preservePortionRevision: true
     });
     return true;
   };
@@ -231,11 +231,7 @@
     var qty = Utils.round2(Math.max(0, Number(raw.quantity) || 0));
     var isOpened = qty > 0 ? Boolean(raw.isOpened) : false;
     var remFrac = Number(raw.openRemainFraction) || 0;
-    if (!isOpened || remFrac <= 0.02 || remFrac >= 0.99) {
-      remFrac = 0;
-    } else {
-      remFrac = Utils.round2(remFrac);
-    }
+    if (!isOpened || remFrac <= 0 || remFrac >= 1) remFrac = 0;
 
     // Preserve any extra user fields via shallow clone first
     var clean = Object.assign({}, raw);
@@ -304,7 +300,7 @@
     clean.nextDueDate = Utils.normalizeDateStr(raw.nextDueDate);
     clean.reminderDone = Boolean(raw.reminderDone);
     clean.deductedUnit = Utils.round2(Math.max(0, Number(raw.deductedUnit) || 0));
-    clean.deductedFrac = Utils.round2(Math.max(0, Number(raw.deductedFrac) || 0));
+    clean.deductedFrac = Math.max(0, Number(raw.deductedFrac) || 0);
     clean.isSample = Boolean(raw.isSample);
     return clean;
   };
@@ -425,6 +421,10 @@
       isSample: Boolean(entry.isSample)
     });
     state.stockHistory.unshift(record);
+    if (!entry.preservePortionRevision) {
+      var batch = state.items.find(function (item) { return item.id === record.itemId; });
+      if (batch && !batch.flavors) batch.portionRevision = record.id;
+    }
     if (state.stockHistory.length > MP.MAX_STOCK_HISTORY) {
       state.stockHistory.length = MP.MAX_STOCK_HISTORY;
     }
@@ -531,6 +531,7 @@
   Domain.revertConsumedFromLog = function (lg, adjustmentNote) {
     if (!lg || !lg.itemId) return false;
     if (lg.flavorId) return revertFlavorFeeding(lg);
+    if (lg.portionChange) return revertBatchPortion(lg);
     var target = state.items.find(function (x) { return x.id === lg.itemId; });
     if (!target) return false;
     var dUnit = Number(lg.deductedUnit) || 0;
@@ -697,13 +698,87 @@
     return true;
   };
 
+  Domain.planFeedingPortion = function (item, flavor, portion) {
+    if (item.flavors && !flavor) return { error: '请先选择实际喂食的口味。' };
+    if (item.quantity < 1 || (flavor && flavor.quantity < 1)) return { error: '当前库存不足，无法扣减。' };
+    var unit = item.unit || '件';
+    if (!Domain.isPackageUnit(unit) && unit !== '粒') {
+      return { error: '无法确认该商品的单件单位，请仅记录喂食或单独调整库存。' };
+    }
+    var remaining = (flavor || item).openRemainFraction || 1;
+    var used = portion.finish ? remaining : portion.fraction;
+    if (!Number.isFinite(used) || used <= 0) return { error: '无法换算份量，请输入如「1' + unit + '」或「半' + unit + '」。' };
+    if (used - remaining > 1e-12) return { error: '份量超过当前单件余量，无法扣减。' };
+    var after = remaining - used;
+    if (after <= 1e-12) after = 0;
+    if (after === remaining) return { error: '份量太小，无法安全更新余量。' };
+    return { used: after === 0 ? remaining : used, after: after };
+  };
+
+  Domain.feedBatchPortion = function (item, plan, date, amount) {
+    var before = {
+      revision: item.portionRevision || '', opened: Boolean(item.isOpened),
+      openedDate: item.openedDate || '', fraction: item.openRemainFraction || 0
+    };
+    var units = 0;
+    if (!plan.after) {
+      units = Domain.recordConsumedUnits(item, 1, date, '记喂食（' + amount + '），核销 1' + item.unit);
+      item.openRemainFraction = 0;
+    } else {
+      item.isOpened = true;
+      item.openedDate = item.openedDate || date;
+      item.openRemainFraction = plan.after;
+      item.lastEatenDate = date;
+      Domain.appendStockHistory({
+        date: date, action: 'partial', itemId: item.id, category: item.category,
+        brand: item.brand, name: item.name, unit: item.unit,
+        deltaText: Utils.formatRemainFractionText(plan.after, item.unit),
+        beforeQty: item.quantity, afterQty: item.quantity, note: '分顿投喂 ' + amount
+      });
+    }
+    return { units: units, fraction: plan.used, before: before, revision: item.portionRevision };
+  };
+
+  Domain.validatePortionReceipt = function (log) {
+    var change = log.portionChange;
+    var before = change && change.before;
+    return Boolean(log.itemId && !log.flavorId && before &&
+      typeof change.revision === 'string' && change.revision && typeof before.revision === 'string' &&
+      typeof before.opened === 'boolean' && typeof before.openedDate === 'string' &&
+      (before.openedDate === '' || Utils.normalizeDateStr(before.openedDate) === before.openedDate) &&
+      Number.isFinite(before.fraction) && before.fraction >= 0 && before.fraction < 1 &&
+      (before.opened || !before.fraction) && (change.units === 0 || change.units === 1) &&
+      change.units === Number(log.deductedUnit) && Number.isFinite(change.fraction) &&
+      change.fraction > 0 && change.fraction <= 1 && change.fraction === Number(log.deductedFrac));
+  };
+
+  function revertBatchPortion(log) {
+    var item = state.items.find(function (batch) { return batch.id === log.itemId; });
+    var change = log.portionChange;
+    var before = change.before;
+    if (!item || item.flavors || !Domain.validatePortionReceipt(log) || item.portionRevision !== change.revision) return false;
+    if (change.units) {
+      if (!Domain.revertConsumedFromLog(Object.assign({}, log, { portionChange: null, deductedFrac: 0 }))) return false;
+    } else {
+      Domain.appendStockHistory({
+        action: 'revert', itemId: item.id, category: item.category, brand: item.brand, name: item.name,
+        unit: item.unit, beforeQty: item.quantity, afterQty: item.quantity, note: '撤销分顿喂食，恢复开封状态及余量',
+        deltaText: before.fraction ? Utils.formatRemainFractionText(before.fraction, item.unit) : '恢复整件'
+      });
+    }
+    item.isOpened = before.opened;
+    item.openedDate = before.openedDate;
+    item.openRemainFraction = before.fraction;
+    item.portionRevision = before.revision;
+    return true;
+  }
+
   Domain.feedFlavor = function (item, flavor, fraction, finish, date, inventoryOnly) {
-    if (!flavor || flavor.quantity <= 0 || item.quantity <= 0) return null;
-    var remaining = flavor.openRemainFraction || 1;
-    var used = finish ? remaining : fraction;
-    if (!Number.isFinite(used) || used <= 0 || used - remaining > 0.00005) return null;
-    var after = Math.max(0, Math.round((remaining - used) * 10000) / 10000);
-    if (after >= remaining) return null;
+    if (!flavor) return null;
+    var plan = Domain.planFeedingPortion(item, flavor, { fraction: fraction, finish: finish });
+    if (plan.error) return null;
+    var used = plan.used;
+    var after = plan.after;
     var before = {
       revision: flavor.revision, openedDate: flavor.openedDate,
       fraction: flavor.openRemainFraction, sharedOpenedDate: item.isOpened ? item.openedDate : ''
@@ -873,6 +948,7 @@
       flavorName: entry.flavorName || undefined,
       flavorPalatability: entry.flavorPalatability || undefined,
       flavorChange: entry.flavorChange || undefined,
+      portionChange: entry.portionChange || undefined,
       isSample: Boolean(entry.isSample)
     });
     state.logs.unshift(record);

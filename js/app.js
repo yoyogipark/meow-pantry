@@ -572,6 +572,7 @@
     }
 
     deductionSwitch.addEventListener('change', refreshFeedPortion);
+    feedAmount.addEventListener('input', refreshFeedPortion);
     document.getElementById('feedDateInput').addEventListener('change', function () {
       if (this.value !== Utils.getTodayStr()) deductionSwitch.checked = false;
       refreshFeedPortion();
@@ -652,6 +653,7 @@
       var actualDeductedFrac = 0;
       var flavor = null;
       var flavorChange = null;
+      var portionChange = null;
       var flavorPalatability = '';
 
       if (fItemId) {
@@ -666,97 +668,32 @@
             UI.showToast('请选择实际喂食的口味');
             return;
           }
-          var portion = UI.getFlavorFeedFraction(fAmount, stItem, flavor);
-          var formatHelp = '请输入有效份量，例如「1' + stItem.unit + '」或「半' + stItem.unit + '」。';
-          if (!portion.valid && !(deduct && portion.finish)) {
-            UI.showToast(formatHelp);
-            return;
-          }
           flavorPalatability = document.getElementById('feedFlavorPal').value;
-          if (deduct) {
-            if (stItem.quantity <= 0 || flavor.quantity <= 0) {
-              UI.showToast('当前「' + flavor.name + '」库存不足，无法扣减。');
-              return;
-            }
-            var remaining = flavor.openRemainFraction || 1;
-            if (!portion.finish && !portion.fraction) {
-              UI.showToast('无法按该口味的规格换算，请输入实际库存单位的份量。');
-              return;
-            }
-            if (portion.fraction - remaining > 0.00005) {
-              UI.showToast(portion.fraction - 1 > 0.00005
-                ? '一次只能扣减该口味的一件库存，请分别记录。'
-                : '当前已开封的「' + flavor.name + '」剩余量不足。');
-              return;
-            }
+        }
+        var portion = UI.parseFeedPortion(fAmount, stItem, flavor);
+        if (flavor && !portion.valid && !(deduct && portion.finish)) {
+          UI.showToast('请输入有效份量，例如「1' + stItem.unit + '」或「半' + stItem.unit + '」。');
+          return;
+        }
+        if (deduct) {
+          var plan = Domain.planFeedingPortion(stItem, flavor, portion);
+          if (plan.error) {
+            UI.showToast(plan.error);
+            return;
+          }
+          if (flavor) {
             flavorChange = Domain.feedFlavor(stItem, flavor, portion.fraction, portion.finish, fDate);
-            if (!flavorChange) {
-              UI.showToast('该份量太小，无法更新当前开封余量。');
-              return;
-            }
+            if (!flavorChange) return;
             flavor.palatability = flavorPalatability;
-            actualDeductedUnit = flavorChange.units;
-            actualDeductedFrac = flavorChange.fraction;
-          }
-        } else if (deduct) {
-          var curQ = Number(stItem.quantity) || 0;
-          if (curQ <= 0) {
-            UI.showToast('当前批次库存不足，无法扣减。');
-            return;
-          }
-          var parsed = UI.parseFeedPortion(fAmount, stItem);
-          var tracksPortions = stItem.category === 'can' || Domain.isSingleServingUnit(stItem);
-          // Keep manual whole-package deductions for products without tracked portions.
-          var usedFrac = parsed.finish ? stItem.openRemainFraction || 1 : parsed.fraction || 0;
-          if (tracksPortions && stItem.openRemainFraction > 0 && !usedFrac) {
-            UI.showToast('无法确认开封份量，请输入实际库存单位的份量，或选择吃完剩余。');
-            return;
-          }
-          if (usedFrac > 0 && tracksPortions) {
-            var startRem = (stItem.isOpened && Number(stItem.openRemainFraction) > 0 && Number(stItem.openRemainFraction) < 0.98)
-              ? Number(stItem.openRemainFraction)
-              : 1.0;
-            if (usedFrac > startRem + 0.00005) {
-              UI.showToast(usedFrac > 1 ? '一次只能扣减一件库存，请分别记录。' : '当前已开封库存的剩余量不足。');
-              return;
-            }
-            stItem.lastEatenDate = fDate;
-            var nextRemFrac = Utils.round2(startRem - usedFrac);
-            if (nextRemFrac <= 0.08) {
-              if (!stItem.openedDate) stItem.openedDate = fDate;
-              actualDeductedUnit = Domain.recordConsumedUnits(stItem, 1, fDate, '记喂食（' + fAmount + '）吃完整' + (stItem.unit || '罐') + '自动核销');
-              actualDeductedFrac = startRem;
-              splitToastSuffix = '（本' + (stItem.unit || '罐') + '已吃完并自动核销库存）';
-            } else {
-              stItem.isOpened = true;
-              if (!stItem.openedDate) stItem.openedDate = fDate;
-              if (!stItem.openDaysLimit) {
-                stItem.openDaysLimit = (MP.CATEGORIES[stItem.category] || MP.CATEGORIES.can).defaultOpenDays;
-              }
-              stItem.openRemainFraction = nextRemFrac;
-              actualDeductedFrac = usedFrac;
-              var remStr = Utils.formatRemainFractionText(nextRemFrac, stItem.unit || '罐');
-              Domain.appendStockHistory({
-                date: fDate,
-                action: 'partial',
-                itemId: stItem.id,
-                category: stItem.category,
-                brand: stItem.brand,
-                name: stItem.name,
-                unit: stItem.unit || '罐',
-                deltaText: '本' + (stItem.unit || '罐') + remStr,
-                beforeQty: curQ,
-                afterQty: curQ,
-                note: '分顿投喂 ' + fAmount + '，拆封余量更新为' + remStr
-              });
-              splitToastSuffix = '（本' + (stItem.unit || '罐') + remStr + '）';
-            }
           } else {
-            stItem.lastEatenDate = fDate;
-            actualDeductedFrac = stItem.isOpened ? Number(stItem.openRemainFraction) || 0 : 0;
-            actualDeductedUnit = Domain.recordConsumedUnits(stItem, 1, fDate, '记喂食同步扣减 1 ' + (stItem.unit || '件'));
-            splitToastSuffix = '（已同步扣减 1 ' + (stItem.unit || '件') + '库存）';
+            portionChange = Domain.feedBatchPortion(stItem, plan, fDate, fAmount);
           }
+          var change = flavorChange || portionChange;
+          actualDeductedUnit = change.units;
+          actualDeductedFrac = change.fraction;
+          splitToastSuffix = plan.after
+            ? '（已更新开封余量）'
+            : '（已核销 1' + stItem.unit + '）';
         }
       }
 
@@ -777,7 +714,8 @@
         flavorId: flavor && flavor.id,
         flavorName: flavor && flavor.name,
         flavorPalatability: flavorPalatability,
-        flavorChange: flavorChange
+        flavorChange: flavorChange,
+        portionChange: portionChange
       });
 
       selectLogDate(fDate);
@@ -1233,6 +1171,9 @@
           var prevQty = Utils.round2(Number(prevIt.quantity) || 0);
           if (prevIt.eatenCount) record.eatenCount = prevIt.eatenCount;
           if (prevIt.openRemainFraction && record.isOpened) record.openRemainFraction = prevIt.openRemainFraction;
+          if (prevQty === newQty && prevIt.isOpened === record.isOpened && prevIt.openedDate === record.openedDate) {
+            record.portionRevision = prevIt.portionRevision;
+          }
           if (prevIt.consumedCount) record.consumedCount = prevIt.consumedCount;
           if (prevIt.lastQuantity) record.lastQuantity = prevIt.lastQuantity;
           if (prevIt.sourceBatchId) record.sourceBatchId = prevIt.sourceBatchId;
@@ -1396,8 +1337,11 @@
           '校验通过：包含 ' + check.items.length + ' 条批次记录、' + check.logs.length + ' 条饮食记录与 ' + check.stockHistory.length + ' 条库存流水。请选择导入方式（即使选全量覆盖，系统也会自动保存覆盖前本地快照供随时撤回）：',
           '确认导入',
           function (useSmartMerge) {
-            Storage.applyBackupData(check, useSmartMerge, function (ok) {
-              if (!ok) return;
+            Storage.applyBackupData(check, useSmartMerge, function (ok, error) {
+              if (!ok) {
+                if (error) UI.openConfirm('无法智能合并', error, '知道了', function () {});
+                return;
+              }
               UI.renderAll();
               UI.switchTab('pantry');
               UI.showToast(useSmartMerge ? '已智能合并备份数据' : ('已恢复 ' + check.items.length + ' 条记录（需要可点设置页撤回）'));

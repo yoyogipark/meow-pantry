@@ -102,6 +102,13 @@
   }
 
   Storage.saveToStorage = function (isSilentInit, onComplete) {
+    if (pendingSmartMerge) {
+      var merge = pendingSmartMerge;
+      pendingSmartMerge = null;
+      if (merge.transaction) {
+        try { merge.transaction.abort(); } catch (error) { /* Transaction already finished. */ }
+      }
+    }
     var st = MP.state;
     if (!isSilentInit) {
       st.settings.unsavedChangesCount = (Number(st.settings.unsavedChangesCount) || 0) + 1;
@@ -442,13 +449,28 @@
       if (item.id && !batchIds.has(item.id)) batchIds.set(item.id, item);
     }
     for (var log of rawLogs) {
-      if (!log || typeof log !== 'object' || !log.flavorId) continue;
+      if (!log || typeof log !== 'object') continue;
+      if (log.portionChange && !Domain.validatePortionReceipt(log)) {
+        return { ok: false, error: '备份中存在无效的分顿扣减凭据' };
+      }
+      if (!log.flavorId) continue;
       var batch = batchIds.get(log.itemId);
       if (!Domain.validateFlavorLog(log) || (batch && !Domain.findFlavor(batch, log.flavorId))) {
         return { ok: false, error: '备份中存在无效的喂食口味或库存回退关联' };
       }
     }
 
+    // Full restore still reads legacy backups without IDs. Smart merge cannot deduplicate them.
+    var unstableIds = [rawItems, rawLogs, rawHist].some(function (records) {
+      var ids = new Set();
+      return records.some(function (record) {
+        if (!record || typeof record !== 'object' || record.isSample) return false;
+        var id = typeof record.id === 'string' ? record.id.trim() : '';
+        if (!id || ids.has(id)) return true;
+        ids.add(id);
+        return false;
+      });
+    });
     var validItems = Domain.reconcileBatches(rawItems);
     var validLogs = rawLogs.map(Domain.sanitizeLog).filter(Boolean);
     var validHist = rawHist.map(Domain.sanitizeStockHistoryEntry).filter(Boolean);
@@ -456,12 +478,152 @@
     return {
       ok: true,
       version: parsed.version || 1,
+      unstableIds: unstableIds,
       items: validItems,
       logs: validLogs,
       stockHistory: validHist,
       settings: rawSettings
     };
   };
+
+  function deductionSignature(log) {
+    return JSON.stringify([log.itemId, log.flavorId || '', log.deductedUnit || 0,
+      log.deductedFrac || 0, log.flavorChange || null, log.portionChange || null]);
+  }
+
+  function hasDeduction(log) {
+    return Boolean(log.deductedUnit || log.deductedFrac || log.flavorChange || log.portionChange);
+  }
+
+  function stockSignature(item) {
+    return JSON.stringify([item.quantity, item.unit, item.isOpened, item.openedDate, item.openRemainFraction,
+      item.eatenCount, item.consumedCount, item.finishedDate, item.purchasePackaging || null,
+      item.portionRevision || '', (item.flavors || []).map(function (flavor) {
+        return [flavor.id, flavor.perPack, flavor.quantity, flavor.openedDate, flavor.openRemainFraction, flavor.revision];
+      }).sort()]);
+  }
+
+  function planSmartMerge(backup) {
+    if (backup.unstableIds) {
+      return { error: '智能合并已取消：备份包含缺少 ID 或 ID 重复的记录，无法安全去重。本地数据未更改。' };
+    }
+    var st = MP.state;
+    var items = st.items.filter(function (item) { return !item.isSample; });
+    var logs = st.logs.filter(function (log) { return !log.isSample; });
+    var history = st.stockHistory.filter(function (entry) { return !entry.isSample; });
+    var incomingItems = backup.items.filter(function (item) { return !item.isSample; });
+    var incomingLogs = backup.logs.filter(function (log) { return !log.isSample; });
+    var incomingHistory = backup.stockHistory.filter(function (entry) { return !entry.isSample; });
+    var batchId = function (item) { return item.sourceBatchId || item.id; };
+    var localBatches = new Set(items.map(batchId));
+    var importedBatches = new Set(incomingItems.map(batchId));
+    var localItems = new Map(items.map(function (item) { return [item.id, item]; }));
+    var localLogs = new Map(logs.map(function (log) { return [log.id, log]; }));
+    var localHistory = new Map(history.map(function (entry) { return [entry.id, entry]; }));
+    var incomingEvidence = new Set(incomingHistory.map(function (entry) { return entry.id; })
+      .concat(incomingLogs.filter(hasDeduction).map(function (log) { return log.id; })));
+    var localEvidence = new Set(history.concat(logs.filter(hasDeduction)).filter(function (record) {
+      return !incomingEvidence.has(record.id);
+    }).map(function (record) { return record.itemId; }));
+    var touchedLocally = new Set(history.concat(logs).map(function (record) { return record.itemId; }));
+    var conflict = function (id) {
+      var item = localItems.get(id) || incomingItems.find(function (entry) { return entry.id === id; });
+      return { error: '智能合并已取消：' + (item ? '「' + item.name + '」' : '批次 ' + (id || '未知')) +
+        '的库存与流水无法安全合并，本地数据未更改。' };
+    };
+
+    // Shared batches keep the local snapshot only when incoming stock evidence is already known.
+    for (var item of incomingItems) {
+      var id = batchId(item);
+      if (!localBatches.has(id)) {
+        if (touchedLocally.has(id) || localItems.has(item.id)) return conflict(id);
+        items.push(item);
+      } else {
+        var local = localItems.get(item.id);
+        if ((!local || stockSignature(local) !== stockSignature(item)) &&
+            (backup.version < 2 || !localEvidence.has(id))) return conflict(id);
+      }
+    }
+    for (var log of incomingLogs) {
+      var oldLog = localLogs.get(log.id);
+      if (oldLog) {
+        if (deductionSignature(oldLog) !== deductionSignature(log)) return conflict(log.itemId);
+      } else {
+        if (hasDeduction(log) && (!log.itemId || localBatches.has(log.itemId) ||
+            (!importedBatches.has(log.itemId) && touchedLocally.has(log.itemId)))) return conflict(log.itemId);
+        logs.push(log);
+        localLogs.set(log.id, log);
+      }
+    }
+    for (var entry of incomingHistory) {
+      var oldEntry = localHistory.get(entry.id);
+      if (oldEntry) {
+        if (JSON.stringify(oldEntry) !== JSON.stringify(entry)) return conflict(entry.itemId);
+      } else {
+        if (localBatches.has(entry.itemId) || (!importedBatches.has(entry.itemId) &&
+            touchedLocally.has(entry.itemId))) return conflict(entry.itemId);
+        history.push(entry);
+        localHistory.set(entry.id, entry);
+      }
+    }
+    if (history.length > MP.MAX_STOCK_HISTORY) {
+      return { error: '智能合并已取消：合并后的库存流水超过保留上限，本地数据未更改。' };
+    }
+    logs.sort(function (a, b) { return b.date.localeCompare(a.date); });
+    history.sort(function (a, b) { return b.timestamp.localeCompare(a.timestamp); });
+    return { items: Domain.reconcileBatches(items), logs: logs, stockHistory: history };
+  }
+
+  var pendingSmartMerge = null;
+
+  function commitSmartMerge(plan, done) {
+    if (plan.error) { done(false, plan.error); return; }
+    if (pendingSmartMerge) { done(false, '正在合并备份，请稍后再试。'); return; }
+    var st = MP.state;
+    var operation = { transaction: null };
+    pendingSmartMerge = operation;
+    function finish(ok) {
+      if (pendingSmartMerge === operation) pendingSmartMerge = null;
+      done(ok, ok ? '' : '无法完整保存合并结果，智能合并已取消，本地数据未更改。');
+    }
+    Storage.openIDB(function (db) {
+      if (pendingSmartMerge !== operation || !db) { finish(false); return; }
+      var settings = Object.assign({}, st.settings, {
+        lastBackupDate: Utils.getTodayStr(), unsavedChangesCount: 0,
+        lastSavedAt: Math.max(Date.now(), (st.settings.lastSavedAt || 0) + 1),
+        schemaVersion: MP.SCHEMA_VERSION, lsSlimMode: false
+      });
+      try {
+        var tx = db.transaction(MP.IDB_CONFIG.STORE, 'readwrite');
+        operation.transaction = tx;
+        tx.onabort = function () { finish(false); };
+        tx.oncomplete = function () {
+          if (pendingSmartMerge !== operation) { finish(false); return; }
+          st.items = plan.items;
+          st.logs = plan.logs;
+          st.stockHistory = plan.stockHistory;
+          st.settings = settings;
+          showStorageWriteWarning('');
+          finish(true);
+        };
+        var store = tx.objectStore(MP.IDB_CONFIG.STORE);
+        var currentSettings = store.get(MP.STORAGE_KEYS.SETTINGS);
+        currentSettings.onsuccess = function () {
+          var saved = safeJsonParse(currentSettings.result);
+          if (saved && saved.lastSavedAt > st.settings.lastSavedAt) { tx.abort(); return; }
+          try {
+            store.put(JSON.stringify(plan.items), MP.STORAGE_KEYS.ITEMS);
+            store.put(JSON.stringify(plan.logs), MP.STORAGE_KEYS.LOGS);
+            store.put(JSON.stringify(plan.stockHistory), MP.STORAGE_KEYS.STOCK_HISTORY);
+            store.put(JSON.stringify(settings), MP.STORAGE_KEYS.SETTINGS);
+          } catch (error) { tx.abort(); }
+        };
+      } catch (error) {
+        if (operation.transaction) operation.transaction.abort();
+        else finish(false);
+      }
+    });
+  }
 
   Storage.applyBackupData = function (validated, useSmartMerge, onDone) {
     var st = MP.state;
@@ -481,48 +643,7 @@
     }
 
     if (useSmartMerge) {
-      var curItems = st.items.filter(function (x) { return !x.isSample; });
-      var itemIdxMap = {};
-      for (var i = 0; i < curItems.length; i++) {
-        itemIdxMap[curItems[i].id] = i;
-      }
-      incomingItems.forEach(function (inc) {
-        if (!inc || inc.isSample) return;
-        if (itemIdxMap[inc.id] === undefined) {
-          itemIdxMap[inc.id] = curItems.length;
-          curItems.push(inc);
-        } else {
-          curItems[itemIdxMap[inc.id]] = inc;
-        }
-      });
-      st.items = Domain.reconcileBatches(curItems);
-
-      var curLogs = st.logs.filter(function (lg) { return !lg.isSample; });
-      var logMap = {};
-      curLogs.forEach(function (lg) { logMap[lg.id] = true; });
-      incomingLogs.forEach(function (incLg) {
-        if (!incLg || incLg.isSample) return;
-        if (!logMap[incLg.id]) {
-          curLogs.push(incLg);
-          logMap[incLg.id] = true;
-        }
-      });
-      curLogs.sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
-      st.logs = curLogs;
-
-      var curHist = st.stockHistory.filter(function (h) { return !h.isSample; });
-      var histMap = {};
-      curHist.forEach(function (h) { histMap[h.id] = true; });
-      incomingHist.forEach(function (incH) {
-        if (!incH || incH.isSample) return;
-        if (!histMap[incH.id]) {
-          curHist.push(incH);
-          histMap[incH.id] = true;
-        }
-      });
-      curHist.sort(function (a, b) { return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
-      st.stockHistory = curHist.slice(0, MP.MAX_STOCK_HISTORY);
-      finishImport();
+      commitSmartMerge(planSmartMerge(validated), onDone || function () {});
     } else {
       // Save automatic pre-restore snapshot before full overwrite so user never loses local data accidentally!
       Storage.savePreRestoreSnapshot(function (ok) {
