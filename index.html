@@ -383,6 +383,91 @@
       pointer-events: none;
       transition: opacity 0.2s ease;
     }
+
+    /* ==================== DARK MODE (夜间护眼模式 #9) ==================== */
+    body.dark-mode {
+      --bg-cream: #121110;
+      --card-bg: #1C1917;
+      --text-main: #F5F5F4;
+      --text-muted: #A8A29E;
+      background-color: #121110 !important;
+      color: #F5F5F4 !important;
+    }
+
+    body.dark-mode .ios-card,
+    body.dark-mode .modal-sheet,
+    body.dark-mode .status-card {
+      background-color: #1C1917 !important;
+      border-color: #292524 !important;
+      color: #F5F5F4 !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+
+    body.dark-mode .status-card.selected {
+      background-color: #2E1A0F !important;
+      border-color: #EA580C !important;
+    }
+
+    body.dark-mode .bottom-nav {
+      background: rgba(28, 25, 23, 0.92) !important;
+      border-top-color: #292524 !important;
+    }
+
+    body.dark-mode .ios-input,
+    body.dark-mode .ios-date-wrap {
+      background-color: #262320 !important;
+      border-color: #44403C !important;
+      color: #F5F5F4 !important;
+    }
+
+    body.dark-mode .ios-date-display {
+      color: #F5F5F4 !important;
+    }
+
+    body.dark-mode .ios-btn-secondary,
+    body.dark-mode .pill-chip:not(.active),
+    body.dark-mode .mode-switch-pill {
+      background-color: #262320 !important;
+      border-color: #44403C !important;
+      color: #D6D3D1 !important;
+    }
+
+    body.dark-mode .pill-chip.active {
+      background-color: #EA580C !important;
+      border-color: #EA580C !important;
+      color: #FFFFFF !important;
+    }
+
+    body.dark-mode .progress-track {
+      background-color: #292524 !important;
+    }
+
+    /* Adapt inline light surfaces & dark text inside cards when dark-mode is active */
+    body.dark-mode h1,
+    body.dark-mode h2,
+    body.dark-mode h3,
+    body.dark-mode strong {
+      color: #F5F5F4 !important;
+    }
+
+    body.dark-mode [style*="background:#FAFAF9"],
+    body.dark-mode [style*="background:#F5F5F4"],
+    body.dark-mode [style*="background:#FFFFFF"],
+    body.dark-mode [style*="background:#FFF"] {
+      background-color: #262320 !important;
+      border-color: #38332E !important;
+      color: #E7E5E4 !important;
+    }
+
+    body.dark-mode [style*="background:#FFF7ED"] {
+      background-color: #2A1810 !important;
+      border-color: #7C2D12 !important;
+    }
+
+    body.dark-mode [style*="color:#1C1917"],
+    body.dark-mode [style*="color:#44403C"] {
+      color: #E7E5E4 !important;
+    }
   </style>
 </head>
 <body>
@@ -405,7 +490,8 @@
           <p id="headerSubtitle" class="text-xs text-stone-500" style="margin:2px 0 0 0;font-size:12px;color:#78716C;">本地离线存储 · 保质期与品牌管家</p>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <button id="darkModeToggleBtn" type="button" aria-label="切换夜间护眼模式" title="切换日间/夜间护眼模式" style="width:36px;height:38px;border-radius:999px;border:1.5px solid #E7E5E4;background:#FFFFFF;color:#57534E;font-size:15px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">🌙</button>
         <label for="globalEditModeToggle" class="mode-switch-pill" title="勾选后开启增删改操作，平时关闭防误触">
           <input id="globalEditModeToggle" type="checkbox" style="width:15px;height:15px;accent-color:#EA580C;margin:0;cursor:pointer;">
           <span id="globalEditModeText">编辑模式</span>
@@ -722,6 +808,16 @@
         <div id="priorityFeedList" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
 
+      <!-- 4B. Future Expiry Month Timeline (未来到期月份时间轴 #6) -->
+      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
+          <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🗓️ 未来到期月份时间轴</h2>
+          <span id="expiryTimelineCountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">0 个月份</span>
+        </div>
+        <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">按到期月份由近及远排列在库口粮，提前发现集中临期月份</p>
+        <div id="expiryMonthTimelineList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
       <!-- 5. Brand Deep Archive Directory -->
       <div class="ios-card p-4" style="padding:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
@@ -922,7 +1018,7 @@
           </div>
           <div>
             <div style="height:20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-              <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">单价</label>
+              <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">单价 <span id="modalUnitPriceHint" style="font-size:10px;font-weight:600;color:#EA580C;"></span></label>
               <div id="currencyToggleGroup" style="display:inline-flex;background:#E7E5E4;padding:1.5px;border-radius:7px;gap:1px;">
                 <button type="button" data-form-currency="CNY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;line-height:1.35;">人民币</button>
                 <button type="button" data-form-currency="JPY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;line-height:1.35;">日元</button>
@@ -1587,6 +1683,41 @@
         return 'CN¥' + fixed;
       }
 
+      function parseSpecToGrams(specStr) {
+        if (!specStr || typeof specStr !== 'string') return 0;
+        var s = specStr.trim().toLowerCase();
+        // Match compound specs like "15g×6支", "85g*12", "14g x 4"
+        var mComp = s.match(/(\d+(?:\.\d+)?)\s*(kg|千克|g|克|ml|毫升)\s*[x×\*]\s*(\d+)/i);
+        if (mComp) {
+          var baseVal = parseFloat(mComp[1]);
+          var unit = mComp[2];
+          var mult = parseInt(mComp[3], 10) || 1;
+          var g = (unit === 'kg' || unit === '千克') ? baseVal * 1000 : baseVal;
+          return g * mult;
+        }
+        // Match single weight/volume like "5.4kg", "170g", "320g"
+        var mSingle = s.match(/(\d+(?:\.\d+)?)\s*(kg|千克|g|克|ml|毫升)/i);
+        if (mSingle) {
+          var val = parseFloat(mSingle[1]);
+          var u = mSingle[2];
+          return (u === 'kg' || u === '千克') ? val * 1000 : val;
+        }
+        return 0;
+      }
+
+      function formatPer100gPrice(price, currency, specStr) {
+        var p = Number(price);
+        if (!p || p <= 0) return '';
+        var totalGrams = parseSpecToGrams(specStr);
+        if (!totalGrams || totalGrams <= 0) return '';
+        var per100g = (p / totalGrams) * 100;
+        if (currency === 'JPY') {
+          return '≈' + Math.round(per100g).toLocaleString('en-US') + '円/100g';
+        }
+        var fixed = per100g >= 10 ? per100g.toFixed(1) : per100g.toFixed(2);
+        return '≈¥' + fixed + '/100g';
+      }
+
       var state = {
         items: [],
         logs: [],
@@ -1595,6 +1726,7 @@
           warnDays: 60,
           showImages: true,
           defaultCurrency: 'CNY',
+          darkMode: false,
           lastBackupDate: '',
           unsavedChangesCount: 0
         },
@@ -1699,6 +1831,9 @@
         }
         if (typeof pSet.unsavedChangesCount === 'number') {
           state.settings.unsavedChangesCount = pSet.unsavedChangesCount;
+        }
+        if (typeof pSet.darkMode === 'boolean') {
+          state.settings.darkMode = pSet.darkMode;
         }
       }
 
@@ -1841,6 +1976,50 @@
           target.isOpened = false;
           target.openRemainFraction = 0;
         }
+      }
+
+      function revertConsumedFromLog(lg) {
+        if (!lg || !lg.itemId) return false;
+        var target = state.items.find(function (x) { return x.id === lg.itemId; });
+        if (!target) return false;
+        var dUnit = Number(lg.deductedUnit) || 0;
+        var dFrac = Number(lg.deductedFrac) || 0;
+
+        if (dUnit > 0) {
+          // Restore 1 unit back to stock and decrement eatenCount / archive copy
+          target.quantity = Math.round(((Number(target.quantity) || 0) + dUnit) * 100) / 100;
+          target.eatenCount = Math.max(0, Math.round(((Number(target.eatenCount) || 0) - dUnit) * 100) / 100);
+          if (dFrac > 0 && dFrac < 0.98) {
+            target.isOpened = true;
+            target.openRemainFraction = dFrac;
+          }
+          var linkedArc = state.items.find(function (x) { return x.sourceBatchId === target.id && (Number(x.quantity) || 0) <= 0; });
+          if (linkedArc) {
+            if (target.eatenCount <= 0) {
+              state.items = state.items.filter(function (x) { return x.id !== linkedArc.id; });
+            } else {
+              linkedArc.consumedCount = target.eatenCount;
+              linkedArc.lastQuantity = target.eatenCount;
+            }
+          }
+          return true;
+        }
+
+        if (dFrac > 0) {
+          // Restore fractional portion back to the currently opened can
+          var curRem = (target.isOpened && Number(target.openRemainFraction) > 0) ? Number(target.openRemainFraction) : 0;
+          var restoredRem = Math.round((curRem + dFrac) * 100) / 100;
+          if (restoredRem >= 0.96) {
+            target.isOpened = false;
+            target.openedDate = '';
+            target.openRemainFraction = 0;
+          } else {
+            target.isOpened = true;
+            target.openRemainFraction = restoredRem;
+          }
+          return true;
+        }
+        return false;
       }
 
       function getProductGroupKey(it) {
@@ -2047,7 +2226,27 @@
         }
       }
 
+      function syncDarkModeUI() {
+        var btn = document.getElementById('darkModeToggleBtn');
+        if (state.settings.darkMode) {
+          document.body.classList.add('dark-mode');
+          if (btn) {
+            btn.textContent = '☀️';
+            btn.style.background = '#262320';
+            btn.style.borderColor = '#44403C';
+          }
+        } else {
+          document.body.classList.remove('dark-mode');
+          if (btn) {
+            btn.textContent = '🌙';
+            btn.style.background = '#FFFFFF';
+            btn.style.borderColor = '#E7E5E4';
+          }
+        }
+      }
+
       function syncEditModeUI() {
+        syncDarkModeUI();
         var chk = document.getElementById('globalEditModeToggle');
         var lbl = document.getElementById('globalEditModeText');
         if (chk) chk.checked = Boolean(state.editMode);
@@ -2547,7 +2746,10 @@
           var metaTags = [];
           if (it.spec) metaTags.push('规格 ' + escapeHtml(it.spec));
           if (it.location) metaTags.push('📍 ' + escapeHtml(it.location));
-          if (it.price) metaTags.push(formatMoney(it.price, it.currency) + '/' + escapeHtml(it.unit || '件'));
+          if (it.price) {
+            var per100Txt = formatPer100gPrice(it.price, it.currency, it.spec);
+            metaTags.push(formatMoney(it.price, it.currency) + '/' + escapeHtml(it.unit || '件') + (per100Txt ? (' (' + per100Txt + ')') : ''));
+          }
           if (it.batchCode) metaTags.push(escapeHtml(it.batchCode));
 
           var thumbHtml = '';
@@ -2665,6 +2867,8 @@
           note: entry.note || '',
           nextDueDate: entry.nextDueDate || '',
           reminderDays: entry.reminderDays || 0,
+          deductedUnit: Number(entry.deductedUnit) || 0,
+          deductedFrac: Number(entry.deductedFrac) || 0,
           isSample: false
         });
       }
@@ -3456,6 +3660,61 @@
           }).join('');
         }
 
+        // 4B. Future Expiry Month Timeline (未来到期月份时间轴 #6)
+        var monthBuckets = {};
+        activeItems.forEach(function (it) {
+          var ym = (it.expDate && it.expDate.length >= 7) ? it.expDate.slice(0, 7) : '未标注月份';
+          if (!monthBuckets[ym]) {
+            monthBuckets[ym] = { ym: ym, items: [], minDays: 99999 };
+          }
+          monthBuckets[ym].items.push(it);
+          var dLeft = diffDaysFromToday(it.expDate);
+          if (dLeft !== null && dLeft < monthBuckets[ym].minDays) {
+            monthBuckets[ym].minDays = dLeft;
+          }
+        });
+        var sortedMonths = Object.keys(monthBuckets).sort(function (a, b) {
+          return String(a).localeCompare(String(b));
+        });
+        document.getElementById('expiryTimelineCountBadge').textContent = '涵盖 ' + sortedMonths.length + ' 个月份';
+        var timelineBox = document.getElementById('expiryMonthTimelineList');
+        if (sortedMonths.length === 0) {
+          timelineBox.innerHTML = '<div style="font-size:13px;color:#A8A29E;padding:8px 0;">当前暂无在库口粮</div>';
+        } else {
+          timelineBox.innerHTML = sortedMonths.map(function (ym) {
+            var bucket = monthBuckets[ym];
+            var dotColor = '#16A34A';
+            var tagBg = '#DCFCE7';
+            var tagColor = '#15803D';
+            var statusNote = '保质期充裕';
+            if (bucket.minDays < 0) {
+              dotColor = '#DC2626'; tagBg = '#FEE2E2'; tagColor = '#DC2626'; statusNote = '含已过期批次';
+            } else if (bucket.minDays <= state.settings.warnDays) {
+              dotColor = '#F59E0B'; tagBg = '#FEF3C7'; tagColor = '#B45309'; statusNote = '最快 ' + bucket.minDays + ' 天到期';
+            } else if (bucket.minDays < 99999) {
+              statusNote = '约 ' + bucket.minDays + ' 天后到期';
+            }
+            var ymTitle = ym.indexOf('-') !== -1 ? (ym.split('-')[0] + '年' + parseInt(ym.split('-')[1], 10) + '月') : ym;
+            var pills = bucket.items.map(function (it) {
+              var ci = CATEGORIES[it.category] || CATEGORIES.dry;
+              return (
+                '<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:8px;font-size:11.5px;font-weight:600;background:#FFFFFF;color:#44403C;border:1px solid #E7E5E4;">' +
+                  ci.icon + ' [' + escapeHtml(it.brand) + '] ' + escapeHtml(it.name) + ' ×' + Number(it.quantity) + escapeHtml(it.unit || '') +
+                '</span>'
+              );
+            }).join('');
+            return (
+              '<div style="padding:10px 12px;border-radius:12px;background:#FAFAF9;border-left:4px solid ' + dotColor + ';border-top:1px solid #F5F5F4;border-right:1px solid #F5F5F4;border-bottom:1px solid #F5F5F4;">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">' +
+                  '<strong style="font-size:13.5px;color:#1C1917;">🗓️ ' + escapeHtml(ymTitle) + ' 到期 (' + bucket.items.length + '批)</strong>' +
+                  '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:' + tagBg + ';color:' + tagColor + ';">' + statusNote + '</span>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + pills + '</div>' +
+              '</div>'
+            );
+          }).join('');
+        }
+
         // 5. Brand Deep Archive Cards (In-stock vs eaten, CNY/JPY spend, color-coded SKU palatability pills)
         var brandGroups = {};
         uniqueProducts.forEach(function (prod) {
@@ -3794,6 +4053,16 @@
           btns[i].style.background = active ? '#1C1917' : 'transparent';
           btns[i].style.color = active ? '#FFFFFF' : '#57534E';
         }
+        syncModalUnitPriceHint();
+      }
+
+      function syncModalUnitPriceHint() {
+        var hintEl = document.getElementById('modalUnitPriceHint');
+        if (!hintEl) return;
+        var pVal = document.getElementById('fieldPrice').value;
+        var sVal = document.getElementById('fieldSpec').value;
+        var txt = formatPer100gPrice(pVal, state.formCurrency, sVal);
+        hintEl.textContent = txt ? ('· ' + txt) : '';
       }
 
       function syncModalPalatabilityUI(palKey) {
@@ -4180,12 +4449,18 @@
           var logId = delBtn.getAttribute('data-del-log');
           var targetLog = state.logs.find(function (lg) { return lg.id === logId; });
           var logTitle = targetLog ? ('「' + targetLog.brand + ' ' + targetLog.name + ' (' + targetLog.amount + ')」') : '这条喂食记录';
-          openConfirm('删除喂食记录？', '确定要从每日盘点中删除 ' + logTitle + ' 吗？删除后不可恢复。', '确认删除', function () {
+          var canRevert = targetLog && targetLog.itemId && ((Number(targetLog.deductedUnit) || 0) > 0 || (Number(targetLog.deductedFrac) || 0) > 0);
+          var revertOpt = canRevert ? { label: '🔄 同时退回刚才扣减的罐头余量 / 库存数量', defaultChecked: true } : null;
+          openConfirm('删除喂食记录？', '确定要从每日盘点中删除 ' + logTitle + ' 吗？', '确认删除', function (doRevert) {
+            var reverted = false;
+            if (doRevert && targetLog) {
+              reverted = revertConsumedFromLog(targetLog);
+            }
             state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
             saveToStorage();
             renderAll();
-            showToast('已删除该条喂食记录');
-          });
+            showToast(reverted ? '已删除记录并退回对应库存余量' : '已删除该条喂食记录');
+          }, revertOpt);
         });
 
         document.getElementById('recentSevenDaysList').addEventListener('click', function (ev) {
@@ -4299,12 +4574,18 @@
             var logId = delBtn.getAttribute('data-del-log');
             var targetLog = state.logs.find(function (lg) { return lg.id === logId; });
             var logTitle = targetLog ? ('「' + targetLog.date + ' ' + targetLog.brand + ' ' + targetLog.name + '」') : '这条喂食记录';
-            openConfirm('删除喂食记录？', '确定要删除 ' + logTitle + ' 吗？删除后不可恢复。', '确认删除', function () {
+            var canRevert = targetLog && targetLog.itemId && ((Number(targetLog.deductedUnit) || 0) > 0 || (Number(targetLog.deductedFrac) || 0) > 0);
+            var revertOpt = canRevert ? { label: '🔄 同时退回刚才扣减的罐头余量 / 库存数量', defaultChecked: true } : null;
+            openConfirm('删除喂食记录？', '确定要删除 ' + logTitle + ' 吗？', '确认删除', function (doRevert) {
+              var reverted = false;
+              if (doRevert && targetLog) {
+                reverted = revertConsumedFromLog(targetLog);
+              }
               state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
               saveToStorage();
               renderAll();
-              showToast('已删除该条喂食记录');
-            });
+              showToast(reverted ? '已删除记录并退回对应库存余量' : '已删除该条喂食记录');
+            }, revertOpt);
             return;
           }
           var jumpBtn = ev.target.closest('[data-jump-date]');
@@ -4409,21 +4690,10 @@
             return;
           }
 
-          appendFeedingLog({
-            date: fDate,
-            mealSlot: fSlot,
-            itemId: fItemId,
-            category: fCat,
-            brand: fBrand,
-            name: fName,
-            amount: fAmount,
-            note: fNote,
-            reminderDays: remDays,
-            nextDueDate: nextDue
-          });
-
           var usedFrac = parseFloat(document.getElementById('feedUnitFraction').value) || 0;
           var splitToastSuffix = '';
+          var actualDeductedUnit = 0;
+          var actualDeductedFrac = 0;
 
           if (fItemId) {
             for (var i = 0; i < state.items.length; i++) {
@@ -4436,22 +4706,24 @@
                     : 1.0;
                   var nextRemFrac = Math.round((startRem - usedFrac) * 100) / 100;
                   if (nextRemFrac <= 0.08) {
-                    // Finished the opened (or full) unit!
                     if (!stItem.openedDate) stItem.openedDate = fDate;
                     recordConsumedUnits(stItem, 1);
+                    actualDeductedUnit = 1;
+                    actualDeductedFrac = startRem;
                     splitToastSuffix = '（本' + (stItem.unit || '罐') + '已全部吃完并自动核销库存）';
                   } else {
-                    // Mark 1 unit opened with remaining fraction!
                     stItem.isOpened = true;
                     if (!stItem.openedDate) stItem.openedDate = fDate;
                     if (!stItem.openDaysLimit) {
                       stItem.openDaysLimit = (CATEGORIES[stItem.category] || CATEGORIES.can).defaultOpenDays;
                     }
                     stItem.openRemainFraction = nextRemFrac;
+                    actualDeductedFrac = usedFrac;
                     splitToastSuffix = '（本' + (stItem.unit || '罐') + formatRemainFractionText(nextRemFrac, stItem.unit || '罐') + '）';
                   }
                 } else if (deduct && curQ > 0) {
                   recordConsumedUnits(stItem, 1);
+                  actualDeductedUnit = 1;
                   splitToastSuffix = '（已同步扣减 1 ' + (stItem.unit || '件') + '库存）';
                 }
                 break;
@@ -4459,12 +4731,39 @@
             }
           }
 
+          appendFeedingLog({
+            date: fDate,
+            mealSlot: fSlot,
+            itemId: fItemId,
+            category: fCat,
+            brand: fBrand,
+            name: fName,
+            amount: fAmount,
+            note: fNote,
+            reminderDays: remDays,
+            nextDueDate: nextDue,
+            deductedUnit: actualDeductedUnit,
+            deductedFrac: actualDeductedFrac
+          });
+
           state.selectedLogDate = fDate;
           saveToStorage();
           closeFeedModal();
           renderAll();
           showToast(nextDue ? ('已记录喂食，将于 ' + nextDue + ' 提醒下次用药') : ('已记入 ' + fDate + ' 饮食盘点' + splitToastSuffix));
         });
+
+        // Dark Mode Toggle (#9)
+        document.getElementById('darkModeToggleBtn').addEventListener('click', function () {
+          state.settings.darkMode = !state.settings.darkMode;
+          syncDarkModeUI();
+          saveToStorage(true);
+          showToast(state.settings.darkMode ? '🌙 已开启夜间护眼模式' : '☀️ 已恢复日间暖白模式');
+        });
+
+        // Live per-100g price calculation in modal (#3)
+        document.getElementById('fieldPrice').addEventListener('input', syncModalUnitPriceHint);
+        document.getElementById('fieldSpec').addEventListener('input', syncModalUnitPriceHint);
 
         // Global Read-Only vs Edit Mode Toggle
         document.getElementById('globalEditModeToggle').addEventListener('change', function () {
@@ -4617,9 +4916,9 @@
                 ? ('在库将减为 ' + nextRem + ' ' + uName + '（恢复未拆封），同时在顶部【已吃完】自动累加 1 ' + uName + '「' + target.brand + ' ' + target.name + '」。')
                 : ('这 1 ' + uName + '「' + target.brand + ' ' + target.name + '」已空袋/用完，在库将减为 ' + nextRem + ' ' + uName + '，并同步累加到顶部【已吃完】归档（大包装空袋不会把整' + uName + '塞进今日单顿食量）。');
               var extraOpt = singleServe
-                ? { label: '同时将「' + portionLabel + '」记入今日饮食盘点', defaultChecked: true }
+                ? { label: '同时记入今日饮食盘点（' + portionLabel + '；若剩罐放坏丢弃请取消勾选）', defaultChecked: true }
                 : null;
-              openConfirm('用完/吃完 1 ' + uName + '？', confirmDesc, '确认吃完 1 ' + uName, function (alsoLogMeal) {
+              openConfirm('用完/吃完 1 ' + uName + '？', confirmDesc, '确认核销 1 ' + uName, function (alsoLogMeal) {
                 recordConsumedUnits(target, 1);
                 if (alsoLogMeal) {
                   appendFeedingLog({
@@ -4630,7 +4929,9 @@
                     brand: target.brand,
                     name: target.name,
                     amount: portionLabel,
-                    note: '吃完 1 ' + uName + '（余 ' + nextRem + uName + '在库）'
+                    note: '吃完 1 ' + uName + '（余 ' + nextRem + uName + '在库）',
+                    deductedUnit: 1,
+                    deductedFrac: remFracVal
                   });
                 }
                 saveToStorage();
@@ -4645,10 +4946,11 @@
                 ? ('确认后这最后 ' + curQ + ' ' + uName + '「' + target.brand + ' ' + target.name + '」将完整移入顶部【已吃完】列表。')
                 : ('这' + uName + '「' + target.brand + ' ' + target.name + '」终于见底啦！确认后将移入顶部【已吃完】历史归档（不会把整' + uName + '算作今日一顿吃掉；平时记单顿克数请点「🐾 记喂食」）。');
               var lastExtraOpt = singleServe
-                ? { label: '同时将「' + portionLabel + '」记入今日饮食盘点', defaultChecked: true }
+                ? { label: '同时记入今日饮食盘点（' + portionLabel + '；若剩罐放坏丢弃请取消勾选）', defaultChecked: true }
                 : null;
-              openConfirm('标记这' + uName + '已吃完？', lastDesc, '确认吃完归档', function (alsoLogMeal) {
-                recordConsumedUnits(target, curQ > 0 ? curQ : 1);
+              openConfirm('标记这' + uName + '已吃完？', lastDesc, '确认核销归档', function (alsoLogMeal) {
+                var usedCount = curQ > 0 ? curQ : 1;
+                recordConsumedUnits(target, usedCount);
                 if (alsoLogMeal) {
                   appendFeedingLog({
                     date: getTodayStr(),
@@ -4658,7 +4960,9 @@
                     brand: target.brand,
                     name: target.name,
                     amount: portionLabel,
-                    note: '吃完归档'
+                    note: '吃完归档',
+                    deductedUnit: usedCount,
+                    deductedFrac: remFracVal
                   });
                 }
                 saveToStorage();
@@ -4988,14 +5292,46 @@
                 showToast('备份文件格式无法识别');
                 return;
               }
+              var incomingLogs = Array.isArray(parsed.logs) ? parsed.logs : [];
               openConfirm(
-                '恢复备份数据',
-                '备份中包含 ' + incoming.length + ' 条记录，确定用备份替换当前列表吗？',
-                '确认恢复',
-                function () {
-                  state.items = incoming;
-                  if (Array.isArray(parsed.logs)) {
-                    state.logs = parsed.logs;
+                '导入备份数据',
+                '备份文件中包含 ' + incoming.length + ' 条库存记录与 ' + incomingLogs.length + ' 条喂食记录。请选择导入方式：',
+                '确认导入',
+                function (useSmartMerge) {
+                  if (useSmartMerge) {
+                    // Remove sample items first if user is importing real backup
+                    var curItems = state.items.filter(function (x) { return !x.isSample; });
+                    var itemMap = {};
+                    curItems.forEach(function (x) { itemMap[x.id] = true; });
+                    var addedItems = 0;
+                    incoming.forEach(function (inc) {
+                      if (!inc || inc.isSample) return;
+                      if (!itemMap[inc.id]) {
+                        curItems.push(inc);
+                        itemMap[inc.id] = true;
+                        addedItems += 1;
+                      } else {
+                        for (var idx = 0; idx < curItems.length; idx++) {
+                          if (curItems[idx].id === inc.id) { curItems[idx] = inc; break; }
+                        }
+                      }
+                    });
+                    state.items = curItems;
+
+                    var curLogs = state.logs.filter(function (lg) { return !lg.isSample; });
+                    var logMap = {};
+                    curLogs.forEach(function (lg) { logMap[lg.id] = true; });
+                    incomingLogs.forEach(function (incLg) {
+                      if (!incLg || incLg.isSample) return;
+                      if (!logMap[incLg.id]) {
+                        curLogs.push(incLg);
+                        logMap[incLg.id] = true;
+                      }
+                    });
+                    state.logs = curLogs;
+                  } else {
+                    state.items = incoming;
+                    state.logs = incomingLogs;
                   }
                   applyLoadedSettings(parsed.settings);
                   state.settings.lastBackupDate = getTodayStr();
@@ -5003,8 +5339,9 @@
                   saveToStorage(true);
                   renderAll();
                   switchTab('pantry');
-                  showToast('成功恢复 ' + incoming.length + ' 条记录');
-                }
+                  showToast(useSmartMerge ? '已智能合并备份数据' : ('已覆盖恢复 ' + incoming.length + ' 条记录'));
+                },
+                { label: '✅ 智能合并模式（保留手机现有新记录并去重合并；取消勾选则为全量覆盖）', defaultChecked: true }
               );
             } catch (err) {
               showToast('JSON 解析失败，请检查文件');
