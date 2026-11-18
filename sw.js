@@ -1,19 +1,20 @@
-const CACHE_NAME = 'meow-pantry-pwa-v28';
+const CACHE_PREFIX = 'meow-pantry-pwa-';
+const CACHE_NAME = CACHE_PREFIX + 'v29';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './css/styles.css?v=28',
-  './js/covers.js?v=28',
-  './js/constants.js?v=28',
-  './js/utils.js?v=28',
-  './js/domain.js?v=28',
-  './js/storage.js?v=28',
-  './js/stats.js?v=28',
-  './js/ui.js?v=28',
-  './js/app.js?v=28',
+  './css/styles.css?v=29',
+  './js/covers.js?v=29',
+  './js/constants.js?v=29',
+  './js/utils.js?v=29',
+  './js/domain.js?v=29',
+  './js/storage.js?v=29',
+  './js/stats.js?v=29',
+  './js/ui.js?v=29',
+  './js/app.js?v=29',
   'https://cdn.tailwindcss.com/3.4.17'
 ];
 
@@ -23,7 +24,7 @@ self.addEventListener('install', (event) => {
       // Cache local core assets atomically, and attempt optional external CDN without blocking install offline
       const localAssets = CORE_ASSETS.filter((u) => !u.startsWith('http'));
       const remoteAssets = CORE_ASSETS.filter((u) => u.startsWith('http'));
-      return cache.addAll(localAssets).then(() =>
+      return cache.addAll(localAssets.map((url) => new Request(new URL(url, self.location.href), { cache: 'reload' }))).then(() =>
         Promise.allSettled(remoteAssets.map((url) => cache.add(url)))
       );
     }).then(() => self.skipWaiting())
@@ -35,7 +36,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME) {
             return caches.delete(key);
           }
           return null;
@@ -71,7 +72,7 @@ self.addEventListener('fetch', (event) => {
   // falls back to offline cache seamlessly when disconnected!
   if (isAppCodeOrDoc) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-cache' })
         .then((res) => {
           if (res && res.ok) {
             const copy = res.clone();
@@ -85,7 +86,7 @@ self.addEventListener('fetch', (event) => {
             if (event.request.mode === 'navigate') {
               return caches.match('./index.html');
             }
-            return caches.match(reqUrl.pathname);
+            return new Response('', { status: 504, statusText: 'Offline' });
           })
         )
     );
