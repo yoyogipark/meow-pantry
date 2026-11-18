@@ -212,7 +212,7 @@
       if (q <= 0) return;
       if (scope !== 'all' && MP.getCategoryGroup(it.category) !== scope) return;
       var ev = Domain.evaluateItem(it);
-      if (it.isOpened) openedBatches += 1;
+      if (Domain.isStockOpened(it)) openedBatches += 1;
       if (ev.status === 'expired') expiredBatches += 1;
       else if (ev.status === 'expiring') expiringBatches += 1;
       else freshBatches += 1;
@@ -263,7 +263,7 @@
         if (ev.status === 'expired') {
           reason = '⚠️ 已过期，请检查清理勿误喂';
           tagColor = '#DC2626';
-        } else if (it.isOpened && ev.openRemaining !== null && (ev.expDays === null || ev.openRemaining <= ev.expDays)) {
+        } else if (Domain.isStockOpened(it) && ev.openRemaining !== null && (ev.expDays === null || ev.openRemaining <= ev.expDays)) {
           var fracInfo = it.openRemainFraction ? (' · ' + Utils.formatRemainFractionText(it.openRemainFraction, it.unit)) : '';
           reason = '🔓 已拆封' + fracInfo + ' · 建议 ' + ev.openRemaining + ' 天内吃完';
           tagColor = '#EA580C';
@@ -506,11 +506,15 @@
         r30.food.forEach(function (lg) {
           var ck = lg.category || 'dry';
           catLogCount[ck] = (catLogCount[ck] || 0) + 1;
-          var fk = (lg.brand || '') + ' · ' + (lg.name || '');
+          var fk = (lg.brand || '') + ' · ' + Domain.logProductName(lg);
           if (!favMap[fk]) {
-            favMap[fk] = { title: fk, category: ck, count: 0, lastDate: lg.date || '' };
+            favMap[fk] = { title: fk, category: ck, count: 0, lastDate: lg.date || '', ratings: Object.create(null) };
           }
           favMap[fk].count += 1;
+          if (MP.PALATABILITY[lg.flavorPalatability]) {
+            var rating = lg.flavorPalatability;
+            favMap[fk].ratings[rating] = (favMap[fk].ratings[rating] || 0) + 1;
+          }
           if (String(lg.date || '') > favMap[fk].lastDate) favMap[fk].lastDate = lg.date;
         });
 
@@ -527,12 +531,15 @@
         var medals = ['🥇', '🥈', '🥉'];
         var topRowsHtml = topFavs.map(function (fav, idx) {
           var ci = MP.CATEGORIES[fav.category] || MP.CATEGORIES.dry;
+          var ratings = Object.keys(fav.ratings).map(function (key) {
+            return MP.PALATABILITY[key].label + ' ' + fav.ratings[key] + '次';
+          }).join(' · ');
           return (
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
               '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
                 '<span style="font-size:15px;">' + (medals[idx] || '🐾') + '</span>' +
                 '<span style="font-size:11px;background:#E7E5E4;color:#44403C;padding:1px 6px;border-radius:5px;flex-shrink:0;">' + ci.icon + ci.label + '</span>' +
-                '<strong style="font-size:13px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(fav.title) + '</strong>' +
+                '<strong style="font-size:13px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(fav.title) + (ratings ? ' · ' + Utils.escapeHtml(ratings) : '') + '</strong>' +
               '</div>' +
               '<span style="font-size:12px;font-weight:800;color:#EA580C;white-space:nowrap;">吃过 ' + fav.count + ' 顿</span>' +
             '</div>'
@@ -551,7 +558,7 @@
         var summarizeCare = function (arr) {
           var m = {};
           arr.forEach(function (lg) {
-            var k = '[' + (lg.brand || '') + '] ' + (lg.name || '');
+            var k = '[' + (lg.brand || '') + '] ' + Domain.logProductName(lg);
             m[k] = (m[k] || 0) + 1;
           });
           return Object.keys(m).map(function (k) { return Utils.escapeHtml(k) + ' ×' + m[k] + '次'; }).join(' · ');

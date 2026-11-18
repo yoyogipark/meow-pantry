@@ -80,7 +80,13 @@
     var size = Number(raw.size);
     if (!Number.isSafeInteger(count) || count < 1 || !Number.isSafeInteger(size) ||
         size < 1 || !Number.isSafeInteger(count * size)) return null;
-    return { count: count, outerUnit: raw.outerUnit, size: size };
+    var result = { count: count, outerUnit: raw.outerUnit, size: size };
+    if (raw.seal && raw.seal !== 'independent' && raw.seal !== 'shared') return null;
+    if (raw.seal === 'shared') {
+      if (count !== 1) return null;
+      result.seal = 'shared';
+    }
+    return result;
   };
 
   Domain.summarizeStockQuantity = function (items) {
@@ -89,9 +95,17 @@
       var qty = Number(it.quantity);
       if (!Number.isFinite(qty) || qty <= 0) return;
       var unit = it.unit || '件';
+      if (Domain.hasSharedSeal(it)) {
+        var shared = summary.units[it.purchasePackaging.outerUnit] ||
+          (summary.units[it.purchasePackaging.outerUnit] = { sealed: 0, opened: 0 });
+        shared[it.isOpened ? 'opened' : 'sealed'] += 1;
+        summary.pieces += 1;
+        summary.otherUnits[unit] = Utils.round2((summary.otherUnits[unit] || 0) + qty);
+        return;
+      }
       if ((it.purchasePackaging || Domain.isPackageUnit(unit)) && (Number.isInteger(qty) || it.isOpened)) {
         var entry = summary.units[unit] || (summary.units[unit] = { sealed: 0, opened: 0 });
-        var opened = it.isOpened ? 1 : 0;
+        var opened = it.flavors ? it.flavors.filter(function (f) { return f.quantity > 0 && f.openedDate; }).length : (it.isOpened ? 1 : 0);
         entry.opened += opened;
         var pieces = Math.ceil(qty);
         entry.sealed += pieces - opened;
@@ -101,6 +115,74 @@
       }
     });
     return summary;
+  };
+
+  Domain.hasSharedSeal = function (item) {
+    return Boolean(item.purchasePackaging && item.purchasePackaging.seal === 'shared');
+  };
+
+  Domain.validateFlavors = function (rows, pack, quantity, isArchive) {
+    if (!pack || !Array.isArray(rows) || rows.length < 2) return null;
+    var ids = new Set();
+    var names = new Set();
+    var allocated = 0;
+    var remaining = 0;
+    var flavors = [];
+    for (var row of rows) {
+      if (!row || typeof row !== 'object') return null;
+      var id = typeof row.id === 'string' ? row.id.trim() : '';
+      var name = typeof row.name === 'string' ? row.name.trim() : '';
+      var nameKey = name.toLowerCase();
+      var perPack = Number(row.perPack);
+      var qty = isArchive ? 0 : Number(row.quantity);
+      var fraction = Number(row.openRemainFraction || 0);
+      if (!id || !name || (fraction > 0 && !Utils.normalizeDateStr(row.openedDate)) || ids.has(id) || names.has(nameKey) || !Number.isSafeInteger(perPack) || perPack <= 0 ||
+          !Number.isSafeInteger(qty) || qty < 0 || qty > perPack * pack.count ||
+          !Number.isFinite(fraction) || fraction < 0 || fraction >= 1) return null;
+      ids.add(id);
+      names.add(nameKey);
+      allocated += perPack;
+      remaining += qty;
+      flavors.push({
+        id: id, name: name, perPack: perPack, quantity: qty,
+        spec: String(row.spec || '').trim(),
+        palatability: Object.prototype.hasOwnProperty.call(MP.PALATABILITY, row.palatability) ? row.palatability : '',
+        openedDate: qty > 0 ? Utils.normalizeDateStr(row.openedDate) : '',
+        openRemainFraction: qty > 0 ? fraction : 0,
+        revision: typeof row.revision === 'string' ? row.revision : ''
+      });
+    }
+    return allocated === pack.size && remaining === quantity ? flavors : null;
+  };
+
+  Domain.findFlavor = function (item, flavorId) {
+    return item && item.flavors && item.flavors.find(function (flavor) { return flavor.id === flavorId; });
+  };
+
+  Domain.isStockOpened = function (item) {
+    return item.isOpened || Boolean(item.flavors && item.flavors.some(function (flavor) {
+      return flavor.quantity > 0 && flavor.openedDate;
+    }));
+  };
+
+  Domain.validateFlavorLog = function (log) {
+    if (typeof log.flavorId !== 'string' || !log.flavorId.trim() ||
+        typeof log.flavorName !== 'string' || !log.flavorName.trim() ||
+        typeof log.itemId !== 'string' || !log.itemId.trim()) return false;
+    var change = log.flavorChange;
+    if (!change) return !Number(log.deductedUnit) && !Number(log.deductedFrac);
+    var before = change.before;
+    return Boolean(before && typeof change.revision === 'string' && change.revision &&
+      (change.units === 0 || change.units === 1) && Number(log.deductedUnit) === change.units &&
+      Number.isFinite(change.fraction) && change.fraction > 0 && change.fraction <= 1 &&
+      Number.isFinite(before.fraction) && before.fraction >= 0 && before.fraction < 1 &&
+      typeof before.revision === 'string' &&
+      (before.openedDate === '' || Utils.normalizeDateStr(before.openedDate) === before.openedDate) &&
+      (before.sharedOpenedDate === '' || Utils.normalizeDateStr(before.sharedOpenedDate) === before.sharedOpenedDate));
+  };
+
+  Domain.logProductName = function (log) {
+    return log.name + (log.flavorName ? ' · ' + log.flavorName : '');
   };
 
   Domain.sanitizeItem = function (raw, fallbackIdx) {
@@ -130,6 +212,9 @@
     var purchasePackaging = Domain.validatePackaging(raw.purchasePackaging, clean.unit);
     if (purchasePackaging) clean.purchasePackaging = purchasePackaging;
     else delete clean.purchasePackaging;
+    var flavors = Domain.validateFlavors(raw.flavors, purchasePackaging, qty, Boolean(raw.sourceBatchId) && qty === 0);
+    if (flavors) clean.flavors = flavors;
+    else delete clean.flavors;
     clean.price = Math.max(0, Number(raw.price) || 0);
     clean.currency = raw.currency === 'JPY' ? 'JPY' : 'CNY';
     clean.prodDate = Utils.normalizeDateStr(raw.prodDate);
@@ -249,6 +334,8 @@
     archiveItem.spec = activeItem.spec;
     archiveItem.unit = activeItem.unit;
     archiveItem.price = activeItem.price;
+    if (activeItem.flavors) archiveItem.flavors = Domain.validateFlavors(activeItem.flavors, activeItem.purchasePackaging, 0, true);
+    else delete archiveItem.flavors;
     if (activeItem.purchasePackaging) archiveItem.purchasePackaging = Object.assign({}, activeItem.purchasePackaging);
     else delete archiveItem.purchasePackaging;
     archiveItem.currency = activeItem.currency;
@@ -336,9 +423,11 @@
 
     if (nextRem > 0) {
       target.quantity = nextRem;
-      target.isOpened = false;
-      target.openedDate = '';
-      target.openRemainFraction = 0;
+      if (!Domain.hasSharedSeal(target)) {
+        target.isOpened = false;
+        target.openedDate = '';
+        target.openRemainFraction = 0;
+      }
       if (linkedArchive) {
         Domain.copySharedMetadataToArchive(target, linkedArchive);
         linkedArchive.consumedCount = target.eatenCount;
@@ -397,6 +486,7 @@
   // Fixed bug: properly clears finishedDate & recreates empty_<id> shadow archive if restoring final unit of a multi-unit batch!
   Domain.revertConsumedFromLog = function (lg) {
     if (!lg || !lg.itemId) return false;
+    if (lg.flavorId) return revertFlavorFeeding(lg);
     var target = state.items.find(function (x) { return x.id === lg.itemId; });
     if (!target) return false;
     var dUnit = Number(lg.deductedUnit) || 0;
@@ -503,6 +593,91 @@
     return false;
   };
 
+  function nextFlavorRevision() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  function flavorHistory(item, flavor, action, date, text) {
+    Domain.appendStockHistory({
+      date: date, action: action, itemId: item.id, category: item.category,
+      brand: item.brand, name: item.name, unit: item.unit,
+      beforeQty: item.quantity, afterQty: item.quantity,
+      deltaText: text, note: '口味：' + flavor.name, isSample: item.isSample
+    });
+  }
+
+  Domain.openFlavor = function (item, flavor, date) {
+    var shared = Domain.hasSharedSeal(item);
+    if (!flavor || flavor.quantity <= 0 || (shared ? item.isOpened : flavor.openedDate)) return false;
+    if (shared) {
+      item.isOpened = true;
+      item.openedDate = date;
+      item.flavors.forEach(function (entry) { entry.revision = nextFlavorRevision(); });
+    } else {
+      flavor.openedDate = date;
+      flavor.revision = nextFlavorRevision();
+    }
+    flavorHistory(item, flavor, 'open', date, shared ? '开封共用密封包装' : '拆封 1' + item.unit);
+    return true;
+  };
+
+  Domain.feedFlavor = function (item, flavor, fraction, finish, date) {
+    if (!flavor || flavor.quantity <= 0 || item.quantity <= 0) return null;
+    var remaining = flavor.openRemainFraction || 1;
+    var used = finish ? remaining : fraction;
+    if (!Number.isFinite(used) || used <= 0 || used - remaining > 0.00005) return null;
+    var after = Math.max(0, Math.round((remaining - used) * 10000) / 10000);
+    if (after >= remaining) return null;
+    var before = {
+      revision: flavor.revision, openedDate: flavor.openedDate,
+      fraction: flavor.openRemainFraction, sharedOpenedDate: item.isOpened ? item.openedDate : ''
+    };
+    var shared = Domain.hasSharedSeal(item);
+    if (shared && !item.isOpened) {
+      item.isOpened = true;
+      item.openedDate = date;
+    }
+    flavor.revision = nextFlavorRevision();
+    flavor.openRemainFraction = after;
+    flavor.openedDate = after > 0 ? flavor.openedDate || date : '';
+    if (after <= 0) {
+      flavor.quantity -= 1;
+      Domain.recordConsumedUnits(item, 1, date, '喂食并用完 1' + item.unit + ' · ' + flavor.name);
+    } else {
+      item.lastEatenDate = date;
+      flavorHistory(item, flavor, 'partial', date, '单件剩余 ' + Utils.round2(after * 100) + '%');
+    }
+    return { revision: flavor.revision, before: before, units: after <= 0 ? 1 : 0, fraction: used };
+  };
+
+  function revertFlavorFeeding(log) {
+    var item = state.items.find(function (entry) { return entry.id === log.itemId; });
+    var flavor = Domain.findFlavor(item, log.flavorId);
+    var change = log.flavorChange;
+    if (!flavor || !change || !Domain.validateFlavorLog(log) || flavor.revision !== change.revision) return false;
+    var before = change.before;
+    if (change.units) {
+      if (flavor.quantity >= flavor.perPack * item.purchasePackaging.count) return false;
+      if (!Domain.revertConsumedFromLog(Object.assign({}, log, {
+        flavorId: '', amount: log.amount + ' · ' + flavor.name, deductedUnit: 1, deductedFrac: 0
+      }))) return false;
+      flavor.quantity += 1;
+    } else {
+      flavorHistory(item, flavor, 'revert', Utils.getTodayStr(), '恢复该口味的开封余量');
+    }
+    flavor.revision = before.revision;
+    flavor.openedDate = before.openedDate;
+    flavor.openRemainFraction = before.fraction;
+    if (Domain.hasSharedSeal(item)) {
+      var otherUse = item.flavors.some(function (entry) {
+        return entry !== flavor && (entry.openedDate || entry.quantity < entry.perPack * item.purchasePackaging.count);
+      });
+      item.openedDate = before.sharedOpenedDate || (otherUse ? item.openedDate || log.date : '');
+      item.isOpened = Boolean(item.openedDate);
+    }
+    return true;
+  }
+
   // ==================== EXPIRY & FRESHNESS EVALUATION ====================
   Domain.evaluateItem = function (item, refTodayStr) {
     var expDays = Utils.diffDaysFromToday(item.expDate, refTodayStr);
@@ -510,6 +685,15 @@
     if (item.isOpened && item.openedDate && item.openDaysLimit > 0) {
       var openEndStr = Utils.addShelfLife(item.openedDate, item.openDaysLimit, 'days');
       openRemaining = Utils.diffDaysFromToday(openEndStr, refTodayStr);
+    }
+
+    if (item.flavors && !Domain.hasSharedSeal(item)) {
+      item.flavors.forEach(function (flavor) {
+        if (!flavor.openedDate || flavor.quantity <= 0) return;
+        var end = Utils.addShelfLife(flavor.openedDate, item.openDaysLimit, 'days');
+        var days = Utils.diffDaysFromToday(end, refTodayStr);
+        if (days !== null && (openRemaining === null || days < openRemaining)) openRemaining = days;
+      });
     }
 
     var effectiveDays = expDays;
@@ -608,6 +792,10 @@
       reminderDone: false,
       deductedUnit: Number(entry.deductedUnit) || 0,
       deductedFrac: Number(entry.deductedFrac) || 0,
+      flavorId: entry.flavorId || undefined,
+      flavorName: entry.flavorName || undefined,
+      flavorPalatability: entry.flavorPalatability || undefined,
+      flavorChange: entry.flavorChange || undefined,
       isSample: Boolean(entry.isSample)
     });
     state.logs.unshift(record);
