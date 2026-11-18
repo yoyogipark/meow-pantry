@@ -12,7 +12,7 @@
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
   <script src="https://cdn.tailwindcss.com/3.4.17" defer></script>
-  <link rel="stylesheet" href="./css/styles.css?v=31">
+  <link rel="stylesheet" href="./css/styles.css?v=32">
 </head>
 <body>
 
@@ -68,7 +68,7 @@
     <div id="sampleBanner" class="ios-card hidden-view" style="padding:12px 14px;margin-bottom:14px;background:#FFFBEB;border-color:#FDE68A;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
         <div style="font-size:12px;color:#78350F;flex:1;min-width:190px;">
-          <strong>示例体验中：</strong>已预置 4 条猫粮/罐头/冻干示例，可直接点「记喂食」或录入你的囤货。
+          <strong>示例体验中：</strong>已预置 4 条猫粮/湿粮/冻干示例，可直接点「记喂食」或录入你的囤货。
         </div>
         <button id="clearSamplesBtn" type="button" class="edit-only" style="border:none;padding:5px 10px;border-radius:8px;background:#FDE68A;color:#92400E;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
           一键清空示例
@@ -108,7 +108,7 @@
       <section id="categoryBar" class="no-scrollbar" style="display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;">
         <button type="button" data-cat="all" class="pill-chip active">全部</button>
         <button type="button" data-cat="dry" class="pill-chip">🥣 猫粮</button>
-        <button type="button" data-cat="can" class="pill-chip">🥫 罐头</button>
+        <button type="button" data-cat="can" class="pill-chip">🥫 湿粮</button>
         <button type="button" data-cat="freeze" class="pill-chip">🍗 冻干</button>
         <button type="button" data-cat="treat" class="pill-chip">🍮 零食</button>
         <button type="button" data-cat="supp" class="pill-chip">💊 营养品</button>
@@ -189,7 +189,7 @@
       <div id="emptyStateBox" class="ios-card hidden-view" style="padding:36px 20px;text-align:center;">
         <div style="font-size:40px;margin-bottom:8px;">🐾</div>
         <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:800;color:#292524;">当前筛选下暂无记录</h3>
-        <p id="emptyStateDesc" style="margin:0 0 16px 0;font-size:13px;color:#78716C;">可点击重置筛选，或点击右上角「记囤货」添加猫粮、罐头、营养品或药品。</p>
+        <p id="emptyStateDesc" style="margin:0 0 16px 0;font-size:13px;color:#78716C;">可点击重置筛选，或点击右上角「记囤货」添加猫粮、湿粮、营养品或药品。</p>
         <div style="display:flex;justify-content:center;gap:8px;">
           <button id="resetFiltersBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:0 16px;">重置筛选</button>
           <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-primary" style="padding:0 16px;">+ 立即录入</button>
@@ -250,7 +250,7 @@
               <option value="all">🏷️ 全部分类</option>
               <option value="group_food">🍽️ 仅普通食品</option>
               <option value="dry">🥣 猫粮</option>
-              <option value="can">🥫 罐头</option>
+              <option value="can">🥫 湿粮</option>
               <option value="freeze">🍗 冻干</option>
               <option value="treat">🍮 零食</option>
               <option value="supp">💊 营养品</option>
@@ -564,12 +564,17 @@
           <label style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:6px;">分类</label>
           <div id="modalCatSelector" class="grid-safe" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
             <button type="button" data-form-cat="dry" class="pill-chip active" style="padding:8px 4px;font-size:12px;text-align:center;">🥣 猫粮</button>
-            <button type="button" data-form-cat="can" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🥫 罐头</button>
+            <button type="button" data-form-cat="can" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🥫 湿粮</button>
             <button type="button" data-form-cat="freeze" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🍗 冻干</button>
             <button type="button" data-form-cat="treat" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🍮 零食</button>
             <button type="button" data-form-cat="supp" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">💊 营养品</button>
             <button type="button" data-form-cat="med" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🩺 药品</button>
           </div>
+        </div>
+
+        <div id="itemSubtypeWrap" class="hidden-view">
+          <label id="itemSubtypeLabel" for="fieldSubtype" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;"></label>
+          <select id="fieldSubtype" class="ios-input"></select>
         </div>
 
         <!-- Product Photo Picker -->
@@ -651,7 +656,7 @@
         <div class="purchase-packaging">
           <label class="purchase-packaging-toggle">
             <input id="fieldPackagingEnabled" type="checkbox">
-            整盒／整箱包装
+            组合包装
           </label>
           <div id="purchasePackagingFields" class="hidden-view">
             <div class="grid-safe purchase-packaging-grid">
@@ -660,10 +665,10 @@
               </label>
               <label for="fieldPackOuterUnit">外包装
                 <select id="fieldPackOuterUnit" class="ios-input">
-                  <option value="盒">盒</option>
+                  <option value="盒" selected>盒</option>
+                  <option value="袋">袋</option>
+                  <option value="桶">桶</option>
                   <option value="箱">箱</option>
-                  <option value="组">组</option>
-                  <option value="提">提</option>
                 </select>
               </label>
               <label for="fieldPackSize">每包装件数
@@ -850,7 +855,7 @@
             <label for="feedCategorySelect" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">分类</label>
             <select id="feedCategorySelect" class="ios-input" style="background-color:#FFFFFF;">
               <option value="dry">🥣 猫粮</option>
-              <option value="can">🥫 罐头</option>
+              <option value="can">🥫 湿粮</option>
               <option value="freeze">🍗 冻干</option>
               <option value="treat">🍮 零食</option>
               <option value="supp">💊 营养品</option>
@@ -992,13 +997,13 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=31"></script>
-  <script src="./js/constants.js?v=31"></script>
-  <script src="./js/utils.js?v=31"></script>
-  <script src="./js/domain.js?v=31"></script>
-  <script src="./js/storage.js?v=31"></script>
-  <script src="./js/stats.js?v=31"></script>
-  <script src="./js/ui.js?v=31"></script>
-  <script src="./js/app.js?v=31"></script>
+  <script src="./js/covers.js?v=32"></script>
+  <script src="./js/constants.js?v=32"></script>
+  <script src="./js/utils.js?v=32"></script>
+  <script src="./js/domain.js?v=32"></script>
+  <script src="./js/storage.js?v=32"></script>
+  <script src="./js/stats.js?v=32"></script>
+  <script src="./js/ui.js?v=32"></script>
+  <script src="./js/app.js?v=32"></script>
 </body>
 </html>
