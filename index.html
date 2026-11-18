@@ -182,7 +182,8 @@
       margin: 0;
     }
 
-    .grid-safe > * {
+    .grid-safe > *,
+    .grid > * {
       min-width: 0;
       max-width: 100%;
     }
@@ -525,7 +526,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:5px;">
           <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页显示</span>
-          <select id="pageSizeSelect" aria-label="每页显示条数" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background:#FFFFFF;">
+          <select id="pageSizeSelect" aria-label="每页显示条数" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:#FFFFFF;">
             <option value="6">6 条</option>
             <option value="10">10 条</option>
             <option value="20">20 条</option>
@@ -589,10 +590,10 @@
         <!-- All Dates Filter Controls (Month + Category + Search) -->
         <div id="allDatesControlsBox" class="hidden-view" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
           <div class="grid-safe" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <select id="logHistoryMonthSelect" aria-label="按月份筛选饮食记录" class="ios-input" style="height:38px;min-height:38px;font-size:12.5px;background:#FFFFFF;">
+            <select id="logHistoryMonthSelect" aria-label="按月份筛选饮食记录" class="ios-input" style="height:38px;min-height:38px;font-size:12.5px;background-color:#FFFFFF;">
               <option value="all">🗓️ 全部月份</option>
             </select>
-            <select id="logHistoryCatSelect" aria-label="按分类筛选饮食记录" class="ios-input" style="height:38px;min-height:38px;font-size:12.5px;background:#FFFFFF;">
+            <select id="logHistoryCatSelect" aria-label="按分类筛选饮食记录" class="ios-input" style="height:38px;min-height:38px;font-size:12.5px;background-color:#FFFFFF;">
               <option value="all">🏷️ 全部分类</option>
               <option value="dry">🥣 猫粮</option>
               <option value="can">🥫 罐头</option>
@@ -646,7 +647,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:5px;">
               <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
-              <select id="logPageSizeSelect" aria-label="饮食记录每页显示天数" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background:#FFFFFF;">
+              <select id="logPageSizeSelect" aria-label="饮食记录每页显示天数" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background-color:#FFFFFF;">
                 <option value="7">7 天</option>
                 <option value="14">14 天</option>
                 <option value="30">30 天</option>
@@ -754,7 +755,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:5px;">
               <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
-              <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background:#FFFFFF;">
+              <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background-color:#FFFFFF;">
                 <option value="5">5 个品牌</option>
                 <option value="10">10 个品牌</option>
                 <option value="9999">全部</option>
@@ -979,7 +980,7 @@
               <label for="fieldShelfValue" style="display:block;font-size:12px;font-weight:600;color:#44403C;margin-bottom:4px;">保质期时长</label>
               <div class="grid-safe" style="display:grid;grid-template-columns:1fr 1.05fr;gap:5px;">
                 <input id="fieldShelfValue" type="number" min="1" max="3650" placeholder="18" class="ios-input" style="background:#FFFFFF;height:42px;padding:8px 6px;font-size:14px;text-align:center;">
-                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input" style="background:#FFFFFF;height:42px;padding:8px 22px 8px 8px;font-size:13px;">
+                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input" style="background-color:#FFFFFF;height:42px;padding:8px 22px 8px 8px;font-size:13px;">
                   <option value="months">个月</option>
                   <option value="days">天</option>
                 </select>
@@ -1010,7 +1011,7 @@
         <!-- Opened Status / Finished Batch Dates -->
         <div style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;overflow:hidden;">
           <label id="openedCheckboxLabelWrap" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-            <span id="openedCheckboxTitle" style="font-size:13px;font-weight:700;color:#1C1917;">🔓 当前有 1 件已拆封（单独追踪开封保鲜期，其余仍为未拆）</span>
+            <span id="openedCheckboxTitle" style="font-size:13px;font-weight:700;color:#1C1917;">🔓 当前有 1 件已拆封（单独计算开封保鲜期）</span>
             <input id="fieldIsOpened" type="checkbox" style="width:20px;height:20px;accent-color:#EA580C;flex-shrink:0;">
           </label>
           <div id="openedExtraFields" class="grid-safe hidden-view" style="margin-top:10px;display:grid;grid-template-columns:1.18fr 1fr;gap:8px;">
@@ -1041,16 +1042,18 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2.5" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div>
-            <label for="fieldLocation" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">存放位置 (选填)</label>
-            <input id="fieldLocation" type="text" placeholder="如：储物柜2层 / 冰箱" class="ios-input text-sm">
-            <div id="quickLocationChips" class="no-scrollbar" style="display:flex;gap:5px;overflow-x:auto;margin-top:5px;padding-bottom:2px;"></div>
+        <div>
+          <div class="grid-safe" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label for="fieldLocation" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">存放位置 (选填)</label>
+              <input id="fieldLocation" type="text" placeholder="如：储物柜 / 冰箱" class="ios-input text-sm">
+            </div>
+            <div>
+              <label for="fieldBatch" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">购入渠道/批次号</label>
+              <input id="fieldBatch" type="text" placeholder="如：旗舰店 / 批号" class="ios-input text-sm">
+            </div>
           </div>
-          <div>
-            <label for="fieldBatch" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">购入渠道/批次号</label>
-            <input id="fieldBatch" type="text" placeholder="如：旗舰店双11 / 批号" class="ios-input text-sm">
-          </div>
+          <div id="quickLocationChips" class="no-scrollbar" style="display:flex;gap:5px;overflow-x:auto;margin-top:6px;padding-bottom:2px;max-width:100%;"></div>
         </div>
 
         <div>
@@ -1122,7 +1125,7 @@
           </div>
           <div>
             <label for="feedMealSlot" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">餐次时段</label>
-            <select id="feedMealSlot" class="ios-input" style="height:42px;background:#FFFFFF;">
+            <select id="feedMealSlot" class="ios-input" style="height:42px;background-color:#FFFFFF;">
               <option value="🌅 早饭">🌅 早饭</option>
               <option value="☀️ 午饭">☀️ 午饭</option>
               <option value="🌙 晚饭">🌙 晚饭</option>
@@ -1135,14 +1138,14 @@
         <!-- Pick from In-Stock Items -->
         <div>
           <label for="feedStockSelect" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">选择在库口粮/药品（或下方手动输入）</label>
-          <select id="feedStockSelect" class="ios-input" style="height:42px;background:#FFFFFF;"></select>
+          <select id="feedStockSelect" class="ios-input" style="height:42px;background-color:#FFFFFF;"></select>
         </div>
 
         <!-- Category + Brand + Product Name (auto-filled when stock selected, or editable) -->
         <div class="grid-safe" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:8px;">
           <div>
             <label for="feedCategorySelect" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">分类</label>
-            <select id="feedCategorySelect" class="ios-input" style="height:42px;background:#FFFFFF;">
+            <select id="feedCategorySelect" class="ios-input" style="height:42px;background-color:#FFFFFF;">
               <option value="dry">🥣 猫粮</option>
               <option value="can">🥫 罐头</option>
               <option value="freeze">🍗 冻干</option>
@@ -1196,7 +1199,7 @@
         <div id="medNextReminderBox" class="hidden-view" style="padding:10px 12px;border-radius:12px;background:#F0FDF4;border:1px solid #BBF7D0;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <label for="feedNextReminderDays" style="font-size:12px;font-weight:700;color:#14532D;">🩺 下次用药/驱虫提醒（室内猫低频可选）</label>
-            <select id="feedNextReminderDays" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background:#FFFFFF;">
+            <select id="feedNextReminderDays" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:#FFFFFF;">
               <option value="0">不设提醒</option>
               <option value="60">2个月后 (60天)</option>
               <option value="90">3个月后 / 季度 (90天)</option>
@@ -4043,7 +4046,7 @@
           return;
         }
 
-        titleEl.textContent = '🔓 当前有 1 件已拆封（单独追踪开封保鲜期，其余仍为未拆）';
+        titleEl.textContent = '🔓 当前有 1 件已拆封（单独计算开封保鲜期）';
         chkEl.classList.remove('hidden-view');
         limitCol.classList.remove('hidden-view');
         finCol.classList.add('hidden-view');
