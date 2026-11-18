@@ -417,16 +417,21 @@
       </div>
     </header>
 
-    <!-- Unbacked Changes Reminder Banner -->
-    <div id="unbackedBanner" class="ios-card p-3 mb-3 hidden-view" style="padding:10px 13px;margin-bottom:12px;background:#FEF2F2;border:1px solid #FECACA;">
+    <!-- Unbacked Changes Reminder Banner (Pops up at >=5 changes, dismissible) -->
+    <div id="unbackedBanner" class="ios-card p-3 mb-3 hidden-view" style="padding:10px 13px;margin-bottom:12px;background:#FFF7ED;border:1px solid #FDBA74;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#991B1B;">
-          <span style="font-size:14px;">⚠️</span>
-          <span id="unbackedBannerText"><strong>有未备份的改动：</strong>你已有 1 项数据变动尚未导出备份，建议备份防丢失</span>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#9A3412;flex:1;min-width:180px;">
+          <span style="font-size:14px;">💾</span>
+          <span id="unbackedBannerText"><strong>备份提醒：</strong>已有 5 项数据变动未导出备份</span>
         </div>
-        <button id="quickBackupNowBtn" type="button" style="border:none;padding:5px 11px;border-radius:8px;background:#DC2626;color:#FFFFFF;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
-          立即导出备份
-        </button>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+          <button id="quickBackupNowBtn" type="button" style="border:none;padding:5px 10px;border-radius:8px;background:#EA580C;color:#FFFFFF;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            导出备份
+          </button>
+          <button id="dismissBackupBannerBtn" type="button" aria-label="稍后提醒" style="border:1px solid #FDBA74;padding:5px 8px;border-radius:8px;background:#FFFFFF;color:#9A3412;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">
+            稍后
+          </button>
+        </div>
       </div>
     </div>
 
@@ -550,9 +555,14 @@
             <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📅 每日饮食盘点</h2>
             <p id="dailyDateLabel" style="margin:2px 0 0 0;font-size:12px;color:#78716C;white-space:nowrap;">查看主子每天吃了什么</p>
           </div>
-          <button id="openQuickFeedBtn" type="button" class="ios-btn ios-btn-primary" style="min-height:36px;padding:6px 12px;font-size:13px;white-space:nowrap;">
-            <span>＋ 记一笔喂食</span>
-          </button>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <button id="copyPrevDayLogsBtn" type="button" class="ios-btn ios-btn-secondary" title="将前一天的日常饮食复制到当前日期" style="min-height:36px;padding:6px 10px;font-size:12px;color:#9A3412;background:#FFF7ED;border-color:#FED7AA;white-space:nowrap;">
+              <span>📋 复制前一天</span>
+            </button>
+            <button id="openQuickFeedBtn" type="button" class="ios-btn ios-btn-primary" style="min-height:36px;padding:6px 11px;font-size:12.5px;white-space:nowrap;">
+              <span>＋ 记喂食</span>
+            </button>
+          </div>
         </div>
 
         <!-- Mode Toggle: Single Day vs All Dates History -->
@@ -576,12 +586,14 @@
           <div id="dailySummaryBar" style="margin-top:12px;padding-top:11px;border-top:1px solid #F5F5F4;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></div>
         </div>
 
-        <!-- All Dates Filter Controls (Shown when in All-Dates mode) -->
-        <div id="allDatesControlsBox" class="hidden-view" style="margin-top:12px;">
-          <div class="grid-safe" style="display:grid;grid-template-columns:1.25fr 1fr;gap:8px;">
-            <input id="logHistorySearchInput" type="search" placeholder="搜索品牌、口味或备注..." class="ios-input" style="height:38px;min-height:38px;font-size:13px;background:#FFFFFF;">
-            <select id="logHistoryCatSelect" aria-label="按分类筛选饮食记录" class="ios-input" style="height:38px;min-height:38px;font-size:13px;background:#FFFFFF;">
-              <option value="all">全部分类</option>
+        <!-- All Dates Filter Controls (Month + Category + Search) -->
+        <div id="allDatesControlsBox" class="hidden-view" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+          <div class="grid-safe" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <select id="logHistoryMonthSelect" aria-label="按月份筛选饮食记录" class="ios-input" style="height:38px;min-height:38px;font-size:12.5px;background:#FFFFFF;">
+              <option value="all">🗓️ 全部月份</option>
+            </select>
+            <select id="logHistoryCatSelect" aria-label="按分类筛选饮食记录" class="ios-input" style="height:38px;min-height:38px;font-size:12.5px;background:#FFFFFF;">
+              <option value="all">🏷️ 全部分类</option>
               <option value="dry">🥣 猫粮</option>
               <option value="can">🥫 罐头</option>
               <option value="freeze">🍗 冻干</option>
@@ -590,6 +602,7 @@
               <option value="med">🩺 药品</option>
             </select>
           </div>
+          <input id="logHistorySearchInput" type="search" placeholder="搜索品牌、口味、日期或备注..." class="ios-input" style="height:38px;min-height:38px;font-size:13px;background:#FFFFFF;">
         </div>
       </div>
 
@@ -615,7 +628,7 @@
         </div>
       </div>
 
-      <!-- Mode B: All Dates Grouped Archive View -->
+      <!-- Mode B: All Dates Grouped Archive View (With Pagination) -->
       <div id="dailyAllDatesView" class="hidden-view">
         <div class="ios-card p-4" style="padding:15px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -623,6 +636,24 @@
             <span id="allDatesStatsBadge" style="font-size:12px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;">共 0 天 · 0 条</span>
           </div>
           <div id="allDatesArchiveList" style="display:flex;flex-direction:column;gap:14px;"></div>
+
+          <!-- All Dates Pagination Bar -->
+          <div id="allDatesPaginationBar" class="hidden-view" style="margin-top:14px;padding-top:11px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button id="prevLogPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
+              <span id="logPageInfoText" style="font-size:11.5px;font-weight:700;color:#44403C;white-space:nowrap;">第 1 / 1 页</span>
+              <button id="nextLogPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
+              <select id="logPageSizeSelect" aria-label="饮食记录每页显示天数" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background:#FFFFFF;">
+                <option value="7">7 天</option>
+                <option value="14">14 天</option>
+                <option value="30">30 天</option>
+                <option value="9999">全部</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -987,6 +1018,7 @@
           <div>
             <label for="fieldLocation" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">存放位置 (选填)</label>
             <input id="fieldLocation" type="text" placeholder="如：储物柜2层 / 冰箱" class="ios-input text-sm">
+            <div id="quickLocationChips" class="no-scrollbar" style="display:flex;gap:5px;overflow-x:auto;margin-top:5px;padding-bottom:2px;"></div>
           </div>
           <div>
             <label for="fieldBatch" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">购入渠道/批次号</label>
@@ -1103,24 +1135,31 @@
           <input id="feedNameInput" type="text" required placeholder="如：无谷鸡肉猫粮 / 马鲛鱼罐头" class="ios-input" style="height:42px;">
         </div>
 
-        <!-- Portion Amount + Quick Portion Chips -->
+        <!-- Portion Amount + Smart Split-Can Portion Chips -->
         <div>
-          <label for="feedAmountInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">投喂份量 <span style="color:#EA580C;">*</span></label>
-          <input id="feedAmountInput" type="text" required placeholder="如：50g / 半罐 / 1罐 / 1支" class="ios-input" style="height:42px;">
-          <div id="feedPortionChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
-            <button type="button" data-portion="30g" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">30g</button>
-            <button type="button" data-portion="50g" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">50g</button>
-            <button type="button" data-portion="半罐" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">半罐</button>
-            <button type="button" data-portion="1罐" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1罐</button>
-            <button type="button" data-portion="15g冻干" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">15g冻干</button>
-            <button type="button" data-portion="1支" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1支</button>
-            <button type="button" data-portion="1粒" style="padding:3px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1粒</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <label for="feedAmountInput" style="font-size:12px;font-weight:700;color:#44403C;">投喂份量 <span style="color:#EA580C;">*</span></label>
+            <span id="feedSplitHintTag" style="font-size:11px;font-weight:700;color:#EA580C;"></span>
+          </div>
+          <input id="feedAmountInput" type="text" required placeholder="如：半罐 (85g) / 1/3罐 / 50g / 1支" class="ios-input" style="height:42px;">
+          <input type="hidden" id="feedUnitFraction" value="0">
+          <div id="feedPortionChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
+            <button type="button" data-portion="吃完本罐剩余" data-frac="rest" id="chipFinishRestCan" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #16A34A;background:#DCFCE7;color:#15803D;font-size:11.5px;font-weight:800;cursor:pointer;">✨ 吃完本罐剩余</button>
+            <button type="button" data-portion="半罐 (1/2)" data-frac="0.5" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 半罐 (1/2)</button>
+            <button type="button" data-portion="1/3罐" data-frac="0.34" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 1/3罐</button>
+            <button type="button" data-portion="1/4罐" data-frac="0.25" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 1/4罐</button>
+            <button type="button" data-portion="1整罐" data-frac="1" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1整罐</button>
+            <button type="button" data-portion="30g" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">30g</button>
+            <button type="button" data-portion="50g" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">50g</button>
+            <button type="button" data-portion="15g冻干" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">15g冻干</button>
+            <button type="button" data-portion="1支" data-frac="1" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1支</button>
           </div>
         </div>
 
-        <!-- Optional Stock Deduction Checkbox -->
+        <!-- Smart Split-Can / Stock Deduction Status Box -->
         <div id="feedDeductBox" style="padding:10px 12px;border-radius:12px;background:#FFF7ED;border:1px solid #FED7AA;">
-          <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;">
+          <div id="feedSplitAutoInfo" class="hidden-view" style="font-size:12px;font-weight:700;color:#9A3412;line-height:1.4;"></div>
+          <label id="feedManualDeductLabelWrap" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;">
             <span id="feedDeductLabel" style="font-size:12px;font-weight:700;color:#7C2D12;">📦 同时从库存扣减 1 件（适合整罐/整支吃完时勾选）</span>
             <input id="feedDeductStock" type="checkbox" style="width:18px;height:18px;accent-color:#EA580C;flex-shrink:0;">
           </label>
@@ -1246,6 +1285,30 @@
       }
 
       var COMMON_BRANDS = ['渴望 Orijen', '爱肯拿 Acana', '巅峰 ZiwiPeak', 'K9 Natural', '大宠爱 Revolution', '博来恩 Broadline', '海乐妙 Milprazon', '爱沃克 Advocate', '百利 Instinct', '法米娜 Farmina', '小李子 Leonardo', '鲜朗', '诚实一口'];
+      var COMMON_LOCATIONS = ['真空储粮桶', '餐边柜', '储物柜', '冰箱冷藏', '零食抽屉', '医药箱'];
+
+      function formatRemainFractionText(remFrac, unitStr) {
+        var r = Number(remFrac);
+        if (!r || r <= 0.05 || r >= 0.98) return '';
+        var u = unitStr || '罐';
+        if (Math.abs(r - 0.5) <= 0.06) return '余1/2' + u;
+        if (Math.abs(r - 0.66) <= 0.08) return '余2/3' + u;
+        if (Math.abs(r - 0.33) <= 0.08) return '余1/3' + u;
+        if (Math.abs(r - 0.75) <= 0.06) return '余3/4' + u;
+        if (Math.abs(r - 0.25) <= 0.06) return '余1/4' + u;
+        return '余' + Math.round(r * 100) + '%' + u;
+      }
+
+      function computePortionGramLabel(baseLabel, frac, specStr) {
+        if (!specStr || !frac || frac <= 0 || frac >= 1) return baseLabel;
+        var m = String(specStr).match(/^(\d+(?:\.\d+)?)\s*(g|克|ml|毫升)$/i);
+        if (!m) return baseLabel;
+        var totalG = parseFloat(m[1]);
+        var unitG = m[2];
+        if (!totalG || totalG <= 0) return baseLabel;
+        var partG = Math.round(totalG * frac);
+        return baseLabel + ' (约' + partG + unitG + ')';
+      }
 
       // ==================== DATE HELPERS ====================
       function getTodayStr() {
@@ -1553,6 +1616,10 @@
         brandPageSize: 5,
         logSearchQuery: '',
         logCatFilter: 'all',
+        logMonthFilter: 'all',
+        logPage: 1,
+        logPageSize: 7,
+        backupBannerDismissedCount: -1,
         formCat: 'dry',
         formPal: '',
         formImage: '',
@@ -1737,6 +1804,7 @@
           target.quantity = nextRem;
           target.isOpened = false;
           target.openedDate = '';
+          target.openRemainFraction = 0;
           if (linkedArchive) {
             linkedArchive.consumedCount = target.eatenCount;
             linkedArchive.lastQuantity = target.eatenCount;
@@ -1771,6 +1839,7 @@
           target.finishedDate = today;
           target.quantity = 0;
           target.isOpened = false;
+          target.openRemainFraction = 0;
         }
       }
 
@@ -2371,8 +2440,9 @@
               badgeBg = '#FEF3C7'; badgeText = '#B45309';
               badgeLabel = ev.expDays === 0 ? '今日到期' : ('剩' + ev.expDays + '天');
             }
+            var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? formatRemainFractionText(it.openRemainFraction, it.unit || '罐') : '';
             var openDot = it.isOpened && ev.status !== 'empty'
-              ? '<span style="font-size:10px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;">🔓1拆</span>'
+              ? '<span style="font-size:10px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;">🔓' + (fracTxtCompact || '1拆') + '</span>'
               : '';
             var palIcon = it.palatability === 'love' ? (it.category === 'med' ? '✅' : '😍') : (it.palatability === 'coax' ? (it.category === 'med' ? '💦' : '🥺') : (it.palatability === 'meh' ? (it.category === 'med' ? '⚠️' : '😒') : ''));
 
@@ -2462,9 +2532,11 @@
               ? (ev.openRemaining < 0 ? ('当前拆封件已超期 ' + Math.abs(ev.openRemaining) + ' 天') : ('当前拆封件保鲜剩 ' + ev.openRemaining + ' 天'))
               : '当前 1 ' + unitStr + '已拆封';
             var sealedLeft = Math.max(0, Math.round((qtyNum - 1) * 100) / 100);
+            var fracBannerTxt = formatRemainFractionText(it.openRemainFraction, unitStr);
+            var fracHighlight = fracBannerTxt ? (' · <strong>本' + unitStr + fracBannerTxt + '</strong>') : '';
             var scopeTxt = qtyNum > 1
-              ? ('🔓 正在吃 1 ' + unitStr + '（开封日 ' + escapeHtml(it.openedDate || '今日') + ' · 其余 ' + sealedLeft + ' ' + unitStr + '未拆）')
-              : ('🔓 开封日：' + escapeHtml(it.openedDate || '已记录'));
+              ? ('🔓 正在吃 1 ' + unitStr + '（开封日 ' + escapeHtml(it.openedDate || '今日') + fracHighlight + ' · 其余 ' + sealedLeft + ' ' + unitStr + '未拆）')
+              : ('🔓 开封日：' + escapeHtml(it.openedDate || '已记录') + fracHighlight);
             openedBannerHtml =
               '<div style="margin-top:8px;padding:6px 10px;border-radius:10px;background:#FFF7ED;border:1px dashed #FDBA74;display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;">' +
                 '<span style="color:#7C2D12;">' + scopeTxt + '</span>' +
@@ -2537,8 +2609,8 @@
                         : ''
                       ) +
                       (it.isOpened && qtyNum > 1
-                        ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">' + Math.max(0, Math.round((qtyNum - 1) * 100) / 100) + '未拆·1拆封</span>'
-                        : (it.isOpened && qtyNum > 0 ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中</span>' : '')
+                        ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">' + Math.max(0, Math.round((qtyNum - 1) * 100) / 100) + '未拆·1拆' + (fracBannerTxt ? ('(' + fracBannerTxt + ')') : '') + '</span>'
+                        : (it.isOpened && qtyNum > 0 ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中' + (fracBannerTxt ? ('·' + fracBannerTxt) : '') + '</span>' : '')
                       )
                   ) +
                 '</div>' +
@@ -2728,10 +2800,34 @@
       }
 
       function renderAllDatesArchive() {
+        // Populate Month Filter dropdown from all existing logs
+        var monthSet = {};
+        state.logs.forEach(function (lg) {
+          if (lg.date && lg.date.length >= 7) {
+            var ym = lg.date.slice(0, 7);
+            monthSet[ym] = (monthSet[ym] || 0) + 1;
+          }
+        });
+        var months = Object.keys(monthSet).sort(function (a, b) { return b.localeCompare(a); });
+        var monthSel = document.getElementById('logHistoryMonthSelect');
+        if (monthSel) {
+          if (state.logMonthFilter !== 'all' && !monthSet[state.logMonthFilter]) {
+            state.logMonthFilter = 'all';
+          }
+          var mHtml = '<option value="all">🗓️ 全部月份 (' + state.logs.length + '条)</option>';
+          months.forEach(function (ym) {
+            var selAttr = (state.logMonthFilter === ym) ? ' selected' : '';
+            mHtml += '<option value="' + escapeHtml(ym) + '"' + selAttr + '>' + escapeHtml(ym) + ' (' + monthSet[ym] + '条)</option>';
+          });
+          monthSel.innerHTML = mHtml;
+        }
+
         var q = (state.logSearchQuery || '').trim().toLowerCase();
         var catF = state.logCatFilter || 'all';
+        var monthF = state.logMonthFilter || 'all';
 
         var matched = state.logs.filter(function (lg) {
+          if (monthF !== 'all' && String(lg.date || '').slice(0, 7) !== monthF) return false;
           if (catF !== 'all' && lg.category !== catF) return false;
           if (q) {
             var hay = [lg.date, lg.mealSlot, lg.brand, lg.name, lg.amount, lg.note].join(' ').toLowerCase();
@@ -2755,7 +2851,9 @@
           '共 ' + sortedDates.length + ' 天 · ' + matched.length + ' 条记录';
 
         var listEl = document.getElementById('allDatesArchiveList');
+        var logPagerEl = document.getElementById('allDatesPaginationBar');
         if (sortedDates.length === 0) {
+          if (logPagerEl) logPagerEl.classList.add('hidden-view');
           listEl.innerHTML =
             '<div style="padding:28px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#78716C;font-size:13px;">' +
               '🐾 没有找到匹配的喂食记录' +
@@ -2763,7 +2861,31 @@
           return;
         }
 
-        listEl.innerHTML = sortedDates.map(function (dStr) {
+        var lPageSize = Number(state.logPageSize) || 7;
+        var lTotalPages = Math.max(1, Math.ceil(sortedDates.length / lPageSize));
+        if (state.logPage > lTotalPages) state.logPage = lTotalPages;
+        if (state.logPage < 1) state.logPage = 1;
+        var pagedDates = sortedDates.slice((state.logPage - 1) * lPageSize, state.logPage * lPageSize);
+
+        if (sortedDates.length > 7 || lTotalPages > 1) {
+          logPagerEl.classList.remove('hidden-view');
+          document.getElementById('logPageInfoText').textContent =
+            '第 ' + state.logPage + ' / ' + lTotalPages + ' 页 (共 ' + sortedDates.length + ' 天)';
+          var lpPrev = document.getElementById('prevLogPageBtn');
+          var lpNext = document.getElementById('nextLogPageBtn');
+          lpPrev.disabled = (state.logPage <= 1);
+          lpPrev.style.opacity = state.logPage <= 1 ? '0.45' : '1';
+          lpNext.disabled = (state.logPage >= lTotalPages);
+          lpNext.style.opacity = state.logPage >= lTotalPages ? '0.45' : '1';
+          var lSizeSel = document.getElementById('logPageSizeSelect');
+          if (lSizeSel && String(lSizeSel.value) !== String(lPageSize)) {
+            lSizeSel.value = String(lPageSize);
+          }
+        } else {
+          logPagerEl.classList.add('hidden-view');
+        }
+
+        listEl.innerHTML = pagedDates.map(function (dStr) {
           var items = byDate[dStr];
           var diff = diffDaysFromToday(dStr);
           var rel = diff === 0 ? ' (今天)' : (diff === -1 ? ' (昨天)' : '');
@@ -2815,6 +2937,77 @@
         sel.innerHTML = html;
       }
 
+      function syncFeedSplitCanUI(target, chosenFrac) {
+        var fracInput = document.getElementById('feedUnitFraction');
+        var hintTag = document.getElementById('feedSplitHintTag');
+        var finishRestChip = document.getElementById('chipFinishRestCan');
+        var splitAutoInfo = document.getElementById('feedSplitAutoInfo');
+        var manualDeductWrap = document.getElementById('feedManualDeductLabelWrap');
+        var deductBox = document.getElementById('feedDeductBox');
+
+        var frac = Number(chosenFrac) || 0;
+        fracInput.value = String(frac);
+
+        if (!target) {
+          hintTag.textContent = '';
+          finishRestChip.classList.add('hidden-view');
+          splitAutoInfo.classList.add('hidden-view');
+          if (state.editMode) {
+            deductBox.classList.remove('hidden-view');
+            manualDeductWrap.style.display = 'flex';
+          } else {
+            deductBox.classList.add('hidden-view');
+          }
+          return;
+        }
+
+        var u = target.unit || '罐';
+        var curRemFrac = (target.isOpened && Number(target.openRemainFraction) > 0 && Number(target.openRemainFraction) < 0.98)
+          ? Number(target.openRemainFraction)
+          : 0;
+
+        if (curRemFrac > 0) {
+          var remLabel = formatRemainFractionText(curRemFrac, u);
+          hintTag.textContent = '🔓 当前已拆封1' + u + '（' + remLabel + '）';
+          finishRestChip.classList.remove('hidden-view');
+          finishRestChip.textContent = '✨ 吃完本' + u + '剩余 (' + remLabel.replace(/^余/, '') + ')';
+        } else {
+          hintTag.textContent = target.category === 'can' ? '💡 一罐吃不完？点下方 1/2罐 或 1/3罐 自动记拆封余量' : '';
+          finishRestChip.classList.add('hidden-view');
+        }
+
+        // If user picked a fractional can portion (0 < frac <= 1) on a single-serving / can item:
+        if (frac > 0 && (target.category === 'can' || isSingleServingUnit(target))) {
+          deductBox.classList.remove('hidden-view');
+          var startRem = curRemFrac > 0 ? curRemFrac : 1.0;
+          var afterRem = startRem - frac;
+          if (afterRem <= 0.08) {
+            // Finishes the currently opened (or full) unit!
+            splitAutoInfo.classList.remove('hidden-view');
+            manualDeductWrap.style.display = 'none';
+            document.getElementById('feedDeductStock').checked = false;
+            splitAutoInfo.innerHTML = curRemFrac > 0
+              ? ('✅ <strong>本' + u + '刚好全部吃完！</strong>保存后将自动从库存核销这 1 ' + u + '并归入【已吃完】，其余未拆封库存不受影响。')
+              : ('✅ <strong>整' + u + '吃完：</strong>保存后将自动从库存核销 1 ' + u + '并归入【已吃完】。');
+          } else {
+            // Partial unit eaten! Leave remaining fraction open!
+            var afterTxt = formatRemainFractionText(afterRem, u);
+            splitAutoInfo.classList.remove('hidden-view');
+            manualDeductWrap.style.display = 'none';
+            document.getElementById('feedDeductStock').checked = false;
+            splitAutoInfo.innerHTML = '🔓 <strong>分顿吃自动追踪：</strong>保存后这 1 ' + u + '将标为【拆封中 · ' + afterTxt + '】（暂不扣减整' + u + '库存，等下次吃完剩余部分时自动核销）。';
+          }
+        } else {
+          splitAutoInfo.classList.add('hidden-view');
+          manualDeductWrap.style.display = 'flex';
+          if (state.editMode && !document.getElementById('feedLogEditId').value) {
+            deductBox.classList.remove('hidden-view');
+          } else {
+            deductBox.classList.add('hidden-view');
+          }
+        }
+      }
+
       function applyFeedStockSelection(itemId) {
         var target = null;
         for (var i = 0; i < state.items.length; i++) {
@@ -2826,16 +3019,38 @@
           document.getElementById('feedBrandInput').value = target.brand || '';
           document.getElementById('feedNameInput').value = target.name || '';
           var defaultPortion = '50g';
-          if (target.category === 'can') defaultPortion = target.spec ? ('1罐 (' + target.spec + ')') : '1罐';
-          if (target.category === 'freeze') defaultPortion = '15g';
-          if (target.category === 'treat') defaultPortion = '1支';
-          if (target.category === 'supp') defaultPortion = '5cm / 1份';
-          if (target.category === 'med') defaultPortion = '1' + (target.unit || '支');
+          var defaultFrac = 0;
+          var curRemFrac = (target.isOpened && Number(target.openRemainFraction) > 0 && Number(target.openRemainFraction) < 0.98)
+            ? Number(target.openRemainFraction)
+            : 0;
+
+          if (target.category === 'can') {
+            if (curRemFrac > 0) {
+              var rTxt = formatRemainFractionText(curRemFrac, target.unit || '罐').replace(/^余/, '');
+              defaultPortion = computePortionGramLabel(rTxt, curRemFrac, target.spec);
+              defaultFrac = curRemFrac;
+            } else {
+              defaultPortion = computePortionGramLabel('半罐', 0.5, target.spec);
+              defaultFrac = 0.5;
+            }
+          } else if (target.category === 'freeze') {
+            defaultPortion = '15g';
+          } else if (target.category === 'treat') {
+            defaultPortion = '1支';
+            defaultFrac = (target.unit === '支') ? 1 : 0;
+          } else if (target.category === 'supp') {
+            defaultPortion = '5cm / 1份';
+          } else if (target.category === 'med') {
+            defaultPortion = '1' + (target.unit || '支');
+            defaultFrac = 1;
+          }
           document.getElementById('feedAmountInput').value = defaultPortion;
           document.getElementById('feedDeductLabel').textContent =
             '📦 同时从库存扣减 1 ' + (target.unit || '件') + '（当前余 ' + Number(target.quantity) + (target.unit || '件') + '）';
+          syncFeedSplitCanUI(target, defaultFrac);
         } else {
           document.getElementById('feedDeductLabel').textContent = '📦 同时从库存扣减 1 件（仅从上方选择在库商品时生效）';
+          syncFeedSplitCanUI(null, 0);
         }
       }
 
@@ -3379,11 +3594,15 @@
             dotEl.classList.remove('hidden-view');
           }
           if (topBanner) {
-            topBanner.classList.remove('hidden-view');
-            if (topBannerTxt) {
-              topBannerTxt.innerHTML = lastBk
-                ? ('<strong>未备份提醒：</strong>自上次备份 (' + escapeHtml(lastBk) + ') 后已有 <strong>' + badgeCount + ' 项</strong>新增/修改未导出备份')
-                : ('<strong>未备份提醒：</strong>当前已有 <strong>' + badgeCount + ' 项</strong>操作尚未导出本地 JSON 备份，建议备份防丢失');
+            if (badgeCount >= 5 && state.backupBannerDismissedCount !== badgeCount) {
+              topBanner.classList.remove('hidden-view');
+              if (topBannerTxt) {
+                topBannerTxt.innerHTML = lastBk
+                  ? ('<strong>备份提醒：</strong>自上次备份 (' + escapeHtml(lastBk) + ') 后已累计 <strong>' + badgeCount + ' 项</strong>改动未备份')
+                  : ('<strong>备份提醒：</strong>已累计 <strong>' + badgeCount + ' 项</strong>数据变动未导出 JSON 备份，建议备份防丢');
+              }
+            } else {
+              topBanner.classList.add('hidden-view');
             }
           }
           if (setBadge) {
@@ -3436,7 +3655,30 @@
       }
 
       // ==================== ADD / EDIT MODAL LOGIC ====================
+      function renderQuickLocationChips() {
+        var existing = {};
+        var merged = [];
+        state.items.forEach(function (it) {
+          if (it.location && it.location.trim() && !existing[it.location.trim()]) {
+            existing[it.location.trim()] = true;
+            merged.push(it.location.trim());
+          }
+        });
+        COMMON_LOCATIONS.forEach(function (loc) {
+          if (!existing[loc]) {
+            existing[loc] = true;
+            merged.push(loc);
+          }
+        });
+        var box = document.getElementById('quickLocationChips');
+        if (!box) return;
+        box.innerHTML = merged.slice(0, 8).map(function (loc) {
+          return '<button type="button" data-pick-location="' + escapeHtml(loc) + '" style="white-space:nowrap;padding:3px 8px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">📍 ' + escapeHtml(loc) + '</button>';
+        }).join('');
+      }
+
       function renderQuickBrandChips() {
+        renderQuickLocationChips();
         var existing = {};
         var merged = [];
         state.items.forEach(function (it) {
@@ -3968,13 +4210,81 @@
           window.scrollTo(0, 0);
         });
 
+        document.getElementById('dismissBackupBannerBtn').addEventListener('click', function () {
+          state.backupBannerDismissedCount = Number(state.settings.unsavedChangesCount) || 0;
+          document.getElementById('unbackedBanner').classList.add('hidden-view');
+        });
+
+        document.getElementById('copyPrevDayLogsBtn').addEventListener('click', function () {
+          var targetDate = state.selectedLogDate || getTodayStr();
+          var dt = parseLocalDate(targetDate);
+          if (!dt) return;
+          dt.setDate(dt.getDate() - 1);
+          var prevDateStr = formatDateObj(dt);
+          var prevLogs = state.logs.filter(function (lg) { return lg.date === prevDateStr; });
+          if (prevLogs.length === 0) {
+            showToast('前一天 (' + prevDateStr + ') 没有饮食记录可复制');
+            return;
+          }
+          openConfirm(
+            '复制前一天饮食记录？',
+            '将把 ' + prevDateStr + ' 的 ' + prevLogs.length + ' 条饮食记录复制到 ' + targetDate + '（复制后可随时单条修改或删除）。',
+            '确认复制',
+            function () {
+              // Copy in reverse so original order is preserved when unshifting
+              for (var i = prevLogs.length - 1; i >= 0; i--) {
+                var srcLog = prevLogs[i];
+                appendFeedingLog({
+                  date: targetDate,
+                  mealSlot: srcLog.mealSlot,
+                  itemId: srcLog.itemId,
+                  category: srcLog.category,
+                  brand: srcLog.brand,
+                  name: srcLog.name,
+                  amount: srcLog.amount,
+                  note: srcLog.note
+                });
+              }
+              saveToStorage();
+              renderAll();
+              showToast('已复制 ' + prevLogs.length + ' 条饮食记录到 ' + targetDate);
+            }
+          );
+        });
+
+        document.getElementById('logHistoryMonthSelect').addEventListener('change', function () {
+          state.logMonthFilter = this.value || 'all';
+          state.logPage = 1;
+          renderAllDatesArchive();
+        });
+
         document.getElementById('logHistorySearchInput').addEventListener('input', function () {
           state.logSearchQuery = this.value || '';
+          state.logPage = 1;
           renderAllDatesArchive();
         });
 
         document.getElementById('logHistoryCatSelect').addEventListener('change', function () {
           state.logCatFilter = this.value || 'all';
+          state.logPage = 1;
+          renderAllDatesArchive();
+        });
+
+        document.getElementById('prevLogPageBtn').addEventListener('click', function () {
+          if (state.logPage > 1) {
+            state.logPage -= 1;
+            renderAllDatesArchive();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+        document.getElementById('nextLogPageBtn').addEventListener('click', function () {
+          state.logPage += 1;
+          renderAllDatesArchive();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        document.getElementById('logPageSizeSelect').addEventListener('change', function () {
+          state.logPageSize = parseInt(this.value, 10) || 7;
+          state.logPage = 1;
           renderAllDatesArchive();
         });
 
@@ -4016,7 +4326,41 @@
         document.getElementById('feedPortionChips').addEventListener('click', function (ev) {
           var btn = ev.target.closest('[data-portion]');
           if (!btn) return;
-          document.getElementById('feedAmountInput').value = btn.getAttribute('data-portion');
+          var fItemId = document.getElementById('feedItemId').value;
+          var target = state.items.find(function (x) { return x.id === fItemId; });
+          var rawFrac = btn.getAttribute('data-frac');
+          var basePortion = btn.getAttribute('data-portion');
+          var chosenFrac = 0;
+
+          if (rawFrac === 'rest' && target) {
+            chosenFrac = (target.isOpened && Number(target.openRemainFraction) > 0) ? Number(target.openRemainFraction) : 1;
+            var rLabel = formatRemainFractionText(chosenFrac, target.unit || '罐').replace(/^余/, '');
+            document.getElementById('feedAmountInput').value = computePortionGramLabel(rLabel, chosenFrac, target.spec);
+          } else {
+            chosenFrac = parseFloat(rawFrac) || 0;
+            if (target && chosenFrac > 0 && chosenFrac < 1) {
+              var cleanBase = basePortion.replace(/\s*\([^)]*\)/, '');
+              document.getElementById('feedAmountInput').value = computePortionGramLabel(cleanBase, chosenFrac, target.spec);
+            } else if (target && chosenFrac === 1 && target.category === 'can') {
+              document.getElementById('feedAmountInput').value = target.spec ? ('1整罐 (' + target.spec + ')') : '1整罐';
+            } else {
+              document.getElementById('feedAmountInput').value = basePortion;
+            }
+          }
+          syncFeedSplitCanUI(target, chosenFrac);
+        });
+
+        document.getElementById('feedAmountInput').addEventListener('input', function () {
+          var val = this.value.trim();
+          var fItemId = document.getElementById('feedItemId').value;
+          var target = state.items.find(function (x) { return x.id === fItemId; });
+          var inferredFrac = 0;
+          if (/半|1\/2|0\.5/.test(val)) inferredFrac = 0.5;
+          else if (/1\/3/.test(val)) inferredFrac = 0.34;
+          else if (/2\/3/.test(val)) inferredFrac = 0.67;
+          else if (/1\/4/.test(val)) inferredFrac = 0.25;
+          else if (/^1(整)?(罐|支|粒)/.test(val)) inferredFrac = 1;
+          syncFeedSplitCanUI(target, inferredFrac);
         });
 
         document.getElementById('feedForm').addEventListener('submit', function (ev) {
@@ -4078,12 +4422,37 @@
             nextDueDate: nextDue
           });
 
-          if (deduct && fItemId) {
+          var usedFrac = parseFloat(document.getElementById('feedUnitFraction').value) || 0;
+          var splitToastSuffix = '';
+
+          if (fItemId) {
             for (var i = 0; i < state.items.length; i++) {
               if (state.items[i].id === fItemId) {
-                var curQ = Number(state.items[i].quantity) || 0;
-                if (curQ > 0) {
-                  recordConsumedUnits(state.items[i], 1);
+                var stItem = state.items[i];
+                var curQ = Number(stItem.quantity) || 0;
+                if (curQ > 0 && usedFrac > 0 && (stItem.category === 'can' || isSingleServingUnit(stItem))) {
+                  var startRem = (stItem.isOpened && Number(stItem.openRemainFraction) > 0 && Number(stItem.openRemainFraction) < 0.98)
+                    ? Number(stItem.openRemainFraction)
+                    : 1.0;
+                  var nextRemFrac = Math.round((startRem - usedFrac) * 100) / 100;
+                  if (nextRemFrac <= 0.08) {
+                    // Finished the opened (or full) unit!
+                    if (!stItem.openedDate) stItem.openedDate = fDate;
+                    recordConsumedUnits(stItem, 1);
+                    splitToastSuffix = '（本' + (stItem.unit || '罐') + '已全部吃完并自动核销库存）';
+                  } else {
+                    // Mark 1 unit opened with remaining fraction!
+                    stItem.isOpened = true;
+                    if (!stItem.openedDate) stItem.openedDate = fDate;
+                    if (!stItem.openDaysLimit) {
+                      stItem.openDaysLimit = (CATEGORIES[stItem.category] || CATEGORIES.can).defaultOpenDays;
+                    }
+                    stItem.openRemainFraction = nextRemFrac;
+                    splitToastSuffix = '（本' + (stItem.unit || '罐') + formatRemainFractionText(nextRemFrac, stItem.unit || '罐') + '）';
+                  }
+                } else if (deduct && curQ > 0) {
+                  recordConsumedUnits(stItem, 1);
+                  splitToastSuffix = '（已同步扣减 1 ' + (stItem.unit || '件') + '库存）';
                 }
                 break;
               }
@@ -4094,7 +4463,7 @@
           saveToStorage();
           closeFeedModal();
           renderAll();
-          showToast(nextDue ? ('已记录喂食，将于 ' + nextDue + ' 提醒下次用药') : ('已记入 ' + fDate + ' 饮食盘点'));
+          showToast(nextDue ? ('已记录喂食，将于 ' + nextDue + ' 提醒下次用药') : ('已记入 ' + fDate + ' 饮食盘点' + splitToastSuffix));
         });
 
         // Global Read-Only vs Edit Mode Toggle
@@ -4234,7 +4603,13 @@
             var curQ = Number(target.quantity) || 0;
             var uName = target.unit || '件';
             var singleServe = isSingleServingUnit(target);
-            var portionLabel = '1' + uName + (target.spec ? (' (' + target.spec + ')') : '');
+            var remFracVal = (target.isOpened && Number(target.openRemainFraction) > 0 && Number(target.openRemainFraction) < 0.98)
+              ? Number(target.openRemainFraction)
+              : 1;
+            var remFracText = remFracVal < 0.98 ? formatRemainFractionText(remFracVal, uName).replace(/^余/, '剩余') : ('1' + uName);
+            var portionLabel = remFracVal < 0.98
+              ? computePortionGramLabel(remFracText, remFracVal, target.spec)
+              : ('1' + uName + (target.spec ? (' (' + target.spec + ')') : ''));
 
             if (curQ > 1) {
               var nextRem = Math.max(0, Math.round((curQ - 1) * 100) / 100);
@@ -4321,6 +4696,12 @@
           var btn = ev.target.closest('[data-pick-brand]');
           if (!btn) return;
           document.getElementById('fieldBrand').value = btn.getAttribute('data-pick-brand');
+        });
+
+        document.getElementById('quickLocationChips').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-pick-location]');
+          if (!btn) return;
+          document.getElementById('fieldLocation').value = btn.getAttribute('data-pick-location');
         });
 
         document.getElementById('currencyToggleGroup').addEventListener('click', function (ev) {
@@ -4443,6 +4824,7 @@
               if (state.items[pIdx].id === id) {
                 var prevIt = state.items[pIdx];
                 if (prevIt.eatenCount) record.eatenCount = prevIt.eatenCount;
+                if (prevIt.openRemainFraction && record.isOpened) record.openRemainFraction = prevIt.openRemainFraction;
                 if (prevIt.consumedCount) record.consumedCount = prevIt.consumedCount;
                 if (prevIt.lastQuantity) record.lastQuantity = prevIt.lastQuantity;
                 if (prevIt.sourceBatchId) record.sourceBatchId = prevIt.sourceBatchId;
