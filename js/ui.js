@@ -219,9 +219,13 @@
       : '目前没有在库数量。';
   }
 
+  function purchasePackagingLabel(pack, unit) {
+    return pack.count + pack.outerUnit + '装，' + (pack.outerUnit === unit ? '内包装' : '') +
+      '共' + (pack.count * pack.size) + unit;
+  }
+
   function purchasePackagingText(item) {
-    var pack = item.purchasePackaging;
-    return pack ? Utils.escapeHtml(pack.count + pack.outerUnit + ' × ' + pack.size + item.unit) : '';
+    return item.purchasePackaging ? Utils.escapeHtml(purchasePackagingLabel(item.purchasePackaging, item.unit)) : '';
   }
 
   function flavorStockText(item, plain) {
@@ -230,9 +234,13 @@
       var text = flavor.name + ' ' + flavor.quantity + item.unit;
       if (flavor.openedDate) {
         var rest = flavor.openRemainFraction;
-        var spec = flavor.spec || item.spec || '';
-        var grams = /(?:ml|毫升)/i.test(spec) ? 0 : Utils.parseSpecToGrams(spec);
-        var left = rest ? (grams ? '，约余' + Utils.round2(grams * rest) + 'g' : '，余' + Utils.round2(rest * 100) + '%') : '';
+        var spec = singlePortionSpec(item, flavor);
+        var left = '';
+        if (rest) {
+          left = spec && Number(spec[1]) > 0 && (!spec[3] || spec[3] === item.unit)
+            ? '，约余' + Utils.round2(Number(spec[1]) * rest) + spec[2]
+            : '，余' + Utils.round2(rest * 100) + '%';
+        }
         text += '（1' + item.unit + '使用中' + left + '）';
       }
       return plain ? text : Utils.escapeHtml(text);
@@ -1111,13 +1119,16 @@
   // ==================== QUICK FEED MODAL (FIXED READ-ONLY DEDUCT VISIBILITY + PORTION MEMORY) ====================
   UI.populateFeedStockDropdown = function (selectedItemId) {
     var sel = document.getElementById('feedStockSelect');
-    var active = MP.state.items.filter(function (it) { return (Number(it.quantity) || 0) > 0; });
-    var html = '<option value="">-- 手动填写或从下方在库商品中选择 --</option>';
+    var items = MP.state.items;
+    var active = items.filter(function (it) {
+      return !it.sourceBatchId || !items.some(function (batch) { return batch.id === it.sourceBatchId; });
+    }).sort(function (a, b) { return Number(b.quantity > 0) - Number(a.quantity > 0); });
+    var html = '<option value="">-- 手动填写或选择商品批次 --</option>';
     active.forEach(function (it) {
       var ci = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
       var remSuffix = (it.isOpened && it.openRemainFraction > 0) ? (' · ' + Utils.formatRemainFractionText(it.openRemainFraction, it.unit)) : '';
       var isSel = (selectedItemId && it.id === selectedItemId) ? ' selected' : '';
-      html += '<option value="' + Utils.escapeHtml(it.id) + '"' + isSel + '>' + ci.icon + ' [' + Utils.escapeHtml(it.brand) + '] ' + Utils.escapeHtml(it.name) + ' (余' + Number(it.quantity) + Utils.escapeHtml(it.unit || '') + remSuffix + ')</option>';
+      html += '<option value="' + Utils.escapeHtml(it.id) + '"' + isSel + '>' + ci.icon + ' [' + Utils.escapeHtml(it.brand) + '] ' + Utils.escapeHtml(it.name) + '（' + (it.quantity > 0 ? '余' + it.quantity + Utils.escapeHtml(it.unit || '') + remSuffix : '已核销，可补记') + '）</option>';
     });
     sel.innerHTML = html;
   };
@@ -1129,79 +1140,83 @@
     box.classList.toggle('hidden-view', !(cat === 'med' || slot === '🩺 用药/护理'));
   };
 
-  // CRITICAL BUG FIX: Always keep `#feedDeductBox` visible when adding a new feeding log (even in read-only mode!)
-  // Only hide `#feedDeductBox` when editing an existing historical log (`#feedLogEditId` non-empty) to prevent double-deduction!
-  UI.syncFeedSplitCanUI = function (target, chosenFrac) {
-    var fracInput = document.getElementById('feedUnitFraction');
-    var hintTag = document.getElementById('feedSplitHintTag');
-    var finishRestChip = document.getElementById('chipFinishRestCan');
-    var splitAutoInfo = document.getElementById('feedSplitAutoInfo');
-    var manualDeductWrap = document.getElementById('feedManualDeductLabelWrap');
-    var deductBox = document.getElementById('feedDeductBox');
-    var isEditingLog = Boolean(document.getElementById('feedLogEditId').value);
+  UI.syncFeedSplitCanUI = function (target) {
+    var editing = Boolean(document.getElementById('feedLogEditId').value);
+    var deduct = document.getElementById('feedDeductStock');
+    var hint = document.getElementById('feedSplitHintTag');
+    var rest = document.getElementById('chipFinishRestCan');
+    var info = document.getElementById('feedSplitAutoInfo');
+    var flavor = target && target.flavors && UI.getFeedFlavor(target);
+    var unit = target && target.unit || '罐';
+    var remaining = flavor ? flavor.openRemainFraction : target && !target.flavors && target.openRemainFraction;
+    document.getElementById('feedDeductBox').classList.toggle('hidden-view', !target || editing);
+    deduct.disabled = !target || target.quantity <= 0 || editing;
+    if (deduct.disabled) deduct.checked = false;
+    hint.textContent = remaining > 0 ? '🔓 当前' + Utils.formatRemainFractionText(remaining, unit) : '';
+    rest.classList.toggle('hidden-view', !(remaining > 0 && deduct.checked));
+    rest.textContent = '✨ 吃完本' + unit + '剩余';
+    info.classList.toggle('hidden-view', !target || editing);
+    info.textContent = deduct.checked ? '按份量更新当前库存或开封余量。' : '仅补记喂食。当前库存和开封余量保持原样。';
+  };
 
-    var frac = Number(chosenFrac) || 0;
-    fracInput.value = String(frac);
+  function singlePortionSpec(item, flavor) {
+    return /^(\d+(?:\.\d+)?)\s*(g|克|kg|千克|ml|毫升)(?:\s*\/\s*(.+))?$/i.exec(
+      (flavor && flavor.spec || item.spec || '').trim()
+    );
+  }
 
-    if (isEditingLog) {
-      deductBox.classList.add('hidden-view');
-      return;
-    }
+  UI.portionLabel = function (base, fraction, item, flavor) {
+    var spec = item && singlePortionSpec(item, flavor);
+    if (!spec || Number(spec[1]) <= 0 || (spec[3] && spec[3] !== item.unit)) return base;
+    return base + ' (约' + Utils.round2(Number(spec[1]) * fraction) + spec[2] + ')';
+  };
 
-    if (!target || target.flavors) {
-      hintTag.textContent = '';
-      finishRestChip.classList.add('hidden-view');
-      splitAutoInfo.classList.add('hidden-view');
-      deductBox.classList.add('hidden-view');
-      return;
-    }
-
-    deductBox.classList.remove('hidden-view');
-    var u = target.unit || '罐';
-    var curRemFrac = (target.isOpened && Number(target.openRemainFraction) > 0 && Number(target.openRemainFraction) < 0.98)
-      ? Number(target.openRemainFraction)
-      : 0;
-
-    if (curRemFrac > 0) {
-      var remLabel = Utils.formatRemainFractionText(curRemFrac, u);
-      hintTag.textContent = '🔓 当前已拆1' + u + '（' + remLabel + '）';
-      finishRestChip.classList.remove('hidden-view');
-      finishRestChip.textContent = '✨ 吃完本' + u + '剩余 (' + remLabel.replace(/^余/, '') + ')';
-    } else {
-      hintTag.textContent = target.category === 'can' ? '💡 分顿吃可点下方 1/2罐 或 1/3罐 自动记余量' : '';
-      finishRestChip.classList.add('hidden-view');
-    }
-
-    if (frac > 0 && (target.category === 'can' || Domain.isSingleServingUnit(target))) {
-      var startRem = curRemFrac > 0 ? curRemFrac : 1.0;
-      var afterRem = Utils.round2(startRem - frac);
-      splitAutoInfo.classList.remove('hidden-view');
-      manualDeductWrap.style.display = 'none';
-      document.getElementById('feedDeductStock').checked = false;
-      if (afterRem <= 0.08) {
-        splitAutoInfo.innerHTML = curRemFrac > 0
-          ? ('✅ <strong>本' + u + '刚好全部吃完！</strong>保存后将自动核销这 1 ' + u + '并归入【已核销】，其余未拆库存不受影响。')
-          : ('✅ <strong>整' + u + '核销：</strong>保存后将自动从库存扣减 1 ' + u + '并归入【已核销】。');
-      } else {
-        var afterTxt = Utils.formatRemainFractionText(afterRem, u);
-        splitAutoInfo.innerHTML = '🔓 <strong>分顿自动追踪：</strong>保存后这 1 ' + u + '将标为【拆封中 · ' + afterTxt + '】（暂不扣整' + u + '，下次吃完剩余时自动核销）。';
+  UI.parseFeedPortion = function (amount, item, flavor) {
+    var text = String(amount || '').trim();
+    if (/^(吃完|用完)$/.test(text)) return { finish: true };
+    var mass = /^(\d+(?:\.\d+)?)\s*(g|克|kg|千克|ml|毫升)$/i.exec(text);
+    if (mass && Number(mass[1]) > 0) {
+      var spec = item && singlePortionSpec(item, flavor);
+      var ratio = 0;
+      if (spec && (!spec[3] || spec[3] === item.unit)) {
+        var actualUnit = mass[2].toLowerCase();
+        var specUnit = spec[2].toLowerCase();
+        var actualVolume = /^(ml|毫升)$/.test(actualUnit);
+        if (actualVolume === /^(ml|毫升)$/.test(specUnit)) {
+          ratio = Number(mass[1]) * (/^(kg|千克)$/.test(actualUnit) ? 1000 : 1) /
+            (Number(spec[1]) * (/^(kg|千克)$/.test(specUnit) ? 1000 : 1));
+        }
       }
-    } else {
-      splitAutoInfo.classList.add('hidden-view');
-      manualDeductWrap.style.display = 'flex';
+      return { valid: true, fraction: Number.isFinite(ratio) ? ratio : 0 };
     }
+    text = text.replace(/\s*[（(](?:约?\s*\d+(?:\.\d+)?\s*(?:g|克|kg|千克|ml|毫升)|1\/2)[）)]$/i, '').trim();
+    var unit = item && item.unit;
+    var hasUnit = Boolean(unit && text.endsWith(unit));
+    if (hasUnit) text = text.slice(0, -unit.length).trim();
+    if (text === '半') return { valid: true, fraction: 0.5 };
+    var parts = /^(\d+)\s*\/\s*(\d+)$/.exec(text);
+    var fraction = parts ? Number(parts[1]) / Number(parts[2])
+      : (hasUnit && /^\d+(?:\.\d+)?整?$/.test(text) ? Number(text.replace(/整$/, '')) : 0);
+    return { valid: Number.isFinite(fraction) && fraction > 0, fraction: fraction };
   };
 
-  UI.inferFractionFromAmountStr = function (val) {
-    if (!val) return 0;
-    if (/半|1\/2|0\.5/.test(val)) return 0.5;
-    if (/1\/3/.test(val)) return 0.34;
-    if (/2\/3/.test(val)) return 0.67;
-    if (/1\/4/.test(val)) return 0.25;
-    if (/3\/4/.test(val)) return 0.75;
-    if (/^1(整)?(罐|支|粒)/.test(val)) return 1;
-    return 0;
+  UI.inferFractionFromAmountStr = function (amount, item) {
+    var portion = UI.parseFeedPortion(amount, item);
+    return portion.valid ? portion.fraction || 0 : 0;
   };
+
+  function syncPortionChips(item) {
+    var unit = item && item.unit || '罐';
+    var presets = { '0.5': '半', '0.34': '1/3', '0.25': '1/4', '1': '1' };
+    document.querySelectorAll('#feedPortionChips [data-package-portion]').forEach(function (button) {
+      var portion = presets[button.dataset.frac] + unit;
+      button.dataset.portion = portion;
+      button.textContent = portion;
+      button.classList.toggle('hidden-view', Boolean(item && !Domain.isPackageUnit(unit) && unit !== '粒'));
+    });
+    document.querySelector('#feedPortionChips [data-portion="1支"]:not([data-package-portion])')
+      .classList.toggle('hidden-view', Boolean(item));
+  }
 
   UI.getFeedFlavor = function (item) {
     return Domain.findFlavor(item, document.getElementById('feedFlavorSelect').value);
@@ -1222,7 +1237,7 @@
       document.getElementById('feedFlavorPal').value = historical.flavorPalatability || '';
       document.getElementById('feedFlavorHint').textContent = '历史口味与库存流水关联';
     } else if (hasFlavor) {
-      item.flavors.filter(function (f) { return f.quantity > 0; }).forEach(function (f) {
+      item.flavors.forEach(function (f) {
         select.add(new Option(f.name + ' · 余' + f.quantity + item.unit, f.id));
       });
       UI.updateFeedFlavor(item);
@@ -1234,31 +1249,23 @@
     var pal = document.getElementById('feedFlavorPal');
     pal.disabled = !flavor;
     pal.value = flavor ? flavor.palatability : '';
-    document.getElementById('discardFlavorBtn').disabled = !MP.state.editMode || !flavor;
+    document.getElementById('discardFlavorBtn').disabled = !MP.state.editMode || !flavor || flavor.quantity <= 0;
     var open = document.getElementById('openFlavorBtn');
     open.textContent = item && Domain.hasSharedSeal(item) ? '记录共用包装开封' : '记录该口味开封';
-    open.disabled = !MP.state.editMode || !flavor || Boolean(Domain.hasSharedSeal(item) ? item.isOpened : flavor.openedDate);
+    open.disabled = !MP.state.editMode || !flavor || flavor.quantity <= 0 || Boolean(Domain.hasSharedSeal(item) ? item.isOpened : flavor.openedDate);
     document.getElementById('feedFlavorHint').textContent = flavor
-      ? '支持克数、分数或「吃完」；当前' + flavorStockText({ flavors: [flavor], spec: item.spec, unit: item.unit }, true)
+      ? '支持克数、分数或件数。当前' + flavorStockText({ flavors: [flavor], spec: item.spec, unit: item.unit }, true)
       : '请先选择实际喂食的口味';
   };
 
-  UI.getFlavorFeedFraction = function (amount, item, flavor) {
-    if (amount === '吃完' || amount === '用完') return { finish: true };
-    if (amount === '1' + item.unit || amount === '1整' + item.unit) return { fraction: 1 };
-    var gramMatch = /^([0-9]+(?:\.[0-9]+)?)\s*(?:g|克)$/i.exec(amount);
-    var spec = flavor.spec || item.spec || '';
-    var grams = /(?:ml|毫升)/i.test(spec) ? 0 : Utils.parseSpecToGrams(spec);
-    if (gramMatch && grams > 0) return { fraction: Number(gramMatch[1]) / grams };
-    var fraction = /^(\d+)\s*\/\s*(\d+)(?:[罐杯袋支瓶])?(?:\s*\([^)]*\))?$/.exec(amount);
-    if (fraction) return { fraction: Number(fraction[1]) / Number(fraction[2]) };
-    return { fraction: /^半[罐杯袋支瓶]/.test(amount) ? 0.5 : 0 };
-  };
+  UI.getFlavorFeedFraction = UI.parseFeedPortion;
 
   UI.applyFeedStockSelection = function (itemId) {
     var target = MP.state.items.find(function (it) { return it.id === itemId; }) || null;
     document.getElementById('feedItemId').value = target ? target.id : '';
     UI.syncFeedFlavor(target);
+    syncPortionChips(target);
+    var deduct = document.getElementById('feedDeductStock');
     var lastPortionChip = document.getElementById('chipLastPortion');
 
     if (target) {
@@ -1278,7 +1285,6 @@
         if (lastFed && lastFed.amount) {
           lastPortionChip.classList.remove('hidden-view');
           lastPortionChip.setAttribute('data-portion', lastFed.amount);
-          lastPortionChip.setAttribute('data-frac', String(UI.inferFractionFromAmountStr(lastFed.amount)));
           lastPortionChip.textContent = '⚡ 上次：' + lastFed.amount;
         } else {
           lastPortionChip.classList.add('hidden-view');
@@ -1293,24 +1299,23 @@
 
       if (target.category === 'can') {
         if (curRemFrac > 0) {
-          var rTxt = Utils.formatRemainFractionText(curRemFrac, target.unit || '罐').replace(/^余/, '');
-          defaultPortion = Utils.computePortionGramLabel(rTxt, curRemFrac, target.spec);
+          defaultPortion = UI.portionLabel(curRemFrac + target.unit, curRemFrac, target);
           defaultFrac = curRemFrac;
         } else if (lastFed && lastFed.amount) {
           defaultPortion = lastFed.amount;
-          defaultFrac = UI.inferFractionFromAmountStr(lastFed.amount) || 0.5;
+          defaultFrac = UI.inferFractionFromAmountStr(lastFed.amount, target);
         } else {
-          defaultPortion = Utils.computePortionGramLabel('半罐', 0.5, target.spec);
+          defaultPortion = '半' + target.unit;
           defaultFrac = 0.5;
         }
       } else if (lastFed && lastFed.amount) {
         defaultPortion = lastFed.amount;
-        defaultFrac = UI.inferFractionFromAmountStr(lastFed.amount);
+        defaultFrac = UI.inferFractionFromAmountStr(lastFed.amount, target);
       } else if (target.category === 'freeze') {
         defaultPortion = '15g';
       } else if (target.category === 'treat') {
-        defaultPortion = '1支';
-        defaultFrac = (target.unit === '支') ? 1 : 0;
+        defaultPortion = '1' + target.unit;
+        defaultFrac = Domain.isSingleServingUnit(target) ? 1 : 0;
       } else if (target.category === 'supp') {
         defaultPortion = '1份 / 5cm';
       } else if (target.category === 'med') {
@@ -1319,17 +1324,18 @@
       }
 
       document.getElementById('feedAmountInput').value = defaultPortion;
-      document.getElementById('feedDeductLabel').textContent =
-        '📦 这袋/瓶刚好空了？同时扣减 1 ' + (target.unit || '件') + '库存（余 ' + Number(target.quantity) + (target.unit || '件') + '）';
+      document.getElementById('feedDeductLabel').textContent = '📦 同步扣减库存';
+      deduct.checked = target.quantity > 0 && document.getElementById('feedDateInput').value === Utils.getTodayStr() &&
+        Boolean(target.flavors || defaultFrac > 0 && (target.category === 'can' || Domain.isSingleServingUnit(target)));
+      document.getElementById('feedAmountInput').placeholder = '如 25g、半' + target.unit + '、1' + target.unit;
       if (target.flavors) {
         if (lastPortionChip) lastPortionChip.classList.add('hidden-view');
         document.getElementById('feedAmountInput').value = '';
-        document.getElementById('feedAmountInput').placeholder = '如 25g、1/2 或吃完';
-        UI.syncFeedSplitCanUI(null, 0);
-      } else UI.syncFeedSplitCanUI(target, defaultFrac);
+        UI.syncFeedSplitCanUI(target);
+      } else UI.syncFeedSplitCanUI(target);
     } else {
       if (lastPortionChip) lastPortionChip.classList.add('hidden-view');
-      UI.syncFeedSplitCanUI(null, 0);
+      UI.syncFeedSplitCanUI(null);
     }
   };
 
@@ -1339,6 +1345,7 @@
     document.getElementById('feedLogEditId').value = '';
     document.getElementById('feedAmountInput').placeholder = '如 40g、半罐、1支';
     UI.syncFeedFlavor(null);
+    syncPortionChips(null);
     var dateToUse = customDate || (MP.state.activeTab === 'daily' ? MP.state.selectedLogDate : Utils.getTodayStr());
     document.getElementById('feedDateInput').value = dateToUse;
     document.getElementById('feedMealSlot').value = Utils.getCurrentMealSlot();
@@ -1360,7 +1367,7 @@
         document.getElementById('feedBrandInput').value = '';
         document.getElementById('feedNameInput').value = '';
         document.getElementById('feedAmountInput').value = '40g';
-        UI.syncFeedSplitCanUI(null, 0);
+        UI.syncFeedSplitCanUI(null);
       }
     }
     UI.syncMedReminderVisibility();
@@ -1378,6 +1385,7 @@
     // A deduction belongs to the original batch even when the meal details are edited.
     document.getElementById('feedStockSelect').disabled = Boolean(lg.deductedUnit || lg.deductedFrac || lg.flavorId);
     UI.syncFeedFlavor(null, lg);
+    syncPortionChips(MP.state.items.find(function (item) { return item.id === lg.itemId; }));
     UI.populateFeedStockDropdown(lg.itemId || '');
     document.getElementById('feedItemId').value = lg.itemId || '';
     document.getElementById('feedCategorySelect').value = lg.category || 'dry';
@@ -1681,7 +1689,7 @@
     row.querySelector('[data-flavor-spec]').value = entry.spec || '';
     if (editing) {
       Array.from(row.children).forEach(function (control) { control.disabled = true; });
-      row.lastElementChild.textContent = '余 ' + entry.quantity;
+      row.lastElementChild.textContent = '余 ' + entry.quantity + document.getElementById('fieldUnit').value;
     }
     document.getElementById('flavorRows').appendChild(row);
   };
@@ -1717,7 +1725,7 @@
     var pack = UI.readPurchasePackaging();
     var message = '';
     if (enabled && editing) {
-      message = '已入库批次的配比和剩余库存由喂食及库存流水维护。';
+      message = '原始配比保留，盘点差异可按口味调整。';
     } else if (enabled && pack) {
       var rows = UI.readFlavorRows(pack);
       var allocated = rows.reduce(function (sum, row) { return sum + row.perPack; }, 0);
@@ -1757,7 +1765,10 @@
     document.getElementById('fieldPriceLabel').textContent = enabled ? '购入总价' : '单价';
     qty.readOnly = enabled && !editing;
     qty.step = enabled ? '1' : '0.01';
-    unitField.disabled = enabled && editing;
+    unitField.disabled = editing;
+    var correction = document.getElementById('unitCorrectionFields');
+    var item = editing && MP.state.items.find(function (entry) { return entry.id === document.getElementById('fieldId').value; });
+    correction.classList.toggle('hidden-view', !item || Boolean(item.sourceBatchId));
     ['fieldPackCount', 'fieldPackOuterUnit', 'fieldPackSize'].forEach(function (id) {
       document.getElementById(id).disabled = !enabled || editing;
     });
@@ -1765,7 +1776,7 @@
     var preview = '';
     if (enabled) {
       preview = pack
-        ? pack.count + pack.outerUnit + ' × ' + pack.size + unit + ' = ' + total + unit
+        ? purchasePackagingLabel(pack, unit)
         : (document.getElementById('fieldPackSeal').value === 'shared'
           ? '每个共用密封包装单独录入一批，购买数量填 1。'
           : '请输入有效的整包装数量，并选择内包装单位。');
@@ -1779,6 +1790,18 @@
     UI.syncOpenedFieldsVisibility();
   };
 
+  UI.syncFlavorAdjustment = function (item) {
+    var flavor = Domain.findFlavor(item, document.getElementById('adjustFlavorSelect').value);
+    var qty = document.getElementById('adjustFlavorWhole');
+    var percent = document.getElementById('adjustFlavorPercent');
+    var opened = Boolean(flavor && flavor.openedDate && flavor.quantity > 0);
+    qty.value = flavor ? flavor.quantity - Number(opened) : '';
+    qty.max = flavor ? flavor.perPack * item.purchasePackaging.count - Number(opened) : 0;
+    percent.closest('label').classList.toggle('hidden-view', !opened);
+    percent.disabled = !opened;
+    percent.value = opened ? Utils.round2((flavor.openRemainFraction || 1) * 100) : '';
+  };
+
   function setPurchasePackagingForm(item) {
     var pack = item && item.purchasePackaging;
     var editing = Boolean(document.getElementById('fieldId').value);
@@ -1788,7 +1811,6 @@
     document.getElementById('fieldPackSeal').value = pack && pack.seal === 'shared' ? 'shared' : 'independent';
     document.getElementById('fieldMixedFlavors').checked = Boolean(item && item.flavors);
     document.getElementById('flavorRows').replaceChildren();
-    if (item && item.flavors) item.flavors.forEach(function (flavor) { UI.addFlavorRow(flavor, editing); });
     var count = document.getElementById('fieldPackCount');
     var outer = document.getElementById('fieldPackOuterUnit');
     var size = document.getElementById('fieldPackSize');
@@ -1812,6 +1834,19 @@
     } else {
       unit.value = (MP.CATEGORIES[MP.state.formCat] || MP.CATEGORIES.dry).defaultUnit;
     }
+    if (item && item.flavors) item.flavors.forEach(function (flavor) { UI.addFlavorRow(flavor, editing); });
+    var adjustment = document.getElementById('flavorAdjustmentFields');
+    adjustment.classList.toggle('hidden-view', !(editing && item && item.flavors && !item.sourceBatchId));
+    adjustment.open = false;
+    var flavorSelect = document.getElementById('adjustFlavorSelect');
+    flavorSelect.options.length = 0;
+    if (editing && item.flavors) item.flavors.forEach(function (flavor) {
+      flavorSelect.add(new Option(flavor.name, flavor.id));
+    });
+    document.getElementById('adjustFlavorReason').value = '';
+    UI.syncFlavorAdjustment(item);
+    document.getElementById('unitCorrectionFields').open = false;
+    document.getElementById('correctedUnit').value = '';
     var price = item && item.price;
     document.getElementById('fieldPrice').value = price
       ? String(pack ? Utils.round2(price * pack.count * pack.size) : price)
