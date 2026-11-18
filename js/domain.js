@@ -74,7 +74,8 @@
   };
 
   Domain.validatePackaging = function (raw, innerUnit) {
-    if (!raw || !/^(盒|箱|组|提)$/.test(raw.outerUnit)) return null;
+    // 组 and 提 remain valid for existing records and imported backups.
+    if (!raw || !/^(盒|袋|桶|箱|组|提)$/.test(raw.outerUnit)) return null;
     if (!Domain.isPackageUnit(innerUnit) && innerUnit !== '粒') return null;
     var count = Number(raw.count);
     var size = Number(raw.size);
@@ -209,6 +210,9 @@
     clean.spec = String(raw.spec || '').trim();
     clean.quantity = qty;
     clean.unit = String(raw.unit || defCat.defaultUnit).trim() || defCat.defaultUnit;
+    if (MP.FOOD_SUBTYPES[clean.category] && typeof raw.subtype === 'string' && raw.subtype.trim()) {
+      clean.subtype = raw.subtype.trim();
+    } else delete clean.subtype;
     var purchasePackaging = Domain.validatePackaging(raw.purchasePackaging, clean.unit);
     if (purchasePackaging) clean.purchasePackaging = purchasePackaging;
     else delete clean.purchasePackaging;
@@ -332,6 +336,8 @@
     archiveItem.brand = activeItem.brand;
     archiveItem.name = activeItem.name;
     archiveItem.spec = activeItem.spec;
+    if (activeItem.subtype) archiveItem.subtype = activeItem.subtype;
+    else delete archiveItem.subtype;
     archiveItem.unit = activeItem.unit;
     archiveItem.price = activeItem.price;
     if (activeItem.flavors) archiveItem.flavors = Domain.validateFlavors(activeItem.flavors, activeItem.purchasePackaging, 0, true);

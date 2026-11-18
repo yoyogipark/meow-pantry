@@ -712,6 +712,7 @@
       }
 
       var metaTags = [];
+      if (it.subtype) metaTags.push(Utils.escapeHtml(catInfo.label + ' · ' + it.subtype));
       if (it.purchasePackaging) metaTags.push('购入 ' + purchasePackagingText(it));
       if (it.spec) metaTags.push('规格 ' + Utils.escapeHtml(it.spec));
       if (it.location) metaTags.push('📍 ' + Utils.escapeHtml(it.location));
@@ -1536,6 +1537,51 @@
   };
 
   // Distinct palatability/tolerance labels for Ordinary Food vs Supplements vs Medicine!
+  var subtypeDraft = {};
+  var manualItemUnit = false;
+
+  function resetSubtypeForm(item, editing) {
+    subtypeDraft = {};
+    manualItemUnit = Boolean(item);
+    if (!item || !item.subtype) return;
+    var config = MP.FOOD_SUBTYPES[item.category];
+    if (config && (editing || config.options.includes(item.subtype))) {
+      subtypeDraft[item.category] = item.subtype;
+    }
+  }
+
+  function syncItemSubtype(catKey) {
+    var config = MP.FOOD_SUBTYPES[catKey];
+    var field = document.getElementById('fieldSubtype');
+    var editing = Boolean(document.getElementById('fieldId').value);
+    document.getElementById('itemSubtypeWrap').classList.toggle('hidden-view', !config);
+    field.disabled = !config;
+    field.required = Boolean(config && !editing);
+    field.options.length = 0;
+    if (!config) return;
+    document.getElementById('itemSubtypeLabel').textContent = config.label;
+    field.add(new Option(editing ? '未指定' : '请选择' + config.label, ''));
+    config.options.forEach(function (option) { field.add(new Option(option, option)); });
+    var value = subtypeDraft[catKey] || '';
+    if (value && !config.options.includes(value)) field.add(new Option(value + '（历史）', value));
+    field.value = value;
+  }
+
+  UI.updateItemSubtype = function () {
+    var catKey = MP.state.formCat;
+    var config = MP.FOOD_SUBTYPES[catKey];
+    var subtype = document.getElementById('fieldSubtype').value;
+    subtypeDraft[catKey] = subtype;
+    var unit = document.getElementById('fieldUnit');
+    var index = config && config.options.indexOf(subtype);
+    if (!manualItemUnit && !unit.disabled && config && config.units && index >= 0) {
+      unit.value = config.units[index];
+      UI.syncModalUnitPriceHint();
+    }
+  };
+
+  UI.markItemUnitManual = function () { manualItemUnit = true; };
+
   UI.syncModalCategoryUI = function (catKey, applyDefaults) {
     var st = MP.state;
     st.formCat = catKey;
@@ -1546,13 +1592,18 @@
     }
     if (applyDefaults) {
       var unitField = document.getElementById('fieldUnit');
-      if (!unitField.disabled) unitField.value = catInfo.defaultUnit;
+      if (!unitField.disabled && !manualItemUnit) {
+        var config = MP.FOOD_SUBTYPES[catKey];
+        var index = config && config.options.indexOf(subtypeDraft[catKey]);
+        unitField.value = config && config.units && index >= 0 ? config.units[index] : catInfo.defaultUnit;
+      }
       document.getElementById('fieldOpenLimit').value = String(catInfo.defaultOpenDays);
       if (!document.getElementById('fieldShelfValue').value) {
         document.getElementById('fieldShelfValue').value = String(catInfo.defaultShelfMonths);
         document.getElementById('fieldShelfUnit').value = 'months';
       }
     }
+    syncItemSubtype(catKey);
     UI.syncModalPhotoUI();
 
     var palTitle = document.getElementById('palatabilityFieldTitle');
@@ -1711,7 +1762,14 @@
     var outer = document.getElementById('fieldPackOuterUnit');
     var size = document.getElementById('fieldPackSize');
     count.value = pack ? pack.count : 1;
+    outer.querySelectorAll('[data-legacy-unit]').forEach(function (option) { option.remove(); });
+    if (editing && pack && !Array.from(outer.options).some(function (option) { return option.value === pack.outerUnit; })) {
+      var legacy = new Option(pack.outerUnit, pack.outerUnit);
+      legacy.dataset.legacyUnit = 'true';
+      outer.add(legacy);
+    }
     outer.value = pack ? pack.outerUnit : '盒';
+    if (outer.selectedIndex < 0) outer.value = '盒';
     size.value = pack ? pack.size : 8;
     count.disabled = outer.disabled = size.disabled = editing || !pack;
     var unit = document.getElementById('fieldUnit');
@@ -1867,6 +1925,7 @@
     document.getElementById('fieldPhotoInput').value = '';
     var defaultCat = st.catFilter !== 'all' ? st.catFilter : 'dry';
     document.getElementById('fieldUnit').disabled = false;
+    resetSubtypeForm();
     UI.syncModalCategoryUI(defaultCat, true);
     setPurchasePackagingForm();
     UI.autoComputeExpDate();
@@ -1905,6 +1964,7 @@
 
     MP.state.formImage = item.imageData || '';
     document.getElementById('fieldPhotoInput').value = '';
+    resetSubtypeForm(item, Boolean(document.getElementById('fieldId').value));
     UI.syncModalCategoryUI(item.category || 'dry', false);
     setPurchasePackagingForm(item);
     UI.syncModalCurrencyUI(item.currency || 'CNY');
@@ -1946,6 +2006,7 @@
 
     MP.state.formImage = item.imageData || '';
     document.getElementById('fieldPhotoInput').value = '';
+    resetSubtypeForm(item, Boolean(document.getElementById('fieldId').value));
     UI.syncModalCategoryUI(item.category || 'dry', false);
     setPurchasePackagingForm(item);
     UI.syncModalCurrencyUI(item.currency || MP.state.settings.defaultCurrency || 'CNY');

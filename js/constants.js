@@ -26,7 +26,7 @@
   // Explicit `group` property cleanly separates ordinary food, supplements, and medicine!
   MP.CATEGORIES = {
     dry:    { label: '猫粮',   icon: '🥣', group: 'food', defaultUnit: '袋', defaultOpenDays: 45, defaultShelfMonths: 18 },
-    can:    { label: '罐头',   icon: '🥫', group: 'food', defaultUnit: '罐', defaultOpenDays: 2,  defaultShelfMonths: 24 },
+    can:    { label: '湿粮',   icon: '🥫', group: 'food', defaultUnit: '罐', defaultOpenDays: 2,  defaultShelfMonths: 24 },
     freeze: { label: '冻干',   icon: '🍗', group: 'food', defaultUnit: '包', defaultOpenDays: 60, defaultShelfMonths: 18 },
     treat:  { label: '零食',   icon: '🍮', group: 'food', defaultUnit: '盒', defaultOpenDays: 14, defaultShelfMonths: 18 },
     supp:   { label: '营养品', icon: '💊', group: 'supp', defaultUnit: '瓶', defaultOpenDays: 90, defaultShelfMonths: 24 },
@@ -42,6 +42,11 @@
   MP.CURRENCIES = {
     CNY: { code: 'CNY', label: '人民币', prefix: 'CN¥', unitWord: '元' },
     JPY: { code: 'JPY', label: '日元',   prefix: 'JP¥', unitWord: '円' }
+  };
+
+  MP.FOOD_SUBTYPES = {
+    can: { label: '包装类型', options: ['罐头', '餐盒', '餐包'], units: ['罐', '盒', '袋'] },
+    freeze: { label: '冻干类型', options: ['主食冻干', '零食冻干'] }
   };
 
   MP.PALATABILITY = {

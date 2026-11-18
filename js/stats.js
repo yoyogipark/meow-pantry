@@ -421,7 +421,7 @@
     if (tierMatched.length === 0) {
       if (tierPagerEl) tierPagerEl.classList.add('hidden-view');
       var emptyHintMap = {
-        love: '还没有标记为「😍 超爱」的口粮，可在录入或编辑猫粮/罐头/冻干/零食时点选适口性',
+        love: '还没有标记为「😍 超爱」的口粮，可在录入或编辑猫粮/湿粮/冻干/零食时点选适口性',
         ok:   '还没有标记为「😋 正常吃」的口粮记录',
         coax: '太棒了，目前没有需要哄骗才肯吃的口粮',
         meh:  '太棒了，目前还没有踩雷不吃的黑名单口粮',
@@ -547,7 +547,7 @@
         }).join('');
 
         foodHtml =
-          '<div style="font-size:11.5px;font-weight:800;color:#9A3412;margin-bottom:6px;">🍽️ 普通食品结构与 TOP 3 偏好（仅统计猫粮/罐头/冻干/零食）</div>' +
+          '<div style="font-size:11.5px;font-weight:800;color:#9A3412;margin-bottom:6px;">🍽️ 普通食品结构与 TOP 3 偏好（仅统计猫粮/湿粮/冻干/零食）</div>' +
           '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">' + catPillsHtml + '</div>' +
           '<div style="display:flex;flex-direction:column;gap:6px;">' + topRowsHtml + '</div>';
       }

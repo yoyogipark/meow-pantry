@@ -967,6 +967,8 @@
       UI.addFlavorRow();
       UI.syncFlavorForm();
     });
+    document.getElementById('fieldSubtype').addEventListener('change', UI.updateItemSubtype);
+    document.getElementById('fieldUnit').addEventListener('change', UI.markItemUnitManual);
     ['fieldPackagingEnabled', 'fieldPackOuterUnit', 'fieldUnit'].forEach(function (id) {
       document.getElementById(id).addEventListener('change', UI.syncModalUnitPriceHint);
     });
@@ -1049,6 +1051,12 @@
         return;
       }
 
+      var subtypeConfig = MP.FOOD_SUBTYPES[st.formCat];
+      var subtype = subtypeConfig ? document.getElementById('fieldSubtype').value : '';
+      if (!id && subtypeConfig && !subtypeConfig.options.includes(subtype)) {
+        UI.showToast('请选择' + subtypeConfig.label);
+        return;
+      }
       var packaging = UI.readPurchasePackaging();
       if (document.getElementById('fieldPackagingEnabled').checked && !packaging) {
         UI.showToast('请填写有效的包装数量和内包装单位');
@@ -1082,6 +1090,7 @@
       var record = Domain.sanitizeItem({
         id: id || ('item_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
         category: st.formCat,
+        subtype: subtype,
         brand: brand,
         name: name,
         spec: document.getElementById('fieldSpec').value.trim(),
