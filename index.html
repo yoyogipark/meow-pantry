@@ -40,7 +40,6 @@
       background-color: var(--bg-cream);
       color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Inter", sans-serif;
-      overscroll-behavior-y: none;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -384,90 +383,7 @@
       transition: opacity 0.2s ease;
     }
 
-    /* ==================== DARK MODE (夜间护眼模式 #9) ==================== */
-    body.dark-mode {
-      --bg-cream: #121110;
-      --card-bg: #1C1917;
-      --text-main: #F5F5F4;
-      --text-muted: #A8A29E;
-      background-color: #121110 !important;
-      color: #F5F5F4 !important;
-    }
 
-    body.dark-mode .ios-card,
-    body.dark-mode .modal-sheet,
-    body.dark-mode .status-card {
-      background-color: #1C1917 !important;
-      border-color: #292524 !important;
-      color: #F5F5F4 !important;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-    }
-
-    body.dark-mode .status-card.selected {
-      background-color: #2E1A0F !important;
-      border-color: #EA580C !important;
-    }
-
-    body.dark-mode .bottom-nav {
-      background: rgba(28, 25, 23, 0.92) !important;
-      border-top-color: #292524 !important;
-    }
-
-    body.dark-mode .ios-input,
-    body.dark-mode .ios-date-wrap {
-      background-color: #262320 !important;
-      border-color: #44403C !important;
-      color: #F5F5F4 !important;
-    }
-
-    body.dark-mode .ios-date-display {
-      color: #F5F5F4 !important;
-    }
-
-    body.dark-mode .ios-btn-secondary,
-    body.dark-mode .pill-chip:not(.active),
-    body.dark-mode .mode-switch-pill {
-      background-color: #262320 !important;
-      border-color: #44403C !important;
-      color: #D6D3D1 !important;
-    }
-
-    body.dark-mode .pill-chip.active {
-      background-color: #EA580C !important;
-      border-color: #EA580C !important;
-      color: #FFFFFF !important;
-    }
-
-    body.dark-mode .progress-track {
-      background-color: #292524 !important;
-    }
-
-    /* Adapt inline light surfaces & dark text inside cards when dark-mode is active */
-    body.dark-mode h1,
-    body.dark-mode h2,
-    body.dark-mode h3,
-    body.dark-mode strong {
-      color: #F5F5F4 !important;
-    }
-
-    body.dark-mode [style*="background:#FAFAF9"],
-    body.dark-mode [style*="background:#F5F5F4"],
-    body.dark-mode [style*="background:#FFFFFF"],
-    body.dark-mode [style*="background:#FFF"] {
-      background-color: #262320 !important;
-      border-color: #38332E !important;
-      color: #E7E5E4 !important;
-    }
-
-    body.dark-mode [style*="background:#FFF7ED"] {
-      background-color: #2A1810 !important;
-      border-color: #7C2D12 !important;
-    }
-
-    body.dark-mode [style*="color:#1C1917"],
-    body.dark-mode [style*="color:#44403C"] {
-      color: #E7E5E4 !important;
-    }
   </style>
 </head>
 <body>
@@ -476,28 +392,26 @@
   <div id="toastEl" class="toast-box hidden-view">已保存</div>
 
   <div class="app-shell">
-    <!-- Top App Header -->
-    <header class="flex items-center justify-between gap-3 mb-4" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <div class="flex items-center gap-3" style="display:flex;align-items:center;gap:12px;">
+    <!-- Top App Header (Compact Single-Line Mobile Layout) -->
+    <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
         <img
           src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUEBAQEAwUEBAQGBQUGCA0ICAcHCBALDAkNExAUExIQEhIUFx0ZFBYcFhISGiMaHB4fISEhFBkkJyQgJh0gISD/2wBDAQUGBggHCA8ICA8gFRIVICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICD/wAARCAEYARgDASIAAhEBAxEB/8QAHAAAAwADAQEBAAAAAAAAAAAAAAECAwUGBAcI/8QARBAAAQMDAgQDBQUGAwUJAAAAAQACAwQFESExBhJBURNhcRQiMoHBByNSkbEVQmJyodEWJPAzQ1Nzghc0RIOSorLh8f/EABoBAAIDAQEAAAAAAAAAAAAAAAABAgMEBQb/xAAxEQACAgEDAgQEBgEFAAAAAAAAAQIDEQQhMRJBBRNRcSJhgfAUMqGxwdEVNEJDUpH/2gAMAwEAAhEDEQA/AP2WhCxyyshYXvPoO6TeFlglktxa0FziAB1K8Ute0aRN5j3Oy8k0753ZccN6N7LDqsNmob2gao1LmRnfVTP3kIHYaLEXE7kn1SSysrbfLLkkuBoSyhIY0IQgY0JIygQwhAKEhAhCCgBI0QhMY9EkIwgAQhCQAEIQmAIQhAwQhCABMOI2JHopRlAjOyqmZtIT5HVeuKvadJW8p7jZa5CtjbOPDIOuLN6HNcA5pBB6hNaeGofC7LTkdWnZbWKVk0fM0+o7LfXap+5lnBxKQmhXFYi4NaXOOANStNPM6eXmOgGw7L2XCXDWwg/FqfRa4Ln6izL6Eaqo7dTGllBSWQvDKaSaADCaWqaABCEIGCE8IwmIXVNPCePJIRKarCWAngBIwqwEIwBKFWEYRgCEEKsIwjAEIVYSwgYkIwhIAQhCBiKEIQIE0k0ACywTGGQOG3UdwsSFJPDygaysM3rSHNDgcg6hC8dBLlroj+7qELrQl1xTMEo9LweOqfz1Tz2OAsKbtST3UrkyeW2bksLAITSURjCEbJoAEIRhAAmmAmAmIWFWEJgZQAk08BCeAyLBKOVNCeBZFhPARg9kYRgMhhLHmnhCMBkWEJoSwGSUYVYCWEDIwkQrSISAhCohSkPIkZTKSABNCEALKaRQgDPSv5Klh6E4KFhBwQeyFqqt6Fgpsr6nlEoQhZS4EwjCaABJNAQAwmAgBUAmAAJoxlVsmIQHdCOqoBMWScEqg1NCYshgIwnujCeBCwlhUjBTwAsJKsLFPPDTQumqJGxsbuXJPZZYLfZF48kcq1dJf6CsrBTM8RjnaMLwAHHstqq4TjYsweSc4Sg8SWCEK8JFvZTI5Jx2UqkbpDySQpKvGEiFEZj6pFWQpISGJNCEAJJUl1QAITQmhkpoG6aQgQhCABMIAVAIEMBPdCoDAUgDogDKAMqlJEWA0TAQAmngQbL59xPeJKi8z0kcpbRW9v3vKf8AaSkZOe4aOnc+S7qtqWUNvqa2T4KeN0p+QyvizJpX8N+0TkmareZZCepc7J/RczxCxqKqXf8AY6/hdCsm5vt/J0Nl4nlilDad7sDV0Ep0cPLt8l2knFNkgomVNVWCAu08Mgl+e2ANV8epaeolnBpgeZpzz7Bq6YxNlh5J2teCMOGNCsEdTPT/AAxeV6PsdbWaCmU0+PY6r/HlplZJ7FT1NS9gzyYDC4dxkrWf9plMX4/Y82O/jNz+i4espJbfVslhJ5M5Y7t5FZblTxvgZcKduBIAXgdD3+ii/EL33/QjHw3TLlZz8z6LJx7aYfDNRTVTWSN5mvYA8H+u60NxvTrqPbnv5adoJYzowf3XMW9gq7fPRv1cz7yPyP8A+/qvVZnGSjlie3LWvxgjuNlVbq7bY9M3sShoqaW5RW5ipLnO67MkLy1jnYaPw9j65X2WjqBV0MNSP940Ejsev9V8jqLVGffpfu3jXlOx/svo3CsxltD4nHWKQj5EZ/ut+gsj5nTHuv2M3i0YTrjZDsb1JVhGF3MHmiSMqSMK0sKOBkbpHRURhLdRaJIkhSQrUkKIyNkJlJIYJJoQAkJoQAk0IQAIG6EwEAMKkBAGSmIod09yhMKSExhMBATUiIJoQpCOT+0G5RUPB9TTufyzVmIY29SMgu+WB/VcUKOOe209O/Ia1jD7vkFh40rnX7jB1NC/mgpT7MzB0GD75/PP5BbJgAYANhoF5fW3eZc2u2x6vR1OimPq9wijZDGI42BjRsArSTCw8mjkxzQxzwuikGWuWOGkiipPZtXswQebrlejCEDy+DTUFHPTXOQOafCDSA/o7UYW3axjObkaG8xycDGSqwjokOUnJ7hjRbG0XR9sq+Y5dA/SRvl3HmFp6mto6PkFVWQU5kOGCWVrOY+WTqsw2yrISlXJTjyVThGyLjLg+pMc17GvY4Oa4AgjYhMrmeE7vDVxT2vxA6akw4fyk7fI/qF0+ML19NitrU13PKXVOqbhLsSkVRUqwqFuo2WTCkqI0SdQpVJHQqDJkFSd1ZClRYCQhCBghCE0MEIQkIBuqCQVBAhqhskmVJAMbqwpAVBSRBjTCQTU0IaxVMvs9HPUAZMUbpMegJ+i81zu1BZ6Q1NdNyNOjWjVzz2aOq+U8ScVXS8kxtcaWhJwIWO1d/Mevpssmp1cKFh7v0Nul0dmoe2y9Th6Cuq6a4GcO+9eS54cM5J1OV2EN7j5R40Dmnuw5C11tjoppXirZEcgcpf39VtTR2lurvDA/wCbp+q8pyewscW8NHrpq+lq3lkLyXgZ5SMHC9Q0Guy8lKKAczaPwsge9yalYKi4yRTuiZGBynd3VSjBzeEUqDk8ROFh4s484nkqa7gyzUDbPBI6OOWvdh9UW78oyMfTvnbrOEeI3cTWR9VPQyUFZTzOpqqneD7kjcZxncaj02W4opfGpgfBEQBIAaMD5L06A5V1s4tOChjH3v6lHRKL3Zq75xBaOHKFlbeav2aB7/DaeRzy52CcAAHoCnZL3buIrTHdLZJJJSSPc0OfGWElpwdCuR4kr+IbrRXbheTg6aeepkMVJVNAfSeET7sz3k+65oycYzkaLNZqPjihZZ+H3UlHR2+3SNE9xhla4VcLc4Y2LGWudpzE+ZU/Jj5eW9/dcEOp5weKi+zeK9V90u3Hg/aNbUzvFOyKdwZTwg+4G4xrjpsPUldNw3bG8M2cWaW9Pr2RSuMDphh0UZ+GMnXONdfPouiWvFqh5yfFfyk5xj6pec7E42Pb0Lq6608yN1wnBS2/iaJ7HFrqlro8F++RnQeoX0ohfN7Bbop+KqCpbzNdTAu02wGkD9V9JXa8Mb8l+557xPHnJ/L+yMJEKyFBXUZzBFSqSKgxkHQpHZU5JQZNEKSqSKiMkpJpJDQIQhMAQhCQDVhT1VDZNCGN00DqmN1JCZSaSpSREfRaXiTiSh4atntVV95M/LYYAcOld9AOpWyrayC30M1bUv5IYWlzj9B59F8G4oray+XQ3WoJ5Xe4yPORE3o0f61Kx6zVeRHEfzM6Og0f4meZflX3g2AuFbxFI6418vPMXFvKNGsGcgNHQLO+h8WB0exOxPQrW8PPEMzoHHAlGR6hdO1q8w25PLPTyxW+mKwkcXKx8Mjo5G8rmnBBWxpLTLVRNlMsbY3agjUrc11thrWZd7koGA8fXutRA24WWV3NCZqdx97k1HqOxUSzzOpbcm6pKKGjYWxAkndztyvS5jXfE1p9RlYqephqohLA8Ob17jyIWfKZmbedwQhCQgwhLKeQBk7IAMIUte2QZY4OAOMhey3Npn3OnjrATA54DsH8s+WcKUY9UlH1IyfSm/Q6fha3uhpn18rcOmHKwH8Pf5n9F0iOUNaAAABoAOiS9lTUqq1BdjyFtrtm5vuM7KCFakq0rRJUqklFkieihWpO6gSRJGqRVHopKiSISKo7qTuojBCEIAEIQN0AUFQUhUmhFDZMbpDZMKSEyxun1SCHOaxrnvOGNHMT2A3UkRPmf2h8Rt/a1Nw7G/EbAJZz/Gfgb8hr8wufpYGPYWvaHMcMFp6rlrpVTXK91lwqPjqJXSegJ0H5YXRWSs8UNgmOH4w134vL1XktRa7bHM9tVp/IojFfX3JntVRTSCWlDpGNOW4+Jq6OJznQse5hY5zQS09CqaMBM6qgjKblyTlGCqxhCMkSQxrSS1oaTuQN08JoSAWFhmjldrFOYyOmAQVnXqpLfLVnmHuRj98/TupRi5PCIuSiss0jorl0nZ8sD6JtoZZCHVM5f/CDuuxitdHGPeYZHd3H6LKaGjcMGmYPQYWhaaXdlD1keyOXa1rWhrQA0aADomfXC3FVaMNL6UkkbsP0K1B7KmcJQe5bCyM1lH0q2VXttppqgnLnMHN6jQ/ovUtBwjNz2qWEn/ZSnHoRn+6369hp5+ZVGXyPJ3w8u2UV6jUlUpKtKieiRTSUWSEd1B3VndQ7dRGhHZT0VHZT0UCZJUqjspURghCEDEExukhAiwqUBWE0IobJt3UjqqG6khMsbrU8T1BpeE7pO04c2neAfM6fVbVaHjQE8E3TH/CB/wDcFC14rk16MsoSdsU/VfufFIYI58MkbtsRuFsW2qYNHgOa71OCtfTOxIF01G7QYXj0e4sk48HrohUtpGtqiDKNM5zkdF6Um7JoMbDKF5ZJatjzikEkY2LZBk/JOCrhncWNJbIN43jDh8kDwelGUIQI9VDSGrnw7Ijbq4j9F0bWtY0NaAGgYAHReS3QiGhZ+J/vn/XovX0XTph0xOVdZ1y+QFGUIVxQPotFd6cRziZow2Tf1W8JWqvD2+x6nZwVVyTgy+htTWDY8GuyK5vTLD+q6xclwU3MNdL0L2N/IE/VdauzodtPHP3ucvW/6iX32BSV4rldaO103j1TzgnAa0Zc4+QXI1X2hQR3QR00bJqZhDXMwfFccZIA7/081ZbqaqniTIU6a23eCO5QV81j+0OUXeR80UvsxPL7MYsOiz8Jc7YeZyRqt5ScdWjwWm71EVvle8MYCS4O8840HfKphraZvCZfPQ3wWXHPsdWd1J3VAgjIKk7rTkxoR2U9Ez0SOyiSJKlMpKI0CEuqEACaSAgCgrCxhWE0IoaFUoVhNAUub41ulDQcMVVNVOJlrI3QxRt3ccb+g0JXSDtsvg3FN3fe+I6ir5iYGExQDswH66n5rHrb/Kr25exv8P03n3b8Lc1UTi0jVdBb5wQMlc83cL2U05Y4BeZR7Ccco7GN+WhZFqqWpHKAStix4cM5TMLjgyLBU0sdS0E+7I3Vkg3aVmymkRWx5aSofIHwzgCeI4eB17Eeq9W5xndeCqxBcqWcaCTMLvPqF6hJqCngbXdHXNcAAB0GFQctcKkd1XtI7rqqaOQ62e/m80i8YXgNUAN1gkrQOqTsSGqmzYSThoOq5671XPDyh37wVzVZeCMrneHYqziPiOelMj307qhxz0jibgEj1/UqiUnY+iPc11VqCdkux9R4QpnU/DUL3jDqhxl+R0H9APzW4qp2wMaXbOdj5JyzU1FTAyPZDEwcrQT0GwHdaOqutJWzMbDLo3Qcw5clek6HVSox7Hm3JW2uUu5xfEdjv0t6kq4Wy1VHK5z/AGindzPYOjOXcD0BGi5aRjJKlrYGupZ4PedNPCQ450IPNjPcr64HOactJafJZfaZ9jIXfza/quHOiE5OWWs/U7dWrnXFRwnj6HxeKqlhg8R9whqJKl7WOAb7rQfdyANdB3Wyh4cuddVRU0lBU11K1gMbxFyNadvfdkDbZfVfaJQcgtae4aB9EnzSyDD5HOHYlRWlgnu2WS183+WKX39Askc1tttLb6upFRO3ILgcho6Nz1xoFuVowS1wcNwchbsODmBw2IyuvTPqWDiWxw8kndSU+qRVxUSUkEpJDAboQhACQhCBlBUFGyoIEWqBAacnACkLy3B7mUT+X97RNvCyCWXg5fiq+z+yTwUkhiZyOGW6F2n6L5D7RGXCNmuNC5d/f2OljkjzjmaRn1C+c26FrqoCUe4w+8O57Lz+tblJNnrPDYxjBpGxks1ZcqUGm+7kYeeKR2gDv7dF56ed3iOgqIzBVxaSQu3B7juPNdxTTQil8VzmtY0ZJ7Bc3dYor9Uxs9n5XtOIpG6SD/q7eSwfJm6Fkm3lbCp6otIGVuKes2yVpn8N3umYPZa2nrR2mBjd+Y0K17aq6wymI29j3NOPu5wQT5IwDUZ8HcxztcN1mEgPVcxHFxRgYtlKz/mVP9gvS08TQ+9JbqOYdWxVBDvlkYRgzuC7M9V4mYx9C1zw0mfm1ONAEOrW8uA4ZVUVTaLy91DW0XLWxDmdT1bMPaO7e48wtPd7ZTWynbcrbK8Uvi+DNTvJPIScZGdRr081Lp2COM9LN7YbnLcLQyWowKmJzoZgBgczT28xgrZGoPdfP6G5Otl653OxSVhDJT0Y8aB3odivqEdtpKSBstwkaSSBq7DQToB56lWxTlwU3qNb37nKXi8T22qpp3P/AMo9kjHNx++G8zTn5ELJap6yotdKJBJUVDow55AycnXp6rPx1SW13DdWyNjWVcDopGtGR8TuUevVZrHxLb6ThVschihuFIxrJqV7uRznAhuR3B3yp9Dzhsj1ry04x3yeO6OrKC3z1U1PLG2NhdlzSBnGi6b7NRDbrXBQSxAVFSwSvl6l2M8p8tTj5rn+KLv+0pZOHrbJHUx1Aj8WWI8wiaHEvBI02DV2XDltdHMyvqfuYYxmMP0LtMZ9Ft0dbVuY7mHWWZ0+J7Z+0ay4y1b7tL7UXeKHFoa7YDpjyWvggbJTxzB8jJnD3nBxOvXIOm67i51/DUg5bjWUoc3QF0ga5vocrh3zUsFZMaasiq6VzsmSJ4cGE7E42B6+a9PpoyhFxZ5q+am00bO33OSOYUlYRk/C8bEeX9ui3q5aaPxIuUHlcPeY7sehXstn7XukeaGojYGNHMyTHunbTTuFj1mm/wCSC9zRprs/BNm9QvM20cQn462mZ6DP0Wdlgq3/APe7tI4dWxN5VzFVN9jc5wX+4xz1UFOPvHjm6NGpPyW0trahtvb7S0te9znBp3a0nQIo7RQULueGHmk/4jzzO/8Apew6laaqnDdlFliksIXRQVTj0UFXFIikhCABCEIGCEIQIFQKlCAMgKx1MPj0z4xudvVWFYRyGcbnz680xLXe6QRoQvmtdC6huLpXaU8x1P4H/wBivvNztbK5hczDZcddnL5xerO5jpIZ4CMjBa4bhczU0ZW53NFqlFnHVd1fFSx0wd7rnZPmAt7w0WTtmqdMtwweXU/RclcLNWU+DDzTwMyQN3MHbzC9dguZghkiY4Z58kddlxpwcOT0Hwzr+A7m5Tmnt8r2nDiOUH1WitMLZbnHnZgL8emyx11zM9ue0jVpDv6ryWu7Mp7lEZNGuywntlVkIwagzuUbLw+3x40KxPuUe3MEGbpZ4+JmiG3Mu1PhlZQPEkbyOhOC09wc7LH+ybjWuJutcJo3SCYwxRcjHOA0J6n0RBDUcWX6msFG0vphI2avmGrYomnPKT+JxGAF9p/ZdtByKCH/ANK62j0rtj1MwavV/h2oLk+QSWiJ8L4nwMcx4w4FuhC87KLiOC3yWuluTKmieA1kVXGXujGcgNcNcadV9sZRULPho4R/0BZ2tYz4GNb/ACjC6P4FPlnO/wAi12Pjf+GOJb5c4q+6h1R4WPDhhhMUQ1yCeY5dr3XRD7PDX8rrkymbj8TfEcP9eq+hlyWVbHR1x53KZ6+2XGxzlJw3ZeHLZNPBSte6Fhk5nNGmBnIbsvnV2tV94guFVWVV2kktnOTBHSPyHM6Z7HvzdfJfWrwM2G4df8vJ/wDEr4xbY6mZ5bTzGFzWg8wcR+isldGhdEVjPdF2l0ctYpXSeens87/VGOPh60x+5JQxSSdpag836ALKy0NtdR7baZYWTY5XwDPJIO2p1W2EnEEIw2rMg/icHfqEnVPEUmhla3zAYPosznnfzX/4/wCzprTtLCpjj3X9ZC3VU1a4xQRT0sjdXQyRF7B6O6D5rreEWRtqqpkcnieEwB5H4nOJ+hXE1UN1dTPlqa10jWDJYXk5+i6b7PZA2nuryCQ3kOGjJOjtlqWt6sVcv14Obf4X5cJajZJdk89/XC/k7aavoYJvCnrIIpMZ5XyBpx31Wm4s4lj4Zs8dwfD4wlmbC3XQZBOdNxovmF/peJqniGvmp6KsfFVzO8IFnNodAPL6LYceXOuiuVroo3GWjhgZHKC0mMTA8pIPfHVc2ern0T2xjgvq0EPMrXVnO7Ow4Z4uffax1I+KM/dGVsseQCMjTB9V1ey+dWF8HDXDNXxJV0Ehk8RsLDq0GNxaMgds9fJbmxcZU95uptzmxtle0vj8JxcCAMkFTovxGMbX8TKdTpsylOmPwr7Z1KkpkqVuOaCEISGCEITECEIQAIQhADBVNOqhMFAGVYailp6uIxVMLZWdndPTssgKrKfILbdHJ1/BUE2X0VR4Z/BIMj8wuLuv2fVbnmSW3GRw/wB7TnJ/Ma/mvsOyoFUT08JGqvV218M/PU/Dl1psxxVsjRtyVUWf66Fa/wDw3fSfddRv8+ct+i/SrsEYcA4eYyo8CnJ1giz/ACBZn4fBm6Pi9sex8Cp7PxS9rYv8jnbmL3OJ+QC31v8As2vdykabpc5Iac/E2GPwgR6n3ivsbWMZ8DGt/lGFWVOGgqi99yqfit0liOxr7LZbbw/bGW+2UzYIW6uI3e78Tj1K2OdUkLpRSSwjkyk5PL5KQpyhMiUsVRMKemkmILuRucDqrykcEEEAg6EFD+Q1zufOb/dK+rjkY6dwYQQI2HDfy6rmLfUsopnulYSHDGW9F9Rr+GaSqy6GQwOPTHM1c3VcD1rnExvgk9HFp/Rc6VTbzPPuv6O5ptdGqLjHGHynt+pqGXOifr44Hk4EKjX0Q/8AEN+WVmPBF3B92Bh/81qtnA12eff8Fg85Af0Cj5Pz/Rmr8fV/1/VGsrLlTS0skMRc9zxjbAC3/wBnhc2W4M5Dyuax3N0yCRj+q9FFwDExwdW1nP8AwxN+p/suto6Kkt1OKejhbGwa6bk9yeqtrpUX1dzHqfEHZW6orCf1/hBcas0NqqqzLSYYXyNDzgOIaSB/RfKrLx3cbtXwvqIoXiWZkb4pImlrQSPhO/VfVaulgrYfCqY+dm/otNQcI8P2usdV0lC0Sk8wLjkNPcDYFQ1Fds5RcHhIz6a2iuElZHLfB6r9ZKa/UBoqmR7GfwnT8u4WmsHA9s4fr218VTUVNS1rmgyEBoBGDoB9V1aknKtlVCUutrdFEb7IwdcXsxboQhWFAIQhAwQhCABCZGCR2STECEISGCEITEMFWDlY0wUAZAU1AKYKYGTm7oUjVPOE8iKyQjPdIHuhPIisoypQmLBWU8qcpZKAwVlPKnJS1QGC8hLPZShGQwPJKNlOeyFHJIZd2UoJAUkpAMnspQSpJSGBKSEJZGCEIQAIQhIAQmBkgd0KaTfAm0jLUs5KqRvnkLCtjcYshswG2hWuU7YdM2iEHmKBCEKkmCEITAEIQmA8qgVCEAZMphyxgqsoAvITWNPJTDBaMlRzFPm8kCwVlPKjmCOYIyGCsoypyEcyAKyUkuYpZPUoArIUlxSRlIYIypJS1QAycpIQkMEIQkAIQhAAhCEwM1MznqY2+eSheu3xYDpj10CF0tPDEMvuY7ZZlse1zQ9hY4ZBGCtNPC6CUsOo6HuFu+ixTQsnj5XfI9lO6rrW3JGufSzSIWWaCSB/K8adD0KxLltNPDNqed0CEIURghCEwBCEIAEZQhGQHlPKlCBF5RlQjJQBaFGUIAtCjJRlAF5S5lKEZAeSllCEACEISGCEIQAIQhAAhCEACywQunkDG6DqeyIYJJn4YNOpOwW3hhZDHyt+Z7rTTS5vL4KbLOnZclNaGMDGjAGgQmhdQxghCEAJzWvbyvaCD0K8UtvB1hdj+FyEKudcZ8olGTjweN9NPH8UZx3GqxkEbjCELm21qDwjXCTlyJCEKgtBCEIAEIQgAQhCABCEIAEIQgQIQhAwQhCABCEIAEIQgAQhCABGCdghCa5EZWU07/hjPqdF7IreAQZnZ/hahC6NVEMZZlnZLOD2ta1jQ1gAA6BUhC1lAkIQgD//2Q=="
           alt="喵喵粮仓图标"
-          class="w-12 h-12 rounded-2xl object-cover shadow-sm border border-orange-200"
-          style="width:48px;height:48px;border-radius:14px;object-fit:cover;"
+          style="width:44px;height:44px;border-radius:13px;object-fit:cover;flex-shrink:0;border:1px solid #FED7AA;"
         >
-        <div>
-          <h1 class="text-xl font-bold tracking-tight text-stone-900" style="margin:0;font-size:20px;font-weight:800;">喵喵粮仓</h1>
-          <p id="headerSubtitle" class="text-xs text-stone-500" style="margin:2px 0 0 0;font-size:12px;color:#78716C;">本地离线存储 · 保质期与品牌管家</p>
+        <div style="min-width:0;flex:1;">
+          <h1 style="margin:0;font-size:19px;font-weight:800;color:#1C1917;white-space:nowrap;line-height:1.2;">喵喵粮仓</h1>
+          <p id="headerSubtitle" style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">在库 4 款 · 4 品牌 · 🔒只读</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-        <button id="darkModeToggleBtn" type="button" aria-label="切换夜间护眼模式" title="切换日间/夜间护眼模式" style="width:36px;height:38px;border-radius:999px;border:1.5px solid #E7E5E4;background:#FFFFFF;color:#57534E;font-size:15px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">🌙</button>
-        <label for="globalEditModeToggle" class="mode-switch-pill" title="勾选后开启增删改操作，平时关闭防误触">
-          <input id="globalEditModeToggle" type="checkbox" style="width:15px;height:15px;accent-color:#EA580C;margin:0;cursor:pointer;">
-          <span id="globalEditModeText">编辑模式</span>
+        <label for="globalEditModeToggle" class="mode-switch-pill" style="height:36px;padding:0 10px;font-size:12px;gap:5px;" title="勾选后开启增删改操作，平时关闭防误触">
+          <input id="globalEditModeToggle" type="checkbox" style="width:14px;height:14px;accent-color:#EA580C;margin:0;cursor:pointer;">
+          <span id="globalEditModeText">编辑</span>
         </label>
-        <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary" style="height:38px;min-height:38px;padding:0 13px;font-size:13px;white-space:nowrap;flex-shrink:0;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary" style="height:36px;min-height:36px;padding:0 12px;font-size:12.5px;white-space:nowrap;flex-shrink:0;gap:4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           <span>记囤货</span>
         </button>
       </div>
@@ -744,104 +658,121 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 3: STATS, PALATABILITY TIER LIST & BRAND ARCHIVES (红黑图鉴) ==================== -->
+    <!-- ==================== TAB 3: FEEDING DASHBOARD (喂养看板 · 3栏分屏切换) ==================== -->
     <section id="viewStats" class="hidden-view space-y-4">
-      <!-- 1. Category Breakdown + Stock Health Bar + Consumption Speed -->
-      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-          <div>
-            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📊 全仓盘点与消耗总览</h2>
-            <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">在库余量、历史消灭量与保质期健康度</p>
-          </div>
-          <span id="totalValueBadge" style="font-size:12px;font-weight:700;background:#FFEDD5;color:#C2410C;padding:4px 10px;border-radius:999px;white-space:nowrap;">在库总值 ¥0</span>
-        </div>
-        <div id="categoryStatsGrid" class="grid-safe" style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px;"></div>
-        <div id="stockHealthBox" style="margin-top:12px;padding-top:11px;border-top:1px solid #F5F5F4;"></div>
-      </div>
-
-      <!-- 2. Interactive Palatability Archive (适口性口碑档案) -->
-      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
-          <div>
-            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🐾 适口性口碑档案</h2>
-            <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">按平时试吃反馈归类，复购选粮更直观</p>
-          </div>
-          <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
-        </div>
-
-        <!-- 5-Tier Filter Pills -->
-        <div id="palTierTabBar" class="no-scrollbar" style="display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">
-          <button type="button" data-tier-tab="love" class="pill-chip active" style="padding:6px 11px;font-size:12px;">😍 超爱吃</button>
-          <button type="button" data-tier-tab="ok" class="pill-chip" style="padding:6px 11px;font-size:12px;">😋 正常吃</button>
-          <button type="button" data-tier-tab="coax" class="pill-chip" style="padding:6px 11px;font-size:12px;">🥺 需哄吃</button>
-          <button type="button" data-tier-tab="meh" class="pill-chip" style="padding:6px 11px;font-size:12px;">😒 不爱吃</button>
-          <button type="button" data-tier-tab="med" class="pill-chip" style="padding:6px 11px;font-size:12px;">🩺 药品反应</button>
-        </div>
-
-        <!-- Visual Tier Cards Container -->
-        <div id="palTierCardsList" style="display:flex;flex-direction:column;gap:9px;"></div>
-
-        <!-- Tier List Pagination Controls -->
-        <div id="tierPaginationBar" class="hidden-view" style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <button id="prevTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
-          <span id="tierPageInfoText" style="font-size:11.5px;font-weight:700;color:#57534E;">第 1 / 1 页</span>
-          <button id="nextTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+      <!-- Top 3-Segment Switcher -->
+      <div class="ios-card p-3" style="padding:10px 12px;margin-bottom:12px;">
+        <div id="statsSubTabSwitch" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#F5F5F4;padding:3px;border-radius:12px;border:1px solid #E7E5E4;">
+          <button type="button" data-stats-subtab="stock" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;white-space:nowrap;">📊 库存与到期</button>
+          <button type="button" data-stats-subtab="pal" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;white-space:nowrap;">🐾 适口性档案</button>
+          <button type="button" data-stats-subtab="brand" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;white-space:nowrap;">🏷️ 品牌与偏好</button>
         </div>
       </div>
 
-      <!-- 3. 30-Day Feeding Preferences & Top Favorites -->
-      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
-          <div>
-            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📈 近 30 天饮食偏好排行</h2>
-            <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">根据每日盘点自动统计主子近期最常吃什么</p>
+      <!-- SUB-VIEW 1: 📊 库存与到期 -->
+      <div id="statsSubViewStock">
+        <!-- Category Breakdown + Stock Health Bar -->
+        <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            <div>
+              <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📊 全仓盘点与消耗总览</h2>
+              <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">在库余量、历史消灭量与保质期健康度</p>
+            </div>
+            <span id="totalValueBadge" style="font-size:12px;font-weight:700;background:#FFEDD5;color:#C2410C;padding:4px 10px;border-radius:999px;white-space:nowrap;">在库总值 ¥0</span>
           </div>
-          <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">近30天 0 顿</span>
+          <div id="categoryStatsGrid" class="grid-safe" style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px;"></div>
+          <div id="stockHealthBox" style="margin-top:12px;padding-top:11px;border-top:1px solid #F5F5F4;"></div>
         </div>
-        <div id="recent30PrefBox"></div>
+
+        <!-- Future Expiry Month Timeline -->
+        <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
+            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🗓️ 未来到期月份时间轴</h2>
+            <span id="expiryTimelineCountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">0 个月份</span>
+          </div>
+          <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">按到期月份由近及远排列在库口粮，提前发现集中临期月份</p>
+          <div id="expiryMonthTimelineList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+        <!-- Priority Feeding Queue (FEFO) -->
+        <div class="ios-card p-4" style="padding:16px;">
+          <h2 style="margin:0 0 3px 0;font-size:16px;font-weight:800;color:#1C1917;">🍽️ 近期优先投喂建议</h2>
+          <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">结合「拆封后保鲜期」与「未开封保质期」自动排序，避免浪费</p>
+          <div id="priorityFeedList" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
       </div>
 
-      <!-- 4. Priority Feeding Queue (FEFO) -->
-      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <h2 style="margin:0 0 3px 0;font-size:16px;font-weight:800;color:#1C1917;">🍽️ 近期优先投喂建议</h2>
-        <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">结合「拆封后保鲜期」与「未开封保质期」自动排序，避免浪费</p>
-        <div id="priorityFeedList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <!-- SUB-VIEW 2: 🐾 适口性档案 -->
+      <div id="statsSubViewPal" class="hidden-view">
+        <div class="ios-card p-4" style="padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+            <div>
+              <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🐾 适口性口碑档案</h2>
+              <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">按平时试吃反馈归类，复购选粮更直观</p>
+            </div>
+            <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
+          </div>
+
+          <!-- 5-Tier Filter Pills -->
+          <div id="palTierTabBar" class="no-scrollbar" style="display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">
+            <button type="button" data-tier-tab="love" class="pill-chip active" style="padding:6px 11px;font-size:12px;">😍 超爱吃</button>
+            <button type="button" data-tier-tab="ok" class="pill-chip" style="padding:6px 11px;font-size:12px;">😋 正常吃</button>
+            <button type="button" data-tier-tab="coax" class="pill-chip" style="padding:6px 11px;font-size:12px;">🥺 需哄吃</button>
+            <button type="button" data-tier-tab="meh" class="pill-chip" style="padding:6px 11px;font-size:12px;">😒 不爱吃</button>
+            <button type="button" data-tier-tab="med" class="pill-chip" style="padding:6px 11px;font-size:12px;">🩺 药品反应</button>
+          </div>
+
+          <!-- Visual Tier Cards Container -->
+          <div id="palTierCardsList" style="display:flex;flex-direction:column;gap:9px;"></div>
+
+          <!-- Tier List Pagination Controls -->
+          <div id="tierPaginationBar" class="hidden-view" style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <button id="prevTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
+            <span id="tierPageInfoText" style="font-size:11.5px;font-weight:700;color:#57534E;">第 1 / 1 页</span>
+            <button id="nextTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+          </div>
+        </div>
       </div>
 
-      <!-- 4B. Future Expiry Month Timeline (未来到期月份时间轴 #6) -->
-      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
-          <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🗓️ 未来到期月份时间轴</h2>
-          <span id="expiryTimelineCountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">0 个月份</span>
-        </div>
-        <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">按到期月份由近及远排列在库口粮，提前发现集中临期月份</p>
-        <div id="expiryMonthTimelineList" style="display:flex;flex-direction:column;gap:8px;"></div>
-      </div>
-
-      <!-- 5. Brand Deep Archive Directory -->
-      <div class="ios-card p-4" style="padding:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
-          <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🏷️ 品牌囤货档案</h2>
-          <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
-        </div>
-        <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">汇总各品牌在库余量、累计消灭量、历史花费与旗下单品口碑（点击品牌可筛选库存）</p>
-        <div id="brandStatsList" style="display:flex;flex-direction:column;gap:10px;"></div>
-
-        <!-- Brand Archive Pagination Controls -->
-        <div id="brandPaginationBar" class="hidden-view" style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <button id="prevBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
-            <span id="brandPageInfoText" style="font-size:11.5px;font-weight:700;color:#44403C;white-space:nowrap;">第 1 / 1 页</span>
-            <button id="nextBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+      <!-- SUB-VIEW 3: 🏷️ 品牌与偏好 -->
+      <div id="statsSubViewBrand" class="hidden-view">
+        <!-- Brand Deep Archive Directory -->
+        <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
+            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🏷️ 品牌囤货档案</h2>
+            <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
           </div>
-          <div style="display:flex;align-items:center;gap:5px;">
-            <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
-            <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background:#FFFFFF;">
-              <option value="5">5 个品牌</option>
-              <option value="10">10 个品牌</option>
-              <option value="9999">全部</option>
-            </select>
+          <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">汇总各品牌在库余量、累计消灭量、历史花费与旗下单品口碑（点击品牌可筛选库存）</p>
+          <div id="brandStatsList" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+          <!-- Brand Archive Pagination Controls -->
+          <div id="brandPaginationBar" class="hidden-view" style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <button id="prevBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
+              <span id="brandPageInfoText" style="font-size:11.5px;font-weight:700;color:#44403C;white-space:nowrap;">第 1 / 1 页</span>
+              <button id="nextBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;">
+              <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
+              <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background:#FFFFFF;">
+                <option value="5">5 个品牌</option>
+                <option value="10">10 个品牌</option>
+                <option value="9999">全部</option>
+              </select>
+            </div>
           </div>
+        </div>
+
+        <!-- 30-Day Feeding Preferences & Top Favorites -->
+        <div class="ios-card p-4" style="padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+            <div>
+              <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📈 近 30 天饮食偏好排行</h2>
+              <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">根据每日盘点自动统计主子近期最常吃什么</p>
+            </div>
+            <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">近30天 0 顿</span>
+          </div>
+          <div id="recent30PrefBox"></div>
         </div>
       </div>
     </section>
@@ -1193,9 +1124,9 @@
             <label for="feedMealSlot" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">餐次时段</label>
             <select id="feedMealSlot" class="ios-input" style="height:42px;background:#FFFFFF;">
               <option value="🌅 早饭">🌅 早饭</option>
-              <option value="☀️ 午间">☀️ 午间</option>
+              <option value="☀️ 午饭">☀️ 午饭</option>
               <option value="🌙 晚饭">🌙 晚饭</option>
-              <option value="🌌 夜宵/加餐">🌌 夜宵/加餐</option>
+              <option value="🍪 加餐/零食">🍪 加餐/零食</option>
               <option value="🩺 用药/护理">🩺 用药/护理</option>
             </select>
           </div>
@@ -1654,7 +1585,7 @@
           {
             id: 'log_sample_4',
             date: yesterday,
-            mealSlot: '🌌 夜宵/加餐',
+            mealSlot: '🍪 加餐/零食',
             itemId: 'sample_3',
             category: 'freeze',
             brand: 'K9 Natural',
@@ -1741,6 +1672,7 @@
         pantryPage: 1,
         pantryPageSize: 6,
         dailyViewMode: 'day', // 'day' | 'all'
+        statsSubTab: 'stock', // 'stock' | 'pal' | 'brand'
         statsTierTab: 'love', // 'love' | 'ok' | 'coax' | 'meh' | 'med'
         tierPage: 1,
         tierPageSize: 5,
@@ -2226,27 +2158,7 @@
         }
       }
 
-      function syncDarkModeUI() {
-        var btn = document.getElementById('darkModeToggleBtn');
-        if (state.settings.darkMode) {
-          document.body.classList.add('dark-mode');
-          if (btn) {
-            btn.textContent = '☀️';
-            btn.style.background = '#262320';
-            btn.style.borderColor = '#44403C';
-          }
-        } else {
-          document.body.classList.remove('dark-mode');
-          if (btn) {
-            btn.textContent = '🌙';
-            btn.style.background = '#FFFFFF';
-            btn.style.borderColor = '#E7E5E4';
-          }
-        }
-      }
-
       function syncEditModeUI() {
-        syncDarkModeUI();
         var chk = document.getElementById('globalEditModeToggle');
         var lbl = document.getElementById('globalEditModeText');
         if (chk) chk.checked = Boolean(state.editMode);
@@ -2255,7 +2167,7 @@
           if (lbl) lbl.textContent = '编辑中';
         } else {
           document.body.classList.remove('is-edit-mode');
-          if (lbl) lbl.textContent = '编辑模式';
+          if (lbl) lbl.textContent = '编辑';
         }
       }
 
@@ -2271,7 +2183,7 @@
         });
         var brandTotal = Object.keys(brandsSet).length;
         document.getElementById('headerSubtitle').textContent =
-          '在库 ' + activeCount + ' 款 · ' + brandTotal + ' 个品牌 · ' + (state.editMode ? '✏️ 编辑模式已开启' : '🔒 只读浏览模式');
+          '在库 ' + activeCount + ' 款 · ' + brandTotal + ' 品牌 · ' + (state.editMode ? '✏️编辑中' : '🔒只读');
       }
 
       function renderStatusCounts() {
@@ -2849,9 +2761,9 @@
       function getCurrentMealSlot() {
         var hr = new Date().getHours();
         if (hr < 10) return '🌅 早饭';
-        if (hr < 15) return '☀️ 午间';
+        if (hr < 15) return '☀️ 午饭';
         if (hr < 21) return '🌙 晚饭';
-        return '🌌 夜宵/加餐';
+        return '🍪 加餐/零食';
       }
 
       function appendFeedingLog(entry) {
@@ -3220,6 +3132,13 @@
         document.getElementById('feedItemId').value = target ? target.id : '';
         if (target) {
           document.getElementById('feedCategorySelect').value = target.category || 'dry';
+          if (!document.getElementById('feedLogEditId').value) {
+            if (target.category === 'med') {
+              document.getElementById('feedMealSlot').value = '🩺 用药/护理';
+            } else if (target.category === 'treat' || target.category === 'freeze') {
+              document.getElementById('feedMealSlot').value = '🍪 加餐/零食';
+            }
+          }
           document.getElementById('feedBrandInput').value = target.brand || '';
           document.getElementById('feedNameInput').value = target.name || '';
           var defaultPortion = '50g';
@@ -3368,6 +3287,30 @@
       }
 
       function renderStatsView() {
+        var subTab = state.statsSubTab || 'stock';
+        var subBtns = document.querySelectorAll('#statsSubTabSwitch [data-stats-subtab]');
+        for (var sIdx = 0; sIdx < subBtns.length; sIdx++) {
+          var sk = subBtns[sIdx].getAttribute('data-stats-subtab');
+          var active = (sk === subTab);
+          subBtns[sIdx].style.background = active ? '#1C1917' : 'transparent';
+          subBtns[sIdx].style.color = active ? '#FFFFFF' : '#57534E';
+        }
+        var svStock = document.getElementById('statsSubViewStock');
+        var svPal = document.getElementById('statsSubViewPal');
+        var svBrand = document.getElementById('statsSubViewBrand');
+        if (svStock) {
+          if (subTab === 'stock') svStock.classList.remove('hidden-view');
+          else svStock.classList.add('hidden-view');
+        }
+        if (svPal) {
+          if (subTab === 'pal') svPal.classList.remove('hidden-view');
+          else svPal.classList.add('hidden-view');
+        }
+        if (svBrand) {
+          if (subTab === 'brand') svBrand.classList.remove('hidden-view');
+          else svBrand.classList.add('hidden-view');
+        }
+
         var totalCny = 0;
         var totalJpy = 0;
         var catStats = {};
@@ -4753,12 +4696,12 @@
           showToast(nextDue ? ('已记录喂食，将于 ' + nextDue + ' 提醒下次用药') : ('已记入 ' + fDate + ' 饮食盘点' + splitToastSuffix));
         });
 
-        // Dark Mode Toggle (#9)
-        document.getElementById('darkModeToggleBtn').addEventListener('click', function () {
-          state.settings.darkMode = !state.settings.darkMode;
-          syncDarkModeUI();
-          saveToStorage(true);
-          showToast(state.settings.darkMode ? '🌙 已开启夜间护眼模式' : '☀️ 已恢复日间暖白模式');
+        // Stats Sub-Tab Switcher (#3A)
+        document.getElementById('statsSubTabSwitch').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-stats-subtab]');
+          if (!btn) return;
+          state.statsSubTab = btn.getAttribute('data-stats-subtab');
+          renderStatsView();
         });
 
         // Live per-100g price calculation in modal (#3)
