@@ -6,6 +6,16 @@
   var Domain = MP.Domain;
   var Stats = MP.Stats = {};
 
+  function addUnitQuantity(totals, unit, quantity) {
+    if (quantity > 0) totals[unit] = Utils.round2((totals[unit] || 0) + quantity);
+  }
+
+  function formatUnitQuantities(totals) {
+    return Object.keys(totals).map(function (unit) {
+      return totals[unit] + unit;
+    }).join(' · ');
+  }
+
   Stats.aggregateUniqueProducts = function () {
     var map = {};
     var list = [];
@@ -63,11 +73,9 @@
       catStats[k] = {
         group: MP.CATEGORIES[k].group,
         skus: 0,
-        totalQty: 0,
-        eatenQty: 0,
-        unit: MP.CATEGORIES[k].defaultUnit,
-        daysSum: 0,
-        daysUnits: 0
+        stockByUnit: Object.create(null),
+        eatenByUnit: Object.create(null),
+        durationByUnit: Object.create(null)
       };
     });
 
@@ -75,22 +83,25 @@
       var q = Number(it.quantity) || 0;
       var ck = catStats[it.category] ? it.category : 'dry';
       var grp = MP.getCategoryGroup(ck);
+      var category = catStats[ck];
+      var unit = it.unit || '件';
       if (q > 0) {
         groupTotals[grp].batches += 1;
         if (it.price) {
           if (it.currency === 'JPY') groupTotals[grp].jpy += q * Number(it.price);
           else groupTotals[grp].cny += q * Number(it.price);
         }
-        catStats[ck].skus += 1;
-        catStats[ck].totalQty = Utils.round2(catStats[ck].totalQty + q);
+        category.skus += 1;
+        addUnitQuantity(category.stockByUnit, unit, q);
       } else {
         var used = Number(it.consumedCount) || Number(it.lastQuantity) || 1;
         groupTotals[grp].eatenBatches += 1;
-        catStats[ck].eatenQty = Utils.round2(catStats[ck].eatenQty + used);
+        addUnitQuantity(category.eatenByUnit, unit, used);
         var cd = Utils.calcConsumeDays(it.archivedOpenedDate || it.openedDate, it.finishedDate);
         if (cd !== null) {
-          catStats[ck].daysSum += cd;
-          catStats[ck].daysUnits += used;
+          var duration = category.durationByUnit[unit] || (category.durationByUnit[unit] = { days: 0, quantity: 0 });
+          duration.days += cd;
+          duration.quantity += used;
         }
       }
     });
@@ -163,9 +174,9 @@
     var sepStripEl = document.getElementById('groupSeparationSummary');
     if (sepStripEl) {
       sepStripEl.innerHTML = [
-        { key: 'food', icon: '🍽️', label: '普通食品', bg: '#FFF7ED', border: '#FED7AA', titleColor: '#9A3412', data: gt.food, unitWord: '批口粮' },
-        { key: 'supp', icon: '💊', label: '营养品',   bg: '#F0F9FF', border: '#BAE6FD', titleColor: '#0369A1', data: gt.supp, unitWord: '批营养' },
-        { key: 'med',  icon: '🩺', label: '药品护理', bg: '#F0FDF4', border: '#BBF7D0', titleColor: '#15803D', data: gt.med,  unitWord: '批药品' }
+        { key: 'food', icon: '🍽️', label: '普通食品', bg: '#FFF7ED', border: '#FED7AA', titleColor: '#9A3412', data: gt.food, unitWord: '批在库' },
+        { key: 'supp', icon: '💊', label: '营养品',   bg: '#F0F9FF', border: '#BAE6FD', titleColor: '#0369A1', data: gt.supp, unitWord: '批在库' },
+        { key: 'med',  icon: '🩺', label: '药品护理', bg: '#F0FDF4', border: '#BBF7D0', titleColor: '#15803D', data: gt.med,  unitWord: '批在库' }
       ].map(function (card) {
         var isSel = (scope === card.key);
         return (
@@ -185,7 +196,12 @@
     var catGridHtml = visibleCatKeys.map(function (k) {
       var c = MP.CATEGORIES[k];
       var stCat = catStats[k];
-      var avgStr = stCat.daysUnits > 0 ? (' · 均' + Math.max(1, Math.round(stCat.daysSum / stCat.daysUnits)) + '天/' + c.defaultUnit) : '';
+      var stockText = formatUnitQuantities(stCat.stockByUnit);
+      var eatenText = formatUnitQuantities(stCat.eatenByUnit);
+      var avgText = Object.keys(stCat.durationByUnit).map(function (unit) {
+        var duration = stCat.durationByUnit[unit];
+        return '均' + Math.max(1, Math.round(duration.days / duration.quantity)) + '天/' + Utils.escapeHtml(unit);
+      }).join(' · ');
       var eatenVerb = c.group === 'med' ? '累计已用 ' : (c.group === 'supp' ? '累计已喂 ' : '累计已吃 ');
       return (
         '<button type="button" data-jump-cat="' + k + '" class="clickable-stat-tile" style="text-align:left;padding:11px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;width:100%;">' +
@@ -193,9 +209,9 @@
             '<span style="font-size:12.5px;font-weight:700;color:#44403C;">' + c.icon + ' ' + c.label + '</span>' +
             '<span style="font-size:11px;color:#EA580C;font-weight:600;">' + stCat.skus + '批 ▶</span>' +
           '</div>' +
-          '<div style="margin-top:4px;font-size:18px;font-weight:800;color:#1C1917;">' + stCat.totalQty + ' <span style="font-size:12px;font-weight:600;color:#78716C;">' + c.defaultUnit + '</span></div>' +
-          '<div style="margin-top:2px;font-size:11px;color:' + (stCat.eatenQty > 0 ? '#15803D' : '#A8A29E') + ';font-weight:600;">' +
-            eatenVerb + stCat.eatenQty + ' ' + c.defaultUnit + avgStr +
+          '<div style="margin-top:4px;font-size:' + (Object.keys(stCat.stockByUnit).length > 1 ? '14' : '18') + 'px;font-weight:800;color:#1C1917;overflow-wrap:anywhere;">' + Utils.escapeHtml(stockText || '无库存') + '</div>' +
+          '<div style="margin-top:2px;font-size:11px;color:' + (eatenText ? '#15803D' : '#A8A29E') + ';font-weight:600;overflow-wrap:anywhere;">' +
+            eatenVerb + Utils.escapeHtml(eatenText || '0') + (avgText ? ' · ' + avgText : '') +
           '</div>' +
         '</button>'
       );
@@ -590,14 +606,14 @@
       if (bScope !== 'all' && prod.group !== bScope) return;
       var b = prod.brand;
       if (!brandGroups[b]) {
-        brandGroups[b] = { products: [], activeSkus: 0, foodEatenUnits: 0, careUsedUnits: 0, spendCny: 0, spendJpy: 0 };
+        brandGroups[b] = { products: [], activeSkus: 0, foodEatenUnits: Object.create(null), careUsedUnits: Object.create(null), spendCny: 0, spendJpy: 0 };
       }
       brandGroups[b].products.push(prod);
       if (prod.inStockQty > 0) brandGroups[b].activeSkus += 1;
       if (prod.group === 'food') {
-        brandGroups[b].foodEatenUnits = Utils.round2(brandGroups[b].foodEatenUnits + prod.eatenQty);
+        addUnitQuantity(brandGroups[b].foodEatenUnits, prod.unit, prod.eatenQty);
       } else {
-        brandGroups[b].careUsedUnits = Utils.round2(brandGroups[b].careUsedUnits + prod.eatenQty);
+        addUnitQuantity(brandGroups[b].careUsedUnits, prod.unit, prod.eatenQty);
       }
     });
 
@@ -656,8 +672,10 @@
         var spendStr = formatGroupValueStr(g.spendCny, g.spendJpy);
         var spendBadge = (g.spendCny > 0 || g.spendJpy > 0) ? (' · 累计购入 ' + spendStr) : '';
         var consParts = [];
-        if (g.foodEatenUnits > 0) consParts.push('吃完口粮 ' + g.foodEatenUnits + ' 件');
-        if (g.careUsedUnits > 0) consParts.push('用完营养/药品 ' + g.careUsedUnits + ' 件');
+        var foodConsumed = formatUnitQuantities(g.foodEatenUnits);
+        var careConsumed = formatUnitQuantities(g.careUsedUnits);
+        if (foodConsumed) consParts.push('累计已吃 ' + foodConsumed);
+        if (careConsumed) consParts.push('用完营养/药品 ' + careConsumed);
         var consText = consParts.length ? consParts.join(' · ') : '暂无吃完归档';
 
         var skuPillsHtml = g.products.map(function (prod) {
