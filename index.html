@@ -439,19 +439,26 @@
           >
           <svg style="position:absolute;left:11px;top:11px;color:#A8A29E;" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         </div>
-        <div class="grid grid-cols-2 gap-2" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <select id="brandFilterSelect" aria-label="按品牌筛选" class="ios-input text-xs py-1.5" style="min-height:36px;padding:6px 10px;font-size:13px;">
+        <div class="grid-safe" style="display:grid;grid-template-columns:1fr 1.15fr auto;gap:6px;align-items:center;">
+          <select id="brandFilterSelect" aria-label="按品牌筛选" class="ios-input" style="height:36px;min-height:36px;padding:4px 22px 4px 8px;font-size:12px;">
             <option value="all">🏷️ 全部品牌</option>
           </select>
-          <select id="sortSelect" aria-label="排序方式" class="ios-input text-xs py-1.5" style="min-height:36px;padding:6px 10px;font-size:13px;">
-            <option value="exp_asc">⏳ 先到期先吃 (推荐)</option>
-            <option value="exp_desc">📅 剩余保质期最长</option>
-            <option value="prod_desc">🆕 生产日期最新</option>
-            <option value="qty_desc">📦 库存数量最多</option>
-            <option value="brand_asc">🔤 按品牌名称排序</option>
+          <select id="sortSelect" aria-label="排序方式" class="ios-input" style="height:36px;min-height:36px;padding:4px 22px 4px 8px;font-size:12px;">
+            <option value="exp_asc">⏳ 先到期先吃</option>
+            <option value="exp_desc">📅 保质期最长</option>
+            <option value="prod_desc">🆕 生产日最新</option>
+            <option value="qty_desc">📦 库存量最多</option>
+            <option value="brand_asc">🔤 按品牌排序</option>
           </select>
+          <div id="pantryDisplayToggle" style="display:inline-flex;background:#F5F5F4;padding:2px;border-radius:10px;border:1px solid #E7E5E4;height:36px;align-items:center;">
+            <button type="button" data-display-mode="card" title="详细卡片视图" style="border:none;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;white-space:nowrap;">⊞ 详细</button>
+            <button type="button" data-display-mode="compact" title="极简清单视图" style="border:none;border-radius:7px;padding:4px 8px;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;white-space:nowrap;">☰ 极简</button>
+          </div>
         </div>
       </section>
+
+      <!-- Indoor Cat Deworming / Medicine Reminder Banner (Only shown when a reminder is active) -->
+      <div id="medReminderBanner" class="ios-card p-3 mb-3 hidden-view" style="padding:10px 12px;margin-bottom:12px;background:#F0FDF4;border-color:#BBF7D0;"></div>
 
       <!-- Items List Container -->
       <section id="pantryList" class="space-y-3" style="display:flex;flex-direction:column;gap:12px;"></section>
@@ -646,10 +653,13 @@
           </label>
           <input id="importJsonInput" type="file" accept=".json,application/json" class="hidden-view">
           <button id="exportCsvBtn" type="button" class="ios-btn ios-btn-secondary px-4 py-3">
-            <span>📊 导出 Excel/Numbers 表格 (.csv)</span>
+            <span>📊 导出库存盘点表 (.csv)</span>
           </button>
-          <button id="copySummaryBtn" type="button" class="ios-btn ios-btn-secondary px-4 py-3">
-            <span>📋 复制文字版盘点清单</span>
+          <button id="exportLogsCsvBtn" type="button" class="ios-btn ios-btn-secondary px-4 py-3">
+            <span>🗓️ 导出每日饮食记录 (.csv)</span>
+          </button>
+          <button id="copySummaryBtn" type="button" class="ios-btn ios-btn-secondary px-4 py-3" style="grid-column:1 / -1;">
+            <span>📋 复制文字版在库清单</span>
           </button>
         </div>
         <div class="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between" style="margin-top:12px;padding-top:12px;border-top:1px solid #F5F5F4;display:flex;justify-content:space-between;align-items:center;">
@@ -658,24 +668,7 @@
         </div>
       </div>
 
-      <!-- iPhone Local Setup Guide -->
-      <div class="ios-card p-4" style="padding:16px;">
-        <h2 class="text-base font-bold text-stone-900 mb-2" style="margin:0 0 8px 0;font-size:16px;">📱 如何在 iPhone 上作为本地 App 使用？</h2>
-        <div class="space-y-3 text-xs text-stone-600 leading-relaxed" style="font-size:13px;color:#57534E;line-height:1.6;">
-          <div class="p-3 rounded-xl bg-stone-50" style="padding:10px 12px;border-radius:12px;background:#FAFAF9;margin-bottom:8px;">
-            <strong class="text-stone-900">方式一：Safari 添加到主屏幕（推荐，体验如同原生 App）</strong><br>
-            若通过网页链接在 Safari 打开本页面，点击底部中间的<strong>「分享」</strong>图标 → 选择<strong>「添加到主屏幕」</strong>，桌面即会出现专属橘猫图标，支持全屏独立运行与本地持久存储。
-          </div>
-          <div class="p-3 rounded-xl bg-stone-50" style="padding:10px 12px;border-radius:12px;background:#FAFAF9;margin-bottom:8px;">
-            <strong class="text-stone-900">方式二：下载单文件 `.html` 在 iPhone 离线运行</strong><br>
-            iPhone 系统自带的「文件」App 直接点击 `.html` 默认仅开启静态预览。若需完整交互，可在 App Store 使用免费的本地文档工具（如 <strong>Documents</strong>、<strong>HTML Viewer</strong> 或 <strong>Koder</strong>）打开该 `.html` 文件，即可 100% 纯离线读写库存。
-          </div>
-          <div class="p-3 rounded-xl bg-stone-50" style="padding:10px 12px;border-radius:12px;background:#FAFAF9;">
-            <strong class="text-stone-900">方式三：双重防丢保障</strong><br>
-            每次大促囤货录入后，点一下上方<strong>「导出 JSON 完整备份」</strong>保存到 iCloud Drive，即使更换新 iPhone 也能一键无损恢复。
-          </div>
-        </div>
-      </div>
+
     </section>
   </div>
 
@@ -890,6 +883,12 @@
           <input id="fieldNotes" type="text" placeholder="如：需兑温水骗水、换粮7日过渡用..." class="ios-input text-sm">
         </div>
 
+        <div id="cloneBatchFromEditWrap" class="hidden-view" style="padding-top:4px;">
+          <button id="cloneBatchFromEditBtn" type="button" class="ios-btn ios-btn-secondary" style="width:100%;min-height:38px;font-size:12px;color:#9A3412;background:#FFF7ED;border-color:#FED7AA;">
+            <span>＋ 新买了一批同款？点此带入资料新建独立批次（保留原批次）</span>
+          </button>
+        </div>
+
         <div class="flex gap-2.5 pt-2" style="display:flex;gap:10px;padding-top:8px;">
           <button id="cancelModalBtn" type="button" class="ios-btn ios-btn-secondary w-1/3" style="width:34%;">取消</button>
           <button id="saveItemBtn" type="submit" class="ios-btn ios-btn-primary w-2/3" style="width:66%;">保存记录</button>
@@ -933,6 +932,7 @@
       </div>
 
       <form id="feedForm" style="display:flex;flex-direction:column;gap:12px;">
+        <input type="hidden" id="feedLogEditId">
         <input type="hidden" id="feedItemId">
 
         <!-- Date & Meal Time Slot -->
@@ -1004,6 +1004,21 @@
             <span id="feedDeductLabel" style="font-size:12px;font-weight:700;color:#7C2D12;">📦 同时从库存扣减 1 件（适合整罐/整支吃完时勾选）</span>
             <input id="feedDeductStock" type="checkbox" style="width:18px;height:18px;accent-color:#EA580C;flex-shrink:0;">
           </label>
+        </div>
+
+        <!-- Indoor Cat Low-Frequency Deworming / Medicine Reminder (Optional, default off) -->
+        <div id="medNextReminderBox" class="hidden-view" style="padding:10px 12px;border-radius:12px;background:#F0FDF4;border:1px solid #BBF7D0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <label for="feedNextReminderDays" style="font-size:12px;font-weight:700;color:#14532D;">🩺 下次用药/驱虫提醒（室内猫低频可选）</label>
+            <select id="feedNextReminderDays" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background:#FFFFFF;">
+              <option value="0">不设提醒</option>
+              <option value="60">2个月后 (60天)</option>
+              <option value="90">3个月后 / 季度 (90天)</option>
+              <option value="180">半年后 (180天)</option>
+              <option value="365">1年后 (365天)</option>
+              <option value="30">1个月后 (30天)</option>
+            </select>
+          </div>
         </div>
 
         <!-- Reaction / Notes -->
@@ -1384,6 +1399,7 @@
         brandFilter: 'all',
         sortBy: 'exp_asc',
         searchQuery: '',
+        pantryDisplayMode: 'card', // 'card' | 'compact'
         pantryPage: 1,
         pantryPageSize: 6,
         dailyViewMode: 'day', // 'day' | 'all'
@@ -1456,6 +1472,9 @@
         }
         if (typeof pSet.pantryPageSize === 'number' && pSet.pantryPageSize > 0) {
           state.pantryPageSize = pSet.pantryPageSize;
+        }
+        if (pSet.pantryDisplayMode === 'compact' || pSet.pantryDisplayMode === 'card') {
+          state.pantryDisplayMode = pSet.pantryDisplayMode;
         }
       }
 
@@ -1624,10 +1643,43 @@
         renderStatusCounts();
         renderCategoryPills();
         renderBrandDropdown();
+        renderMedReminderBanner();
         renderPantryList();
         renderDailyView();
         renderStatsView();
         renderSettingsView();
+      }
+
+      function renderMedReminderBanner() {
+        var box = document.getElementById('medReminderBanner');
+        if (!box) return;
+        // Find logs that have nextDueDate and haven't been dismissed
+        var activeRems = state.logs.filter(function (lg) {
+          return lg.nextDueDate && !lg.reminderDone;
+        });
+        if (activeRems.length === 0) {
+          box.classList.add('hidden-view');
+          return;
+        }
+        activeRems.sort(function (a, b) {
+          return String(a.nextDueDate).localeCompare(String(b.nextDueDate));
+        });
+        var topRem = activeRems[0];
+        var daysLeft = diffDaysFromToday(topRem.nextDueDate);
+        var statusTxt = daysLeft < 0
+          ? ('已超期 ' + Math.abs(daysLeft) + ' 天（计划日 ' + topRem.nextDueDate + '）')
+          : (daysLeft === 0 ? '今天到期！' : ('还有 ' + daysLeft + ' 天（计划日 ' + topRem.nextDueDate + '）'));
+        var toneColor = daysLeft <= 7 ? '#B45309' : '#15803D';
+
+        box.classList.remove('hidden-view');
+        box.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
+            '<div style="font-size:12px;color:#14532D;">' +
+              '<strong>🩺 用药/驱虫备忘：</strong>[' + escapeHtml(topRem.brand) + '] ' + escapeHtml(topRem.name) +
+              ' · 上次 ' + escapeHtml(topRem.date) + ' · <span style="font-weight:800;color:' + toneColor + ';">下次 ' + statusTxt + '</span>' +
+            '</div>' +
+            '<button type="button" data-dismiss-rem="' + escapeHtml(topRem.id) + '" style="border:none;padding:4px 9px;border-radius:7px;background:#DCFCE7;color:#15803D;font-size:11px;font-weight:700;cursor:pointer;">✓ 已知晓/完成</button>' +
+          '</div>';
       }
 
       function renderSampleBanner() {
@@ -1812,6 +1864,71 @@
           pagerEl.classList.add('hidden-view');
         }
 
+        // Sync Display Mode Toggle UI (⊞ 详细 vs ☰ 极简)
+        var dBtns = document.querySelectorAll('#pantryDisplayToggle [data-display-mode]');
+        for (var dIdx = 0; dIdx < dBtns.length; dIdx++) {
+          var dm = dBtns[dIdx].getAttribute('data-display-mode');
+          var isAct = (dm === state.pantryDisplayMode);
+          dBtns[dIdx].style.background = isAct ? '#1C1917' : 'transparent';
+          dBtns[dIdx].style.color = isAct ? '#FFFFFF' : '#57534E';
+        }
+
+        if (state.pantryDisplayMode === 'compact') {
+          listEl.style.gap = '7px';
+          listEl.innerHTML = pagedItems.map(function (it) {
+            var ev = evaluateItem(it);
+            var catInfo = CATEGORIES[it.category] || CATEGORIES.dry;
+            var qtyNum = Number(it.quantity) || 0;
+            var unitStr = escapeHtml(it.unit || '件');
+            var badgeBg = '#DCFCE7';
+            var badgeText = '#15803D';
+            var badgeLabel = ev.expDays !== null ? (ev.expDays + '天') : '有效';
+            if (ev.status === 'empty') {
+              badgeBg = '#F5F5F4'; badgeText = '#78716C'; badgeLabel = '已吃完';
+            } else if (ev.status === 'expired') {
+              badgeBg = '#FEE2E2'; badgeText = '#DC2626';
+              badgeLabel = (ev.expDays !== null && ev.expDays < 0) ? ('过期' + Math.abs(ev.expDays) + '天') : '开封超期';
+            } else if (ev.status === 'expiring') {
+              badgeBg = '#FEF3C7'; badgeText = '#B45309';
+              badgeLabel = ev.expDays === 0 ? '今日到期' : ('剩' + ev.expDays + '天');
+            }
+            var openDot = it.isOpened && ev.status !== 'empty'
+              ? '<span style="font-size:10px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;">🔓1拆</span>'
+              : '';
+            var palIcon = it.palatability === 'love' ? '😍' : (it.palatability === 'meh' ? '😒' : '');
+
+            return (
+              '<div class="ios-card" style="padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+                '<div data-action="edit" data-id="' + escapeHtml(it.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
+                  '<div style="display:flex;align-items:center;gap:5px;min-width:0;">' +
+                    '<span style="font-size:14px;flex-shrink:0;">' + catInfo.icon + '</span>' +
+                    '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;flex-shrink:0;">' + escapeHtml(it.brand) + '</span>' +
+                    '<strong style="font-size:13.5px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(it.name) + '</strong>' +
+                    (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
+                    openDot +
+                  '</div>' +
+                  '<div style="font-size:11px;color:#78716C;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
+                    '<span>到期 ' + escapeHtml(it.expDate || '—') + '</span>' +
+                    (it.spec ? ('<span>· ' + escapeHtml(it.spec) + '</span>') : '') +
+                    (it.location ? ('<span>· 📍' + escapeHtml(it.location) + '</span>') : '') +
+                  '</div>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
+                  '<span style="background:' + badgeBg + ';color:' + badgeText + ';padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;">' + badgeLabel + '</span>' +
+                  '<span style="background:#F5F5F4;border:1px solid #E7E5E4;color:#1C1917;padding:3px 7px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;">' + qtyNum + unitStr + '</span>' +
+                  (ev.status !== 'empty'
+                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" title="记喂食" style="padding:4px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:11px;font-weight:700;cursor:pointer;">喂</button>'
+                    : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" title="同款复购" style="padding:4px 7px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>'
+                  ) +
+                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" style="padding:4px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
+                '</div>' +
+              '</div>'
+            );
+          }).join('');
+          return;
+        }
+
+        listEl.style.gap = '12px';
         var cardsHtml = pagedItems.map(function (it) {
           var ev = evaluateItem(it);
           var catInfo = CATEGORIES[it.category] || CATEGORIES.dry;
@@ -1982,8 +2099,21 @@
           name: entry.name || '',
           amount: entry.amount || '1份',
           note: entry.note || '',
+          nextDueDate: entry.nextDueDate || '',
+          reminderDays: entry.reminderDays || 0,
           isSample: false
         });
+      }
+
+      function syncMedReminderVisibility() {
+        var cat = document.getElementById('feedCategorySelect').value;
+        var slot = document.getElementById('feedMealSlot').value;
+        var box = document.getElementById('medNextReminderBox');
+        if (cat === 'med' || slot === '🩺 用药/护理') {
+          box.classList.remove('hidden-view');
+        } else {
+          box.classList.add('hidden-view');
+        }
       }
 
       function renderDailyView() {
@@ -2040,8 +2170,12 @@
                   '</div>' +
                   '<div style="font-size:14px;font-weight:800;color:#1C1917;">[' + escapeHtml(lg.brand) + '] ' + escapeHtml(lg.name) + '</div>' +
                   (lg.note ? '<div style="margin-top:3px;font-size:12px;color:#57534E;">💬 ' + escapeHtml(lg.note) + '</div>' : '') +
+                  (lg.nextDueDate ? '<div style="margin-top:3px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒日：' + escapeHtml(lg.nextDueDate) + '</div>' : '') +
                 '</div>' +
-                '<button type="button" data-del-log="' + escapeHtml(lg.id) + '" aria-label="删除此条喂食记录" style="padding:5px 8px;border-radius:8px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;">删除</button>' +
+                '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
+                  '<button type="button" data-edit-log="' + escapeHtml(lg.id) + '" style="padding:5px 8px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">编辑</button>' +
+                  '<button type="button" data-del-log="' + escapeHtml(lg.id) + '" aria-label="删除此条喂食记录" style="padding:5px 8px;border-radius:8px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
+                '</div>' +
               '</div>'
             );
           }).join('');
@@ -2155,8 +2289,12 @@
                   '</div>' +
                   '<div style="font-size:13px;font-weight:800;color:#1C1917;">[' + escapeHtml(lg.brand) + '] ' + escapeHtml(lg.name) + '</div>' +
                   (lg.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">💬 ' + escapeHtml(lg.note) + '</div>' : '') +
+                  (lg.nextDueDate ? '<div style="margin-top:2px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒：' + escapeHtml(lg.nextDueDate) + '</div>' : '') +
                 '</div>' +
-                '<button type="button" data-del-log="' + escapeHtml(lg.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;flex-shrink:0;">删除</button>' +
+                '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
+                  '<button type="button" data-edit-log="' + escapeHtml(lg.id) + '" style="padding:4px 7px;border-radius:7px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">编辑</button>' +
+                  '<button type="button" data-del-log="' + escapeHtml(lg.id) + '" style="padding:4px 7px;border-radius:7px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
+                '</div>' +
               '</div>'
             );
           }).join('');
@@ -2210,10 +2348,14 @@
       }
 
       function openFeedModal(itemId, customDate) {
+        document.getElementById('feedModalTitle').textContent = '🐾 记录每日喂食';
+        document.getElementById('feedLogEditId').value = '';
+        document.getElementById('feedDeductBox').classList.remove('hidden-view');
         var dateToUse = customDate || (state.activeTab === 'daily' ? state.selectedLogDate : getTodayStr());
         document.getElementById('feedDateInput').value = dateToUse;
         document.getElementById('feedMealSlot').value = getCurrentMealSlot();
         document.getElementById('feedDeductStock').checked = false;
+        document.getElementById('feedNextReminderDays').value = '0';
         document.getElementById('feedNoteInput').value = '';
         populateFeedStockDropdown(itemId || '');
         if (itemId) {
@@ -2230,6 +2372,33 @@
             document.getElementById('feedAmountInput').value = '50g';
           }
         }
+        syncMedReminderVisibility();
+        syncAllDateDisplays();
+        document.getElementById('feedModalBackdrop').classList.remove('hidden-view');
+      }
+
+      function openEditFeedModal(logId) {
+        var lg = null;
+        for (var i = 0; i < state.logs.length; i++) {
+          if (state.logs[i].id === logId) { lg = state.logs[i]; break; }
+        }
+        if (!lg) return;
+        document.getElementById('feedModalTitle').textContent = '✏️ 编辑喂食记录';
+        document.getElementById('feedLogEditId').value = lg.id;
+        document.getElementById('feedDateInput').value = lg.date || getTodayStr();
+        document.getElementById('feedMealSlot').value = lg.mealSlot || '🌅 早饭';
+        populateFeedStockDropdown(lg.itemId || '');
+        document.getElementById('feedItemId').value = lg.itemId || '';
+        document.getElementById('feedCategorySelect').value = lg.category || 'dry';
+        document.getElementById('feedBrandInput').value = lg.brand || '';
+        document.getElementById('feedNameInput').value = lg.name || '';
+        document.getElementById('feedAmountInput').value = lg.amount || '';
+        document.getElementById('feedNoteInput').value = lg.note || '';
+        document.getElementById('feedNextReminderDays').value = String(lg.reminderDays || 0);
+        // Hide stock deduction checkbox when editing an existing log so stock isn't double-deducted
+        document.getElementById('feedDeductStock').checked = false;
+        document.getElementById('feedDeductBox').classList.add('hidden-view');
+        syncMedReminderVisibility();
         syncAllDateDisplays();
         document.getElementById('feedModalBackdrop').classList.remove('hidden-view');
       }
@@ -2549,6 +2718,7 @@
       function openAddModal() {
         document.getElementById('modalTitle').textContent = '录入猫咪口粮';
         document.getElementById('fieldId').value = '';
+        document.getElementById('cloneBatchFromEditWrap').classList.add('hidden-view');
         document.getElementById('fieldBrand').value = '';
         document.getElementById('fieldName').value = '';
         document.getElementById('fieldSpec').value = '';
@@ -2588,6 +2758,7 @@
 
         document.getElementById('modalTitle').textContent = '编辑口粮信息';
         document.getElementById('fieldId').value = item.id;
+        document.getElementById('cloneBatchFromEditWrap').classList.remove('hidden-view');
         document.getElementById('fieldBrand').value = item.brand || '';
         document.getElementById('fieldName').value = item.name || '';
         document.getElementById('fieldSpec').value = item.spec || '';
@@ -2621,6 +2792,7 @@
       function openRestockModal(item) {
         if (!item) return;
         document.getElementById('modalTitle').textContent = '同款复购入库（新建批次）';
+        document.getElementById('cloneBatchFromEditWrap').classList.add('hidden-view');
         // Leave fieldId empty so saving creates a brand-new batch record while keeping old finished record in history
         document.getElementById('fieldId').value = '';
         document.getElementById('fieldBrand').value = item.brand || '';
@@ -2731,6 +2903,36 @@
         showToast('已导出 CSV 盘点表格');
       }
 
+      function exportLogsCsvTable() {
+        var headers = ['喂食日期', '星期', '餐次时段', '分类', '品牌', '品名/口味', '投喂份量', '下次提醒日', '备注'];
+        var rows = [headers];
+        var sorted = state.logs.slice().sort(function (a, b) {
+          return String(b.date || '').localeCompare(String(a.date || ''));
+        });
+        sorted.forEach(function (lg) {
+          var catName = (CATEGORIES[lg.category] || CATEGORIES.dry).label;
+          rows.push([
+            lg.date || '',
+            getWeekdayName(lg.date || ''),
+            lg.mealSlot || '',
+            catName,
+            lg.brand || '',
+            lg.name || '',
+            lg.amount || '',
+            lg.nextDueDate || '',
+            lg.note || ''
+          ]);
+        });
+        var csvBody = rows.map(function (r) {
+          return r.map(function (cell) {
+            var s = String(cell === null || cell === undefined ? '' : cell).replace(/"/g, '""');
+            return '"' + s + '"';
+          }).join(',');
+        }).join('\r\n');
+        triggerFileDownload('猫咪每日饮食记录_' + getTodayStr() + '.csv', '\uFEFF' + csvBody, 'text/csv;charset=utf-8');
+        showToast('已导出每日饮食记录 CSV 表格');
+      }
+
       function copyTextSummary() {
         var active = state.items.filter(function (it) { return (Number(it.quantity) || 0) > 0; });
         var lines = ['🐾 【喵喵粮仓盘点】截至 ' + getTodayStr() + '（共 ' + active.length + ' 款在库）'];
@@ -2815,12 +3017,17 @@
         });
 
         document.getElementById('dailyFeedTimeline').addEventListener('click', function (ev) {
+          var editBtn = ev.target.closest('[data-edit-log]');
+          if (editBtn) {
+            openEditFeedModal(editBtn.getAttribute('data-edit-log'));
+            return;
+          }
           var delBtn = ev.target.closest('[data-del-log]');
           if (!delBtn) return;
           var logId = delBtn.getAttribute('data-del-log');
           state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
           saveToStorage();
-          renderDailyView();
+          renderAll();
           showToast('已删除该条喂食记录');
         });
 
@@ -2857,12 +3064,17 @@
         });
 
         document.getElementById('allDatesArchiveList').addEventListener('click', function (ev) {
+          var editBtn = ev.target.closest('[data-edit-log]');
+          if (editBtn) {
+            openEditFeedModal(editBtn.getAttribute('data-edit-log'));
+            return;
+          }
           var delBtn = ev.target.closest('[data-del-log]');
           if (delBtn) {
             var logId = delBtn.getAttribute('data-del-log');
             state.logs = state.logs.filter(function (lg) { return lg.id !== logId; });
             saveToStorage();
-            renderDailyView();
+            renderAll();
             showToast('已删除该条喂食记录');
             return;
           }
@@ -2877,7 +3089,10 @@
 
         document.getElementById('feedStockSelect').addEventListener('change', function () {
           applyFeedStockSelection(this.value);
+          syncMedReminderVisibility();
         });
+        document.getElementById('feedCategorySelect').addEventListener('change', syncMedReminderVisibility);
+        document.getElementById('feedMealSlot').addEventListener('change', syncMedReminderVisibility);
 
         document.getElementById('feedPortionChips').addEventListener('click', function (ev) {
           var btn = ev.target.closest('[data-portion]');
@@ -2887,6 +3102,7 @@
 
         document.getElementById('feedForm').addEventListener('submit', function (ev) {
           ev.preventDefault();
+          var editLogId = document.getElementById('feedLogEditId').value;
           var fDate = document.getElementById('feedDateInput').value || getTodayStr();
           var fSlot = document.getElementById('feedMealSlot').value;
           var fItemId = document.getElementById('feedItemId').value;
@@ -2895,10 +3111,38 @@
           var fName = document.getElementById('feedNameInput').value.trim();
           var fAmount = document.getElementById('feedAmountInput').value.trim();
           var fNote = document.getElementById('feedNoteInput').value.trim();
+          var remDays = parseInt(document.getElementById('feedNextReminderDays').value, 10) || 0;
+          var nextDue = (remDays > 0 && (fCat === 'med' || fSlot === '🩺 用药/护理'))
+            ? addShelfLife(fDate, remDays, 'days')
+            : '';
           var deduct = document.getElementById('feedDeductStock').checked;
 
           if (!fBrand || !fName || !fAmount) {
             showToast('请填写品牌、品名和投喂份量');
+            return;
+          }
+
+          if (editLogId) {
+            for (var k = 0; k < state.logs.length; k++) {
+              if (state.logs[k].id === editLogId) {
+                state.logs[k].date = fDate;
+                state.logs[k].mealSlot = fSlot;
+                state.logs[k].itemId = fItemId;
+                state.logs[k].category = fCat;
+                state.logs[k].brand = fBrand;
+                state.logs[k].name = fName;
+                state.logs[k].amount = fAmount;
+                state.logs[k].note = fNote;
+                state.logs[k].reminderDays = remDays;
+                state.logs[k].nextDueDate = nextDue;
+                break;
+              }
+            }
+            state.selectedLogDate = fDate;
+            saveToStorage();
+            closeFeedModal();
+            renderAll();
+            showToast('喂食记录修改已保存');
             return;
           }
 
@@ -2910,7 +3154,9 @@
             brand: fBrand,
             name: fName,
             amount: fAmount,
-            note: fNote
+            note: fNote,
+            reminderDays: remDays,
+            nextDueDate: nextDue
           });
 
           if (deduct && fItemId) {
@@ -2932,7 +3178,7 @@
           saveToStorage();
           closeFeedModal();
           renderAll();
-          showToast('已记入 ' + fDate + ' 饮食盘点');
+          showToast(nextDue ? ('已记录喂食，将于 ' + nextDue + ' 提醒下次用药') : ('已记入 ' + fDate + ' 饮食盘点'));
         });
 
         // Open/Close Add Modal
@@ -3281,7 +3527,44 @@
 
         document.getElementById('exportJsonBtn').addEventListener('click', exportJsonBackup);
         document.getElementById('exportCsvBtn').addEventListener('click', exportCsvTable);
+        document.getElementById('exportLogsCsvBtn').addEventListener('click', exportLogsCsvTable);
         document.getElementById('copySummaryBtn').addEventListener('click', copyTextSummary);
+
+        document.getElementById('pantryDisplayToggle').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-display-mode]');
+          if (!btn) return;
+          state.pantryDisplayMode = btn.getAttribute('data-display-mode');
+          state.settings.pantryDisplayMode = state.pantryDisplayMode;
+          saveToStorage();
+          renderPantryList();
+          showToast(state.pantryDisplayMode === 'compact' ? '已切换为「极简清单」视图' : '已切换为「详细卡片」视图');
+        });
+
+        document.getElementById('medReminderBanner').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-dismiss-rem]');
+          if (!btn) return;
+          var logId = btn.getAttribute('data-dismiss-rem');
+          for (var i = 0; i < state.logs.length; i++) {
+            if (state.logs[i].id === logId) {
+              state.logs[i].reminderDone = true;
+              break;
+            }
+          }
+          saveToStorage();
+          renderMedReminderBanner();
+          showToast('已标记完成本次用药提醒');
+        });
+
+        document.getElementById('cloneBatchFromEditBtn').addEventListener('click', function () {
+          var curId = document.getElementById('fieldId').value;
+          var item = null;
+          for (var i = 0; i < state.items.length; i++) {
+            if (state.items[i].id === curId) { item = state.items[i]; break; }
+          }
+          if (item) {
+            openRestockModal(item);
+          }
+        });
 
         document.getElementById('importJsonInput').addEventListener('change', function (ev) {
           var file = ev.target.files && ev.target.files[0];
