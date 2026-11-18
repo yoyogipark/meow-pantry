@@ -600,6 +600,7 @@
       return String(b.date || '').localeCompare(String(a.date || ''));
     });
     sorted.forEach(function (lg) {
+      var product = Domain.resolveLogProduct(lg);
       var catInfo = MP.CATEGORIES[lg.category] || MP.CATEGORIES.dry;
       var grpInfo = MP.CATEGORY_GROUPS[catInfo.group] || MP.CATEGORY_GROUPS.food;
       rows.push([
@@ -608,8 +609,8 @@
         lg.mealSlot || '',
         grpInfo.label,
         catInfo.label,
-        lg.brand || '',
-        lg.name || '',
+        product.brand || '',
+        product.name || '',
         lg.amount || '',
         lg.nextDueDate || '',
         lg.note || ''

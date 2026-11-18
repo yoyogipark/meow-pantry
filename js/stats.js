@@ -522,7 +522,8 @@
         r30.food.forEach(function (lg) {
           var ck = lg.category || 'dry';
           catLogCount[ck] = (catLogCount[ck] || 0) + 1;
-          var fk = (lg.brand || '') + ' · ' + Domain.logProductName(lg);
+          var product = Domain.resolveLogProduct(lg);
+          var fk = (product.brand || '') + ' · ' + product.name;
           if (!favMap[fk]) {
             favMap[fk] = { title: fk, category: ck, count: 0, lastDate: lg.date || '', ratings: Object.create(null) };
           }
@@ -574,7 +575,8 @@
         var summarizeCare = function (arr) {
           var m = {};
           arr.forEach(function (lg) {
-            var k = '[' + (lg.brand || '') + '] ' + Domain.logProductName(lg);
+            var product = Domain.resolveLogProduct(lg);
+            var k = '[' + (product.brand || '') + '] ' + product.name;
             m[k] = (m[k] || 0) + 1;
           });
           return Object.keys(m).map(function (k) { return Utils.escapeHtml(k) + ' ×' + m[k] + '次'; }).join(' · ');

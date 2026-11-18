@@ -182,8 +182,23 @@
       (before.sharedOpenedDate === '' || Utils.normalizeDateStr(before.sharedOpenedDate) === before.sharedOpenedDate));
   };
 
-  Domain.logProductName = function (log) {
-    return log.name + (log.flavorName ? ' · ' + log.flavorName : '');
+  Domain.resolveLogProduct = function (log) {
+    var item;
+    if (log.itemId) {
+      item = state.items.find(function (entry) { return entry.id === log.itemId; });
+      if (!item) {
+        // Only use an archive with an explicit, unambiguous link to the original batch.
+        var archives = state.items.filter(function (entry) {
+          return entry.sourceBatchId === log.itemId && entry.quantity === 0;
+        });
+        if (archives.length === 1) item = archives[0];
+      }
+    }
+    var product = item || log;
+    return {
+      brand: product.brand,
+      name: product.name + (log.flavorName ? ' · ' + log.flavorName : '')
+    };
   };
 
   Domain.sanitizeItem = function (raw, fallbackIdx) {

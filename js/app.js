@@ -72,7 +72,8 @@
     var st = MP.state;
     var targetLog = st.logs.find(function (lg) { return lg.id === logId; });
     if (!targetLog) return;
-    var logTitle = '「' + targetLog.date + ' ' + targetLog.brand + ' ' + targetLog.name + ' (' + targetLog.amount + ')」';
+    var product = Domain.resolveLogProduct(targetLog);
+    var logTitle = '「' + targetLog.date + ' ' + product.brand + ' ' + product.name + ' (' + targetLog.amount + ')」';
     var canRevert = targetLog.itemId && (targetLog.flavorChange || Number(targetLog.deductedUnit) > 0 || Number(targetLog.deductedFrac) > 0);
     var revertOpt = canRevert ? { label: '🔄 同时退回该笔记录扣减的罐头余量 / 库存数量', defaultChecked: true } : null;
     UI.openConfirm('删除饮食记录？', '确定要删除 ' + logTitle + ' 吗？', '确认删除', function (doRevert) {

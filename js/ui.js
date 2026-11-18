@@ -885,6 +885,7 @@
         '</div>';
     } else {
       timelineEl.innerHTML = dayLogs.map(function (lg) {
+        var product = Domain.resolveLogProduct(lg);
         var catInfo = MP.CATEGORIES[lg.category] || MP.CATEGORIES.dry;
         return (
           '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:11px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
@@ -894,7 +895,7 @@
                 '<span style="font-size:11px;font-weight:700;color:#44403C;background:#E7E5E4;padding:2px 7px;border-radius:7px;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
                 '<span style="font-size:12px;font-weight:800;color:#15803D;background:#DCFCE7;padding:2px 8px;border-radius:7px;">份量：' + Utils.escapeHtml(lg.amount || '1份') + '</span>' +
               '</div>' +
-              '<div style="font-size:14px;font-weight:800;color:#1C1917;">[' + Utils.escapeHtml(lg.brand) + '] ' + Utils.escapeHtml(Domain.logProductName(lg)) + '</div>' +
+              '<div style="font-size:14px;font-weight:800;color:#1C1917;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
               (lg.note ? '<div style="margin-top:3px;font-size:12px;color:#57534E;">💬 ' + Utils.escapeHtml(lg.note) + '</div>' : '') +
               (lg.nextDueDate ? '<div style="margin-top:3px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒日：' + Utils.escapeHtml(lg.nextDueDate) + '</div>' : '') +
             '</div>' +
@@ -917,7 +918,8 @@
         ? '<span style="color:#A8A29E;">未记录</span>'
         : dLogs.map(function (lg) {
             var ci = MP.CATEGORIES[lg.category] || MP.CATEGORIES.dry;
-            return ci.icon + Utils.escapeHtml(lg.brand) + '(' + Utils.escapeHtml(lg.amount) + ')';
+            var product = Domain.resolveLogProduct(lg);
+            return ci.icon + Utils.escapeHtml([product.brand, product.name].filter(Boolean).join(' ')) + '(' + Utils.escapeHtml(lg.amount) + ')';
           }).join(' · ');
 
       sevenHtml.push(
@@ -982,7 +984,8 @@
       if (catF === 'group_food' && MP.getCategoryGroup(lg.category) !== 'food') return false;
       else if (catF !== 'all' && catF !== 'group_food' && lg.category !== catF) return false;
       if (q) {
-        var hay = [lg.date, lg.mealSlot, lg.brand, Domain.logProductName(lg), lg.amount, lg.note].join(' ').toLowerCase();
+        var product = Domain.resolveLogProduct(lg);
+        var hay = [lg.date, lg.mealSlot, product.brand, product.name, lg.amount, lg.note].join(' ').toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       return true;
@@ -1044,6 +1047,7 @@
       var dayHeader = dStr + ' ' + Utils.getWeekdayName(dStr) + rel;
 
       var rowsHtml = items.map(function (lg) {
+        var product = Domain.resolveLogProduct(lg);
         var catInfo = MP.CATEGORIES[lg.category] || MP.CATEGORIES.dry;
         return (
           '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:10px;background:#FFFFFF;border:1px solid #E7E5E4;">' +
@@ -1053,7 +1057,7 @@
                 '<span style="font-size:11px;font-weight:700;color:#44403C;background:#F5F5F4;padding:1px 6px;border-radius:6px;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
                 '<span style="font-size:11px;font-weight:800;color:#15803D;background:#DCFCE7;padding:1px 7px;border-radius:6px;">' + Utils.escapeHtml(lg.amount || '1份') + '</span>' +
               '</div>' +
-              '<div style="font-size:13px;font-weight:800;color:#1C1917;">[' + Utils.escapeHtml(lg.brand) + '] ' + Utils.escapeHtml(Domain.logProductName(lg)) + '</div>' +
+              '<div style="font-size:13px;font-weight:800;color:#1C1917;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
               (lg.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">💬 ' + Utils.escapeHtml(lg.note) + '</div>' : '') +
               (lg.nextDueDate ? '<div style="margin-top:2px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒：' + Utils.escapeHtml(lg.nextDueDate) + '</div>' : '') +
             '</div>' +
