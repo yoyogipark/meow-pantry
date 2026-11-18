@@ -1,0 +1,623 @@
+/* Meow Pantry Dual Storage Engine (Singleton IndexedDB + LocalStorage + Timestamp Sync + Validated Backup/Restore) */
+(function (global) {
+  'use strict';
+  var MP = global.MeowPantry = global.MeowPantry || {};
+  var Utils = MP.Utils;
+  var Domain = MP.Domain;
+  var Storage = MP.Storage = {};
+
+  var dbInstance = null;
+  var dbOpeningCallbacks = null;
+
+  Storage.openIDB = function (callback) {
+    if (dbInstance) {
+      callback(dbInstance);
+      return;
+    }
+    if (dbOpeningCallbacks) {
+      dbOpeningCallbacks.push(callback);
+      return;
+    }
+    try {
+      if (!global.indexedDB) {
+        MP.state.storageHealth.idbAvailable = false;
+        callback(null);
+        return;
+      }
+      dbOpeningCallbacks = [callback];
+      var req = global.indexedDB.open(MP.IDB_CONFIG.NAME, MP.IDB_CONFIG.VERSION);
+      req.onupgradeneeded = function (ev) {
+        var db = ev.target.result;
+        if (!db.objectStoreNames.contains(MP.IDB_CONFIG.STORE)) {
+          db.createObjectStore(MP.IDB_CONFIG.STORE);
+        }
+      };
+      req.onsuccess = function (ev) {
+        dbInstance = ev.target.result;
+        MP.state.storageHealth.idbAvailable = true;
+        dbInstance.onversionchange = function () {
+          try { dbInstance.close(); } catch (e) {}
+          dbInstance = null;
+        };
+        dbInstance.onclose = function () {
+          dbInstance = null;
+        };
+        var cbs = dbOpeningCallbacks || [];
+        dbOpeningCallbacks = null;
+        for (var i = 0; i < cbs.length; i++) cbs[i](dbInstance);
+      };
+      req.onerror = function () {
+        MP.state.storageHealth.idbAvailable = false;
+        var cbs = dbOpeningCallbacks || [];
+        dbOpeningCallbacks = null;
+        for (var i = 0; i < cbs.length; i++) cbs[i](null);
+      };
+      req.onblocked = function () {
+        var cbs = dbOpeningCallbacks || [];
+        dbOpeningCallbacks = null;
+        for (var i = 0; i < cbs.length; i++) cbs[i](null);
+      };
+    } catch (err) {
+      MP.state.storageHealth.idbAvailable = false;
+      dbOpeningCallbacks = null;
+      callback(null);
+    }
+  };
+
+  Storage.applyLoadedSettings = function (pSet) {
+    if (!pSet || typeof pSet !== 'object') return;
+    var st = MP.state;
+    if (typeof pSet.warnDays === 'number' && pSet.warnDays > 0) st.settings.warnDays = pSet.warnDays;
+    if (pSet.defaultCurrency === 'JPY' || pSet.defaultCurrency === 'CNY') {
+      st.settings.defaultCurrency = pSet.defaultCurrency;
+    }
+    if (typeof pSet.pantryPageSize === 'number' && pSet.pantryPageSize > 0) {
+      st.pantryPageSize = pSet.pantryPageSize;
+      st.settings.pantryPageSize = pSet.pantryPageSize;
+    }
+    if (pSet.pantryDisplayMode === 'compact' || pSet.pantryDisplayMode === 'card') {
+      st.pantryDisplayMode = pSet.pantryDisplayMode;
+      st.settings.pantryDisplayMode = pSet.pantryDisplayMode;
+    }
+    if (typeof pSet.lastBackupDate === 'string') {
+      st.settings.lastBackupDate = pSet.lastBackupDate;
+    }
+    if (typeof pSet.unsavedChangesCount === 'number' && pSet.unsavedChangesCount >= 0) {
+      st.settings.unsavedChangesCount = pSet.unsavedChangesCount;
+    }
+    if (typeof pSet.lastSavedAt === 'number' && pSet.lastSavedAt > 0) {
+      st.settings.lastSavedAt = pSet.lastSavedAt;
+    }
+    st.settings.schemaVersion = MP.SCHEMA_VERSION;
+    // Strip legacy unused keys if any existed
+    delete st.settings.darkMode;
+    delete st.settings.showImages;
+  };
+
+  Storage.saveToStorage = function (isSilentInit, onComplete) {
+    var st = MP.state;
+    if (!isSilentInit) {
+      st.settings.unsavedChangesCount = (Number(st.settings.unsavedChangesCount) || 0) + 1;
+    }
+    var nowTs = Date.now();
+    // Ensure strictly monotonic timestamp even if two saves occur in the same millisecond
+    if (nowTs <= (st.settings.lastSavedAt || 0)) {
+      nowTs = (st.settings.lastSavedAt || 0) + 1;
+    }
+    st.settings.lastSavedAt = nowTs;
+    st.settings.schemaVersion = MP.SCHEMA_VERSION;
+
+    var itemsPayload = JSON.stringify(st.items);
+    var logsPayload = JSON.stringify(st.logs);
+    var histPayload = JSON.stringify(st.stockHistory);
+    var fullSettingsPayload = JSON.stringify(Object.assign({}, st.settings, { lsSlimMode: false }));
+
+    // 1. Synchronous LocalStorage write (with automatic photo-stripping fallback if 5MB quota exceeded)
+    try {
+      global.localStorage.setItem(MP.STORAGE_KEYS.LOGS, logsPayload);
+      global.localStorage.setItem(MP.STORAGE_KEYS.STOCK_HISTORY, histPayload);
+      try {
+        global.localStorage.setItem(MP.STORAGE_KEYS.ITEMS, itemsPayload);
+        global.localStorage.setItem(MP.STORAGE_KEYS.SETTINGS, fullSettingsPayload);
+      } catch (quotaErr) {
+        var slimItems = st.items.map(function (it) {
+          var copy = Object.assign({}, it);
+          delete copy.imageData;
+          return copy;
+        });
+        global.localStorage.setItem(MP.STORAGE_KEYS.ITEMS, JSON.stringify(slimItems));
+        global.localStorage.setItem(MP.STORAGE_KEYS.SETTINGS, JSON.stringify(Object.assign({}, st.settings, { lsSlimMode: true })));
+      }
+      st.storageHealth.lsAvailable = true;
+    } catch (lsErr) {
+      st.storageHealth.lsAvailable = false;
+    }
+
+    // 2. Asynchronous IndexedDB full write (retains full compressed photos up to hundreds of MB)
+    Storage.openIDB(function (db) {
+      if (!db) {
+        if (typeof onComplete === 'function') onComplete(false);
+        return;
+      }
+      try {
+        var tx = db.transaction(MP.IDB_CONFIG.STORE, 'readwrite');
+        var store = tx.objectStore(MP.IDB_CONFIG.STORE);
+        store.put(itemsPayload, MP.STORAGE_KEYS.ITEMS);
+        store.put(fullSettingsPayload, MP.STORAGE_KEYS.SETTINGS);
+        store.put(logsPayload, MP.STORAGE_KEYS.LOGS);
+        store.put(histPayload, MP.STORAGE_KEYS.STOCK_HISTORY);
+        tx.oncomplete = function () {
+          if (typeof onComplete === 'function') onComplete(true);
+        };
+        tx.onerror = function () {
+          if (typeof onComplete === 'function') onComplete(false);
+        };
+      } catch (txErr) {
+        if (typeof onComplete === 'function') onComplete(false);
+      }
+    });
+  };
+
+  function safeJsonParse(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    try {
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Rehydrate imageData from IDB items when LocalStorage had newer data saved in 5MB slim mode
+  function rehydrateImagesFromIdb(primaryItems, idbItems) {
+    if (!Array.isArray(primaryItems) || !Array.isArray(idbItems)) return primaryItems;
+    var imgMap = {};
+    for (var i = 0; i < idbItems.length; i++) {
+      var x = idbItems[i];
+      if (x && x.id && x.imageData) imgMap[x.id] = x.imageData;
+    }
+    for (var j = 0; j < primaryItems.length; j++) {
+      var p = primaryItems[j];
+      if (p && !p.imageData && imgMap[p.id]) {
+        p.imageData = imgMap[p.id];
+      }
+    }
+    return primaryItems;
+  }
+
+  Storage.loadFromStorage = function (done) {
+    var st = MP.state;
+    var lsItems = null;
+    var lsSettings = null;
+    var lsLogs = null;
+    var lsHist = null;
+    var lsSnap = null;
+
+    try {
+      lsItems = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.ITEMS));
+      lsSettings = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.SETTINGS));
+      lsLogs = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.LOGS));
+      lsHist = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.STOCK_HISTORY));
+      lsSnap = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT));
+      st.storageHealth.lsAvailable = true;
+    } catch (e) {
+      st.storageHealth.lsAvailable = false;
+    }
+
+    function finalizeLoad(chosenItems, chosenLogs, chosenHist, chosenSettings, snapObj) {
+      if (snapObj && Array.isArray(snapObj.items)) {
+        st.storageHealth.hasPreRestoreSnapshot = true;
+        st.storageHealth.preRestoreSnapshotTime = snapObj.savedAt || '';
+      } else {
+        st.storageHealth.hasPreRestoreSnapshot = false;
+        st.storageHealth.preRestoreSnapshotTime = '';
+      }
+
+      if (Array.isArray(chosenItems)) {
+        st.items = Domain.reconcileBatches(chosenItems);
+        var hasAnySample = st.items.some(function (x) { return Boolean(x.isSample); });
+        var rawLogs = Array.isArray(chosenLogs) ? chosenLogs : (hasAnySample ? Domain.buildSampleLogs() : []);
+        st.logs = rawLogs.map(Domain.sanitizeLog).filter(Boolean);
+        var rawHist = Array.isArray(chosenHist) ? chosenHist : [];
+        st.stockHistory = rawHist.map(Domain.sanitizeStockHistoryEntry).filter(Boolean).slice(0, MP.MAX_STOCK_HISTORY);
+        Storage.applyLoadedSettings(chosenSettings);
+      } else {
+        // Brand-new user first visit: initialize sample items & logs without touching any existing records
+        st.items = Domain.buildSampleItems();
+        st.logs = Domain.buildSampleLogs();
+        st.stockHistory = [];
+        Storage.saveToStorage(true);
+      }
+      if (typeof done === 'function') done();
+    }
+
+    Storage.openIDB(function (db) {
+      if (!db) {
+        finalizeLoad(lsItems, lsLogs, lsHist, lsSettings, lsSnap);
+        return;
+      }
+      try {
+        var tx = db.transaction(MP.IDB_CONFIG.STORE, 'readonly');
+        var store = tx.objectStore(MP.IDB_CONFIG.STORE);
+        var reqItems = store.get(MP.STORAGE_KEYS.ITEMS);
+        var reqSet = store.get(MP.STORAGE_KEYS.SETTINGS);
+        var reqLogs = store.get(MP.STORAGE_KEYS.LOGS);
+        var reqHist = store.get(MP.STORAGE_KEYS.STOCK_HISTORY);
+        var reqSnap = store.get(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT);
+
+        tx.oncomplete = function () {
+          var idbItems = safeJsonParse(reqItems.result);
+          var idbSet = safeJsonParse(reqSet.result);
+          var idbLogs = safeJsonParse(reqLogs.result);
+          var idbHist = safeJsonParse(reqHist.result);
+          var idbSnap = safeJsonParse(reqSnap.result) || lsSnap;
+
+          var idbTs = (idbSet && typeof idbSet.lastSavedAt === 'number') ? idbSet.lastSavedAt : 0;
+          var lsTs = (lsSettings && typeof lsSettings.lastSavedAt === 'number') ? lsSettings.lastSavedAt : 0;
+
+          // Timestamp-aware dual-engine conflict resolution:
+          // Prefer whichever store has a newer valid write timestamp; if equal (or v1/v2 legacy without lastSavedAt), prefer IDB for full photos!
+          if (Array.isArray(lsItems) && Array.isArray(idbItems)) {
+            if (lsTs > idbTs) {
+              var mergedLsItems = lsSettings && lsSettings.lsSlimMode
+                ? rehydrateImagesFromIdb(lsItems, idbItems)
+                : lsItems;
+              finalizeLoad(
+                mergedLsItems,
+                Array.isArray(lsLogs) ? lsLogs : idbLogs,
+                Array.isArray(lsHist) ? lsHist : idbHist,
+                lsSettings,
+                idbSnap
+              );
+              // Heal IndexedDB asynchronously with the newer state
+              Storage.saveToStorage(true);
+              return;
+            }
+            finalizeLoad(
+              idbItems,
+              Array.isArray(idbLogs) ? idbLogs : lsLogs,
+              Array.isArray(idbHist) ? idbHist : lsHist,
+              idbSet || lsSettings,
+              idbSnap
+            );
+            return;
+          }
+
+          if (Array.isArray(idbItems)) {
+            finalizeLoad(idbItems, idbLogs || lsLogs, idbHist || lsHist, idbSet || lsSettings, idbSnap);
+          } else {
+            finalizeLoad(lsItems, lsLogs, lsHist, lsSettings, idbSnap);
+          }
+        };
+
+        tx.onerror = function () {
+          finalizeLoad(lsItems, lsLogs, lsHist, lsSettings, lsSnap);
+        };
+      } catch (err) {
+        finalizeLoad(lsItems, lsLogs, lsHist, lsSettings, lsSnap);
+      }
+    });
+  };
+
+  // ==================== SAFETY SNAPSHOT BEFORE FULL OVERWRITE RESTORE ====================
+  Storage.savePreRestoreSnapshot = function (callback) {
+    var st = MP.state;
+    var snapObj = {
+      savedAt: Utils.getNowDateTimeStr(),
+      settings: Object.assign({}, st.settings),
+      items: st.items.slice(),
+      logs: st.logs.slice(),
+      stockHistory: st.stockHistory.slice()
+    };
+    var rawSnap = JSON.stringify(snapObj);
+    st.storageHealth.hasPreRestoreSnapshot = true;
+    st.storageHealth.preRestoreSnapshotTime = snapObj.savedAt;
+
+    try {
+      global.localStorage.setItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT, rawSnap);
+    } catch (e) {
+      // Ignore if localStorage 5MB is full; IndexedDB below will store full snapshot
+    }
+
+    Storage.openIDB(function (db) {
+      if (!db) {
+        if (typeof callback === 'function') callback();
+        return;
+      }
+      try {
+        var tx = db.transaction(MP.IDB_CONFIG.STORE, 'readwrite');
+        tx.objectStore(MP.IDB_CONFIG.STORE).put(rawSnap, MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT);
+        tx.oncomplete = function () {
+          if (typeof callback === 'function') callback();
+        };
+        tx.onerror = function () {
+          if (typeof callback === 'function') callback();
+        };
+      } catch (err) {
+        if (typeof callback === 'function') callback();
+      }
+    });
+  };
+
+  Storage.restorePreRestoreSnapshot = function (callback) {
+    function applySnap(snap) {
+      if (!snap || !Array.isArray(snap.items)) {
+        if (typeof callback === 'function') callback(false);
+        return;
+      }
+      MP.state.items = Domain.reconcileBatches(snap.items);
+      MP.state.logs = Array.isArray(snap.logs) ? snap.logs.map(Domain.sanitizeLog).filter(Boolean) : [];
+      MP.state.stockHistory = Array.isArray(snap.stockHistory)
+        ? snap.stockHistory.map(Domain.sanitizeStockHistoryEntry).filter(Boolean)
+        : [];
+      Storage.applyLoadedSettings(snap.settings);
+      Storage.saveToStorage(false, function () {
+        if (typeof callback === 'function') callback(true);
+      });
+    }
+
+    Storage.openIDB(function (db) {
+      if (!db) {
+        applySnap(safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT)));
+        return;
+      }
+      try {
+        var tx = db.transaction(MP.IDB_CONFIG.STORE, 'readonly');
+        var req = tx.objectStore(MP.IDB_CONFIG.STORE).get(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT);
+        tx.oncomplete = function () {
+          var snap = safeJsonParse(req.result) || safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT));
+          applySnap(snap);
+        };
+        tx.onerror = function () {
+          applySnap(safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT)));
+        };
+      } catch (e) {
+        applySnap(safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT)));
+      }
+    });
+  };
+
+  // ==================== BACKUP VALIDATION, IMPORT & EXPORT ====================
+  Storage.validateAndParseBackup = function (rawText) {
+    if (!rawText || typeof rawText !== 'string') {
+      return { ok: false, error: '备份文件内容为空' };
+    }
+    var parsed = safeJsonParse(rawText.replace(/^\uFEFF/, '').trim());
+    if (!parsed || typeof parsed !== 'object') {
+      return { ok: false, error: 'JSON 格式解析失败，请确认选择的是 .json 备份文件' };
+    }
+
+    var rawItems = null;
+    var rawLogs = [];
+    var rawHist = [];
+    var rawSettings = null;
+
+    if (Array.isArray(parsed)) {
+      // Legacy v1 array backup
+      rawItems = parsed;
+    } else if (Array.isArray(parsed.items)) {
+      // v2 / v3 structured backup
+      rawItems = parsed.items;
+      rawLogs = Array.isArray(parsed.logs) ? parsed.logs : [];
+      rawHist = Array.isArray(parsed.stockHistory) ? parsed.stockHistory : [];
+      rawSettings = (parsed.settings && typeof parsed.settings === 'object') ? parsed.settings : null;
+    } else {
+      return { ok: false, error: '未检测到有效的粮仓 items 数据结构，无法导入' };
+    }
+
+    var validItems = Domain.reconcileBatches(rawItems);
+    var validLogs = rawLogs.map(Domain.sanitizeLog).filter(Boolean);
+    var validHist = rawHist.map(Domain.sanitizeStockHistoryEntry).filter(Boolean);
+
+    return {
+      ok: true,
+      version: parsed.version || 1,
+      items: validItems,
+      logs: validLogs,
+      stockHistory: validHist,
+      settings: rawSettings
+    };
+  };
+
+  Storage.applyBackupData = function (validated, useSmartMerge, onDone) {
+    var st = MP.state;
+    var incomingItems = validated.items || [];
+    var incomingLogs = validated.logs || [];
+    var incomingHist = validated.stockHistory || [];
+
+    function finishImport() {
+      if (validated.settings) {
+        Storage.applyLoadedSettings(validated.settings);
+      }
+      st.settings.lastBackupDate = Utils.getTodayStr();
+      st.settings.unsavedChangesCount = 0;
+      Storage.saveToStorage(true, function () {
+        if (typeof onDone === 'function') onDone();
+      });
+    }
+
+    if (useSmartMerge) {
+      var curItems = st.items.filter(function (x) { return !x.isSample; });
+      var itemIdxMap = {};
+      for (var i = 0; i < curItems.length; i++) {
+        itemIdxMap[curItems[i].id] = i;
+      }
+      incomingItems.forEach(function (inc) {
+        if (!inc || inc.isSample) return;
+        if (itemIdxMap[inc.id] === undefined) {
+          itemIdxMap[inc.id] = curItems.length;
+          curItems.push(inc);
+        } else {
+          curItems[itemIdxMap[inc.id]] = inc;
+        }
+      });
+      st.items = Domain.reconcileBatches(curItems);
+
+      var curLogs = st.logs.filter(function (lg) { return !lg.isSample; });
+      var logMap = {};
+      curLogs.forEach(function (lg) { logMap[lg.id] = true; });
+      incomingLogs.forEach(function (incLg) {
+        if (!incLg || incLg.isSample) return;
+        if (!logMap[incLg.id]) {
+          curLogs.push(incLg);
+          logMap[incLg.id] = true;
+        }
+      });
+      curLogs.sort(function (a, b) { return String(b.date || '').localeCompare(String(a.date || '')); });
+      st.logs = curLogs;
+
+      var curHist = st.stockHistory.filter(function (h) { return !h.isSample; });
+      var histMap = {};
+      curHist.forEach(function (h) { histMap[h.id] = true; });
+      incomingHist.forEach(function (incH) {
+        if (!incH || incH.isSample) return;
+        if (!histMap[incH.id]) {
+          curHist.push(incH);
+          histMap[incH.id] = true;
+        }
+      });
+      curHist.sort(function (a, b) { return String(b.timestamp || '').localeCompare(String(a.timestamp || '')); });
+      st.stockHistory = curHist.slice(0, MP.MAX_STOCK_HISTORY);
+      finishImport();
+    } else {
+      // Save automatic pre-restore snapshot before full overwrite so user never loses local data accidentally!
+      Storage.savePreRestoreSnapshot(function () {
+        st.items = Domain.reconcileBatches(incomingItems);
+        st.logs = incomingLogs;
+        st.stockHistory = incomingHist.slice(0, MP.MAX_STOCK_HISTORY);
+        finishImport();
+      });
+    }
+  };
+
+  Storage.buildBackupObject = function () {
+    var st = MP.state;
+    return {
+      app: '喵喵粮仓',
+      version: 3,
+      schemaVersion: MP.SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      settings: st.settings,
+      items: st.items,
+      logs: st.logs,
+      stockHistory: st.stockHistory
+    };
+  };
+
+  Storage.triggerFileDownload = function (filename, content, mimeType) {
+    var blob = new Blob([content], { type: mimeType });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1200);
+  };
+
+  Storage.exportJsonBackup = function (onAfter) {
+    var st = MP.state;
+    st.settings.lastBackupDate = Utils.getTodayStr();
+    st.settings.unsavedChangesCount = 0;
+    Storage.saveToStorage(true);
+    var backupObj = Storage.buildBackupObject();
+    var fname = '喵喵粮仓备份_' + Utils.getTodayStr() + '.json';
+    Storage.triggerFileDownload(fname, JSON.stringify(backupObj, null, 2), 'application/json;charset=utf-8');
+    if (typeof onAfter === 'function') onAfter();
+  };
+
+  function rowsToCsv(rows) {
+    return '\uFEFF' + rows.map(function (r) {
+      return r.map(function (cell) {
+        var s = String(cell === null || cell === undefined ? '' : cell).replace(/"/g, '""');
+        return '"' + s + '"';
+      }).join(',');
+    }).join('\r\n');
+  }
+
+  Storage.exportItemsCsv = function () {
+    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已用/吃完', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '渠道/批次', '备注'];
+    var rows = [headers];
+    MP.state.items.forEach(function (it) {
+      if (it.sourceBatchId && (Number(it.quantity) || 0) <= 0) return; // avoid duplicating shadow row already counted on active batch's eatenCount
+      var ev = Domain.evaluateItem(it);
+      var catInfo = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
+      var grpInfo = MP.CATEGORY_GROUPS[catInfo.group] || MP.CATEGORY_GROUPS.food;
+      var shelfStr = it.shelfLifeValue ? (it.shelfLifeValue + (it.shelfLifeUnit === 'days' ? '天' : '个月')) : '';
+      var palObj = MP.getPalatabilityBadgeInfo(it);
+      var palStr = palObj ? palObj.label : '';
+      var eatenQty = (Number(it.quantity) || 0) > 0 ? (Number(it.eatenCount) || 0) : (Number(it.consumedCount) || Number(it.lastQuantity) || 1);
+      rows.push([
+        grpInfo.label,
+        catInfo.label,
+        it.brand || '',
+        it.name || '',
+        it.spec || '',
+        String(it.quantity),
+        String(eatenQty),
+        it.unit || '',
+        it.currency === 'JPY' ? '日元(JPY)' : '人民币(CNY)',
+        it.price ? String(it.price) : '',
+        it.prodDate || '',
+        shelfStr,
+        it.expDate || '',
+        ev.expDays !== null ? String(ev.expDays) : '',
+        it.isOpened ? '已开封' : '未开封',
+        it.openedDate || it.archivedOpenedDate || '',
+        it.openRemainFraction ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit) : '',
+        palStr,
+        it.location || '',
+        it.batchCode || '',
+        it.notes || ''
+      ]);
+    });
+    Storage.triggerFileDownload('猫咪粮仓盘点表_' + Utils.getTodayStr() + '.csv', rowsToCsv(rows), 'text/csv;charset=utf-8');
+  };
+
+  Storage.exportLogsCsv = function () {
+    var headers = ['喂食日期', '星期', '餐次时段', '属性分组', '分类', '品牌', '品名/口味', '投喂份量', '下次提醒日', '备注'];
+    var rows = [headers];
+    var sorted = MP.state.logs.slice().sort(function (a, b) {
+      return String(b.date || '').localeCompare(String(a.date || ''));
+    });
+    sorted.forEach(function (lg) {
+      var catInfo = MP.CATEGORIES[lg.category] || MP.CATEGORIES.dry;
+      var grpInfo = MP.CATEGORY_GROUPS[catInfo.group] || MP.CATEGORY_GROUPS.food;
+      rows.push([
+        lg.date || '',
+        Utils.getWeekdayName(lg.date || ''),
+        lg.mealSlot || '',
+        grpInfo.label,
+        catInfo.label,
+        lg.brand || '',
+        lg.name || '',
+        lg.amount || '',
+        lg.nextDueDate || '',
+        lg.note || ''
+      ]);
+    });
+    Storage.triggerFileDownload('猫咪饮食记录_' + Utils.getTodayStr() + '.csv', rowsToCsv(rows), 'text/csv;charset=utf-8');
+  };
+
+  Storage.exportStockHistoryCsv = function () {
+    var headers = ['变动时间', '操作类型', '分类', '品牌', '品名', '数量变化', '变动前余量', '变动后余量', '单位', '说明备注'];
+    var rows = [headers];
+    MP.state.stockHistory.forEach(function (h) {
+      var actMeta = MP.STOCK_ACTION_META[h.action] || MP.STOCK_ACTION_META.adjust;
+      var catInfo = MP.CATEGORIES[h.category] || MP.CATEGORIES.dry;
+      rows.push([
+        h.timestamp || h.date || '',
+        actMeta.label,
+        catInfo.label,
+        h.brand || '',
+        h.name || '',
+        h.deltaText || '',
+        String(h.beforeQty),
+        String(h.afterQty),
+        h.unit || '',
+        h.note || ''
+      ]);
+    });
+    Storage.triggerFileDownload('猫咪粮仓库存变动流水_' + Utils.getTodayStr() + '.csv', rowsToCsv(rows), 'text/csv;charset=utf-8');
+  };
+})(typeof window !== 'undefined' ? window : globalThis);
