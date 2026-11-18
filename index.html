@@ -95,7 +95,10 @@
     }
 
     .ios-input {
+      display: block;
       width: 100%;
+      max-width: 100%;
+      min-width: 0;
       min-height: 44px;
       padding: 10px 12px;
       border-radius: 12px;
@@ -103,8 +106,62 @@
       background-color: #FAFAF9;
       color: #1C1917;
       font-size: 15px;
+      line-height: 1.35;
       outline: none;
+      box-sizing: border-box;
       transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+
+    /* Bulletproof iOS Safari/Chrome WebKit date wrapper (prevents iOS content-box +24px padding overflow) */
+    .ios-date-wrap {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      max-width: 100%;
+      min-height: 44px;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid #D6D3D1;
+      background-color: #FFFFFF;
+      box-sizing: border-box;
+      overflow: hidden;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ios-date-wrap:focus-within {
+      border-color: #EA580C;
+      box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+    }
+
+    .ios-date-wrap input[type="date"] {
+      -webkit-appearance: none;
+      appearance: none;
+      display: block;
+      flex: 1 1 auto;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      height: 42px;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 0 !important;
+      outline: none !important;
+      background: transparent !important;
+      color: #1C1917;
+      font-size: 15px;
+      font-family: inherit;
+      text-align: left;
+      box-sizing: border-box;
+    }
+
+    input[type="date"].ios-input::-webkit-date-and-time-value {
+      text-align: left;
+      margin: 0;
+    }
+
+    .grid-safe > * {
+      min-width: 0;
+      max-width: 100%;
     }
 
     .ios-input:focus {
@@ -186,6 +243,7 @@
       background: #FFFFFF;
       border-radius: 24px 24px 0 0;
       overflow-y: auto;
+      overflow-x: hidden;
       padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
       box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.15);
       animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -436,6 +494,16 @@
         </div>
       </div>
 
+      <!-- Default Currency Preference -->
+      <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
+        <h2 class="text-base font-bold text-stone-900 mb-1" style="margin:0 0 4px 0;font-size:16px;">💴 新录入默认币种</h2>
+        <p class="text-xs text-stone-500 mb-3" style="margin:0 0 10px 0;font-size:12px;color:#78716C;">新增口粮时默认选中的货币（录入时也可随时单条切换人民币/日元，盘点总值会按币种分开统计）</p>
+        <div id="defaultCurrencyGroup" class="grid-safe" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-primary">🇨🇳 人民币 (CN¥ / 元)</button>
+          <button type="button" data-def-currency="JPY" class="ios-btn ios-btn-secondary">🇯🇵 日元 (JP¥ / 円)</button>
+        </div>
+      </div>
+
       <!-- Local Data Backup & Export -->
       <div class="ios-card p-4" style="padding:16px;margin-bottom:14px;">
         <h2 class="text-base font-bold text-stone-900 mb-1" style="margin:0 0 4px 0;font-size:16px;">💾 本地数据备份与导出</h2>
@@ -550,19 +618,19 @@
         </div>
 
         <!-- Product Name / Flavor & Spec -->
-        <div class="grid grid-cols-3 gap-2.5" style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
+        <div class="grid-safe" style="display:grid;grid-template-columns:1.8fr 1fr;gap:10px;">
           <div>
             <label for="fieldName" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">品名 / 口味配方 <span style="color:#EA580C;">*</span></label>
-            <input id="fieldName" type="text" required placeholder="如：鸡肉无谷配方 / 鹿肉主食罐" class="ios-input">
+            <input id="fieldName" type="text" required placeholder="如：无谷鸡肉 / 鹿肉罐" class="ios-input">
           </div>
           <div>
             <label for="fieldSpec" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">单件规格</label>
-            <input id="fieldSpec" type="text" placeholder="如 170g / 5.4kg" class="ios-input">
+            <input id="fieldSpec" type="text" placeholder="如 170g" class="ios-input">
           </div>
         </div>
 
-        <!-- Quantity, Unit, Price -->
-        <div class="grid grid-cols-3 gap-2.5" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <!-- Quantity & Unit -->
+        <div class="grid-safe" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div>
             <label for="fieldQty" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">数量 <span style="color:#EA580C;">*</span></label>
             <input id="fieldQty" type="number" min="0" step="0.5" required value="1" class="ios-input">
@@ -578,69 +646,84 @@
               <option value="瓶">瓶</option>
             </select>
           </div>
-          <div>
-            <label for="fieldPrice" class="block text-xs font-bold text-stone-700 mb-1" style="display:block;font-size:12px;font-weight:700;margin-bottom:4px;">单价 (¥选填)</label>
-            <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input">
+        </div>
+
+        <!-- Price & Currency Selector (CNY / JPY) -->
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;">购入单价 <span style="font-weight:500;color:#78716C;">(选填 · 支持人民币/日元)</span></label>
+          </div>
+          <div class="grid-safe" style="display:grid;grid-template-columns:1.15fr 1fr;gap:8px;align-items:center;">
+            <div style="position:relative;min-width:0;">
+              <span id="pricePrefixSymbol" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:#78716C;pointer-events:none;">CN¥</span>
+              <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="如 28.5" class="ios-input" style="padding-left:44px;">
+            </div>
+            <div id="currencyToggleGroup" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#F5F5F4;padding:3px;border-radius:12px;border:1px solid #E7E5E4;">
+              <button type="button" data-form-currency="CNY" style="min-height:36px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;">🇨🇳 人民币</button>
+              <button type="button" data-form-currency="JPY" style="min-height:36px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;">🇯🇵 日元</button>
+            </div>
           </div>
         </div>
 
-        <!-- Date Calculation Box -->
-        <div class="p-3.5 rounded-2xl bg-orange-50/70 border border-orange-200/80 space-y-2.5" style="padding:14px;border-radius:16px;background:#FFF7ED;border:1px solid #FED7AA;">
-          <div class="flex items-center justify-between" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <span class="text-xs font-bold text-orange-900" style="font-size:12px;font-weight:700;color:#7C2D12;">📅 生产日期 · 保质期 · 过期日自动互推</span>
-            <span id="dateCalcHint" class="text-xs text-orange-700" style="font-size:11px;color:#C2410C;">填任意两项自动推算</span>
+        <!-- Date Calculation Box (iOS WebKit Overflow-Safe Stacked Layout) -->
+        <div style="padding:14px;border-radius:16px;background:#FFF7ED;border:1px solid #FED7AA;overflow:hidden;">
+          <div style="margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:800;color:#7C2D12;">📅 日期与保质期自动互推</div>
+            <div id="dateCalcHint" style="font-size:11px;color:#C2410C;margin-top:2px;">填写生产日+保质期自动算过期日；也可由到期日反推</div>
           </div>
 
-          <div class="grid grid-cols-2 gap-2.5" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
-            <div>
-              <label for="fieldProdDate" class="block text-xs font-semibold text-stone-700 mb-1" style="display:block;font-size:12px;margin-bottom:4px;">生产日期 (MFG)</label>
-              <input id="fieldProdDate" type="date" class="ios-input bg-white" style="background:#FFFFFF;">
-            </div>
-            <div>
-              <label for="fieldShelfValue" class="block text-xs font-semibold text-stone-700 mb-1" style="display:block;font-size:12px;margin-bottom:4px;">有效期 / 保质期时长</label>
-              <div class="flex gap-1" style="display:flex;gap:4px;">
-                <input id="fieldShelfValue" type="number" min="1" max="3650" placeholder="18" class="ios-input bg-white" style="background:#FFFFFF;width:58%;">
-                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input bg-white px-2" style="background:#FFFFFF;width:42%;padding-left:6px;padding-right:6px;">
-                  <option value="months">个月</option>
-                  <option value="days">天</option>
-                </select>
-              </div>
+          <!-- Production Date: Full Width so iOS Date Picker never collides -->
+          <div style="margin-bottom:10px;width:100%;max-width:100%;overflow:hidden;">
+            <label for="fieldProdDate" style="display:block;font-size:12px;font-weight:600;color:#44403C;margin-bottom:4px;">生产日期 (MFG)</label>
+            <div class="ios-date-wrap"><input id="fieldProdDate" type="date"></div>
+          </div>
+
+          <!-- Shelf Life Value + Unit -->
+          <div style="margin-bottom:8px;">
+            <label for="fieldShelfValue" style="display:block;font-size:12px;font-weight:600;color:#44403C;margin-bottom:4px;">有效期 / 保质期时长</label>
+            <div class="grid-safe" style="display:grid;grid-template-columns:1.6fr 1fr;gap:8px;">
+              <input id="fieldShelfValue" type="number" min="1" max="3650" placeholder="18" class="ios-input" style="background:#FFFFFF;">
+              <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input" style="background:#FFFFFF;">
+                <option value="months">个月</option>
+                <option value="days">天</option>
+              </select>
             </div>
           </div>
 
           <!-- Quick Shelf Life Presets -->
-          <div id="shelfPresetsBar" class="flex items-center gap-1.5 flex-wrap" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-            <span class="text-xs text-stone-500" style="font-size:11px;color:#78716C;">常用保质期：</span>
-            <button type="button" data-preset-months="6" class="text-xs bg-white border border-orange-200 text-orange-800 px-2 py-1 rounded-lg cursor-pointer" style="font-size:11px;padding:3px 8px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;">6个月</button>
-            <button type="button" data-preset-months="12" class="text-xs bg-white border border-orange-200 text-orange-800 px-2 py-1 rounded-lg cursor-pointer" style="font-size:11px;padding:3px 8px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;">12个月</button>
-            <button type="button" data-preset-months="18" class="text-xs bg-white border border-orange-200 text-orange-800 px-2 py-1 rounded-lg cursor-pointer" style="font-size:11px;padding:3px 8px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;">18个月</button>
-            <button type="button" data-preset-months="24" class="text-xs bg-white border border-orange-200 text-orange-800 px-2 py-1 rounded-lg cursor-pointer" style="font-size:11px;padding:3px 8px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;">24个月</button>
-            <button type="button" data-preset-months="36" class="text-xs bg-white border border-orange-200 text-orange-800 px-2 py-1 rounded-lg cursor-pointer" style="font-size:11px;padding:3px 8px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;">36个月</button>
+          <div id="shelfPresetsBar" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+            <span style="font-size:11px;color:#78716C;">常用：</span>
+            <button type="button" data-preset-months="6" style="font-size:11px;padding:4px 9px;border-radius:8px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;font-weight:600;cursor:pointer;">6个月</button>
+            <button type="button" data-preset-months="12" style="font-size:11px;padding:4px 9px;border-radius:8px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;font-weight:600;cursor:pointer;">12个月</button>
+            <button type="button" data-preset-months="18" style="font-size:11px;padding:4px 9px;border-radius:8px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;font-weight:600;cursor:pointer;">18个月</button>
+            <button type="button" data-preset-months="24" style="font-size:11px;padding:4px 9px;border-radius:8px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;font-weight:600;cursor:pointer;">24个月</button>
+            <button type="button" data-preset-months="36" style="font-size:11px;padding:4px 9px;border-radius:8px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;font-weight:600;cursor:pointer;">36个月</button>
           </div>
 
-          <div>
-            <div class="flex items-center justify-between mb-1" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-              <label for="fieldExpDate" class="text-xs font-bold text-stone-800" style="font-size:12px;font-weight:700;">过期日期 / 保质期至 (EXP) <span style="color:#EA580C;">*</span></label>
-              <button id="calcProdFromExpBtn" type="button" class="text-xs text-orange-700 underline bg-transparent border-0 cursor-pointer" style="font-size:11px;color:#C2410C;background:none;border:none;cursor:pointer;">进口粮仅有到期日？点此反推生产日</button>
+          <!-- Expiration Date: Full Width Overflow-Safe -->
+          <div style="width:100%;max-width:100%;overflow:hidden;">
+            <label for="fieldExpDate" style="display:block;font-size:12px;font-weight:800;color:#1C1917;margin-bottom:4px;">过期日期 / 保质期至 (EXP) <span style="color:#EA580C;">*</span></label>
+            <div class="ios-date-wrap"><input id="fieldExpDate" type="date" required style="font-weight:700;"></div>
+            <div style="margin-top:6px;display:flex;justify-content:flex-end;">
+              <button id="calcProdFromExpBtn" type="button" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;border:1px solid #FDBA74;padding:4px 10px;border-radius:999px;cursor:pointer;">进口粮仅有到期日？点此反推生产日</button>
             </div>
-            <input id="fieldExpDate" type="date" required class="ios-input bg-white font-semibold" style="background:#FFFFFF;">
           </div>
         </div>
 
-        <!-- Opened Status Toggle -->
-        <div class="p-3 rounded-2xl bg-stone-50 border border-stone-200" style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;">
-          <label class="flex items-center justify-between cursor-pointer" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-            <span class="text-xs font-bold text-stone-800" style="font-size:13px;font-weight:700;">🔓 已拆封（追踪开封后保鲜期）</span>
-            <input id="fieldIsOpened" type="checkbox" class="w-5 h-5 accent-orange-600" style="width:20px;height:20px;">
+        <!-- Opened Status Toggle (Stacked Date Input so iOS never overflows) -->
+        <div style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;overflow:hidden;">
+          <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+            <span style="font-size:13px;font-weight:700;color:#1C1917;">🔓 已拆封（追踪开封后保鲜期）</span>
+            <input id="fieldIsOpened" type="checkbox" style="width:20px;height:20px;accent-color:#EA580C;">
           </label>
-          <div id="openedExtraFields" class="grid grid-cols-2 gap-2.5 mt-2.5 hidden-view" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
-            <div>
-              <label for="fieldOpenedDate" class="block text-xs text-stone-600 mb-1" style="display:block;font-size:11px;margin-bottom:4px;">开封日期</label>
-              <input id="fieldOpenedDate" type="date" class="ios-input bg-white text-xs" style="background:#FFF;min-height:38px;">
+          <div id="openedExtraFields" class="hidden-view" style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+            <div style="width:100%;max-width:100%;overflow:hidden;">
+              <label for="fieldOpenedDate" style="display:block;font-size:11px;color:#57534E;margin-bottom:4px;">开封日期</label>
+              <div class="ios-date-wrap" style="min-height:40px;"><input id="fieldOpenedDate" type="date" style="height:38px;"></div>
             </div>
             <div>
-              <label for="fieldOpenLimit" class="block text-xs text-stone-600 mb-1" style="display:block;font-size:11px;margin-bottom:4px;">开封后建议吃完(天)</label>
-              <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input bg-white text-xs" style="background:#FFF;min-height:38px;">
+              <label for="fieldOpenLimit" style="display:block;font-size:11px;color:#57534E;margin-bottom:4px;">开封后建议几天内吃完</label>
+              <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input" style="background:#FFF;min-height:40px;">
             </div>
           </div>
         </div>
@@ -909,8 +992,9 @@
             openDaysLimit: 2,
             palatability: 'love',
             location: '餐边柜第2层',
-            batchCode: '批次24B',
-            price: 28.5,
+            batchCode: '日本宠粮店购入',
+            price: 460,
+            currency: 'JPY',
             notes: '临期批次优先投喂，每次半罐兑温水',
             isSample: true
           },
@@ -962,11 +1046,28 @@
       }
 
       // ==================== STATE ====================
+      var CURRENCIES = {
+        CNY: { code: 'CNY', label: '人民币', prefix: 'CN¥', unitWord: '元' },
+        JPY: { code: 'JPY', label: '日元', prefix: 'JP¥', unitWord: '円' }
+      };
+
+      function formatMoney(price, currency) {
+        var num = Number(price);
+        if (!num || num <= 0) return '';
+        var cur = currency === 'JPY' ? 'JPY' : 'CNY';
+        if (cur === 'JPY') {
+          return Math.round(num).toLocaleString('en-US') + '円';
+        }
+        var fixed = Math.round(num * 100) % 100 === 0 ? String(Math.round(num)) : num.toFixed(1);
+        return 'CN¥' + fixed;
+      }
+
       var state = {
         items: [],
         settings: {
           warnDays: 60,
-          showImages: true
+          showImages: true,
+          defaultCurrency: 'CNY'
         },
         activeTab: 'pantry',
         statusFilter: 'in_stock', // 'in_stock' | 'expiring' | 'expired' | 'empty'
@@ -976,7 +1077,8 @@
         searchQuery: '',
         formCat: 'dry',
         formPal: '',
-        formImage: ''
+        formImage: '',
+        formCurrency: 'CNY'
       };
 
       var pendingConfirmFn = null;
@@ -1032,6 +1134,9 @@
         if (!pSet || typeof pSet !== 'object') return;
         if (typeof pSet.warnDays === 'number') state.settings.warnDays = pSet.warnDays;
         if (typeof pSet.showImages === 'boolean') state.settings.showImages = pSet.showImages;
+        if (pSet.defaultCurrency === 'JPY' || pSet.defaultCurrency === 'CNY') {
+          state.settings.defaultCurrency = pSet.defaultCurrency;
+        }
       }
 
       function loadFromStorage(done) {
@@ -1400,7 +1505,7 @@
           var metaTags = [];
           if (it.spec) metaTags.push('规格 ' + escapeHtml(it.spec));
           if (it.location) metaTags.push('📍 ' + escapeHtml(it.location));
-          if (it.price) metaTags.push('¥' + Number(it.price).toFixed(1) + '/' + escapeHtml(it.unit || '件'));
+          if (it.price) metaTags.push(formatMoney(it.price, it.currency) + '/' + escapeHtml(it.unit || '件'));
           if (it.batchCode) metaTags.push(escapeHtml(it.batchCode));
 
           var thumbHtml = '';
@@ -1472,7 +1577,8 @@
 
       // ==================== RENDER STATS & BRANDS VIEW ====================
       function renderStatsView() {
-        var totalVal = 0;
+        var totalCny = 0;
+        var totalJpy = 0;
         var catStats = {};
         Object.keys(CATEGORIES).forEach(function (k) {
           catStats[k] = { skus: 0, totalQty: 0, unit: CATEGORIES[k].defaultUnit };
@@ -1481,14 +1587,24 @@
         state.items.forEach(function (it) {
           var q = Number(it.quantity) || 0;
           if (q > 0) {
-            if (it.price) totalVal += q * Number(it.price);
+            if (it.price) {
+              if (it.currency === 'JPY') {
+                totalJpy += q * Number(it.price);
+              } else {
+                totalCny += q * Number(it.price);
+              }
+            }
             var ck = catStats[it.category] ? it.category : 'dry';
             catStats[ck].skus += 1;
             catStats[ck].totalQty += q;
           }
         });
 
-        document.getElementById('totalValueBadge').textContent = '估算总值 ¥' + totalVal.toFixed(0);
+        var valParts = [];
+        if (totalCny > 0) valParts.push('CN¥' + Math.round(totalCny).toLocaleString('en-US'));
+        if (totalJpy > 0) valParts.push(Math.round(totalJpy).toLocaleString('en-US') + '円');
+        document.getElementById('totalValueBadge').textContent =
+          valParts.length ? ('在库总值 ' + valParts.join(' + ')) : '在库总值 ¥0';
 
         var catGridHtml = Object.keys(CATEGORIES).map(function (k) {
           var c = CATEGORIES[k];
@@ -1585,6 +1701,13 @@
           } else {
             btns[i].className = 'ios-btn ios-btn-secondary';
           }
+        }
+        var curBtns = document.querySelectorAll('#defaultCurrencyGroup [data-def-currency]');
+        for (var j = 0; j < curBtns.length; j++) {
+          var ck = curBtns[j].getAttribute('data-def-currency');
+          curBtns[j].className = (ck === (state.settings.defaultCurrency || 'CNY'))
+            ? 'ios-btn ios-btn-primary'
+            : 'ios-btn ios-btn-secondary';
         }
         document.getElementById('toggleShowImages').checked = (state.settings.showImages !== false);
         var customPhotos = state.items.filter(function (it) { return Boolean(it.imageData); }).length;
@@ -1696,6 +1819,28 @@
         document.getElementById('photoPreviewBackdrop').classList.add('hidden-view');
       }
 
+      function syncModalCurrencyUI(curCode) {
+        var cur = curCode === 'JPY' ? 'JPY' : 'CNY';
+        state.formCurrency = cur;
+        var prefixEl = document.getElementById('pricePrefixSymbol');
+        var priceInput = document.getElementById('fieldPrice');
+        if (cur === 'JPY') {
+          prefixEl.textContent = 'JP¥';
+          priceInput.step = '1';
+          priceInput.placeholder = '如 380';
+        } else {
+          prefixEl.textContent = 'CN¥';
+          priceInput.step = '0.01';
+          priceInput.placeholder = '如 28.5';
+        }
+        var btns = document.querySelectorAll('#currencyToggleGroup [data-form-currency]');
+        for (var i = 0; i < btns.length; i++) {
+          var active = btns[i].getAttribute('data-form-currency') === cur;
+          btns[i].style.background = active ? '#1C1917' : 'transparent';
+          btns[i].style.color = active ? '#FFFFFF' : '#57534E';
+        }
+      }
+
       function syncModalPalatabilityUI(palKey) {
         state.formPal = palKey || '';
         var btns = document.querySelectorAll('#palatabilityGroup [data-pal]');
@@ -1758,6 +1903,7 @@
         var defaultCat = state.catFilter !== 'all' ? state.catFilter : 'dry';
         syncModalCategoryUI(defaultCat, true);
         autoComputeExpDate();
+        syncModalCurrencyUI(state.settings.defaultCurrency || 'CNY');
         syncModalPalatabilityUI('');
         syncOpenedFieldsVisibility();
         renderQuickBrandChips();
@@ -1795,6 +1941,7 @@
         state.formImage = item.imageData || '';
         document.getElementById('fieldPhotoInput').value = '';
         syncModalCategoryUI(item.category || 'dry', false);
+        syncModalCurrencyUI(item.currency || 'CNY');
         syncModalPalatabilityUI(item.palatability || '');
         syncOpenedFieldsVisibility();
         renderQuickBrandChips();
@@ -1833,7 +1980,7 @@
       }
 
       function exportCsvTable() {
-        var headers = ['分类', '品牌', '品名/口味', '规格', '数量', '单位', '单价(元)', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '适口性', '存放位置', '渠道/批次', '备注'];
+        var headers = ['分类', '品牌', '品名/口味', '规格', '数量', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '适口性', '存放位置', '渠道/批次', '备注'];
         var rows = [headers];
         state.items.forEach(function (it) {
           var ev = evaluateItem(it);
@@ -1847,6 +1994,7 @@
             it.spec || '',
             String(it.quantity),
             it.unit || '',
+            it.currency === 'JPY' ? '日元(JPY)' : '人民币(CNY)',
             it.price ? String(it.price) : '',
             it.prodDate || '',
             shelfStr,
@@ -2038,6 +2186,21 @@
           document.getElementById('fieldBrand').value = btn.getAttribute('data-pick-brand');
         });
 
+        document.getElementById('currencyToggleGroup').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-form-currency]');
+          if (!btn) return;
+          syncModalCurrencyUI(btn.getAttribute('data-form-currency'));
+        });
+
+        document.getElementById('defaultCurrencyGroup').addEventListener('click', function (ev) {
+          var btn = ev.target.closest('[data-def-currency]');
+          if (!btn) return;
+          state.settings.defaultCurrency = btn.getAttribute('data-def-currency') === 'JPY' ? 'JPY' : 'CNY';
+          saveToStorage();
+          renderAll();
+          showToast('默认币种已设为' + (state.settings.defaultCurrency === 'JPY' ? '日元 (円)' : '人民币 (CN¥)'));
+        });
+
         document.getElementById('palatabilityGroup').addEventListener('click', function (ev) {
           var btn = ev.target.closest('[data-pal]');
           if (!btn) return;
@@ -2107,6 +2270,7 @@
             quantity: Math.max(0, Number(document.getElementById('fieldQty').value) || 0),
             unit: document.getElementById('fieldUnit').value,
             price: document.getElementById('fieldPrice').value ? Number(document.getElementById('fieldPrice').value) : 0,
+            currency: state.formCurrency || 'CNY',
             prodDate: document.getElementById('fieldProdDate').value,
             shelfLifeValue: document.getElementById('fieldShelfValue').value ? Number(document.getElementById('fieldShelfValue').value) : '',
             shelfLifeUnit: document.getElementById('fieldShelfUnit').value,
