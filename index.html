@@ -403,7 +403,7 @@
         >
         <div style="min-width:0;flex:1;">
           <h1 style="margin:0;font-size:19px;font-weight:800;color:#1C1917;white-space:nowrap;line-height:1.2;">喵喵粮仓</h1>
-          <p id="headerSubtitle" style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">在库 4 款 · 4 品牌 · 🔒只读</p>
+          <p id="headerSubtitle" style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">在库 4 款 · 涵盖 4 个品牌</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
@@ -2186,7 +2186,7 @@
         });
         var brandTotal = Object.keys(brandsSet).length;
         document.getElementById('headerSubtitle').textContent =
-          '在库 ' + activeCount + ' 款 · ' + brandTotal + ' 品牌 · ' + (state.editMode ? '✏️编辑中' : '🔒只读');
+          '在库 ' + activeCount + ' 款 · 涵盖 ' + brandTotal + ' 个品牌';
       }
 
       function renderStatusCounts() {
@@ -2712,38 +2712,32 @@
               openedBannerHtml +
               (it.notes ? '<div style="margin-top:8px;font-size:12px;color:#57534E;background:#F5F5F4;padding:6px 10px;border-radius:8px;">💬 ' + escapeHtml(it.notes) + '</div>' : '') +
 
-              '<!-- Card Actions Footer (Read-Only Stock Breakdown + Per-Unit Open/Consume) -->' +
-              '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
-                '<div style="display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;background:#F5F5F4;border:1px solid #E7E5E4;border-radius:10px;padding:5px 10px;" title="点击右侧「编辑」可直接修改库存数">' +
-                  (ev.status === 'empty'
-                    ? '<span style="font-size:11px;font-weight:600;color:#78716C;">累计吃完</span>' +
-                      '<span style="font-size:14px;font-weight:800;color:#15803D;">' + (Number(it.consumedCount) || Number(it.lastQuantity) || 1) + ' ' + unitStr + '</span>' +
-                      (it.finishedDate ? '<span style="font-size:11px;color:#78716C;">(' + escapeHtml(it.finishedDate) + ')</span>' : '')
-                    : '<span style="font-size:11px;font-weight:600;color:#78716C;">在库</span>' +
-                      '<span style="font-size:14px;font-weight:800;color:#1C1917;">' + qtyNum + ' ' + unitStr + '</span>' +
-                      (Number(it.eatenCount) > 0
-                        ? '<span style="font-size:11px;font-weight:700;color:#15803D;background:#DCFCE7;padding:1px 6px;border-radius:6px;">已吃' + Number(it.eatenCount) + unitStr + '</span>'
-                        : ''
-                      ) +
-                      (it.isOpened && qtyNum > 1
-                        ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">' + Math.max(0, Math.round((qtyNum - 1) * 100) / 100) + '未拆·1拆' + (fracBannerTxt ? ('(' + fracBannerTxt + ')') : '') + '</span>'
-                        : (it.isOpened && qtyNum > 0 ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中' + (fracBannerTxt ? ('·' + fracBannerTxt) : '') + '</span>' : '')
-                      )
-                  ) +
+              '<!-- Card Actions Footer: Row 1 (Stock + Quick Feed) + Row 2 (Symmetrical 4-Column Edit Bar) -->' +
+              '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+                  '<div style="display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;background:#F5F5F4;border:1px solid #E7E5E4;border-radius:10px;padding:5px 10px;min-width:0;">' +
+                    '<span style="font-size:11px;font-weight:600;color:#78716C;">在库</span>' +
+                    '<span style="font-size:14px;font-weight:800;color:#1C1917;">' + qtyNum + ' ' + unitStr + '</span>' +
+                    (Number(it.eatenCount) > 0
+                      ? '<span style="font-size:11px;font-weight:700;color:#15803D;background:#DCFCE7;padding:1px 6px;border-radius:6px;">已吃' + Number(it.eatenCount) + unitStr + '</span>'
+                      : ''
+                    ) +
+                    (it.isOpened && qtyNum > 1
+                      ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">' + Math.max(0, Math.round((qtyNum - 1) * 100) / 100) + '未拆·1拆' + (fracBannerTxt ? ('(' + fracBannerTxt + ')') : '') + '</span>'
+                      : (it.isOpened && qtyNum > 0 ? '<span style="font-size:11px;font-weight:700;color:#EA580C;background:#FFEDD5;padding:1px 6px;border-radius:6px;">拆封中' + (fracBannerTxt ? ('·' + fracBannerTxt) : '') + '</span>' : '')
+                    ) +
+                  '</div>' +
+                  '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" style="padding:6px 12px;border-radius:10px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🐾 记喂食</button>' +
                 '</div>' +
-                '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' +
-                  (ev.status !== 'empty'
-                    ? '<button type="button" data-action="log-feed" data-id="' + escapeHtml(it.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;">🐾 记喂食</button>' +
-                      '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 9px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FFFFFF') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;">' +
-                        (it.isOpened ? '🔓 1' + unitStr + '已拆' : (qtyNum > 1 ? '🔒 拆封1' + unitStr : '🔒 记开封')) +
-                      '</button>' +
-                      '<button type="button" data-action="consume-one" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 9px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:12px;font-weight:700;cursor:pointer;">' +
-                        (qtyNum > 1 ? ('✓ 吃完1' + unitStr) : '✓ 记吃完') +
-                      '</button>'
-                    : '<button type="button" data-action="restock-new" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 10px;border-radius:9px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;">＋ 同款复购入库</button>'
-                  ) +
-                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:12px;font-weight:700;cursor:pointer;">编辑</button>' +
-                  '<button type="button" data-action="delete" data-id="' + escapeHtml(it.id) + '" class="edit-only" style="padding:6px 9px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;">删除</button>' +
+                '<div class="edit-only grid-safe" style="margin-top:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
+                  '<button type="button" data-action="toggle-open" data-id="' + escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FAFAF9') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">' +
+                    (it.isOpened ? ('🔓 已拆1' + unitStr) : (qtyNum > 1 ? ('🔒 拆1' + unitStr) : '🔒 记开封')) +
+                  '</button>' +
+                  '<button type="button" data-action="consume-one" data-id="' + escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' +
+                    (qtyNum > 1 ? ('✓ 吃完1' + unitStr) : '✓ 记吃完') +
+                  '</button>' +
+                  '<button type="button" data-action="edit" data-id="' + escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">✏️ 编辑</button>' +
+                  '<button type="button" data-action="delete" data-id="' + escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">🗑️ 删除</button>' +
                 '</div>' +
               '</div>' +
             '</article>'
@@ -4938,8 +4932,14 @@
         document.getElementById('modalCatSelector').addEventListener('click', function (ev) {
           var btn = ev.target.closest('[data-form-cat]');
           if (!btn) return;
+          var newCat = btn.getAttribute('data-form-cat');
           var isEditing = Boolean(document.getElementById('fieldId').value);
-          syncModalCategoryUI(btn.getAttribute('data-form-cat'), !isEditing);
+          syncModalCategoryUI(newCat, !isEditing);
+          // Even when editing, if not currently opened, sync openDaysLimit to the new category's sensible default (e.g. 2 days for cans)
+          if (isEditing && !document.getElementById('fieldIsOpened').checked) {
+            var cInfo = CATEGORIES[newCat] || CATEGORIES.dry;
+            document.getElementById('fieldOpenLimit').value = String(cInfo.defaultOpenDays);
+          }
         });
 
         document.getElementById('quickBrandChips').addEventListener('click', function (ev) {
