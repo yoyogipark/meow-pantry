@@ -373,7 +373,16 @@ body.is-edit-mode .mode-switch-pill {
   border-color: #EA580C;
 }
 
+.status-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
 .status-card {
+  display: grid;
+  align-content: start;
   padding: 10px 10px;
   border-radius: 16px;
   border: 1.5px solid transparent;
@@ -389,6 +398,21 @@ body.is-edit-mode .mode-switch-pill {
   border-color: #EA580C;
   background: #FFF7ED;
 }
+
+.status-card-count {
+  margin-top: 2px;
+  color: var(--text-main);
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+#countExpiring:not(.is-zero) { color: var(--warn); }
+#countExpired:not(.is-zero) { color: var(--danger); }
+#countEmpty:not(.is-zero) { color: #57534E; }
+.status-card-count.is-zero { color: var(--text-muted); }
 
 .progress-track {
   width: 100%;
@@ -486,6 +510,7 @@ body.is-edit-mode .mode-switch-pill {
 .stock-piece-count {
   color: #78716C;
   font-size: 10px;
+  font-variant-numeric: tabular-nums;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
