@@ -556,7 +556,26 @@ body.is-edit-mode .mode-switch-pill {
 
 .compact-card-header {
   justify-content: space-between;
+  flex-wrap: nowrap;
   margin-bottom: 4px;
+}
+
+.compact-card-identity,
+.compact-card-controls {
+  flex-wrap: nowrap;
+}
+
+.compact-card-controls {
+  flex-shrink: 0;
+}
+
+.compact-expiry-badge {
+  white-space: nowrap;
+}
+
+.compact-expiry-badge.detail-card-status--unknown {
+  background: #F1E6D6;
+  color: #4A3A2E;
 }
 
 .compact-title {
@@ -565,6 +584,14 @@ body.is-edit-mode .mode-switch-pill {
   color: #2B2320;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.compact-title-spec {
+  margin-inline-start: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .compact-meta-row {
@@ -837,6 +864,10 @@ body.is-edit-mode .mode-switch-pill {
   overflow-wrap: anywhere;
 }
 
+.flavor-stock-finished {
+  color: #78716C;
+}
+
 #feedFlavorFields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1079,6 +1110,10 @@ body.is-edit-mode .mode-switch-pill {
 #searchInput { border: 1.5px solid var(--accent); }
 #viewPantry select.ios-input { background-color: #F1E6D6; border: 0; }
 #pantryList { padding-bottom: calc(61px + env(safe-area-inset-bottom, 0px)); }
+#pantryList:has(+ #pantryPaginationBar:not(.hidden-view)) {
+  /* 23px + the pager's 12px margin matches the 35px below it (96px − 61px). */
+  padding-bottom: 23px;
+}
 
 .detail-card-category {
   padding: 2px 6px;

@@ -529,6 +529,25 @@ async function run() {
   assert.equal(card(openedCardItem.id).querySelector('.detail-card-open-date'), null);
   console.log('Opened card layout and progress pass');
 
+  const packagedCardItem = make('packaged-card', 1, '杯', {
+    price: 3.5,
+    batchCode: '拼多多',
+    purchasePackaging: { count: 1, outerUnit: '盒', size: 4 },
+    flavors: [
+      { id: 'chicken', name: '草莓鸡', perPack: 2, quantity: 1 },
+      { id: 'rabbit', name: '蓝莓兔', perPack: 2, quantity: 0 }
+    ]
+  });
+  reset(packagedCardItem);
+  state.pantryDisplayMode = 'card';
+  ui.renderPantryList();
+  const packagedCard = card(packagedCardItem.id);
+  assert.match(packagedCard.textContent, /CN¥3\.5\/杯 · ¥14\/盒（4杯）/);
+  assert.ok(Array.from(packagedCard.querySelectorAll('.detail-card-line')).some(
+    line => line.textContent === '拼多多 · 购入 1盒装，共4杯'));
+  assert.match(packagedCard.querySelector('.flavor-stock').textContent, /剩余：草莓鸡 1 · 蓝莓兔 0/);
+  assert.equal(packagedCard.querySelector('s.flavor-stock-finished').textContent, '蓝莓兔 0');
+
   const archived = make('archive-balance', 0, '杯', { name: '同款测试', consumedCount: 2 });
   reset(archived,
     make('live-balance-a', 1, '杯', { name: archived.name, eatenCount: 2 }),
