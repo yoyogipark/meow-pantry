@@ -28,8 +28,8 @@
     return y + '-' + m + '-' + d;
   };
 
-  Utils.getNowDateTimeStr = function () {
-    var now = new Date();
+  Utils.getNowDateTimeStr = function (date) {
+    var now = date || new Date();
     var y = now.getFullYear();
     var mo = String(now.getMonth() + 1).padStart(2, '0');
     var d = String(now.getDate()).padStart(2, '0');

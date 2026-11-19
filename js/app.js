@@ -1294,18 +1294,15 @@
       UI.showToast('默认币种已设为' + (st.settings.defaultCurrency === 'JPY' ? '日元 (円)' : '人民币 (CN¥)'));
     });
 
-    document.getElementById('exportJsonBtn').addEventListener('click', function () {
-      Storage.exportJsonBackup(function () {
-        UI.renderAll();
-        UI.showToast('已生成 JSON 完整备份文件（含库存、饮食与流水）');
+    function exportJsonBackup() {
+      Storage.exportJsonBackup(function (handedOff) {
+        if (handedOff) UI.renderAll();
+        UI.showToast(handedOff ? '已发起 JSON 导出，请在浏览器中确认文件已保存' : '未能发起 JSON 导出，请重试');
       });
-    });
-    document.getElementById('quickBackupNowBtn').addEventListener('click', function () {
-      Storage.exportJsonBackup(function () {
-        UI.renderAll();
-        UI.showToast('已生成 JSON 备份文件');
-      });
-    });
+    }
+
+    document.getElementById('exportJsonBtn').addEventListener('click', exportJsonBackup);
+    document.getElementById('quickBackupNowBtn').addEventListener('click', exportJsonBackup);
     document.getElementById('dismissBackupBannerBtn').addEventListener('click', function () {
       st.backupBannerDismissedCount = Number(st.settings.unsavedChangesCount) || 0;
       document.getElementById('unbackedBanner').classList.add('hidden-view');

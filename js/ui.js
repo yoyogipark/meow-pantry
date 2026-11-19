@@ -2138,6 +2138,12 @@
     var hasCustomItems = st.items.some(function (it) { return !it.isSample; }) || st.logs.some(function (lg) { return !lg.isSample; });
     var unsaved = Number(st.settings.unsavedChangesCount) || 0;
     var lastBk = st.settings.lastBackupDate || '';
+    var lastExport = new Date(st.settings.lastJsonExportAt);
+    var exportTime = '';
+    if (Number.isFinite(lastExport.getTime())) {
+      exportTime = Utils.getNowDateTimeStr(lastExport);
+      if (lastExport.getFullYear() === new Date().getFullYear()) exportTime = exportTime.slice(5);
+    }
     var needBackup = (unsaved > 0) || (hasCustomItems && !lastBk);
     var badgeCount = unsaved > 0 ? unsaved : (needBackup ? 1 : 0);
 
@@ -2155,8 +2161,8 @@
         if (badgeCount >= 5 && st.backupBannerDismissedCount !== badgeCount) {
           topBanner.classList.remove('hidden-view');
           if (topBannerTxt) {
-            topBannerTxt.innerHTML = lastBk
-              ? ('<strong>备份提醒：</strong>自上次备份 (' + Utils.escapeHtml(lastBk) + ') 后已有 <strong>' + badgeCount + ' 项</strong>改动未备份')
+            topBannerTxt.innerHTML = exportTime
+              ? ('<strong>备份提醒：</strong>自上次发起导出 (' + Utils.escapeHtml(exportTime) + ') 后已有 <strong>' + badgeCount + ' 项</strong>改动未备份')
               : ('<strong>备份提醒：</strong>已累计 <strong>' + badgeCount + ' 项</strong>数据变动未导出 JSON 备份');
           }
         } else {
@@ -2166,7 +2172,7 @@
       if (setBadge) {
         setBadge.style.background = '#FEF2F2';
         setBadge.style.color = '#DC2626';
-        setBadge.textContent = '⚠️ ' + badgeCount + ' 项改动待备份';
+        setBadge.textContent = '⚠️ ' + badgeCount + ' 项改动待备份' + (exportTime ? ' · 上次发起 ' + exportTime : '');
       }
     } else {
       if (dotEl) dotEl.classList.add('hidden-view');
@@ -2174,7 +2180,7 @@
       if (setBadge) {
         setBadge.style.background = '#DCFCE7';
         setBadge.style.color = '#15803D';
-        setBadge.textContent = lastBk ? ('✅ 已备份 (' + lastBk + ')') : '✅ 暂无未备份改动';
+        setBadge.textContent = exportTime ? '✅ 最近发起导出 · ' + exportTime : '尚无导出时间记录';
       }
     }
 
