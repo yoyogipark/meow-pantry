@@ -25,11 +25,11 @@
       '共' + (pack.count * pack.size) + unit;
   };
 
-  UI.flavorStockText = function (item, plain) {
+  UI.flavorStockText = function (item, plain, remainingView) {
     if (!item.flavors) return '';
     return item.flavors.map(function (flavor) {
-      var text = flavor.name + ' ' + flavor.quantity + item.unit;
-      if (flavor.openedDate) {
+      var text = flavor.name + ' ' + flavor.quantity + (remainingView ? '' : item.unit);
+      if (Number(flavor.quantity) > 0 && flavor.openedDate) {
         var rest = flavor.openRemainFraction;
         var spec = Utils.parsePortionSpec(flavor.spec || item.spec);
         var left = '';
@@ -40,7 +40,11 @@
         }
         text += '（1' + item.unit + '使用中' + left + '）';
       }
-      return plain ? text : Utils.escapeHtml(text);
+      if (plain) return text;
+      var escaped = Utils.escapeHtml(text);
+      return remainingView && Number(flavor.quantity) <= 0
+        ? '<s class="flavor-stock-finished" aria-label="' + Utils.escapeHtml(flavor.name + ' 已吃完') + '">' + escaped + '</s>'
+        : escaped;
     }).join(' · ');
   };
 

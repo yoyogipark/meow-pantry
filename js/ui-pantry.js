@@ -97,7 +97,18 @@
   }
 
   function purchasePackagingText(item) {
-    return item.purchasePackaging ? Utils.escapeHtml(UI.purchasePackagingLabel(item.purchasePackaging, item.unit)) : '';
+    var pack = item.purchasePackaging;
+    return pack ? '购入 ' + Utils.escapeHtml(UI.purchasePackagingLabel(pack, item.unit)) : '';
+  }
+
+  function packagedPriceText(item, unit) {
+    var pack = item.purchasePackaging;
+    var price = Number(item.price);
+    if (!pack || !(price > 0) || !Number.isFinite(price)) return '';
+    var isYen = item.currency === 'JPY';
+    var unitPrice = isYen ? Utils.formatMoney(price, 'JPY') : 'CN¥' + Utils.round2(price);
+    var packPrice = isYen ? Utils.formatMoney(price * pack.size, 'JPY') : '¥' + Utils.round2(price * pack.size);
+    return Utils.escapeHtml(unitPrice + '/' + unit + ' · ' + packPrice + '/' + pack.outerUnit + '（' + pack.size + unit + '）');
   }
 
   function stockQuantityPill(item) {
@@ -532,7 +543,7 @@
                   '<span style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:1px 6px;border-radius:5px;">批次 #' + (grp.batches.length - bIdx) + '</span>' +
                   '<strong style="font-size:12.5px;color:#15803D;">核销 ' + bUsed + ' ' + unitStr + '</strong>' +
                   durationBadgeHtml +
-                  (packTxt ? '<span style="font-size:11px;color:#6B5A4C;">购入 ' + packTxt + '</span>' : '') +
+                  (packTxt ? '<span style="font-size:11px;color:#6B5A4C;">' + packTxt + '</span>' : '') +
                   (priceTxt ? '<span style="font-size:11px;color:#6B5A4C;">' + Utils.escapeHtml(priceTxt) + '</span>' : '') +
                 '</div>' +
                 openFinishLine +
@@ -615,45 +626,47 @@
       listEl.innerHTML = pagedItems.map(function (it) {
         var ev = Domain.evaluateItem(it);
         var catInfo = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
-        var badgeBg = '#DCFCE7';
-        var badgeText = '#15803D';
-        var badgeLabel = formatExpiryCountdown(ev);
-        if (ev.status === 'expired') {
-          badgeBg = '#FEE2E2'; badgeText = '#DC2626';
-        } else if (ev.status === 'expiring') {
-          badgeBg = '#FEF3C7'; badgeText = '#B45309';
-        }
+        var expiryDays = ev.expDays;
+        var expiryLabel = expiryDays === null ? '到期日未填'
+          : expiryDays < 0 ? '已过期 ' + Math.abs(expiryDays) + ' 天'
+          : expiryDays === 0 ? '今天到期' : '剩 ' + expiryDays + ' 天';
 
         var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit || '罐') : '';
-        var openDot = it.isOpened && ev.status !== 'empty'
-          ? '<span style="font-size:11px;font-weight:700;color:#E8590C;background:#FFEDD5;padding:1px 5px;border-radius:5px;flex-shrink:0;white-space:nowrap;">🔓' + (fracTxtCompact || '已拆') + '</span>'
-          : '';
         var palIcon = it.palatability === 'love' ? (it.category === 'med' ? '✅' : '😍') : (it.palatability === 'coax' ? (it.category === 'med' ? '💦' : '🥺') : (it.palatability === 'meh' ? (it.category === 'med' ? '⚠️' : '😒') : ''));
 
-        var compactMeta = ['<span>到期 ' + Utils.escapeHtml(it.expDate || '—') + '</span>'];
-        if (it.flavors) compactMeta.push('<span>' + UI.flavorStockText(it) + '</span>');
-        if (it.purchasePackaging) compactMeta.push('<span>购入 ' + purchasePackagingText(it) + '</span>');
-        if (it.spec) compactMeta.push('<span>' + Utils.escapeHtml(it.spec) + '</span>');
+        var compactMeta = [];
+        if (Domain.isStockOpened(it)) {
+          var openDays = ev.openRemaining;
+          var freshness = openDays === null ? '保鲜期未填'
+            : openDays < 0 ? '开封超期 ' + Math.abs(openDays) + ' 天' : '开封剩 ' + openDays + ' 天';
+          compactMeta.push('<span class="detail-card-open-badge detail-card-open-badge--' +
+            expiryTone(openDays, 2, 5) + '">🔓 ' + freshness + '</span>');
+          if (fracTxtCompact) compactMeta.push('<span>' + Utils.escapeHtml(fracTxtCompact) + '</span>');
+        }
+        if (it.flavors) compactMeta.push('<span>剩余：' + UI.flavorStockText(it, false, true) + '</span>');
+        if (it.purchasePackaging) compactMeta.push('<span>' + purchasePackagingText(it) + '</span>');
         if (it.location) compactMeta.push('<span>📍' + Utils.escapeHtml(it.location) + '</span>');
 
         return (
           '<div class="ios-card" style="padding:10px 12px;border-radius:14px;">' +
             '<div class="compact-card-header">' +
-              '<div class="compact-card-tags">' +
+              '<div class="compact-card-tags compact-card-identity">' +
                 '<span style="font-size:13.5px;flex-shrink:0;">' + catInfo.icon + '</span>' +
                 '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + Utils.escapeHtml(it.brand) + '</span>' +
                 (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
-                openDot +
               '</div>' +
-              '<div class="compact-card-tags">' +
-                '<span style="background:' + badgeBg + ';color:' + badgeText + ';padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;">' + badgeLabel + '</span>' +
+              '<div class="compact-card-tags compact-card-controls">' +
+                '<span class="detail-card-status compact-expiry-badge detail-card-status--' +
+                  expiryTone(ev.expDays, 7, 30) + '">' + Utils.escapeHtml(expiryLabel) + '</span>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:3px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#E8590C;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🐾喂</button>' +
                 '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" class="edit-only" style="padding:3px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">编辑</button>' +
               '</div>' +
             '</div>' +
             '<div data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="cursor:pointer;">' +
-              '<div class="compact-title">' + Utils.escapeHtml(it.name) + '</div>' +
-              '<div class="compact-meta-row">' + compactMeta.join('') + '</div>' +
+              '<div class="compact-title">' + Utils.escapeHtml(it.name) +
+                (it.spec ? ' <span class="compact-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') +
+              '</div>' +
+              (compactMeta.length ? '<div class="compact-meta-row">' + compactMeta.join('') + '</div>' : '') +
               stockQuantityPill(it) +
             '</div>' +
           '</div>'
@@ -692,13 +705,17 @@
 
       var specParts = it.spec ? [Utils.escapeHtml(it.spec)] : [];
       var price = Utils.formatMoney(it.price, it.currency);
-      if (price) {
+      var packagedPrice = packagedPriceText(it, unit);
+      if (packagedPrice) {
+        specParts.push(packagedPrice);
+      } else if (price) {
         var per100 = catInfo.group === 'food' && !it.flavors ? Utils.formatPer100gPrice(it.price, it.currency, it.spec) : '';
         specParts.push(price + '/' + unitStr + (per100 ? '（' + per100.replace(/^≈¥/, '≈CN¥') + '）' : ''));
       }
       var locationParts = [];
       if (it.location) locationParts.push('📍' + Utils.escapeHtml(it.location));
       if (it.batchCode) locationParts.push(Utils.escapeHtml(it.batchCode));
+      if (it.purchasePackaging) locationParts.push(purchasePackagingText(it));
 
       var shelfText = it.shelfLifeValue
         ? Utils.escapeHtml(it.shelfLifeValue) + (it.shelfLifeUnit === 'days' ? '天' : '个月')
@@ -746,7 +763,6 @@
               ((palHtml || lastFedHtml) ? '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' + palHtml + lastFedHtml + '</div>' : '') +
               (specParts.length ? '<div class="detail-card-line">' + specParts.join(' · ') + '</div>' : '') +
               (locationParts.length ? '<div class="detail-card-line">' + locationParts.join(' · ') + '</div>' : '') +
-              (it.purchasePackaging ? '<div class="detail-card-line">购入 ' + purchasePackagingText(it) + '</div>' : '') +
             '</div>' +
           '</div>' +
 
@@ -754,7 +770,7 @@
           detailedShelfProgress(it, ev.expDays) +
 
           openedBannerHtml +
-          (it.flavors ? '<div class="flavor-stock">' + UI.flavorStockText(it) + '</div>' : '') +
+          (it.flavors ? '<div class="flavor-stock"><strong>剩余：</strong>' + UI.flavorStockText(it, false, true) + '</div>' : '') +
           (it.notes ? '<div style="margin-top:8px;font-size:12px;color:#57534E;background:#F5F5F4;padding:6px 10px;border-radius:8px;">💬 ' + Utils.escapeHtml(it.notes) + '</div>' : '') +
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
