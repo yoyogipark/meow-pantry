@@ -887,6 +887,46 @@
     };
   };
 
+  Domain.summarizeStockDetailStatuses = function (items, refTodayStr) {
+    var today = refTodayStr || Utils.getTodayStr();
+    var totals = Object.create(null);
+    items.forEach(function (item) {
+      var packages = Domain.summarizeStockQuantity([item]).units;
+      var unit = Object.keys(packages)[0];
+      if (!unit) return;
+
+      var count = packages[unit];
+      var total = totals[unit] || (totals[unit] = { expiring: 0, expired: 0, unknown: 0, openingUnknown: false });
+      var piece = { quantity: 1, expDate: item.expDate, openDaysLimit: item.openDaysLimit };
+      var sealedStatus = Domain.evaluateItem(piece, today).status;
+      var shared = Domain.hasSharedSeal(item);
+      var opened = !shared && item.flavors
+        ? item.flavors.filter(function (flavor) { return flavor.quantity > 0 && flavor.openedDate; })
+        : (item.isOpened ? [item] : []);
+      var openingUnknown = count.sealed < 0 ||
+        (item.isOpened && !opened.length) ||
+        (shared && !item.isOpened && Domain.isStockOpened(item));
+      if (openingUnknown) {
+        total.openingUnknown = true;
+        total[sealedStatus === 'expired' ? 'expired' : 'unknown'] += count.sealed + count.opened;
+        return;
+      }
+
+      if (sealedStatus === 'expiring' || sealedStatus === 'expired') {
+        total[sealedStatus] += count.sealed;
+      }
+      piece.isOpened = true;
+      for (var entry of opened) {
+        piece.openedDate = entry.openedDate;
+        var evaluated = Domain.evaluateItem(piece, today);
+        if (evaluated.status === 'expired') total.expired += 1;
+        else if (evaluated.openRemaining === null) total.unknown += 1;
+        else if (evaluated.status === 'expiring') total.expiring += 1;
+      }
+    });
+    return totals;
+  };
+
   // ==================== PRODUCT GROUPING & FEEDING LOG HELPERS ====================
   Domain.getProductGroupKey = function (it) {
     if (!it) return '';
