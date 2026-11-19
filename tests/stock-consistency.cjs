@@ -549,15 +549,16 @@ async function run() {
   const photo = 'data:image/jpeg;base64,AAAA';
   reset(make('quota-test', 2, '杯', { imageData: photo }));
   w.Storage.prototype.setItem = function (key, value) {
-    if (key === keys.ITEMS && JSON.parse(value).some(row => row.imageData)) {
+    if (key === keys.LOCAL_STATE && JSON.parse(value).items.some(row => row.imageData)) {
       throw new w.DOMException('Simulated quota', 'QuotaExceededError');
     }
     return originalSetItem.call(this, key, value);
   };
   try {
     assert.equal(await save(), true);
-    assert.equal(JSON.parse(w.localStorage.getItem(keys.SETTINGS)).lsSlimMode, true);
-    assert.equal(JSON.parse(w.localStorage.getItem(keys.ITEMS))[0].imageData, undefined);
+    const localState = JSON.parse(w.localStorage.getItem(keys.LOCAL_STATE));
+    assert.equal(localState.settings.lsSlimMode, true);
+    assert.equal(localState.items[0].imageData, undefined);
     await persisted(s => assert.equal(s.items.find(row => row.id === 'quota-test').imageData, photo));
 
     storage.openIDB = callback => callback(null);
@@ -567,11 +568,16 @@ async function run() {
     w.Storage.prototype.setItem = originalSetItem;
     assert.equal(await save(), true, 'Full LocalStorage save works without IndexedDB');
     assert.equal(el('storageWriteWarning').textContent, '');
+    const savedSnapshot = w.localStorage.getItem(keys.LOCAL_STATE);
+    assert.equal((await restore([{ id: 'failed-overwrite', quantity: 1 }], false)).ok, false);
+    assert.ok(byId('quota-test'));
+    assert.equal(byId('failed-overwrite'), undefined);
 
     w.Storage.prototype.setItem = function () {
       throw new w.DOMException('Simulated unavailable storage', 'QuotaExceededError');
     };
     assert.equal(await save(), false, 'Both storage engines failed');
+    assert.equal(w.localStorage.getItem(keys.LOCAL_STATE), savedSnapshot);
     assert.match(el('storageWriteWarning').textContent, /本地保存未完成/);
 
     storage.openIDB = originalOpen;

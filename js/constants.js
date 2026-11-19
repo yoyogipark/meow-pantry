@@ -12,6 +12,7 @@
     SETTINGS: 'meow_pantry_v1_settings',
     LOGS: 'meow_pantry_v1_logs',
     STOCK_HISTORY: 'meow_pantry_v1_stock_history',
+    LOCAL_STATE: 'meow_pantry_local_state',
     PRE_RESTORE_SNAPSHOT: 'meow_pantry_v1_pre_restore_snapshot'
   };
 

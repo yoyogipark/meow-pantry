@@ -328,7 +328,11 @@
           redemption: { quantity: curQ, unit: unit, all: action === 'mark-empty' }
         });
       } else if (action === 'delete') {
-        UI.openConfirm('删除这条批次记录？', '将移除「' + target.brand + ' ' + target.name + '」，删除后不可撤销。', '确认删除', function () {
+        var linkedDeductions = st.logs.some(function (log) {
+          return log.itemId === id && (log.portionChange || log.flavorChange || Number(log.deductedUnit) > 0 || Number(log.deductedFrac) > 0);
+        });
+        UI.openConfirm('删除这条批次记录？', '将移除「' + target.brand + ' ' + target.name + '」，删除后不可撤销。' +
+          (linkedDeductions ? ' 关联的喂食记录会保留，但原扣减将无法自动退回。' : ''), '确认删除', function () {
           var oldQty = Number(target.quantity) || 0;
           // Detach any linked finished archive so historical eaten records aren't orphaned
           st.items.forEach(function (x) {
@@ -623,8 +627,12 @@
       }
 
       if (editLogId) {
+        var preservesDeduction = false;
         for (var k = 0; k < st.logs.length; k++) {
           if (st.logs[k].id === editLogId) {
+            var previousLog = st.logs[k];
+            preservesDeduction = previousLog.amount !== fAmount && Boolean(previousLog.portionChange ||
+              previousLog.flavorChange || previousLog.deductedUnit || previousLog.deductedFrac);
             st.logs[k].date = fDate;
             st.logs[k].mealSlot = fSlot;
             if (!st.logs[k].flavorId && !st.logs[k].deductedUnit && !st.logs[k].deductedFrac) st.logs[k].itemId = fItemId;
@@ -641,7 +649,7 @@
         }
         selectLogDate(fDate);
         Storage.saveToStorage(false, function (ok) {
-          if (ok) UI.showToast('饮食记录修改已保存');
+          if (ok) UI.showToast(preservesDeduction ? '份量已修改，原库存扣减仍保留' : '饮食记录修改已保存');
         });
         UI.closeFeedModal();
         UI.renderAll();
@@ -1217,6 +1225,22 @@
               note: '编辑批次修改库存数量'
             });
           }
+          if (newQty > 0 && (prevIt.isOpened !== record.isOpened ||
+              (record.isOpened && prevIt.openedDate !== record.openedDate))) {
+            Domain.appendStockHistory({
+              action: prevIt.isOpened === record.isOpened ? 'adjust' : (record.isOpened ? 'open' : 'unopen'),
+              itemId: record.id,
+              category: record.category,
+              brand: record.brand,
+              name: record.name,
+              unit: record.unit,
+              beforeQty: newQty,
+              afterQty: newQty,
+              deltaText: '开封状态变更',
+              note: (prevIt.isOpened ? ('已开封 ' + (prevIt.openedDate || '日期未填')) : '未开封') +
+                ' → ' + (record.isOpened ? ('已开封 ' + (record.openedDate || '日期未填')) : '未开封')
+            });
+          }
         }
         if (record.quantity > 0 && st.statusFilter === 'empty') {
           st.statusFilter = 'in_stock';
@@ -1234,7 +1258,9 @@
           deltaText: '+' + newQty + record.unit,
           beforeQty: 0,
           afterQty: newQty,
-          note: (isRestockMode ? '同款复购新建批次' : '新录入库存批次') + (record.expDate ? (' · 到期 ' + record.expDate) : '')
+          note: (isRestockMode ? '同款复购新建批次' : '新录入库存批次') +
+            (record.expDate ? (' · 到期 ' + record.expDate) : '') +
+            (record.isOpened ? (' · 入库时已开封 ' + (record.openedDate || '日期未填')) : '')
         });
         if (record.quantity > 0 && st.statusFilter === 'empty') {
           st.statusFilter = 'in_stock';
@@ -1336,7 +1362,7 @@
           function (useSmartMerge) {
             Storage.applyBackupData(check, useSmartMerge, function (ok, error) {
               if (!ok) {
-                if (error) UI.openConfirm('无法智能合并', error, '知道了', function () {});
+                if (error) UI.openConfirm('无法恢复备份', error, '知道了', function () {});
                 return;
               }
               UI.renderAll();
