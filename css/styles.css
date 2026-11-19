@@ -295,21 +295,37 @@ body:not(.is-edit-mode) .edit-only {
 }
 
 .mode-switch-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0 11px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   user-select: none;
-  border: 1.5px solid #E7E5E4;
-  background: #FFFFFF;
+  border: 1.5px solid var(--border-warm);
+  background: #FFFDFA;
   color: #57534E;
   transition: all 0.15s ease;
   white-space: nowrap;
+}
+
+.mode-switch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  clip-path: inset(50%);
+}
+
+.mode-switch-pill:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 body.is-edit-mode .mode-switch-pill {
@@ -762,25 +778,26 @@ body.is-edit-mode .mode-switch-pill {
 
 .detail-card-open-stock,
 .detail-card-unopened-stock {
-  padding: 5px 9px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px 5px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 9px;
   border-radius: 10px;
+  background: #F4EFE6;
 }
 
 .detail-card-open-stock {
   margin-top: 8px;
   border: 1px dashed #FDBA74;
-  background: #FFF7ED;
-  color: #7C2D12;
+  color: #62594F;
   font-size: 11.5px;
 }
 
-.detail-card-unopened-stock {
-  border: 1px solid #E7E5E4;
-  background: #F5F5F4;
-}
-
 .detail-card-stock-text {
-  color: #1C1917;
+  color: #30251E;
   font-size: 13px;
   font-weight: 800;
 }
@@ -788,12 +805,24 @@ body.is-edit-mode .mode-switch-pill {
 .detail-card-used {
   padding: 1px 6px;
   border-radius: 6px;
-  background: #DCFCE7;
-  color: #15803D;
+  background: #EAE2D7;
+  color: #6D5F53;
   font-size: 10.5px;
   font-weight: 700;
 }
 
-.detail-card-actions > :last-child {
-  margin-left: auto;
+.detail-card-action-buttons {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  max-width: 100%;
+  margin-inline-start: auto;
+}
+
+.detail-card-action-buttons > button {
+  min-width: 44px;
+  min-height: 44px;
 }
