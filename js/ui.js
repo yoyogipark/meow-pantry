@@ -510,6 +510,22 @@
       '</div></div>';
   }
 
+  function detailedOpenedProgress(item, days) {
+    var limit = Number(item.openDaysLimit);
+    var category = MP.CATEGORIES[item.category] || MP.CATEGORIES.dry;
+    // Records do not distinguish user input from either form or category defaults.
+    if (!Number.isInteger(limit) || limit <= 0 || limit === 45 || limit === category.defaultOpenDays ||
+        !Number.isFinite(days)) return '';
+
+    var remaining = Math.max(0, days);
+    var percent = Math.min(100, remaining / limit * 100);
+    var tone = days < 0 ? 'expired' : days <= 1 ? 'urgent' : days <= 3 ? 'warning' : 'fresh';
+    var label = days < 0 ? '已超保鲜期' : '开封保鲜剩 ' + remaining + ' 天';
+    return '<div class="detail-card-open-progress detail-card-open-progress--' + tone + '">' +
+      '<div class="detail-card-open-progress-label"><strong>' + label + '</strong><span>共 ' + limit + ' 天</span></div>' +
+      '<div class="progress-track" aria-hidden="true"><div class="progress-bar" style="width:' + percent + '%;"></div></div></div>';
+  }
+
   UI.renderPantryList = function () {
     var st = MP.state;
     var q = st.searchQuery.trim().toLowerCase();
@@ -844,12 +860,13 @@
       var usedHtml = Number(it.eatenCount) > 0
         ? ' <span class="detail-card-used">已用 ' + Number(it.eatenCount) + ' ' + unitStr + '</span>'
         : '';
-      var openedBannerHtml = stock.opened
-        ? '<div class="detail-card-open-stock">' + stockHtml +
-          (stock.dates.length ? ' <span class="detail-card-open-date">· 开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
-          usedHtml +
-          '</div>'
+      var openedProgress = stock.opened ? detailedOpenedProgress(it, ev.openRemaining) : '';
+      var openedBannerHtml = stock.opened && (stock.dates.length || openedProgress)
+        ? '<div class="detail-card-open-stock">' +
+          (stock.dates.length ? '<span class="detail-card-open-date">开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
+          openedProgress + '</div>'
         : '';
+      var stockClass = stock.opened ? 'detail-card-open-balance' : 'detail-card-unopened-stock';
 
       var specParts = it.spec ? [Utils.escapeHtml(it.spec)] : [];
       var price = Utils.formatMoney(it.price, it.currency);
@@ -920,7 +937,7 @@
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
             '<div class="detail-card-actions">' +
-              (stock.opened ? '' : '<div class="detail-card-unopened-stock">' + stockHtml + usedHtml + '</div>') +
+              '<div class="' + stockClass + '">' + stockHtml + usedHtml + '</div>' +
               '<div class="detail-card-action-buttons">' +
                 '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" style="padding:6px 8px;border-radius:10px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📜 此商品记录</button>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +
