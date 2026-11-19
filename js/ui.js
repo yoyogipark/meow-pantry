@@ -404,7 +404,7 @@
       ? item.flavors.filter(function (flavor) { return flavor.quantity > 0 && flavor.openedDate; })
       : (opened ? [item] : []);
     var stockText = '在库 ' + quantity + ' ' + unit;
-    var openText = shared ? '共用包装已开封' : '已开封';
+    if (shared && opened) stockText += ' · 共用包装已开封';
     var dates = shared || !item.flavors
       ? (item.openedDate ? [item.openedDate] : [])
       : openPackages.map(function (flavor) { return flavor.name + ' ' + flavor.openedDate; });
@@ -415,8 +415,7 @@
         var fractionText = Utils.formatRemainFractionText(openPackages[0].openRemainFraction, unit);
         if (fractionText) {
           var remaining = fractionText.slice(1, -unit.length);
-          stockText += ' + 开封 ' + remaining + ' ' + unit;
-          openText += '余' + remaining + unit;
+          stockText += ' + 开封余 ' + remaining + ' ' + unit;
         } else {
           stockText += ' + 已开封 1 ' + unit;
         }
@@ -424,23 +423,19 @@
         stockText += ' + 已开封 ' + openPackages.length + ' ' + unit;
       }
     }
-    return { opened: opened, text: stockText, badge: openText, dates: dates, openCount: openPackages.length };
+    return { opened: opened, text: stockText, dates: dates, openCount: openPackages.length };
   }
 
-  function detailedExpiryLabel(ev, stock, category) {
-    if (!stock.opened) return formatExpiryCountdown(ev);
-    var label = [stock.badge];
-    var days = ev.openRemaining;
+  function detailedOpenedBadge(days, openCount) {
+    var label = '已开封';
+    var tone = 'unknown';
     if (days !== null) {
-      var countdown = days < 0 ? '开封超期 ' + Math.abs(days) + ' 天'
+      label = days < 0 ? '开封已过期'
         : days === 0 ? '开封今天到期'
-          : days + '天内' + (category.group === 'food' ? '吃完' : '用完');
-      label.push((stock.openCount > 1 ? '最早' : '') + countdown);
+          : '开封' + (openCount > 1 ? '最早' : '') + '剩' + days + '天';
+      tone = days > 30 ? 'fresh' : days >= 7 ? 'warning' : days >= 0 ? 'urgent' : 'expired';
     }
-    if (ev.expDays !== null && (ev.expDays < 0 || (days !== null && ev.expDays < days))) {
-      label.push('原包装' + formatExpiryCountdown({ expDays: ev.expDays, openRemaining: null }));
-    }
-    return label.join(' · ');
+    return '<span class="detail-card-open-badge detail-card-open-badge--' + tone + '">' + label + '</span>';
   }
 
   function detailedShelfProgress(item, days) {
@@ -768,7 +763,7 @@
       var badgeText = '#15803D';
       var unit = it.unit || '件';
       var stock = detailedOpenStock(it, unit);
-      var badgeLabel = detailedExpiryLabel(ev, stock, catInfo);
+      var badgeLabel = formatExpiryCountdown(ev);
 
       if (ev.status === 'expired') {
         badgeBg = '#FEE2E2'; badgeText = '#DC2626';
@@ -793,7 +788,7 @@
           : '');
       var openedBannerHtml = stock.opened
         ? '<div class="detail-card-open-stock">' + stockHtml +
-          (stock.dates.length ? '<div>开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</div>' : '') +
+          (stock.dates.length ? ' <span class="detail-card-open-date">· 开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
           '</div>'
         : '';
 
@@ -807,10 +802,21 @@
       if (it.location) locationParts.push('📍' + Utils.escapeHtml(it.location));
       if (it.batchCode) locationParts.push(Utils.escapeHtml(it.batchCode));
 
-      var dates = [];
-      if (it.prodDate) dates.push('生产 ' + Utils.escapeHtml(it.prodDate));
-      if (it.shelfLifeValue) dates.push(Utils.escapeHtml(it.shelfLifeValue) + (it.shelfLifeUnit === 'days' ? '天' : '个月'));
-      if (it.expDate) dates.push('到期 ' + Utils.escapeHtml(it.expDate));
+      var shelfText = it.shelfLifeValue
+        ? Utils.escapeHtml(it.shelfLifeValue) + (it.shelfLifeUnit === 'days' ? '天' : '个月')
+        : '—';
+      var expiryNote = '';
+      if (stock.opened && ev.expDays !== null) {
+        if (ev.expDays < 0) expiryNote = ' · 已过期';
+        else if (ev.expDays === 0) expiryNote = ' · 今天到期';
+        else if (ev.openRemaining !== null && ev.expDays < ev.openRemaining) expiryNote = ' · 先到期';
+      }
+      var datePanel = '<div class="detail-card-dates">' +
+        '<div><div class="detail-card-date-label">生产日期</div><div>' + Utils.escapeHtml(it.prodDate || '未标注') + '</div></div>' +
+        '<div><div class="detail-card-date-label">保质期</div><div>' + shelfText + '</div></div>' +
+        '<div><div class="detail-card-date-label">过期日期' + expiryNote + '</div><div class="detail-card-date-expiry">' +
+          Utils.escapeHtml(it.expDate || '—') + '</div></div>' +
+        '</div>';
 
       var coverSrc = MP.getItemCoverSrc(it);
       var realTag = it.imageData
@@ -832,10 +838,11 @@
               '<div class="detail-card-heading">' +
                 '<div class="detail-card-tags">' +
                   '<span style="background:' + catBadgeBg + ';color:' + catBadgeCol + ';padding:2px 6px;border-radius:7px;font-size:10.5px;font-weight:700;overflow-wrap:anywhere;">' + catInfo.icon + ' ' + catInfo.label + (it.subtype ? ' · ' + Utils.escapeHtml(it.subtype) : '') + '</span>' +
-                  '<span style="background:#FFEDD5;color:#9A3412;padding:2px 7px;border-radius:7px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + Utils.escapeHtml(it.brand) + '</span>' +
+                  '<span class="detail-card-brand">' + Utils.escapeHtml(it.brand) + '</span>' +
+                  (stock.opened ? detailedOpenedBadge(ev.openRemaining, stock.openCount) : '') +
                 '</div>' +
-                '<span class="detail-card-status detail-card-status--' + ev.status +
-                  '" style="background:' + badgeBg + ';color:' + badgeText + ';">' + Utils.escapeHtml(badgeLabel) + '</span>' +
+                (stock.opened ? '' : '<span class="detail-card-status detail-card-status--' + ev.status +
+                  '" style="background:' + badgeBg + ';color:' + badgeText + ';">' + Utils.escapeHtml(badgeLabel) + '</span>') +
               '</div>' +
               '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#1C1917;line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) + '</h3>' +
               ((palHtml || lastFedHtml) ? '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' + palHtml + lastFedHtml + '</div>' : '') +
@@ -845,11 +852,11 @@
             '</div>' +
           '</div>' +
 
-          (dates.length ? '<div class="detail-card-dates">' + dates.join(' · ') + '</div>' : '') +
+          datePanel +
           detailedShelfProgress(it, ev.expDays) +
 
-          (it.flavors ? '<div class="flavor-stock">' + flavorStockText(it) + '</div>' : '') +
           openedBannerHtml +
+          (it.flavors ? '<div class="flavor-stock">' + flavorStockText(it) + '</div>' : '') +
           (it.notes ? '<div style="margin-top:8px;font-size:12px;color:#57534E;background:#F5F5F4;padding:6px 10px;border-radius:8px;">💬 ' + Utils.escapeHtml(it.notes) + '</div>' : '') +
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
