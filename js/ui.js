@@ -468,18 +468,17 @@
       : openPackages.map(function (flavor) { return flavor.name + ' ' + flavor.openedDate; });
     var independent = !shared && (item.purchasePackaging || Domain.isPackageUnit(unit) || unit === '粒');
     if (independent && openPackages.length && Number.isSafeInteger(quantity) && quantity >= openPackages.length) {
-      stockText = '未开封 ' + (quantity - openPackages.length) + ' ' + unit;
-      if (openPackages.length === 1) {
-        var fractionText = Utils.formatRemainFractionText(openPackages[0].openRemainFraction, unit);
-        if (fractionText) {
-          var remaining = fractionText.slice(1, -unit.length);
-          stockText += ' + 开封余 ' + remaining + ' ' + unit;
-        } else {
-          stockText += ' + 已开封 1 ' + unit;
-        }
-      } else if (openPackages.length > 1) {
-        stockText += ' + 已开封 ' + openPackages.length + ' ' + unit;
+      var unopenedCount = quantity - openPackages.length;
+      var parts = [];
+      if (unopenedCount > 0) parts.push('未开封 ' + unopenedCount + ' ' + unit);
+      var fractionText = openPackages.length === 1
+        ? Utils.formatRemainFractionText(openPackages[0].openRemainFraction, unit) : '';
+      if (fractionText) {
+        parts.push('开封余 ' + fractionText.slice(1, -unit.length) + ' ' + unit);
+      } else {
+        parts.push('已开封 ' + openPackages.length + ' ' + unit);
       }
+      stockText = parts.join(' + ');
     }
     return { opened: opened, text: stockText, dates: dates, openCount: openPackages.length };
   }
@@ -502,7 +501,7 @@
     if (!(duration > 0)) return '';
     var percentage = Math.max(0, Math.min(100, Math.round(days / duration * 100)));
     var tone = days > 30 ? 'fresh' : days >= 7 ? 'warning' : days >= 0 ? 'urgent' : 'expired';
-    var label = '未开封效期剩余 ' + percentage + '%';
+    var label = '有效期剩余 ' + percentage + '%';
     return '<div class="detail-card-shelf">' +
       '<div class="detail-card-line">' + label + '</div>' +
       '<div class="progress-track detail-card-track detail-card-track--' + tone + '" aria-hidden="true">' +
