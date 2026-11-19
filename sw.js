@@ -1,12 +1,12 @@
 const CACHE_PREFIX = 'meow-pantry-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v43';
+const CACHE_NAME = CACHE_PREFIX + 'v44';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './css/styles.css?v=43',
+  './css/styles.css?v=44',
   './js/covers.js?v=41',
   './js/constants.js?v=41',
   './js/utils.js?v=41',
