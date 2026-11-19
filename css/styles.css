@@ -316,6 +316,13 @@ body:not(.is-edit-mode) .edit-only {
   background: var(--accent);
 }
 
+.app-header .mode-switch-pill > svg,
+.app-header #openAddModalBtn > svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
 .mode-switch-pill {
   position: relative;
   width: 64px;
@@ -565,8 +572,8 @@ body.is-edit-mode .mode-switch-pill {
 .stock-detail-heading h2 {
   margin: 0;
   color: var(--text-main);
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .stock-detail-note,
@@ -592,8 +599,8 @@ body.is-edit-mode .mode-switch-pill {
 
 .stock-detail-card {
   min-width: 0;
-  min-height: 66px;
-  padding: 7px;
+  min-height: 58px;
+  padding: 6px;
   border: 1px solid transparent;
   border-radius: 15px;
   background: #F6F2E9;
@@ -610,12 +617,13 @@ body.is-edit-mode .mode-switch-pill {
   align-items: baseline;
   column-gap: 3px;
   color: #6D5F53;
+  font-size: 10px;
 }
 
 .stock-detail-amount strong {
   color: var(--text-main);
-  font-size: 26px;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
@@ -624,7 +632,7 @@ body.is-edit-mode .mode-switch-pill {
   display: grid;
   gap: 2px;
   margin-top: 4px;
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.25;
 }
 
@@ -635,10 +643,7 @@ body.is-edit-mode .mode-switch-pill {
 .stock-detail-caption,
 .stock-detail-other {
   margin: 8px 0 0;
-}
-
-.stock-detail-caption {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .purchase-packaging {
