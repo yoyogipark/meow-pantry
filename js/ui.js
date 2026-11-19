@@ -241,22 +241,23 @@
       var entry = summary.units[unit];
       var status = statuses[unit];
       var labels = [];
-      if (entry.opened) labels.push('<span class="stock-detail-tag stock-detail-tag--opened">已开封 ' + entry.opened + '</span>');
-      else if (!status.openingUnknown) labels.push('<span class="stock-detail-note">全部未开封</span>');
-      if (status.expiring) labels.push('<span class="stock-detail-tag stock-detail-tag--expiring">临期 ' + status.expiring + '</span>');
-      if (status.expired) labels.push('<span class="stock-detail-tag stock-detail-tag--expired">已过期 ' + status.expired + '</span>');
+      if (entry.opened) labels.push('<span class="stock-detail-status--opened">开封 ' + entry.opened + '</span>');
+      if (status.expiring) labels.push('<span class="stock-detail-status--expiring">临期 ' + status.expiring + '</span>');
+      if (status.expired) labels.push('<span class="stock-detail-status--expired">过期 ' + status.expired + '</span>');
       if (status.unknown) labels.push('<span class="stock-detail-note">效期待确认 ' + status.unknown + '</span>');
       if (status.openingUnknown) labels.push('<span class="stock-detail-note">开封状态待确认</span>');
-      return '<li class="stock-detail-card" data-stock-unit="' + Utils.escapeHtml(unit) + '">' +
+      return '<li class="stock-detail-card' + (entry.opened ? ' stock-detail-card--opened' : '') +
+        '" data-stock-unit="' + Utils.escapeHtml(unit) + '">' +
         '<div class="stock-detail-amount"><strong>' + (entry.sealed + entry.opened) + '</strong> <span>' + Utils.escapeHtml(unit) + '</span></div>' +
-        '<div class="stock-detail-tags">' + labels.join('') + '</div></li>';
+        (labels.length ? '<div class="stock-detail-statuses">' + labels.join('') + '</div>' : '') + '</li>';
     });
     var other = Object.keys(summary.otherUnits).map(function (unit) {
       return summary.otherUnits[unit] + ' ' + Utils.escapeHtml(unit);
     });
     document.getElementById('stockQuantityDetails').innerHTML =
-      '<div class="stock-detail-heading"><h2>库存明细</h2><span>' + formatPieceCount(summary.pieces) + '</span></div>' +
-      (cards.length ? '<ul class="stock-detail-grid" role="list">' + cards.join('') + '</ul>' : '') +
+      '<div class="stock-detail-heading"><h2>库存明细</h2><span class="stock-piece-count">' + formatPieceCount(summary.pieces) + '</span></div>' +
+      (cards.length ? '<ul class="stock-detail-grid" role="list">' + cards.join('') + '</ul>' +
+        '<p class="stock-detail-caption">件数含已开封包装 · 临期按实际包装计数</p>' : '') +
       (other.length ? '<p class="stock-detail-other">' + other.join(' · ') + '（不计入总件数）</p>' : '') +
       (!cards.length && !other.length ? '<p class="stock-detail-other">目前没有在库数量。</p>' : '');
   }
