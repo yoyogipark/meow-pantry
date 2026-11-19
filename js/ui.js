@@ -512,10 +512,7 @@
 
   function detailedOpenedProgress(item, days) {
     var limit = Number(item.openDaysLimit);
-    var category = MP.CATEGORIES[item.category] || MP.CATEGORIES.dry;
-    // Records do not distinguish user input from either form or category defaults.
-    if (!Number.isInteger(limit) || limit <= 0 || limit === 45 || limit === category.defaultOpenDays ||
-        !Number.isFinite(days)) return '';
+    if (!Number.isInteger(limit) || limit <= 0 || !Number.isFinite(days)) return '';
 
     var remaining = Math.max(0, days);
     var percent = Math.min(100, remaining / limit * 100);
