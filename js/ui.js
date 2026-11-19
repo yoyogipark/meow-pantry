@@ -233,30 +233,30 @@
     return Number.isSafeInteger(total) ? total : null;
   }
 
-  function renderStockQuantityDetails(items) {
+  function renderStockQuantityDetails(items, statuses) {
     var summary = Domain.summarizeStockQuantity(items);
     document.getElementById('countStockPieces').textContent = formatPieceCount(summary.pieces);
-    var statuses = Domain.summarizeStockDetailStatuses(items);
     var cards = Object.keys(summary.units).map(function (unit) {
       var entry = summary.units[unit];
       var status = statuses[unit];
       var labels = [];
-      if (entry.opened) labels.push('<span class="stock-detail-tag stock-detail-tag--opened">已开封 ' + entry.opened + '</span>');
-      else if (!status.openingUnknown) labels.push('<span class="stock-detail-note">全部未开封</span>');
-      if (status.expiring) labels.push('<span class="stock-detail-tag stock-detail-tag--expiring">临期 ' + status.expiring + '</span>');
-      if (status.expired) labels.push('<span class="stock-detail-tag stock-detail-tag--expired">已过期 ' + status.expired + '</span>');
+      if (entry.opened) labels.push('<span class="stock-detail-status--opened">开封 ' + entry.opened + '</span>');
+      if (status.expiring) labels.push('<span class="stock-detail-status--expiring">临期 ' + status.expiring + '</span>');
+      if (status.expired) labels.push('<span class="stock-detail-status--expired">过期 ' + status.expired + '</span>');
       if (status.unknown) labels.push('<span class="stock-detail-note">效期待确认 ' + status.unknown + '</span>');
       if (status.openingUnknown) labels.push('<span class="stock-detail-note">开封状态待确认</span>');
-      return '<li class="stock-detail-card" data-stock-unit="' + Utils.escapeHtml(unit) + '">' +
+      return '<li class="stock-detail-card' + (entry.opened ? ' stock-detail-card--opened' : '') +
+        '" data-stock-unit="' + Utils.escapeHtml(unit) + '">' +
         '<div class="stock-detail-amount"><strong>' + (entry.sealed + entry.opened) + '</strong> <span>' + Utils.escapeHtml(unit) + '</span></div>' +
-        '<div class="stock-detail-tags">' + labels.join('') + '</div></li>';
+        (labels.length ? '<div class="stock-detail-statuses">' + labels.join('') + '</div>' : '') + '</li>';
     });
     var other = Object.keys(summary.otherUnits).map(function (unit) {
       return summary.otherUnits[unit] + ' ' + Utils.escapeHtml(unit);
     });
     document.getElementById('stockQuantityDetails').innerHTML =
-      '<div class="stock-detail-heading"><h2>库存明细</h2><span>' + formatPieceCount(summary.pieces) + '</span></div>' +
-      (cards.length ? '<ul class="stock-detail-grid" role="list">' + cards.join('') + '</ul>' : '') +
+      '<div class="stock-detail-heading"><h2>库存明细</h2><span class="stock-piece-count">' + formatPieceCount(summary.pieces) + '</span></div>' +
+      (cards.length ? '<ul class="stock-detail-grid" role="list">' + cards.join('') + '</ul>' +
+        '<p class="stock-detail-caption">件数含已开封包装 · 临期按实际包装计数</p>' : '') +
       (other.length ? '<p class="stock-detail-other">' + other.join(' · ') + '（不计入总件数）</p>' : '') +
       (!cards.length && !other.length ? '<p class="stock-detail-other">目前没有在库数量。</p>' : '');
   }
@@ -297,8 +297,8 @@
   UI.renderStatusCounts = function () {
     var st = MP.state;
     var cStock = 0;
-    var expiringItems = [];
-    var expiredItems = [];
+    var cExpiring = 0;
+    var cExpired = 0;
     var attrCounts = { all: 0, opened: 0, fresh: 0, pal_love: 0, group_food: 0, group_care: 0 };
     var emptyItems = [];
 
@@ -308,8 +308,8 @@
         emptyItems.push(it);
       } else {
         cStock += 1;
-        if (ev.status === 'expiring') expiringItems.push(it);
-        else if (ev.status === 'expired') expiredItems.push(it);
+        if (ev.status === 'expiring') cExpiring += 1;
+        else if (ev.status === 'expired') cExpired += 1;
         if (st.statusFilter === 'in_stock' || st.statusFilter === ev.status) {
           attrCounts.all += 1;
           if (Domain.isStockOpened(it)) attrCounts.opened += 1;
@@ -323,17 +323,24 @@
 
     [
       ['countInStock', cStock],
-      ['countExpiring', expiringItems.length],
-      ['countExpired', expiredItems.length],
+      ['countExpiring', cExpiring],
+      ['countExpired', cExpired],
       ['countEmpty', cEmpty]
     ].forEach(function (entry) {
       var el = document.getElementById(entry[0]);
       el.textContent = String(entry[1]);
       el.classList.toggle('is-zero', entry[1] === 0);
     });
-    renderStockQuantityDetails(st.items);
-    document.getElementById('countExpiringPieces').textContent = formatPieceCount(Domain.summarizeStockQuantity(expiringItems).pieces);
-    document.getElementById('countExpiredPieces').textContent = formatPieceCount(Domain.summarizeStockQuantity(expiredItems).pieces);
+    var statuses = Domain.summarizeStockDetailStatuses(st.items);
+    var expiringPieces = 0;
+    var expiredPieces = 0;
+    Object.values(statuses).forEach(function (status) {
+      expiringPieces += status.expiring;
+      expiredPieces += status.expired;
+    });
+    renderStockQuantityDetails(st.items, statuses);
+    document.getElementById('countExpiringPieces').textContent = formatPieceCount(expiringPieces);
+    document.getElementById('countExpiredPieces').textContent = formatPieceCount(expiredPieces);
     document.getElementById('countEmptyPieces').textContent = formatPieceCount(summarizeArchivedPieces(emptyItems));
 
     var cards = document.querySelectorAll('[data-status-filter]');
@@ -501,6 +508,19 @@
       '<div class="progress-track detail-card-track detail-card-track--' + tone + '" aria-hidden="true">' +
         '<div class="progress-bar" style="width:' + percentage + '%;"></div>' +
       '</div></div>';
+  }
+
+  function detailedOpenedProgress(item, days) {
+    var limit = Number(item.openDaysLimit);
+    if (!Number.isInteger(limit) || limit <= 0 || !Number.isFinite(days)) return '';
+
+    var remaining = Math.max(0, days);
+    var percent = Math.min(100, remaining / limit * 100);
+    var tone = days < 0 ? 'expired' : days <= 1 ? 'urgent' : days <= 3 ? 'warning' : 'fresh';
+    var label = days < 0 ? '已超保鲜期' : '开封保鲜剩 ' + remaining + ' 天';
+    return '<div class="detail-card-open-progress detail-card-open-progress--' + tone + '">' +
+      '<div class="detail-card-open-progress-label"><strong>' + label + '</strong><span>共 ' + limit + ' 天</span></div>' +
+      '<div class="progress-track" aria-hidden="true"><div class="progress-bar" style="width:' + percent + '%;"></div></div></div>';
   }
 
   UI.renderPantryList = function () {
@@ -837,12 +857,13 @@
       var usedHtml = Number(it.eatenCount) > 0
         ? ' <span class="detail-card-used">已用 ' + Number(it.eatenCount) + ' ' + unitStr + '</span>'
         : '';
-      var openedBannerHtml = stock.opened
-        ? '<div class="detail-card-open-stock">' + stockHtml +
-          (stock.dates.length ? ' <span class="detail-card-open-date">· 开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
-          usedHtml +
-          '</div>'
+      var openedProgress = stock.opened ? detailedOpenedProgress(it, ev.openRemaining) : '';
+      var openedBannerHtml = stock.opened && (stock.dates.length || openedProgress)
+        ? '<div class="detail-card-open-stock">' +
+          (stock.dates.length ? '<span class="detail-card-open-date">开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
+          openedProgress + '</div>'
         : '';
+      var stockClass = stock.opened ? 'detail-card-open-balance' : 'detail-card-unopened-stock';
 
       var specParts = it.spec ? [Utils.escapeHtml(it.spec)] : [];
       var price = Utils.formatMoney(it.price, it.currency);
@@ -913,7 +934,7 @@
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
             '<div class="detail-card-actions">' +
-              (stock.opened ? '' : '<div class="detail-card-unopened-stock">' + stockHtml + usedHtml + '</div>') +
+              '<div class="' + stockClass + '">' + stockHtml + usedHtml + '</div>' +
               '<div class="detail-card-action-buttons">' +
                 '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" style="padding:6px 8px;border-radius:10px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📜 此商品记录</button>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +

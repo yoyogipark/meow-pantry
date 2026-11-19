@@ -288,7 +288,7 @@ async function run() {
   reset(soon, later, more, last, countedByOpenDate, overdueTwice, sharedStock, weighingStock,
     archive, otherBatch, partialArchive, duplicateArchive);
   const fixturesBeforeRender = json(state.items);
-  for (const [threshold, batches, pieces] of [[30, 2, 4], [60, 3, 7], [90, 4, 11], [120, 5, 16]]) {
+  for (const [threshold, batches, pieces] of [[30, 2, 3], [60, 3, 6], [90, 4, 10], [120, 5, 15]]) {
     el('warnDaysGroup').querySelector('[data-warn-days="' + threshold + '"]').click();
     assert.equal(state.settings.warnDays, threshold);
     assert.deepEqual(readSummary(), [
@@ -299,7 +299,7 @@ async function run() {
   assert.deepEqual(json(state.items), fixturesBeforeRender);
   el('statCardExpiring').click();
   assert.equal(state.statusFilter, 'expiring');
-  assert.equal(readSummary()[1][1], '共 16 件');
+  assert.equal(readSummary()[1][1], '共 15 件');
   reset(soon, make('legacy-archive', 0, '罐'));
   assert.deepEqual(readSummary()[2], ['0', '共 0 件', true]);
   assert.deepEqual(readSummary()[3], ['1', '件数未明', false]);
@@ -321,7 +321,14 @@ async function run() {
   const assertDetail = (unit, quantity, labels) => {
     const card = detailCard(unit);
     assert.equal(card.querySelector('.stock-detail-amount').textContent, quantity + ' ' + unit);
-    assert.deepEqual(Array.from(card.querySelector('.stock-detail-tags').children, node => node.textContent), labels);
+    assert.deepEqual(Array.from(card.querySelectorAll('.stock-detail-statuses > *'), node => node.textContent), labels);
+  };
+  const assertPieceTotalsMatchDetails = () => {
+    for (const [id, status] of [['countExpiringPieces', 'expiring'], ['countExpiredPieces', 'expired']]) {
+      const tags = details.querySelectorAll('.stock-detail-status--' + status);
+      const total = Array.from(tags).reduce((sum, tag) => sum + Number(tag.textContent.split(' ')[1]), 0);
+      assert.equal(el(id).textContent, '共 ' + total + ' 件');
+    }
   };
   assert.equal(el('stockDetailsBtn').getAttribute('aria-controls'), 'stockQuantityDetails');
   assert.equal(el('stockDetailsBtn').getAttribute('aria-expanded'), 'false');
@@ -332,31 +339,56 @@ async function run() {
   assert.equal(el('stockDetailsBtn').getAttribute('aria-expanded'), 'true');
   assert.ok(!details.classList.contains('hidden-view'));
 
+  const screenshotCans = make('three-cans', 3, '罐', {
+    isOpened: true, openedDate: today, openDaysLimit: 1, openRemainFraction: 0.25
+  });
+  const screenshotBag = make('soon-single-bag', 1, '袋', { expDate: today });
+  const freshBag = make('fresh-single-bag', 1, '袋');
+  reset(screenshotCans, screenshotBag, freshBag);
+  assertDetail('罐', 3, ['开封 1', '临期 1']);
+  assertDetail('袋', 2, ['临期 1']);
+  assert.deepEqual(readSummary()[1], ['2', '共 2 件', false]);
+  assertPieceTotalsMatchDetails();
+
   const eight = make('eight', 8, '罐');
   const twoBags = make('soon-bags', 2, '袋', { expDate: today });
   reset(eight, twoBags);
-  assertDetail('罐', 8, ['全部未开封']);
-  assertDetail('袋', 2, ['全部未开封', '临期 2']);
+  assertDetail('罐', 8, []);
+  assert.equal(detailCard('罐').querySelector('.stock-detail-statuses'), null);
+  assertDetail('袋', 2, ['临期 2']);
+  assert.match(details.querySelector('.stock-detail-caption').textContent, /件数含已开封包装 · 临期按实际包装计数/);
   Object.assign(eight, { isOpened: true, openedDate: today, openDaysLimit: 11, openRemainFraction: 0.25 });
   ui.renderStatusCounts();
-  assertDetail('罐', 8, ['已开封 1']);
+  assertDetail('罐', 8, ['开封 1']);
+  assert.ok(detailCard('罐').classList.contains('stock-detail-card--opened'));
   eight.openDaysLimit = 2;
   ui.renderStatusCounts();
-  assertDetail('罐', 8, ['已开封 1', '临期 1']);
-  assert.equal(el('countExpiringPieces').textContent, '共 10 件');
+  assertDetail('罐', 8, ['开封 1', '临期 1']);
+  assert.deepEqual(readSummary()[1], ['2', '共 3 件', false]);
+  assertPieceTotalsMatchDetails();
   eight.expDate = today;
   ui.renderStatusCounts();
-  assertDetail('罐', 8, ['已开封 1', '临期 8']);
+  assertDetail('罐', 8, ['开封 1', '临期 8']);
+  assert.deepEqual(readSummary()[1], ['2', '共 10 件', false]);
+  assertPieceTotalsMatchDetails();
   eight.openedDate = utils.shiftDaysFromToday(-3);
   ui.renderStatusCounts();
-  assertDetail('罐', 8, ['已开封 1', '临期 7', '已过期 1']);
+  assertDetail('罐', 8, ['开封 1', '临期 7', '过期 1']);
+  assert.deepEqual(readSummary()[1], ['1', '共 9 件', false]);
+  assert.deepEqual(readSummary()[2], ['1', '共 1 件', false]);
+  assertPieceTotalsMatchDetails();
+  eight.expDate = '2099-01-01';
+  ui.renderStatusCounts();
+  assertDetail('罐', 8, ['开封 1', '过期 1']);
+  assert.deepEqual(readSummary()[2], ['1', '共 1 件', false]);
+  assertPieceTotalsMatchDetails();
   eight.expDate = yesterday;
   ui.renderStatusCounts();
-  assertDetail('罐', 8, ['已开封 1', '已过期 8']);
+  assertDetail('罐', 8, ['开封 1', '过期 8']);
   eight.expDate = '2099-01-01';
   eight.openedDate = '';
   ui.renderStatusCounts();
-  assertDetail('罐', 8, ['已开封 1', '效期待确认 1']);
+  assertDetail('罐', 8, ['开封 1', '效期待确认 1']);
 
   const flavors = mixed();
   Object.assign(flavors, { expDate: utils.shiftDaysFromToday(40), openDaysLimit: 3 });
@@ -368,8 +400,11 @@ async function run() {
   });
   const noUnit = make('legacy-no-unit', 1, null);
   reset(flavors, sharedDetail, weighingStock, noUnit);
-  assertDetail('杯', 2, ['已开封 2', '临期 1', '已过期 1']);
-  assertDetail('盒', 1, ['已开封 1', '临期 1']);
+  assertDetail('杯', 2, ['开封 2', '临期 1', '过期 1']);
+  assertDetail('盒', 1, ['开封 1', '临期 1']);
+  assert.deepEqual(readSummary()[1], ['1', '共 2 件', false]);
+  assert.deepEqual(readSummary()[2], ['2', '共 1 件', false]);
+  assertPieceTotalsMatchDetails();
   assert.match(details.querySelector('.stock-detail-other').textContent, /3 杯 · 200 g（不计入总件数）/);
   assert.equal(details.querySelector('.stock-detail-heading > span').textContent, el('countStockPieces').textContent);
   const currentDetails = details.innerHTML;
@@ -383,6 +418,71 @@ async function run() {
   assert.equal(el('stockDetailsBtn').getAttribute('aria-expanded'), 'false');
   assert.ok(details.classList.contains('hidden-view'));
   console.log('Stock detail cards pass');
+
+  state.catFilter = 'all';
+  state.brandFilter = 'all';
+  state.searchQuery = '';
+  state.pantryPage = 1;
+  state.pantryDisplayMode = 'card';
+  state.pantryPageSize = 12;
+  const openedCardItem = make('opened-card', 3, '罐', {
+    prodDate: utils.shiftDaysFromToday(-20), expDate: utils.shiftDaysFromToday(20),
+    isOpened: true, openedDate: utils.shiftDaysFromToday(-3), openDaysLimit: 4,
+    openRemainFraction: 0.25, eatenCount: 1
+  });
+  const unopenedCardItem = make('unopened-card', 1, '罐', { openDaysLimit: 4 });
+  const defaultLimitItem = make('default-limit', 1, '罐', { isOpened: true, openedDate: today });
+  const longLimitItem = make('long-limit', 1, '罐', { isOpened: true, openedDate: today, openDaysLimit: 45 });
+  const twoDayItem = make('two-day-limit', 3, '罐', { isOpened: true, openedDate: today, openDaysLimit: 2, openRemainFraction: 0.75 });
+  const missingLimitItem = make('missing-limit', 1, '罐', { isOpened: true, openedDate: today });
+  delete missingLimitItem.openDaysLimit;
+  const multiCardItem = mixed();
+  multiCardItem.openDaysLimit = 4;
+  multiCardItem.flavors[0].openedDate = utils.shiftDaysFromToday(-2);
+  multiCardItem.flavors[1].openedDate = utils.shiftDaysFromToday(-3);
+  reset(openedCardItem, unopenedCardItem, defaultLimitItem, longLimitItem, twoDayItem, missingLimitItem, multiCardItem);
+  const card = id => w.document.querySelector('[data-action="item-history"][data-id="' + id + '"]').closest('article');
+  const progress = id => card(id).querySelector('.detail-card-open-progress');
+  const checkProgress = (id, label, tone, width, limit = 4) => {
+    const bar = progress(id);
+    assert.equal(bar.querySelector('strong').textContent, label);
+    assert.equal(bar.querySelector('.detail-card-open-progress-label > span').textContent, '共 ' + limit + ' 天');
+    assert.ok(bar.classList.contains('detail-card-open-progress--' + tone));
+    assert.equal(bar.querySelector('.progress-bar').style.width, width);
+  };
+  checkProgress(openedCardItem.id, '开封保鲜剩 1 天', 'urgent', '25%');
+  checkProgress(multiCardItem.id, '开封保鲜剩 1 天', 'urgent', '25%');
+  assert.equal(card(multiCardItem.id).querySelectorAll('.detail-card-open-progress').length, 1);
+  checkProgress(twoDayItem.id, '开封保鲜剩 2 天', 'warning', '100%', 2);
+  assert.ok(progress(defaultLimitItem.id));
+  checkProgress(longLimitItem.id, '开封保鲜剩 45 天', 'fresh', '100%', 45);
+  for (const entry of [unopenedCardItem, missingLimitItem]) assert.equal(progress(entry.id), null);
+  assert.ok(card(missingLimitItem.id).querySelector('.detail-card-open-badge'));
+  twoDayItem.openedDate = utils.shiftDaysFromToday(-1);
+  ui.renderPantryList();
+  checkProgress(twoDayItem.id, '开封保鲜剩 1 天', 'urgent', '50%', 2);
+  const activeCard = card(openedCardItem.id);
+  assert.match(activeCard.querySelector('.detail-card-open-date').textContent, /开封 \d{4}-\d{2}-\d{2}/);
+  assert.equal(activeCard.querySelector('.detail-card-open-stock .detail-card-stock-text'), null);
+  assert.equal(activeCard.querySelector('.detail-card-actions .detail-card-stock-text').textContent, '未开封 2 罐 + 开封余 1/4 罐');
+  assert.equal(activeCard.querySelector('.detail-card-actions .detail-card-used').textContent, '已用 1 罐');
+  const shelfBefore = activeCard.querySelector('.detail-card-shelf').outerHTML;
+  for (const [elapsed, label, tone, width] of [
+    [0, '开封保鲜剩 4 天', 'fresh', '100%'],
+    [1, '开封保鲜剩 3 天', 'warning', '75%'],
+    [2, '开封保鲜剩 2 天', 'warning', '50%'],
+    [4, '开封保鲜剩 0 天', 'urgent', '0%'],
+    [5, '已超保鲜期', 'expired', '0%']
+  ]) {
+    openedCardItem.openedDate = utils.shiftDaysFromToday(-elapsed);
+    ui.renderPantryList();
+    checkProgress(openedCardItem.id, label, tone, width);
+    assert.equal(card(openedCardItem.id).querySelector('.detail-card-shelf').outerHTML, shelfBefore);
+  }
+  openedCardItem.openedDate = '';
+  ui.renderPantryList();
+  assert.equal(progress(openedCardItem.id), null);
+  console.log('Opened card progress passes');
   w.close();
 }
 
