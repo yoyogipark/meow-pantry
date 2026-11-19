@@ -199,14 +199,14 @@
 
   Utils.formatRemainFractionText = function (remFrac, unitStr) {
     var r = Number(remFrac);
-    if (!isFinite(r) || r <= 0.05 || r >= 0.98) return '';
+    if (!isFinite(r) || r <= 0 || r >= 1) return '';
     var u = unitStr || '罐';
-    if (Math.abs(r - 0.5) <= 0.06) return '余1/2' + u;
-    if (Math.abs(r - 0.66) <= 0.08) return '余2/3' + u;
-    if (Math.abs(r - 0.33) <= 0.08) return '余1/3' + u;
-    if (Math.abs(r - 0.75) <= 0.06) return '余3/4' + u;
-    if (Math.abs(r - 0.25) <= 0.06) return '余1/4' + u;
-    return '余' + Math.round(r * 100) + '%' + u;
+    if (Math.abs(r - 0.5) <= 0.005) return '余1/2' + u;
+    if (Math.abs(r - 2 / 3) <= 0.005) return '余2/3' + u;
+    if (Math.abs(r - 1 / 3) <= 0.005) return '余1/3' + u;
+    if (Math.abs(r - 0.75) <= 0.005) return '余3/4' + u;
+    if (Math.abs(r - 0.25) <= 0.005) return '余1/4' + u;
+    return '余' + (r < 0.0001 ? '不足0.01' : Utils.round2(r * 100)) + '%' + u;
   };
 
   Utils.computePortionGramLabel = function (baseLabel, frac, specStr) {
