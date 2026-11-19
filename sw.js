@@ -1,23 +1,23 @@
 const CACHE_PREFIX = 'meow-pantry-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v59';
+const CACHE_NAME = CACHE_PREFIX + 'v62';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './css/styles.css?v=59',
-  './js/covers.js?v=59',
-  './js/constants.js?v=59',
-  './js/utils.js?v=59',
-  './js/domain.js?v=59',
-  './js/storage.js?v=59',
-  './js/stats.js?v=59',
-  './js/modal.js?v=59',
-  './js/ui.js?v=59',
-  './js/ui-pantry.js?v=59',
-  './js/ui-settings.js?v=59',
-  './js/app.js?v=59'
+  './css/styles.css?v=62',
+  './js/covers.js?v=62',
+  './js/constants.js?v=62',
+  './js/utils.js?v=62',
+  './js/domain.js?v=62',
+  './js/storage.js?v=62',
+  './js/stats.js?v=62',
+  './js/modal.js?v=62',
+  './js/ui.js?v=62',
+  './js/ui-pantry.js?v=62',
+  './js/ui-settings.js?v=62',
+  './js/app.js?v=62'
 ];
 
 self.addEventListener('install', (event) => {

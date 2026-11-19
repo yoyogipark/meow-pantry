@@ -477,22 +477,25 @@ async function run() {
   const summary = banner.firstElementChild;
   assert.ok(summary.matches('.detail-card-open-summary'));
   assert.equal(summary.querySelector('.detail-card-stock-text').textContent, '未开封 2 罐 + 开封余 1/4 罐');
-  assert.equal(summary.querySelector('.detail-card-used').textContent, '已用 1 罐');
+  assert.doesNotMatch(summary.textContent, /已用/);
+  assert.equal(activeCard.querySelector('.stock-quantity-pill .stock-quantity-used').textContent, '已用 1 罐');
   assert.equal(summary.lastElementChild.textContent, '开封 ' + openedCardItem.openedDate);
   assert.equal(summary.nextElementSibling, progress(openedCardItem.id));
   assert.deepEqual(Array.from(progress(openedCardItem.id).children, child => child.className),
     ['detail-card-open-progress-label', 'progress-track']);
   for (const opened of [openedCardItem, multiCardItem, sharedDetail]) {
     const actions = card(opened.id).querySelector('.detail-card-actions');
-    assert.equal(actions.children.length, 1);
+    assert.equal(actions.querySelector('.stock-quantity-pill').firstElementChild.textContent,
+      '在库 ' + opened.quantity + ' ' + opened.unit);
     assert.deepEqual(Array.from(actions.querySelectorAll('button'), button => button.dataset.action), ['item-history', 'log-feed']);
   }
   assert.equal(card(multiCardItem.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '已开封 2 杯');
   assert.equal(card(sharedDetail.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '在库 3 杯 · 共用包装已开封');
   const unopenedCard = card(unopenedCardItem.id);
   assert.equal(unopenedCard.querySelector('.detail-card-open-stock'), null);
-  assert.equal(unopenedCard.querySelector('.detail-card-unopened-stock .detail-card-stock-text').textContent, '在库 2 杯');
-  assert.equal(unopenedCard.querySelector('.detail-card-unopened-stock .detail-card-used').textContent, '已用 2 杯');
+  assert.equal(unopenedCard.querySelector('.stock-quantity-pill').firstElementChild.textContent, '在库 2 杯');
+  assert.equal(unopenedCard.querySelector('.stock-quantity-pill .stock-quantity-used').textContent, '已用 2 杯');
+  assert.equal(card(multiCardItem.id).querySelector('.stock-quantity-open').textContent, '开封 2 杯');
   const checkOpenedStock = (item, expected) => {
     const row = card(item.id).querySelector('.detail-card-open-summary');
     assert.equal(row.querySelector('.detail-card-stock-text').textContent, expected);

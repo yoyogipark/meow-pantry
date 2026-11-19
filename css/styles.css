@@ -815,6 +815,30 @@ body.is-edit-mode .mode-switch-pill {
   min-width: 0;
 }
 
+.stock-quantity-pill {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #F1E6D6;
+  color: #4A3A2E;
+  font-size: 11.5px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.stock-quantity-used {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #E8DCCB;
+  color: #6B5A4C;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .detail-card-heading {
   margin-bottom: 4px;
 }
@@ -859,8 +883,7 @@ body.is-edit-mode .mode-switch-pill {
 
 .detail-card-line,
 .detail-card-dates,
-.detail-card-open-stock,
-.detail-card-unopened-stock {
+.detail-card-open-stock {
   overflow-wrap: anywhere;
   line-height: 1.4;
 }
@@ -917,8 +940,7 @@ body.is-edit-mode .mode-switch-pill {
 
 .detail-card-track--expired { box-shadow: inset 0 0 0 1px #991B1B; }
 
-.detail-card-open-stock,
-.detail-card-unopened-stock {
+.detail-card-open-stock {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -990,15 +1012,6 @@ body.is-edit-mode .mode-switch-pill {
   color: #30251E;
   font-size: 13px;
   font-weight: 800;
-}
-
-.detail-card-used {
-  padding: 1px 6px;
-  border-radius: 6px;
-  background: #EAE2D7;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 700;
 }
 
 .status-card-label { font-size: 11px; font-weight: 700; }
