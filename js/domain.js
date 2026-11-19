@@ -10,6 +10,7 @@
       schemaVersion: MP.SCHEMA_VERSION,
       warnDays: 60,
       defaultCurrency: 'CNY',
+      dailyFeedGrams: { dry: null, freeze: null, can: null },
       pantryPageSize: 6,
       pantryDisplayMode: 'card',
       lastBackupDate: '',
@@ -240,6 +241,8 @@
       ? raw.id.trim()
       : ('item_migrated_' + Date.now() + '_' + (fallbackIdx || 0));
     clean.category = cat;
+    var netWeight = Number(raw.unit_net_weight_g);
+    clean.unit_net_weight_g = cat === 'can' && Number.isFinite(netWeight) && netWeight > 0 ? netWeight : null;
     clean.brand = String(raw.brand === undefined || raw.brand === null ? '' : raw.brand).trim() || '未命名品牌';
     clean.name = String(raw.name === undefined || raw.name === null ? '' : raw.name).trim() || '未命名单品';
     clean.spec = String(raw.spec || '').trim();
@@ -326,6 +329,7 @@
       beforeQty: Utils.round2(Math.max(0, Number(raw.beforeQty) || 0)),
       afterQty: Utils.round2(Math.max(0, Number(raw.afterQty) || 0)),
       note: String(raw.note || '').trim(),
+      ...(Number.isFinite(raw.unitWeightGrams) && raw.unitWeightGrams > 0 ? { unitWeightGrams: raw.unitWeightGrams } : {}),
       isSample: Boolean(raw.isSample)
     };
   };
@@ -371,6 +375,7 @@
     archiveItem.brand = activeItem.brand;
     archiveItem.name = activeItem.name;
     archiveItem.spec = activeItem.spec;
+    archiveItem.unit_net_weight_g = activeItem.unit_net_weight_g;
     if (activeItem.subtype) archiveItem.subtype = activeItem.subtype;
     else delete archiveItem.subtype;
     archiveItem.unit = activeItem.unit;
@@ -405,6 +410,7 @@
   // ==================== STOCK OPERATION HISTORY LEDGER ====================
   Domain.appendStockHistory = function (entry) {
     if (!entry) return;
+    var item = state.items.find(function (batch) { return batch.id === entry.itemId; });
     var record = Domain.sanitizeStockHistoryEntry({
       id: 'hist_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
       timestamp: entry.timestamp || Utils.getNowDateTimeStr(),
@@ -419,6 +425,7 @@
       beforeQty: entry.beforeQty !== undefined ? entry.beforeQty : 0,
       afterQty: entry.afterQty !== undefined ? entry.afterQty : 0,
       note: entry.note || '',
+      unitWeightGrams: entry.action === 'consume' && item && MP.Forecast ? MP.Forecast.unitGrams(item) : 0,
       isSample: Boolean(entry.isSample)
     });
     state.stockHistory.unshift(record);

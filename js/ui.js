@@ -914,6 +914,31 @@
 
   UI.markItemUnitManual = function () { manualItemUnit = true; };
 
+  UI.syncNetWeight = function (resetValue) {
+    var input = document.getElementById('fieldNetWeight');
+    var wet = MP.state.formCat === 'can';
+    var editing = Boolean(document.getElementById('fieldId').value);
+    input.disabled = !wet;
+    input.required = wet && !editing;
+    document.getElementById('netWeightField').classList.toggle('hidden-view', !wet);
+    if (resetValue || !wet) {
+      input.value = '';
+      delete input.dataset.suggestedWeight;
+    }
+    if (!wet || editing || (input.value && input.value !== input.dataset.suggestedWeight)) return;
+    var product = { category: 'can' };
+    [['brand', 'fieldBrand'], ['name', 'fieldName'], ['spec', 'fieldSpec'], ['unit', 'fieldUnit']].forEach(function (pair) {
+      product[pair[0]] = document.getElementById(pair[1]).value.trim();
+    });
+    if (!product.brand || !product.name) return;
+    var key = Domain.getProductGroupKey(product);
+    var match = MP.state.items.find(function (item) {
+      return item.unit_net_weight_g > 0 && Domain.getProductGroupKey(item) === key;
+    });
+    input.value = match ? match.unit_net_weight_g : '';
+    input.dataset.suggestedWeight = input.value;
+  };
+
   UI.syncModalCategoryUI = function (catKey, applyDefaults) {
     var st = MP.state;
     st.formCat = catKey;
@@ -1162,14 +1187,14 @@
   UI.syncModalCurrencyUI = function (curCode) {
     var cur = curCode === 'JPY' ? 'JPY' : 'CNY';
     MP.state.formCurrency = cur;
-    var prefixEl = document.getElementById('pricePrefixSymbol');
+    var unitEl = document.getElementById('priceCurrencyUnit');
     var priceInput = document.getElementById('fieldPrice');
     if (cur === 'JPY') {
-      prefixEl.textContent = 'JP¥';
+      unitEl.textContent = '円';
       priceInput.step = '1';
       priceInput.placeholder = '380';
     } else {
-      prefixEl.textContent = 'CN¥';
+      unitEl.textContent = '元';
       priceInput.step = '0.01';
       priceInput.placeholder = '0.00';
     }
@@ -1298,6 +1323,7 @@
     document.getElementById('fieldUnit').disabled = false;
     resetSubtypeForm();
     UI.syncModalCategoryUI(defaultCat, true);
+    UI.syncNetWeight(true);
     setPurchasePackagingForm();
     UI.autoComputeExpDate();
     UI.syncModalCurrencyUI(st.settings.defaultCurrency || 'CNY');
@@ -1308,7 +1334,7 @@
     UI.showModal('itemModalBackdrop', 'fieldBrand');
   };
 
-  UI.openEditModal = function (id) {
+  UI.openEditModal = function (id, focusId) {
     var item = MP.state.items.find(function (x) { return x.id === id; });
     if (!item) return;
 
@@ -1337,13 +1363,15 @@
     document.getElementById('fieldPhotoInput').value = '';
     resetSubtypeForm(item, Boolean(document.getElementById('fieldId').value));
     UI.syncModalCategoryUI(item.category || 'dry', false);
+    UI.syncNetWeight(true);
+    document.getElementById('fieldNetWeight').value = item.unit_net_weight_g || '';
     setPurchasePackagingForm(item);
     UI.syncModalCurrencyUI(item.currency || 'CNY');
     UI.syncModalPalatabilityUI(item.palatability || '');
     UI.syncOpenedFieldsVisibility();
     UI.renderQuickBrandChips();
     UI.syncAllDateDisplays();
-    UI.showModal('itemModalBackdrop', 'fieldBrand');
+    UI.showModal('itemModalBackdrop', focusId || 'fieldBrand');
   };
 
   UI.openRestockModal = function (item) {
@@ -1379,6 +1407,8 @@
     document.getElementById('fieldPhotoInput').value = '';
     resetSubtypeForm(item, Boolean(document.getElementById('fieldId').value));
     UI.syncModalCategoryUI(item.category || 'dry', false);
+    UI.syncNetWeight(true);
+    document.getElementById('fieldNetWeight').value = item.unit_net_weight_g || '';
     setPurchasePackagingForm(item);
     UI.syncModalCurrencyUI(item.currency || MP.state.settings.defaultCurrency || 'CNY');
     UI.syncModalPalatabilityUI(item.palatability || '');
