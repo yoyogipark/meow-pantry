@@ -72,7 +72,7 @@
 
     if (setBadge) {
       setBadge.style.background = exportTime ? '#DCFCE7' : '#F5F5F4';
-      setBadge.style.color = exportTime ? '#15803D' : '#78716C';
+      setBadge.style.color = exportTime ? '#15803D' : '#6B5A4C';
       setBadge.textContent = exportTime ? '✓ 已备份 ' + exportTime : '未备份';
     }
 
