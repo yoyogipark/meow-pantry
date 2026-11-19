@@ -21,6 +21,7 @@ assert.equal(Utils.addShelfLife('2023-01-31', 1, 'months'), '2023-02-28');
 assert.equal(Utils.addShelfLife('2024-02-29', 12, 'months'), '2025-02-28');
 assert.equal(Utils.subtractShelfLife('2024-02-29', 1, 'months'), '2024-01-29');
 assert.equal(Utils.diffDaysBetween('2024-02-28', '2024-03-01'), 2);
+assert.deepEqual(Array.from(Utils.parsePortionSpec('50g/罐')).slice(1), ['50', 'g', '罐']);
 assert.equal(Utils.escapeHtml(`<img src=x onerror="alert('x')">`), '&lt;img src=x onerror=&quot;alert(&#39;x&#39;)&quot;&gt;');
 
 assert.match(Storage.validateAndParseBackup('').error, /为空/);
