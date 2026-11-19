@@ -435,7 +435,7 @@
           : '开封' + (openCount > 1 ? '最早' : '') + '剩' + days + '天';
       tone = days > 30 ? 'fresh' : days >= 7 ? 'warning' : days >= 0 ? 'urgent' : 'expired';
     }
-    return '<span class="detail-card-open-badge detail-card-open-badge--' + tone + '">' + label + '</span>';
+    return '<span class="detail-card-reminder detail-card-open-badge detail-card-open-badge--' + tone + '">' + label + '</span>';
   }
 
   function detailedShelfProgress(item, days) {
@@ -839,9 +839,9 @@
                 '<div class="detail-card-tags">' +
                   '<span style="background:' + catBadgeBg + ';color:' + catBadgeCol + ';padding:2px 6px;border-radius:7px;font-size:10.5px;font-weight:700;overflow-wrap:anywhere;">' + catInfo.icon + ' ' + catInfo.label + (it.subtype ? ' · ' + Utils.escapeHtml(it.subtype) : '') + '</span>' +
                   '<span class="detail-card-brand">' + Utils.escapeHtml(it.brand) + '</span>' +
-                  (stock.opened ? detailedOpenedBadge(ev.openRemaining, stock.openCount) : '') +
                 '</div>' +
-                (stock.opened ? '' : '<span class="detail-card-status detail-card-status--' + ev.status +
+                (stock.opened ? detailedOpenedBadge(ev.openRemaining, stock.openCount)
+                  : '<span class="detail-card-reminder detail-card-status detail-card-status--' + ev.status +
                   '" style="background:' + badgeBg + ';color:' + badgeText + ';">' + Utils.escapeHtml(badgeLabel) + '</span>') +
               '</div>' +
               '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#1C1917;line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) + '</h3>' +
