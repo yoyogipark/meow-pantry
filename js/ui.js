@@ -2169,19 +2169,15 @@
           topBanner.classList.add('hidden-view');
         }
       }
-      if (setBadge) {
-        setBadge.style.background = '#FEF2F2';
-        setBadge.style.color = '#DC2626';
-        setBadge.textContent = '⚠️ ' + badgeCount + ' 项改动待备份' + (exportTime ? ' · 上次发起 ' + exportTime : '');
-      }
     } else {
       if (dotEl) dotEl.classList.add('hidden-view');
       if (topBanner) topBanner.classList.add('hidden-view');
-      if (setBadge) {
-        setBadge.style.background = '#DCFCE7';
-        setBadge.style.color = '#15803D';
-        setBadge.textContent = exportTime ? '✅ 最近发起导出 · ' + exportTime : '尚无导出时间记录';
-      }
+    }
+
+    if (setBadge) {
+      setBadge.style.background = exportTime ? '#DCFCE7' : '#F5F5F4';
+      setBadge.style.color = exportTime ? '#15803D' : '#78716C';
+      setBadge.textContent = exportTime ? '✓ 已备份 ' + exportTime : '未备份';
     }
 
     var engineLabel = (st.storageHealth.idbAvailable && st.storageHealth.lsAvailable)
