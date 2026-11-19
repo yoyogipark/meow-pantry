@@ -301,18 +301,18 @@ body:not(.is-edit-mode) .edit-only {
   align-items: center;
   justify-content: center;
   flex: none;
-  height: 44px;
-  min-height: 44px;
+  height: 35px;
+  min-height: 35px;
   padding: 0;
+  gap: 3px;
   border-radius: 10px;
+  font-size: 11px;
   line-height: 1.2;
   white-space: nowrap;
 }
 
 .app-header #openAddModalBtn {
-  width: 88px;
-  gap: 4px;
-  font-size: 12.5px;
+  width: 65px;
   background: var(--accent);
 }
 
@@ -325,9 +325,7 @@ body:not(.is-edit-mode) .edit-only {
 
 .mode-switch-pill {
   position: relative;
-  width: 64px;
-  gap: 5px;
-  font-size: 12px;
+  width: 55px;
   font-weight: 700;
   cursor: pointer;
   user-select: none;
