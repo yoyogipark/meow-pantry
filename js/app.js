@@ -863,16 +863,6 @@
       UI.openFeedModal(btn.getAttribute('data-priority-feed'), Utils.getTodayStr());
     });
 
-    document.getElementById('brandStatsList').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-jump-brand]');
-      if (!btn) return;
-      var brandName = btn.getAttribute('data-jump-brand');
-      clearPantryFilters();
-      st.brandFilter = brandName;
-      UI.renderAll();
-      UI.switchTab('pantry');
-      UI.showToast('已筛选品牌：' + brandName);
-    });
 
     document.getElementById('medReminderBanner').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-dismiss-rem]');
@@ -1360,7 +1350,7 @@
       st.settings.defaultCurrency = btn.getAttribute('data-def-currency') === 'JPY' ? 'JPY' : 'CNY';
       Storage.saveToStorage();
       UI.renderAll();
-      UI.showToast('默认币种已设为' + (st.settings.defaultCurrency === 'JPY' ? '日元 (円)' : '人民币 (CN¥)'));
+      UI.showToast('默认币种已设为' + (st.settings.defaultCurrency === 'JPY' ? '日元' : '人民币'));
     });
 
     function exportJsonBackup() {

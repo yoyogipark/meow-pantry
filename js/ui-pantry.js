@@ -105,9 +105,8 @@
     var pack = item.purchasePackaging;
     var price = Number(item.price);
     if (!pack || !(price > 0) || !Number.isFinite(price)) return '';
-    var isYen = item.currency === 'JPY';
-    var unitPrice = isYen ? Utils.formatMoney(price, 'JPY') : 'CN¥' + Utils.round2(price);
-    var packPrice = isYen ? Utils.formatMoney(price * pack.size, 'JPY') : '¥' + Utils.round2(price * pack.size);
+    var unitPrice = Utils.formatMoney(price, item.currency);
+    var packPrice = Utils.formatMoney(price * pack.size, item.currency);
     return Utils.escapeHtml(unitPrice + '/' + unit + ' · ' + packPrice + '/' + pack.outerUnit + '（' + pack.size + unit + '）');
   }
 
@@ -710,7 +709,7 @@
       var price = Utils.formatMoney(it.price, it.currency);
       if (!priceLine && price) {
         var per100 = catInfo.group === 'food' && !it.flavors ? Utils.formatPer100gPrice(it.price, it.currency, it.spec) : '';
-        priceLine = price + '/' + unitStr + (per100 ? '（' + per100.replace(/^≈¥/, '≈CN¥') + '）' : '');
+        priceLine = price + '/' + unitStr + (per100 ? '（' + per100 + '）' : '');
       }
       var locationParts = [];
       if (it.location) locationParts.push('📍' + Utils.escapeHtml(it.location));

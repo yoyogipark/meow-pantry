@@ -128,9 +128,9 @@
 
   function formatGroupValueStr(cny, jpy) {
     var parts = [];
-    if (cny > 0) parts.push('CN¥' + Math.round(cny).toLocaleString('en-US'));
-    if (jpy > 0) parts.push(Math.round(jpy).toLocaleString('en-US') + '円');
-    return parts.length ? parts.join(' + ') : '¥0';
+    if (jpy > 0) parts.push(Utils.formatMoney(jpy, 'JPY'));
+    if (cny > 0) parts.push(Utils.formatMoney(cny, 'CNY'));
+    return parts.length ? parts.join(' · ') : '暂无金额';
   }
 
   Stats.missingWeightNotice = function (ids, compact) {
@@ -174,8 +174,9 @@
     var scopedCny = scope === 'all' ? (gt.food.cny + gt.supp.cny + gt.med.cny) : gt[scope].cny;
     var scopedJpy = scope === 'all' ? (gt.food.jpy + gt.supp.jpy + gt.med.jpy) : gt[scope].jpy;
     document.getElementById('forecastValues').innerHTML =
-      '<div>在库价值 · 人民币<p><span>CNY</span> <strong>' + scopedCny.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong></p></div>' +
-      '<div>在库价值 · 日元<p><span>JPY</span> <strong>' + Math.round(scopedJpy).toLocaleString('ja-JP') + '</strong></p></div>';
+      (scopedCny > 0 ? '<div>在库价值 · 人民币<p><strong>' + Utils.formatMoney(scopedCny, 'CNY') + '</strong></p></div>' : '') +
+      (scopedJpy > 0 ? '<div>在库价值 · 日元<p><strong>' + Utils.formatMoney(scopedJpy, 'JPY') + '</strong></p></div>' : '') +
+      (!scopedCny && !scopedJpy ? '<div>在库价值<p><strong>暂无金额</strong></p></div>' : '');
 
     var scopeLabels = { all: '全部', food: '普通食品', supp: '营养品', med: '药品' };
     Array.prototype.forEach.call(scopeBtns, function (button) {
@@ -393,10 +394,23 @@
       med:  '🩺 药品耐受反应'
     };
     var tabBtns = document.querySelectorAll('#palTierTabBar [data-tier-tab]');
+    var foodTiers = ['love', 'ok', 'coax', 'meh'];
+    var distribution = document.getElementById('palTierDistribution');
+    var ratedTiers = foodTiers.filter(function (key) { return tierCounts[key] > 0; });
+    distribution.innerHTML = ratedTiers.map(function (key) {
+      return '<span data-tier-segment="' + key + '" style="flex-grow:' + tierCounts[key] + '"></span>';
+    }).join('');
+    distribution.classList.toggle('hidden-view', !ratedTiers.length);
+    distribution.setAttribute('aria-label', '普通食品适口性分布：' + ratedTiers.map(function (key) {
+      return (key === 'meh' ? '不喜欢' : tierLabels[key]) + ' ' + tierCounts[key] + ' 款';
+    }).join('，'));
     for (var tIdx = 0; tIdx < tabBtns.length; tIdx++) {
       var tk = tabBtns[tIdx].getAttribute('data-tier-tab');
-      tabBtns[tIdx].textContent = tierLabels[tk] + ' (' + (tierCounts[tk] || 0) + ')';
+      var countLabel = tabBtns[tIdx].querySelector('[data-tier-count]');
+      if (countLabel) countLabel.textContent = tierCounts[tk];
+      else tabBtns[tIdx].textContent = tierLabels[tk] + ' (' + (tierCounts[tk] || 0) + ')';
       tabBtns[tIdx].classList.toggle('active', tk === st.statsTierTab);
+      tabBtns[tIdx].setAttribute('aria-pressed', String(tk === st.statsTierTab));
     }
 
     var tierMatched = uniqueProducts.filter(function (prod) {
@@ -450,28 +464,25 @@
         var stockTag = prod.inStockQty > 0
           ? '<span style="font-size:11px;font-weight:700;color:#15803D;background:#DCFCE7;padding:2px 7px;border-radius:6px;">在库 ' + prod.inStockQty + Utils.escapeHtml(prod.unit) + '</span>'
           : '<span style="font-size:11px;font-weight:700;color:#6B5A4C;background:#E7E5E4;padding:2px 7px;border-radius:6px;">已用完/断货</span>';
-        var avgTxt = prod.daysUnits > 0
-          ? (' · 均 ' + Math.max(1, Math.round(prod.totalDays / prod.daysUnits)) + '天/' + Utils.escapeHtml(prod.unit))
-          : '';
-
         return (
-          '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;">' +
-            '<img src="' + coverSrc + '" alt="' + Utils.escapeHtml(prod.name) + '" style="width:48px;height:48px;border-radius:11px;object-fit:cover;border:1px solid #E7E5E4;flex-shrink:0;background:#FFF;">' +
-            '<div style="min-width:0;flex:1;">' +
-              '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">' +
+          '<div class="pal-record-card">' +
+            '<img class="pal-record-cover" src="' + coverSrc + '" alt="' + Utils.escapeHtml(prod.name) + '">' +
+            '<div class="pal-record-main">' +
+              '<div class="pal-record-tags">' +
                 '<span style="font-size:11px;font-weight:700;color:#44403C;background:#E7E5E4;padding:1px 6px;border-radius:5px;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
                 '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 7px;border-radius:5px;">' + Utils.escapeHtml(prod.brand) + '</span>' +
                 (palBadge ? '<span style="font-size:11px;font-weight:700;background:' + palBadge.bg + ';color:' + palBadge.text + ';padding:1px 7px;border-radius:999px;">' + palBadge.label + '</span>' : '') +
               '</div>' +
-              '<div style="font-size:14px;font-weight:800;color:#2B2320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-                Utils.escapeHtml(prod.name) + (prod.spec ? (' <span style="font-size:11.5px;font-weight:500;color:#6B5A4C;">(' + Utils.escapeHtml(prod.spec) + ')</span>') : '') +
-              '</div>' +
-              '<div style="margin-top:3px;font-size:11px;color:#57534E;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-                stockTag +
-                '<span>累计已核销 ' + prod.eatenQty + Utils.escapeHtml(prod.unit) + avgTxt + '</span>' +
+              '<div class="pal-record-title">' +
+                Utils.escapeHtml(prod.name) + (prod.spec ? (' <span class="pal-record-spec">(' + Utils.escapeHtml(prod.spec) + ')</span>') : '') +
               '</div>' +
             '</div>' +
-            '<button type="button" data-tier-restock="' + Utils.escapeHtml(prod.rep.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">＋复购</button>' +
+            '<div class="pal-record-footer"><div class="pal-record-quantities">' +
+                stockTag +
+                '<span>累计已核销 ' + prod.eatenQty + Utils.escapeHtml(prod.unit) + '</span>' +
+              '</div>' +
+              '<button type="button" data-tier-restock="' + Utils.escapeHtml(prod.rep.id) + '">＋复购</button>' +
+            '</div>' +
           '</div>'
         );
       }).join('');
@@ -480,7 +491,7 @@
     // ==================== SUB-VIEW 3A: 30-DAY FEEDING PREFERENCES (Food Strictly Separated from Supp & Med!) ====================
     var r30 = metrics.recent30;
     document.getElementById('recent30CountBadge').textContent =
-      '已记录喂食 ' + r30.food.length + ' 顿' + ((r30.supp.length + r30.med.length) > 0 ? (' · 营养/药护 ' + (r30.supp.length + r30.med.length) + ' 次') : '');
+      r30.food.length + ' 顿';
 
     var prefBox = document.getElementById('recent30PrefBox');
     if (r30.all.length === 0) {
@@ -490,56 +501,42 @@
       if (r30.food.length === 0) {
         foodHtml = '<div style="font-size:12px;color:#6B5A4C;margin-bottom:8px;">近 30 天暂无普通食品记录</div>';
       } else {
-        var favMap = {};
-        var catLogCount = {};
-        r30.food.forEach(function (lg) {
-          var ck = lg.category || 'dry';
-          catLogCount[ck] = (catLogCount[ck] || 0) + 1;
-          var product = Domain.resolveLogProduct(lg);
-          var fk = (product.brand || '') + ' · ' + product.name;
-          if (!favMap[fk]) {
-            favMap[fk] = { title: fk, category: ck, count: 0, lastDate: lg.date || '', ratings: Object.create(null) };
+        var foods = new Map();
+        var counts = { dry: 0, can: 0 };
+        r30.food.forEach(function (log) {
+          if (Object.hasOwn(counts, log.category)) counts[log.category] += 1;
+          var product = Domain.resolveLogProduct(log);
+          var key = (product.brand || '') + ' · ' + product.name;
+          var row = foods.get(key);
+          if (!row) {
+            row = { brand: product.brand, name: product.name, category: log.category, count: 0 };
+            foods.set(key, row);
           }
-          favMap[fk].count += 1;
-          if (MP.PALATABILITY[lg.flavorPalatability]) {
-            var rating = lg.flavorPalatability;
-            favMap[fk].ratings[rating] = (favMap[fk].ratings[rating] || 0) + 1;
-          }
-          if (String(lg.date || '') > favMap[fk].lastDate) favMap[fk].lastDate = lg.date;
+          row.count += 1;
         });
-
-        var topFavs = Object.keys(favMap).map(function (k) { return favMap[k]; }).sort(function (a, b) {
-          return b.count - a.count;
-        }).slice(0, 3);
-
-        var catPillsHtml = ['dry', 'can', 'freeze', 'treat'].filter(function (k) { return catLogCount[k] > 0; }).map(function (k) {
-          var ci = MP.CATEGORIES[k];
-          var pct = Math.round((catLogCount[k] / r30.food.length) * 100);
-          return '<span style="background:#FAFAF9;border:1px solid #E7E5E4;color:#44403C;padding:3px 9px;border-radius:8px;font-size:11.5px;font-weight:700;">' + ci.icon + ' ' + ci.label + ' ' + catLogCount[k] + '顿 (' + pct + '%)</span>';
+        var total = r30.food.length;
+        var ratioKeys = ['dry', 'can'];
+        var legend = ratioKeys.map(function (key) {
+          return '<span class="feeding-ratio-' + key + '">' + MP.CATEGORIES[key].label + ' ' +
+            counts[key] + ' 顿 · ' + Math.round(counts[key] / total * 100) + '%</span>';
         }).join('');
-
-        var medals = ['🥇', '🥈', '🥉'];
-        var topRowsHtml = topFavs.map(function (fav, idx) {
-          var ci = MP.CATEGORIES[fav.category] || MP.CATEGORIES.dry;
-          var ratings = Object.keys(fav.ratings).map(function (key) {
-            return MP.PALATABILITY[key].label + ' ' + fav.ratings[key] + '次';
-          }).join(' · ');
-          return (
-            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
-              '<div style="display:flex;align-items:center;gap:6px;min-width:0;">' +
-                '<span style="font-size:15px;">' + (medals[idx] || '🐾') + '</span>' +
-                '<span style="font-size:11px;background:#E7E5E4;color:#44403C;padding:1px 6px;border-radius:5px;flex-shrink:0;">' + ci.icon + ci.label + '</span>' +
-                '<strong style="font-size:13px;color:#2B2320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(fav.title) + (ratings ? ' · ' + Utils.escapeHtml(ratings) : '') + '</strong>' +
-              '</div>' +
-              '<span style="font-size:12px;font-weight:800;color:#E8590C;white-space:nowrap;">已记录喂食 ' + fav.count + ' 顿</span>' +
-            '</div>'
-          );
+        var segments = ratioKeys.map(function (key) {
+          return counts[key] ? '<span class="feeding-ratio-' + key + '" style="width:' + counts[key] / total * 100 + '%"></span>' : '';
         }).join('');
-
-        foodHtml =
-          '<div style="font-size:11.5px;font-weight:800;color:#9A3412;margin-bottom:6px;">🍽️ 普通食品结构与 TOP 3 偏好（仅统计猫粮/湿粮/冻干/零食）</div>' +
-          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">' + catPillsHtml + '</div>' +
-          '<div style="display:flex;flex-direction:column;gap:6px;">' + topRowsHtml + '</div>';
+        var rows = Array.from(foods.values()).sort(function (a, b) { return b.count - a.count; }).slice(0, 3)
+          .map(function (food, index) {
+            var category = MP.CATEGORIES[food.category] || MP.CATEGORIES.dry;
+            return '<li><span class="feeding-rank">' + (index + 1) + '</span><span aria-label="' + category.label + '">' +
+              category.icon + '</span><span class="feeding-rank-product">' +
+              (food.brand ? '<span class="feeding-rank-brand">' + Utils.escapeHtml(food.brand) + '</span>' : '') +
+              '<span class="feeding-rank-name">' + Utils.escapeHtml(food.name) +
+              '</span></span><span>' + food.count + ' 顿</span></li>';
+          }).join('');
+        var otherCount = total - counts.dry - counts.can;
+        foodHtml = '<div class="feeding-ratio-legend">' + legend + '</div>' +
+          '<div class="feeding-ratio-bar" aria-hidden="true">' + segments + '</div>' +
+          (otherCount ? '<p class="feeding-ratio-note">其余为冻干、零食等 ' + otherCount + ' 顿</p>' : '') +
+          '<h3 class="feeding-rank-title">喂食频次 TOP 3</h3><ol class="feeding-rank-list">' + rows + '</ol>';
       }
 
       // Separate Supplement & Medicine 30-day block
@@ -642,42 +639,23 @@
         brandPagerEl.classList.add('hidden-view');
       }
 
-      brandEl.innerHTML = pagedBrandNames.map(function (b) {
-        var g = brandGroups[b];
-        var spendStr = formatGroupValueStr(g.spendCny, g.spendJpy);
-        var spendBadge = (g.spendCny > 0 || g.spendJpy > 0) ? (' · 累计购入 ' + spendStr) : '';
-        var consParts = [];
-        var foodConsumed = formatUnitQuantities(g.foodEatenUnits);
-        var careConsumed = formatUnitQuantities(g.careUsedUnits);
-        if (foodConsumed) consParts.push('累计已核销 ' + foodConsumed);
-        if (careConsumed) consParts.push('营养/药品已核销 ' + careConsumed);
-        var consText = consParts.length ? consParts.join(' · ') : '暂无核销归档';
-
-        var skuPillsHtml = g.products.map(function (prod) {
-          var ci = MP.CATEGORIES[prod.category] || MP.CATEGORIES.dry;
-          var pInfo = MP.getPalatabilityBadgeInfo(prod.rep);
-          var pillBg = pInfo ? pInfo.bg : '#FFFFFF';
-          var pillColor = pInfo ? pInfo.text : '#57534E';
-          var stockDot = prod.inStockQty > 0 ? (' (余' + prod.inStockQty + prod.unit + ')') : ' (已用完)';
-          return (
-            '<span style="display:inline-flex;align-items:center;padding:3px 8px;border-radius:8px;font-size:11.5px;font-weight:600;background:' + pillBg + ';color:' + pillColor + ';border:1px solid rgba(0,0,0,0.06);">' +
-              ci.icon + ' ' + Utils.escapeHtml(prod.name) + Utils.escapeHtml(stockDot) +
-            '</span>'
-          );
+      brandEl.innerHTML = pagedBrandNames.map(function (brand) {
+        var group = brandGroups[brand];
+        var rows = group.products.map(function (product) {
+          var category = MP.CATEGORIES[product.category] || MP.CATEGORIES.dry;
+          var inStock = product.inStockQty > 0;
+          return '<li class="brand-product-row">' +
+            '<span aria-hidden="true">' + category.icon + '</span>' +
+            '<span class="brand-product-name">' + Utils.escapeHtml(product.name) + '</span>' +
+            '<span class="brand-product-stock' + (inStock ? ' has-stock' : '') + '">' +
+              (inStock ? '余 ' + product.inStockQty + Utils.escapeHtml(product.unit) : '已用完') +
+            '</span></li>';
         }).join('');
-
-        return (
-          '<button type="button" data-jump-brand="' + Utils.escapeHtml(b) + '" style="width:100%;text-align:left;padding:12px 14px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;cursor:pointer;display:block;">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">' +
-              '<strong style="font-size:14.5px;color:#2B2320;">🏷️ ' + Utils.escapeHtml(b) + '</strong>' +
-              '<span style="font-size:12px;font-weight:700;color:#E8590C;">在库 ' + g.activeSkus + ' 款 / 共 ' + g.products.length + ' 款 ▶</span>' +
-            '</div>' +
-            '<div style="margin-top:3px;font-size:11.5px;color:#6B5A4C;">' +
-              Utils.escapeHtml(consText + spendBadge) +
-            '</div>' +
-            '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">' + skuPillsHtml + '</div>' +
-          '</button>'
-        );
+        return '<details class="brand-list-entry"><summary class="brand-list-summary">' +
+          '<span class="brand-list-name">' + Utils.escapeHtml(brand) + '</span>' +
+          '<span class="brand-list-count">在库 ' + group.activeSkus + ' 款</span>' +
+          '<span class="brand-list-spend">累计购入 ' + formatGroupValueStr(group.spendCny, group.spendJpy) + '</span>' +
+          '</summary><ul class="brand-products">' + rows + '</ul></details>';
       }).join('');
     }
   };

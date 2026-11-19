@@ -158,10 +158,13 @@
     if (!isFinite(num) || num <= 0) return '';
     var cur = currency === 'JPY' ? 'JPY' : 'CNY';
     if (cur === 'JPY') {
-      return Math.round(num).toLocaleString('en-US') + '円';
+      var yen = Math.round(num).toLocaleString('en-US');
+      return yen + '円';
     }
-    var fixed = Math.round(num * 100) % 100 === 0 ? String(Math.round(num)) : num.toFixed(1);
-    return 'CN¥' + fixed;
+    var yuan = num.toLocaleString('en-US', {
+      maximumFractionDigits: 2
+    });
+    return yuan + '元';
   };
 
   Utils.parseSpecToGrams = function (specStr) {
@@ -196,11 +199,7 @@
     var totalGrams = Utils.parseSpecToGrams(specStr);
     if (!totalGrams || totalGrams <= 0) return '';
     var per100g = (p / totalGrams) * 100;
-    if (currency === 'JPY') {
-      return '≈' + Math.round(per100g).toLocaleString('en-US') + '円/100g';
-    }
-    var fixed = per100g >= 10 ? per100g.toFixed(1) : per100g.toFixed(2);
-    return '≈¥' + fixed + '/100g';
+    return '≈' + Utils.formatMoney(per100g, currency) + '/100g';
   };
 
   Utils.formatRemainFractionText = function (remFrac, unitStr) {

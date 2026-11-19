@@ -11,7 +11,7 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/styles.css?v=80">
+  <link rel="stylesheet" href="./css/styles.css?v=88">
 </head>
 <body>
 
@@ -386,16 +386,17 @@
             <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
           </div>
 
-          <div id="palTierTabBar" class="no-scrollbar" style="display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">
-            <button type="button" data-tier-tab="love" class="pill-chip active" style="padding:6px 11px;font-size:12px;">😍 超爱吃</button>
-            <button type="button" data-tier-tab="ok" class="pill-chip" style="padding:6px 11px;font-size:12px;">😋 正常吃</button>
-            <button type="button" data-tier-tab="coax" class="pill-chip" style="padding:6px 11px;font-size:12px;">🥺 需哄吃</button>
-            <button type="button" data-tier-tab="meh" class="pill-chip" style="padding:6px 11px;font-size:12px;">😒 不爱吃</button>
+          <div id="palTierDistribution" class="pal-tier-distribution hidden-view" role="img"></div>
+          <div id="palTierTabBar" class="pal-tier-grid">
+            <button type="button" data-tier-tab="love" class="pill-chip pal-tier-button active"><span aria-hidden="true">😍</span><span>超爱吃</span><strong data-tier-count>0</strong></button>
+            <button type="button" data-tier-tab="ok" class="pill-chip pal-tier-button"><span aria-hidden="true">😋</span><span>正常吃</span><strong data-tier-count>0</strong></button>
+            <button type="button" data-tier-tab="coax" class="pill-chip pal-tier-button"><span aria-hidden="true">🥺</span><span>需哄吃</span><strong data-tier-count>0</strong></button>
+            <button type="button" data-tier-tab="meh" class="pill-chip pal-tier-button"><span aria-hidden="true">😒</span><span>不喜欢</span><strong data-tier-count>0</strong></button>
             <button type="button" data-tier-tab="supp" class="pill-chip" style="padding:6px 11px;font-size:12px;">💊 营养品接受度</button>
             <button type="button" data-tier-tab="med" class="pill-chip" style="padding:6px 11px;font-size:12px;">🩺 药品耐受反应</button>
           </div>
 
-          <div id="palTierCardsList" style="display:flex;flex-direction:column;gap:9px;"></div>
+          <div id="palTierCardsList" class="pal-record-list"></div>
 
           <div id="tierPaginationBar" class="hidden-view" style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <button id="prevTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
@@ -411,10 +412,9 @@
         <div class="ios-card" style="padding:15px;margin-bottom:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <div>
-              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">📈 近 30 天饮食与护理统计</h2>
-              <p style="margin:2px 0 0 0;font-size:11.5px;color:#6B5A4C;">日常口粮顿数占比与营养品/药品记录分开计算</p>
+              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">近30天喂食统计</h2>
             </div>
-            <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">食品 0 顿</span>
+            <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">0 顿</span>
           </div>
           <div id="recent30PrefBox"></div>
         </div>
@@ -436,7 +436,7 @@
             <button type="button" data-brand-scope="med" class="subfilter-chip">🩺 药品品牌</button>
           </div>
 
-          <div id="brandStatsList" style="display:flex;flex-direction:column;gap:10px;"></div>
+          <div id="brandStatsList" class="brand-list"></div>
 
           <div id="brandPaginationBar" class="hidden-view" style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <div style="display:flex;align-items:center;gap:6px;">
@@ -460,7 +460,7 @@
     <!-- ==================== TAB 4: 备份设置 (SETTINGS & BACKUP) ==================== -->
     <section id="viewSettings" class="hidden-view">
       <section id="dailyFeedSettings" class="ios-card daily-feed-settings">
-        <div class="daily-feed-heading"><h2>每日喂食量</h2><span>用于预测还能吃几天</span></div>
+        <div class="daily-feed-heading"><h2 class="settings-card-title">每日喂食量</h2><span>用于预测还能吃几天</span></div>
         <div class="daily-feed-grid">
           <div class="daily-feed-field">
             <label for="dailyFeedDry">猫粮</label>
@@ -489,8 +489,8 @@
       </section>
       <!-- Warning Threshold Setting -->
       <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <h2 style="margin:0 0 4px 0;font-size:16px;font-weight:800;color:#2B2320;">⏰ 临期预警天数设置</h2>
-        <p style="margin:0 0 12px 0;font-size:12px;color:#6B5A4C;">距离过期日少于该天数（或已拆封快到期）的商品会标黄提醒</p>
+        <h2 class="settings-card-title">⏰ 临期预警天数设置</h2>
+        <p class="settings-card-description">距离过期日少于该天数（或已拆封快到期）的商品会标黄提醒</p>
         <div id="warnDaysGroup" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <button type="button" data-warn-days="30" class="ios-btn ios-btn-secondary">30 天</button>
           <button type="button" data-warn-days="60" class="ios-btn ios-btn-secondary">60 天</button>
@@ -501,8 +501,8 @@
 
       <!-- Default Currency Preference -->
       <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <h2 style="margin:0 0 4px 0;font-size:16px;font-weight:800;color:#2B2320;">💴 新录入默认币种</h2>
-        <p style="margin:0 0 10px 0;font-size:12px;color:#6B5A4C;">新增商品时默认选中的货币（录入时也可随时切换人民币/日元，统计总值按币种独立核算）</p>
+        <h2 class="settings-card-title">💴 新录入默认币种</h2>
+        <p class="settings-card-description">新增商品时默认选中的货币（录入时也可随时切换人民币/日元，统计总值按币种独立核算）</p>
         <div id="defaultCurrencyGroup" class="grid-safe" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-primary">🇨🇳 人民币 (CN¥ / 元)</button>
           <button type="button" data-def-currency="JPY" class="ios-btn ios-btn-secondary">🇯🇵 日元 (JP¥ / 円)</button>
@@ -511,11 +511,11 @@
 
       <!-- Local Data Backup, Restore & Stock Operation Ledger -->
       <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;margin-bottom:4px;">
-          <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">💾 本地数据备份与恢复</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;">
+          <h2 class="settings-card-title">💾 本地数据备份与恢复</h2>
           <span id="settingsBackupBadge" style="margin-left:auto;max-width:100%;font-size:11px;font-weight:800;padding:2px 6px;border-radius:999px;background:#F5F5F4;color:#6B5A4C;">未备份</span>
         </div>
-        <p style="margin:0 0 12px 0;font-size:12px;color:#6B5A4C;line-height:1.45;">数据仅保存在本机，建议定期导出 JSON 备份。</p>
+        <p class="settings-card-description">数据仅保存在本机，建议定期导出 JSON 备份。</p>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
           <button id="exportJsonBtn" type="button" class="ios-btn ios-btn-primary" style="padding:11px 14px;">
@@ -686,8 +686,8 @@
               </div>
             </div>
             <div style="position:relative;min-width:0;">
-              <span id="pricePrefixSymbol" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#6B5A4C;pointer-events:none;">CN¥</span>
-              <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input" style="padding-left:36px;">
+              <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input" aria-describedby="priceCurrencyUnit" style="padding-right:26px;">
+              <span id="priceCurrencyUnit" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#6B5A4C;pointer-events:none;">元</span>
             </div>
           </div>
         </div>
@@ -1072,17 +1072,17 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=80"></script>
-  <script src="./js/constants.js?v=80"></script>
-  <script src="./js/utils.js?v=80"></script>
-  <script src="./js/forecast.js?v=80"></script>
-  <script src="./js/domain.js?v=80"></script>
-  <script src="./js/storage.js?v=80"></script>
-  <script src="./js/stats.js?v=80"></script>
-  <script src="./js/modal.js?v=80"></script>
-  <script src="./js/ui.js?v=80"></script>
-  <script src="./js/ui-pantry.js?v=80"></script>
-  <script src="./js/ui-settings.js?v=80"></script>
-  <script src="./js/app.js?v=80"></script>
+  <script src="./js/covers.js?v=88"></script>
+  <script src="./js/constants.js?v=88"></script>
+  <script src="./js/utils.js?v=88"></script>
+  <script src="./js/forecast.js?v=88"></script>
+  <script src="./js/domain.js?v=88"></script>
+  <script src="./js/storage.js?v=88"></script>
+  <script src="./js/stats.js?v=88"></script>
+  <script src="./js/modal.js?v=88"></script>
+  <script src="./js/ui.js?v=88"></script>
+  <script src="./js/ui-pantry.js?v=88"></script>
+  <script src="./js/ui-settings.js?v=88"></script>
+  <script src="./js/app.js?v=88"></script>
 </body>
 </html>

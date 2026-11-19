@@ -1187,14 +1187,14 @@
   UI.syncModalCurrencyUI = function (curCode) {
     var cur = curCode === 'JPY' ? 'JPY' : 'CNY';
     MP.state.formCurrency = cur;
-    var prefixEl = document.getElementById('pricePrefixSymbol');
+    var unitEl = document.getElementById('priceCurrencyUnit');
     var priceInput = document.getElementById('fieldPrice');
     if (cur === 'JPY') {
-      prefixEl.textContent = 'JP¥';
+      unitEl.textContent = '円';
       priceInput.step = '1';
       priceInput.placeholder = '380';
     } else {
-      prefixEl.textContent = 'CN¥';
+      unitEl.textContent = '元';
       priceInput.step = '0.01';
       priceInput.placeholder = '0.00';
     }
