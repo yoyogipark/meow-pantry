@@ -6,12 +6,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="喵喵粮仓">
-  <meta name="theme-color" content="#FAF7F2">
+  <meta name="theme-color" content="#F8F3EA">
   <title>喵喵粮仓 · 猫咪囤货与喂养管家</title>
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/styles.css?v=56">
+  <link rel="stylesheet" href="./css/styles.css?v=59">
 </head>
 <body>
 
@@ -30,8 +30,8 @@
           style="width:36px;height:36px;border-radius:11px;object-fit:cover;flex-shrink:0;border:1px solid #FED7AA;background:#FFF7ED;"
         >
         <div style="min-width:0;flex:1;">
-          <h1 style="margin:0;font-size:18.5px;font-weight:800;color:#1C1917;white-space:nowrap;line-height:1.2;">喵喵粮仓</h1>
-          <p id="headerSubtitle" style="margin:2px 0 0 0;font-size:11px;color:#78716C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">口粮 0 款 · 0 个品牌</p>
+          <h1 style="margin:0;font-size:18.5px;font-weight:800;color:#2B2320;white-space:nowrap;line-height:1.2;">喵喵粮仓</h1>
+          <p id="headerSubtitle" style="margin:2px 0 0 0;font-size:11px;color:#6B5A4C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">口粮 0 款 · 0 个品牌</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
@@ -57,7 +57,7 @@
           <span id="unbackedBannerText"><strong>备份提醒：</strong>已有 5 项数据变动未导出备份</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <button id="quickBackupNowBtn" type="button" style="border:none;padding:5px 10px;border-radius:8px;background:#EA580C;color:#FFFFFF;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
+          <button id="quickBackupNowBtn" type="button" style="border:none;padding:5px 10px;border-radius:8px;background:#E8590C;color:#FFFFFF;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
             导出备份
           </button>
           <button id="dismissBackupBannerBtn" type="button" aria-label="稍后提醒" style="border:1px solid #FDBA74;padding:5px 8px;border-radius:8px;background:#FFFFFF;color:#9A3412;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">
@@ -84,22 +84,22 @@
       <!-- 4 Primary Status Filter Cards -->
       <section class="status-card-grid">
         <button type="button" data-status-filter="in_stock" class="status-card selected" id="statCardStock">
-          <div style="font-size:11px;color:#78716C;font-weight:600;">在库批次</div>
+          <div style="font-size:11px;color:#6B5A4C;font-weight:600;">在库批次</div>
           <div id="countInStock" class="status-card-count is-zero">0</div>
           <div id="countStockPieces" class="stock-piece-count">共 0 件</div>
         </button>
         <button type="button" data-status-filter="expiring" class="status-card" id="statCardExpiring">
-          <div style="font-size:11px;color:#D97706;font-weight:700;">临期</div>
+          <div class="status-card-label">临期</div>
           <div id="countExpiring" class="status-card-count is-zero">0</div>
           <div id="countExpiringPieces" class="stock-piece-count">共 0 件</div>
         </button>
-        <button type="button" data-status-filter="expired" class="status-card" id="statCardExpired">
-          <div style="font-size:11px;color:#DC2626;font-weight:700;">已过期</div>
+        <button type="button" data-status-filter="expired" class="status-card is-zero" id="statCardExpired">
+          <div class="status-card-label">已过期</div>
           <div id="countExpired" class="status-card-count is-zero">0</div>
           <div id="countExpiredPieces" class="stock-piece-count">共 0 件</div>
         </button>
         <button type="button" data-status-filter="empty" class="status-card" id="statCardEmpty">
-          <div style="font-size:11px;color:#78716C;font-weight:600;">已核销</div>
+          <div style="font-size:11px;color:#6B5A4C;font-weight:600;">已核销</div>
           <div id="countEmpty" class="status-card-count is-zero">0</div>
           <div id="countEmptyPieces" class="stock-piece-count">共 0 件</div>
         </button>
@@ -132,14 +132,14 @@
               class="ios-input"
               style="padding-left:31px;height:36px;min-height:36px;font-size:13px;"
             >
-            <svg style="position:absolute;left:9px;top:10px;color:#A8A29E;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <svg style="position:absolute;left:9px;top:10px;color:#6B5A4C;" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
           <button id="openStockHistoryBtn" type="button" class="ios-btn ios-btn-secondary" title="查看全部库存变动流水" style="height:36px;min-height:36px;padding:0 9px;font-size:11.5px;white-space:nowrap;flex-shrink:0;">
             <span>📜 流水</span>
           </button>
           <div id="pantryDisplayToggle" style="display:inline-flex;background:#F5F5F4;padding:2px;border-radius:10px;border:1px solid #E7E5E4;height:36px;align-items:center;flex-shrink:0;">
-            <button type="button" data-display-mode="card" title="详细卡片视图" style="border:none;border-radius:7px;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;white-space:nowrap;">⊞ 详细</button>
-            <button type="button" data-display-mode="compact" title="极简清单视图" style="border:none;border-radius:7px;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;white-space:nowrap;">☰ 极简</button>
+            <button type="button" data-display-mode="card" class="active" title="详细卡片视图">⊞ 详细</button>
+            <button type="button" data-display-mode="compact" title="极简清单视图">☰ 极简</button>
           </div>
         </div>
         <div class="grid-safe" style="display:grid;grid-template-columns:1fr 0.95fr 1fr;gap:6px;align-items:center;">
@@ -162,8 +162,8 @@
           </select>
         </div>
         <div id="activeFilterSummaryBar" class="hidden-view" style="margin-top:8px;padding-top:7px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;">
-          <span id="filterResultCountText" role="status" style="color:#78716C;font-weight:600;">显示 0 批</span>
-          <button id="clearPantryFiltersBtn" type="button" style="border:none;background:#FFF7ED;color:#EA580C;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">✕ 清除筛选</button>
+          <span id="filterResultCountText" role="status" style="color:#6B5A4C;font-weight:600;">显示 0 批</span>
+          <button id="clearPantryFiltersBtn" type="button" style="border:none;background:#FFF7ED;color:#E8590C;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">✕ 清除筛选</button>
         </div>
       </section>
 
@@ -181,7 +181,7 @@
           <button id="nextPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;">下一页 ▶</button>
         </div>
         <div style="display:flex;align-items:center;gap:5px;">
-          <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
+          <span style="font-size:11px;color:#6B5A4C;white-space:nowrap;">每页</span>
           <select id="pageSizeSelect" aria-label="每页显示条数" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:#FFFFFF;">
             <option value="6">6 条</option>
             <option value="10">10 条</option>
@@ -195,7 +195,7 @@
       <div id="emptyStateBox" class="ios-card hidden-view" style="padding:36px 20px;text-align:center;">
         <div style="font-size:40px;margin-bottom:8px;">🐾</div>
         <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:800;color:#292524;">当前筛选下暂无记录</h3>
-        <p id="emptyStateDesc" style="margin:0 0 16px 0;font-size:13px;color:#78716C;">可点击重置筛选，或点击右上角「记囤货」添加猫粮、湿粮、营养品或药品。</p>
+        <p id="emptyStateDesc" style="margin:0 0 16px 0;font-size:13px;color:#6B5A4C;">可点击重置筛选，或点击右上角「记囤货」添加猫粮、湿粮、营养品或药品。</p>
         <div style="display:flex;justify-content:center;gap:8px;">
           <button id="resetFiltersBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:0 16px;">重置筛选</button>
           <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-primary" style="padding:0 16px;">+ 立即录入</button>
@@ -208,8 +208,8 @@
       <div class="ios-card" style="padding:15px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
           <div style="min-width:0;">
-            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📅 饮食记录</h2>
-            <p id="dailyDateLabel" style="margin:2px 0 0 0;font-size:12px;color:#78716C;white-space:nowrap;">记录主子每日三餐、加餐与护理</p>
+            <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">📅 饮食记录</h2>
+            <p id="dailyDateLabel" style="margin:2px 0 0 0;font-size:12px;color:#6B5A4C;white-space:nowrap;">记录主子每日三餐、加餐与护理</p>
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
             <button id="copyPrevDayLogsBtn" type="button" class="ios-btn ios-btn-secondary" title="将前一天的日常饮食复制到当前日期" style="min-height:36px;padding:6px 10px;font-size:12px;color:#9A3412;background:#FFF7ED;border-color:#FED7AA;white-space:nowrap;">
@@ -223,7 +223,7 @@
 
         <!-- Mode Toggle: Single Day vs All History -->
         <div id="dailyModeSwitch" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#F5F5F4;padding:3px;border-radius:12px;border:1px solid #E7E5E4;">
-          <button type="button" data-daily-mode="day" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;">📅 按日查看</button>
+          <button type="button" data-daily-mode="day" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:#2B2320;color:#FFFFFF;">📅 按日查看</button>
           <button type="button" data-daily-mode="all" id="allDatesModeBtn" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;">📚 全部日期记录</button>
         </div>
 
@@ -236,7 +236,7 @@
               <input id="dailyDatePicker" type="date" aria-label="选择记录日期">
             </div>
             <button id="nextDayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;white-space:nowrap;">后一天 ▶</button>
-            <button id="goTodayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;color:#EA580C;border-color:#FED7AA;background:#FFF7ED;white-space:nowrap;">今天</button>
+            <button id="goTodayBtn" type="button" class="ios-btn ios-btn-secondary" style="height:40px;min-height:40px;padding:0 10px;font-size:12px;color:#E8590C;border-color:#FED7AA;background:#FFF7ED;white-space:nowrap;">今天</button>
           </div>
 
           <!-- 1-Tap Priority Opened/Recent Quick Feed Strip -->
@@ -271,7 +271,7 @@
       <div id="dailySingleDayView">
         <div class="ios-card" style="padding:15px;margin-bottom:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <h3 style="margin:0;font-size:15px;font-weight:800;color:#1C1917;">🍽️ 当日饮食与护理明细</h3>
+            <h3 style="margin:0;font-size:15px;font-weight:800;color:#2B2320;">🍽️ 当日饮食与护理明细</h3>
             <span id="dailyTotalCountBadge" style="font-size:11.5px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;">饮食 0 顿</span>
           </div>
           <div id="dailyFeedTimeline" style="display:flex;flex-direction:column;gap:9px;"></div>
@@ -279,10 +279,10 @@
 
         <div class="ios-card" style="padding:15px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <h3 style="margin:0;font-size:15px;font-weight:800;color:#1C1917;">🗓️ 最近 7 天速览</h3>
-            <button id="jumpToAllDatesBtn" type="button" style="font-size:12px;font-weight:700;color:#EA580C;background:none;border:none;padding:0;cursor:pointer;">查看全部历史 ▶</button>
+            <h3 style="margin:0;font-size:15px;font-weight:800;color:#2B2320;">🗓️ 最近 7 天速览</h3>
+            <button id="jumpToAllDatesBtn" type="button" style="font-size:12px;font-weight:700;color:#E8590C;background:none;border:none;padding:0;cursor:pointer;">查看全部历史 ▶</button>
           </div>
-          <p style="margin:0 0 10px 0;font-size:12px;color:#78716C;">点击任意一天可快速切换查看当日详情</p>
+          <p style="margin:0 0 10px 0;font-size:12px;color:#6B5A4C;">点击任意一天可快速切换查看当日详情</p>
           <div id="recentSevenDaysList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </div>
@@ -291,7 +291,7 @@
       <div id="dailyAllDatesView" class="hidden-view">
         <div class="ios-card" style="padding:15px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <h3 style="margin:0;font-size:15px;font-weight:800;color:#1C1917;">📚 全部日期饮食归档</h3>
+            <h3 style="margin:0;font-size:15px;font-weight:800;color:#2B2320;">📚 全部日期饮食归档</h3>
             <span id="allDatesStatsBadge" style="font-size:12px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;">共 0 天 · 0 条</span>
           </div>
           <div id="allDatesArchiveList" style="display:flex;flex-direction:column;gap:14px;"></div>
@@ -303,7 +303,7 @@
               <button id="nextLogPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
             </div>
             <div style="display:flex;align-items:center;gap:5px;">
-              <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
+              <span style="font-size:11px;color:#6B5A4C;white-space:nowrap;">每页</span>
               <select id="logPageSizeSelect" aria-label="饮食记录每页显示天数" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background-color:#FFFFFF;">
                 <option value="7">7 天</option>
                 <option value="14">14 天</option>
@@ -321,7 +321,7 @@
       <!-- Top 3-Segment Switcher -->
       <div class="ios-card" style="padding:10px 12px;margin-bottom:12px;">
         <div id="statsSubTabSwitch" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#F5F5F4;padding:3px;border-radius:12px;border:1px solid #E7E5E4;">
-          <button type="button" data-stats-subtab="stock" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;white-space:nowrap;">📊 库存与到期</button>
+          <button type="button" data-stats-subtab="stock" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:#2B2320;color:#FFFFFF;white-space:nowrap;">📊 库存与到期</button>
           <button type="button" data-stats-subtab="pal" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;white-space:nowrap;">🐾 适口性档案</button>
           <button type="button" data-stats-subtab="brand" style="min-height:34px;border:none;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;white-space:nowrap;">🏷️ 品牌与偏好</button>
         </div>
@@ -332,8 +332,8 @@
         <div class="ios-card" style="padding:15px;margin-bottom:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
             <div>
-              <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📊 分类统计与消耗分析</h2>
-              <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">独立区分普通食品、营养品与药品（点卡片可跳转库存筛选）</p>
+              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">📊 分类统计与消耗分析</h2>
+              <p style="margin:2px 0 0 0;font-size:11.5px;color:#6B5A4C;">独立区分普通食品、营养品与药品（点卡片可跳转库存筛选）</p>
             </div>
             <span id="totalValueBadge" style="font-size:11.5px;font-weight:700;background:#FFEDD5;color:#C2410C;padding:4px 10px;border-radius:999px;white-space:nowrap;">全仓在库 ¥0</span>
           </div>
@@ -359,17 +359,17 @@
         <!-- Future Expiry Month Timeline -->
         <div class="ios-card" style="padding:15px;margin-bottom:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">
-            <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🗓️ 未来到期月份时间轴</h2>
+            <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">🗓️ 未来到期月份时间轴</h2>
             <span id="expiryTimelineCountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">0 个月份</span>
           </div>
-          <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">按到期月份由近及远排列在库批次，提前发现集中临期月份</p>
+          <p style="margin:0 0 11px 0;font-size:11.5px;color:#6B5A4C;">按到期月份由近及远排列在库批次，提前发现集中临期月份</p>
           <div id="expiryMonthTimelineList" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
 
         <!-- Priority Feeding Queue (Food & Supp only; Medicine separated below!) -->
         <div class="ios-card" style="padding:15px;">
-          <h2 style="margin:0 0 3px 0;font-size:16px;font-weight:800;color:#1C1917;">🍽️ 近期优先投喂建议（食品/营养品）</h2>
-          <p style="margin:0 0 11px 0;font-size:11.5px;color:#78716C;">结合「拆封保鲜期」与「未开封到期日」排序，已自动排除药品避免误喂</p>
+          <h2 style="margin:0 0 3px 0;font-size:16px;font-weight:800;color:#2B2320;">🍽️ 近期优先投喂建议（食品/营养品）</h2>
+          <p style="margin:0 0 11px 0;font-size:11.5px;color:#6B5A4C;">结合「拆封保鲜期」与「未开封到期日」排序，已自动排除药品避免误喂</p>
           <div id="priorityFeedList" style="display:flex;flex-direction:column;gap:8px;"></div>
           <div id="medStockWatchBox" class="hidden-view" style="margin-top:12px;padding:10px 12px;border-radius:12px;background:#F0FDF4;border:1px solid #BBF7D0;"></div>
         </div>
@@ -380,8 +380,8 @@
         <div class="ios-card" style="padding:15px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
             <div>
-              <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🐾 适口性与耐受度档案</h2>
-              <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">普通食品适口性、营养品接受度与药品反应独立建档</p>
+              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">🐾 适口性与耐受度档案</h2>
+              <p style="margin:2px 0 0 0;font-size:11.5px;color:#6B5A4C;">普通食品适口性、营养品接受度与药品反应独立建档</p>
             </div>
             <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
           </div>
@@ -411,8 +411,8 @@
         <div class="ios-card" style="padding:15px;margin-bottom:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <div>
-              <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">📈 近 30 天饮食与护理统计</h2>
-              <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">日常口粮顿数占比与营养品/药品记录分开计算</p>
+              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">📈 近 30 天饮食与护理统计</h2>
+              <p style="margin:2px 0 0 0;font-size:11.5px;color:#6B5A4C;">日常口粮顿数占比与营养品/药品记录分开计算</p>
             </div>
             <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">食品 0 顿</span>
           </div>
@@ -423,8 +423,8 @@
         <div class="ios-card" style="padding:15px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
             <div>
-              <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">🏷️ 品牌囤货档案</h2>
-              <p style="margin:2px 0 0 0;font-size:11.5px;color:#78716C;">点击任意品牌卡片可一键回粮仓筛选</p>
+              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">🏷️ 品牌囤货档案</h2>
+              <p style="margin:2px 0 0 0;font-size:11.5px;color:#6B5A4C;">点击任意品牌卡片可一键回粮仓筛选</p>
             </div>
             <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
           </div>
@@ -445,7 +445,7 @@
               <button id="nextBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
             </div>
             <div style="display:flex;align-items:center;gap:5px;">
-              <span style="font-size:11px;color:#78716C;white-space:nowrap;">每页</span>
+              <span style="font-size:11px;color:#6B5A4C;white-space:nowrap;">每页</span>
               <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background-color:#FFFFFF;">
                 <option value="5">5 个品牌</option>
                 <option value="10">10 个品牌</option>
@@ -461,8 +461,8 @@
     <section id="viewSettings" class="hidden-view">
       <!-- Warning Threshold Setting -->
       <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <h2 style="margin:0 0 4px 0;font-size:16px;font-weight:800;color:#1C1917;">⏰ 临期预警天数设置</h2>
-        <p style="margin:0 0 12px 0;font-size:12px;color:#78716C;">距离过期日少于该天数（或已拆封快到期）的商品会标黄提醒</p>
+        <h2 style="margin:0 0 4px 0;font-size:16px;font-weight:800;color:#2B2320;">⏰ 临期预警天数设置</h2>
+        <p style="margin:0 0 12px 0;font-size:12px;color:#6B5A4C;">距离过期日少于该天数（或已拆封快到期）的商品会标黄提醒</p>
         <div id="warnDaysGroup" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <button type="button" data-warn-days="30" class="ios-btn ios-btn-secondary">30 天</button>
           <button type="button" data-warn-days="60" class="ios-btn ios-btn-secondary">60 天</button>
@@ -473,8 +473,8 @@
 
       <!-- Default Currency Preference -->
       <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <h2 style="margin:0 0 4px 0;font-size:16px;font-weight:800;color:#1C1917;">💴 新录入默认币种</h2>
-        <p style="margin:0 0 10px 0;font-size:12px;color:#78716C;">新增商品时默认选中的货币（录入时也可随时切换人民币/日元，统计总值按币种独立核算）</p>
+        <h2 style="margin:0 0 4px 0;font-size:16px;font-weight:800;color:#2B2320;">💴 新录入默认币种</h2>
+        <p style="margin:0 0 10px 0;font-size:12px;color:#6B5A4C;">新增商品时默认选中的货币（录入时也可随时切换人民币/日元，统计总值按币种独立核算）</p>
         <div id="defaultCurrencyGroup" class="grid-safe" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-primary">🇨🇳 人民币 (CN¥ / 元)</button>
           <button type="button" data-def-currency="JPY" class="ios-btn ios-btn-secondary">🇯🇵 日元 (JP¥ / 円)</button>
@@ -484,10 +484,10 @@
       <!-- Local Data Backup, Restore & Stock Operation Ledger -->
       <div class="ios-card" style="padding:16px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;margin-bottom:4px;">
-          <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">💾 本地数据备份与恢复</h2>
-          <span id="settingsBackupBadge" style="margin-left:auto;max-width:100%;font-size:11px;font-weight:800;padding:2px 6px;border-radius:999px;background:#F5F5F4;color:#78716C;">未备份</span>
+          <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">💾 本地数据备份与恢复</h2>
+          <span id="settingsBackupBadge" style="margin-left:auto;max-width:100%;font-size:11px;font-weight:800;padding:2px 6px;border-radius:999px;background:#F5F5F4;color:#6B5A4C;">未备份</span>
         </div>
-        <p style="margin:0 0 12px 0;font-size:12px;color:#78716C;line-height:1.45;">数据仅保存在本机，建议定期导出 JSON 备份。</p>
+        <p style="margin:0 0 12px 0;font-size:12px;color:#6B5A4C;line-height:1.45;">数据仅保存在本机，建议定期导出 JSON 备份。</p>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
           <button id="exportJsonBtn" type="button" class="ios-btn ios-btn-primary" style="padding:11px 14px;">
@@ -515,13 +515,13 @@
         <div id="undoOverwriteWrap" class="hidden-view" style="margin-top:12px;padding:10px 12px;border-radius:12px;background:#FFF7ED;border:1px solid #FED7AA;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
           <div style="font-size:11.5px;color:#9A3412;">
             <strong>🛡️ 本地快照保护可用</strong>
-            <div id="undoSnapshotTimeText" style="font-size:11px;color:#78716C;margin-top:1px;">可一键撤回最近一次覆盖或清空操作</div>
+            <div id="undoSnapshotTimeText" style="font-size:11px;color:#6B5A4C;margin-top:1px;">可一键撤回最近一次覆盖或清空操作</div>
           </div>
-          <button id="undoOverwriteBtn" type="button" style="border:1px solid #EA580C;background:#FFFFFF;color:#EA580C;padding:5px 10px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">⏪ 撤回恢复快照</button>
+          <button id="undoOverwriteBtn" type="button" style="border:1px solid #E8590C;background:#FFFFFF;color:#E8590C;padding:5px 10px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">⏪ 撤回恢复快照</button>
         </div>
 
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #F5F5F4;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span id="storageStatusText" style="font-size:11.5px;color:#78716C;">本地双引擎存储已就绪</span>
+          <span id="storageStatusText" style="font-size:11.5px;color:#6B5A4C;">本地双引擎存储已就绪</span>
           <button id="clearAllDataBtn" type="button" class="edit-only" style="font-size:12px;font-weight:700;color:#DC2626;background:none;border:none;cursor:pointer;white-space:nowrap;">清空全部数据</button>
         </div>
       </div>
@@ -546,7 +546,7 @@
       <button type="button" data-nav="settings" id="navBtnSettings" class="nav-tab" style="position:relative;">
         <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
           <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span id="backupNoticeDot" class="hidden-view" style="position:absolute;top:-5px;right:-12px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#DC2626;color:#FFFFFF;font-size:10px;font-weight:800;line-height:16px;text-align:center;box-shadow:0 0 0 2px #FFFFFF;">1</span>
+          <span id="backupNoticeDot" class="hidden-view" style="position:absolute;top:-5px;right:-12px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#DC2626;color:#FFFFFF;font-size:11px;font-weight:800;line-height:16px;text-align:center;box-shadow:0 0 0 2px #FFFFFF;">1</span>
         </div>
         <span>备份设置</span>
       </button>
@@ -557,7 +557,7 @@
   <div id="itemModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-sheet" style="padding:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <h2 id="modalTitle" style="margin:0;font-size:18px;font-weight:800;color:#1C1917;">录入粮仓商品</h2>
+        <h2 id="modalTitle" style="margin:0;font-size:18px;font-weight:800;color:#2B2320;">录入粮仓商品</h2>
         <button id="closeItemModalBtn" type="button" aria-label="关闭弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
       </div>
 
@@ -588,11 +588,11 @@
           <div style="display:flex;align-items:center;gap:12px;">
             <div style="position:relative;width:64px;height:64px;flex-shrink:0;">
               <img id="formPhotoPreview" src="./icon-192.png" alt="商品配图预览" style="width:64px;height:64px;border-radius:14px;object-fit:cover;border:1px solid #E7E5E4;background:#FFFFFF;">
-              <span id="formPhotoBadge" style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#44403C;color:#FFFFFF;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;">默认插画</span>
+              <span id="formPhotoBadge" style="position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#44403C;color:#FFFFFF;font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px;">默认插画</span>
             </div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:12px;font-weight:700;color:#1C1917;margin-bottom:3px;">📷 包装实拍 / 罐底喷码图 <span style="font-weight:500;color:#78716C;">(选填)</span></div>
-              <div id="photoCompressHint" style="font-size:11px;color:#78716C;margin-bottom:7px;line-height:1.35;">不传图自动配分类插画；实拍会自动压缩至约 25KB 省空间</div>
+              <div style="font-size:12px;font-weight:700;color:#2B2320;margin-bottom:3px;">📷 包装实拍 / 罐底喷码图 <span style="font-weight:500;color:#6B5A4C;">(选填)</span></div>
+              <div id="photoCompressHint" style="font-size:11px;color:#6B5A4C;margin-bottom:7px;line-height:1.35;">不传图自动配分类插画；实拍会自动压缩至约 25KB 省空间</div>
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                 <label for="fieldPhotoInput" class="ios-btn ios-btn-secondary" style="min-height:30px;padding:4px 10px;font-size:12px;border-radius:9px;margin:0;">拍照 / 选相册</label>
                 <input id="fieldPhotoInput" type="file" accept="image/*" class="hidden-view">
@@ -604,7 +604,7 @@
 
         <!-- Brand + Quick Brand Chips -->
         <div>
-          <label for="fieldBrand" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品牌 <span style="color:#EA580C;">*</span></label>
+          <label for="fieldBrand" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品牌 <span style="color:#E8590C;">*</span></label>
           <input id="fieldBrand" type="text" required placeholder="例如：渴望 Orijen / 巅峰 Ziwi / 红狗 / 大宠爱" class="ios-input">
           <div id="quickBrandChips" class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto;margin-top:6px;"></div>
         </div>
@@ -612,7 +612,7 @@
         <!-- Product Name & Spec -->
         <div class="grid-safe" style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
           <div>
-            <label for="fieldName" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品名 / 口味配方 <span style="color:#EA580C;">*</span></label>
+            <label for="fieldName" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品名 / 口味配方 <span style="color:#E8590C;">*</span></label>
             <input id="fieldName" type="text" required placeholder="如：鸡肉无谷配方 / 鹿肉主食罐" class="ios-input">
           </div>
           <div>
@@ -625,7 +625,7 @@
         <div class="grid-safe" style="display:grid;grid-template-columns:0.75fr 0.78fr 1.47fr;gap:8px;align-items:end;">
           <div>
             <div style="height:20px;display:flex;align-items:center;margin-bottom:4px;">
-              <label id="fieldQtyLabel" for="fieldQty" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">数量 <span style="color:#EA580C;">*</span></label>
+              <label id="fieldQtyLabel" for="fieldQty" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;">数量 <span style="color:#E8590C;">*</span></label>
             </div>
             <input id="fieldQty" type="number" min="0" step="0.5" required value="1" class="ios-input">
           </div>
@@ -646,14 +646,14 @@
           </div>
           <div>
             <div style="height:20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-              <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;"><span id="fieldPriceLabel">单价</span> <span id="modalUnitPriceHint" style="font-size:10px;font-weight:600;color:#EA580C;"></span></label>
+              <label for="fieldPrice" style="font-size:12px;font-weight:700;color:#44403C;line-height:1;"><span id="fieldPriceLabel">单价</span> <span id="modalUnitPriceHint" style="font-size:11px;font-weight:600;color:#E8590C;"></span></label>
               <div id="currencyToggleGroup" style="display:inline-flex;background:#E7E5E4;padding:1.5px;border-radius:7px;gap:1px;">
-                <button type="button" data-form-currency="CNY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:#1C1917;color:#FFFFFF;line-height:1.35;">人民币</button>
-                <button type="button" data-form-currency="JPY" style="border:none;border-radius:5px;padding:1px 6px;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;line-height:1.35;">日元</button>
+                <button type="button" data-form-currency="CNY" style="border:none;border-radius:5px;padding:1px 6px;font-size:11px;font-weight:700;cursor:pointer;background:#2B2320;color:#FFFFFF;line-height:1.35;">人民币</button>
+                <button type="button" data-form-currency="JPY" style="border:none;border-radius:5px;padding:1px 6px;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#57534E;line-height:1.35;">日元</button>
               </div>
             </div>
             <div style="position:relative;min-width:0;">
-              <span id="pricePrefixSymbol" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#78716C;pointer-events:none;">CN¥</span>
+              <span id="pricePrefixSymbol" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#6B5A4C;pointer-events:none;">CN¥</span>
               <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input" style="padding-left:36px;">
             </div>
           </div>
@@ -754,7 +754,7 @@
           </div>
 
           <div id="shelfPresetsBar" style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;overflow-x:auto;margin-bottom:8px;" class="no-scrollbar">
-            <span style="font-size:11px;color:#78716C;white-space:nowrap;">常用：</span>
+            <span style="font-size:11px;color:#6B5A4C;white-space:nowrap;">常用：</span>
             <button type="button" data-preset-months="6" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">6个月</button>
             <button type="button" data-preset-months="12" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">12个月</button>
             <button type="button" data-preset-months="18" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">18个月</button>
@@ -764,7 +764,7 @@
 
           <div style="width:100%;max-width:100%;overflow:hidden;">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;margin-bottom:4px;">
-              <label for="fieldExpDate" style="font-size:12px;font-weight:800;color:#1C1917;white-space:nowrap;">过期日期 (EXP) <span style="color:#EA580C;">*</span></label>
+              <label for="fieldExpDate" style="font-size:12px;font-weight:800;color:#2B2320;white-space:nowrap;">过期日期 (EXP) <span style="color:#E8590C;">*</span></label>
               <button id="calcProdFromExpBtn" type="button" style="font-size:11px;color:#C2410C;text-decoration:underline;background:none;border:none;padding:0;cursor:pointer;white-space:nowrap;">进口粮仅有到期日？点此反推生产日</button>
             </div>
             <div class="ios-date-wrap"><span id="fieldExpDateText" class="ios-date-display" style="font-weight:800;">选择日期</span><input id="fieldExpDate" type="date" required></div>
@@ -774,8 +774,8 @@
         <!-- Opened Status / Finished Batch Dates -->
         <div style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;overflow:hidden;">
           <label id="openedCheckboxLabelWrap" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;">
-            <span id="openedCheckboxTitle" style="font-size:13px;font-weight:700;color:#1C1917;">🔓 当前有 1 件已拆封（单独计算开封保鲜期）</span>
-            <input id="fieldIsOpened" type="checkbox" style="width:20px;height:20px;accent-color:#EA580C;flex-shrink:0;">
+            <span id="openedCheckboxTitle" style="font-size:13px;font-weight:700;color:#2B2320;">🔓 当前有 1 件已拆封（单独计算开封保鲜期）</span>
+            <input id="fieldIsOpened" type="checkbox" style="width:20px;height:20px;accent-color:#E8590C;flex-shrink:0;">
           </label>
           <div id="openedExtraFields" class="grid-safe hidden-view" style="margin-top:10px;display:grid;grid-template-columns:1.18fr 1fr;gap:8px;">
             <div>
@@ -843,7 +843,7 @@
   <div id="feedModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="feedModalTitle">
     <div class="modal-sheet" style="padding:20px;max-width:480px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <h3 id="feedModalTitle" style="margin:0;font-size:17px;font-weight:800;color:#1C1917;">🐾 记录饮食 / 营养 / 用药</h3>
+        <h3 id="feedModalTitle" style="margin:0;font-size:17px;font-weight:800;color:#2B2320;">🐾 记录饮食 / 营养 / 用药</h3>
         <button id="closeFeedModalBtn" type="button" aria-label="关闭记喂食弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
       </div>
 
@@ -904,20 +904,20 @@
         </div>
 
         <div>
-          <label for="feedNameInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品名 / 口味 <span style="color:#EA580C;">*</span></label>
+          <label for="feedNameInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品名 / 口味 <span style="color:#E8590C;">*</span></label>
           <input id="feedNameInput" type="text" required placeholder="如：无谷鸡肉猫粮 / 马鲛鱼罐头" class="ios-input">
         </div>
 
         <!-- Portion Amount + Smart Last-Portion & Split-Can Chips -->
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:6px;flex-wrap:wrap;">
-            <label for="feedAmountInput" style="font-size:12px;font-weight:700;color:#44403C;">投喂份量 <span style="color:#EA580C;">*</span></label>
-            <span id="feedSplitHintTag" style="font-size:11px;font-weight:700;color:#EA580C;"></span>
+            <label for="feedAmountInput" style="font-size:12px;font-weight:700;color:#44403C;">投喂份量 <span style="color:#E8590C;">*</span></label>
+            <span id="feedSplitHintTag" style="font-size:11px;font-weight:700;color:#E8590C;"></span>
           </div>
           <input id="feedAmountInput" type="text" required placeholder="如：半罐 (85g) / 1/3罐 / 40g / 1支" class="ios-input">
           <div id="feedPortionChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
             <button type="button" data-portion="吃完本罐剩余" data-frac="rest" id="chipFinishRestCan" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #16A34A;background:#DCFCE7;color:#15803D;font-size:11.5px;font-weight:800;cursor:pointer;">✨ 吃完本罐剩余</button>
-            <button type="button" data-portion="" data-frac="0" id="chipLastPortion" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #93C5FD;background:#EFF6FF;color:#1D4ED8;font-size:11px;font-weight:800;cursor:pointer;">⚡ 上次份量</button>
+            <button type="button" data-portion="" data-frac="0" id="chipLastPortion" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #C5DDBC;background:#EAF2DC;color:#3D5A24;font-size:11px;font-weight:800;cursor:pointer;">⚡ 上次份量</button>
             <button type="button" data-portion="半罐 (1/2)" data-package-portion data-frac="0.5" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 半罐 (1/2)</button>
             <button type="button" data-portion="1/3罐" data-package-portion data-frac="0.34" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 1/3罐</button>
             <button type="button" data-portion="1/4罐" data-package-portion data-frac="0.25" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 1/4罐</button>
@@ -934,7 +934,7 @@
           <div id="feedSplitAutoInfo" class="hidden-view" style="font-size:12px;font-weight:700;color:#9A3412;line-height:1.45;"></div>
           <label id="feedManualDeductLabelWrap" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;">
             <span id="feedDeductLabel" style="font-size:12px;font-weight:700;color:#7C2D12;">📦 同步扣减库存</span>
-            <input id="feedDeductStock" type="checkbox" style="width:18px;height:18px;accent-color:#EA580C;flex-shrink:0;">
+            <input id="feedDeductStock" type="checkbox" style="width:18px;height:18px;accent-color:#E8590C;flex-shrink:0;">
           </label>
         </div>
 
@@ -971,11 +971,11 @@
     <div class="modal-sheet" style="padding:18px;max-width:540px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
         <div style="min-width:0;">
-          <h3 id="historyModalTitle" style="margin:0;font-size:16.5px;font-weight:800;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📜 库存操作历史流水</h3>
-          <span id="historyCountBadge" style="font-size:11px;color:#78716C;">共 0 条记录</span>
+          <h3 id="historyModalTitle" style="margin:0;font-size:16.5px;font-weight:800;color:#2B2320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📜 库存操作历史流水</h3>
+          <span id="historyCountBadge" style="font-size:11px;color:#6B5A4C;">共 0 条记录</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <button id="clearHistoryItemFilterBtn" type="button" class="hidden-view" style="border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">查看全部商品</button>
+          <button id="clearHistoryItemFilterBtn" type="button" class="hidden-view" style="border:1px solid #FED7AA;background:#FFF7ED;color:#E8590C;padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">查看全部商品</button>
           <button id="exportStockHistoryCsvBtn" type="button" style="border:1px solid #E7E5E4;background:#FAFAF9;color:#44403C;padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">导出CSV</button>
           <button id="closeHistoryModalBtn" type="button" aria-label="关闭库存流水" style="width:30px;height:30px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
         </div>
@@ -1003,14 +1003,14 @@
   <!-- ==================== CUSTOM CONFIRMATION MODAL ==================== -->
   <div id="confirmModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
     <div class="modal-sheet" style="padding:20px;max-width:400px;">
-      <h3 id="confirmTitle" style="margin:0 0 6px 0;font-size:17px;font-weight:800;color:#1C1917;">确认操作</h3>
+      <h3 id="confirmTitle" style="margin:0 0 6px 0;font-size:17px;font-weight:800;color:#2B2320;">确认操作</h3>
       <p id="confirmMessage" style="margin:0 0 14px 0;font-size:13.5px;color:#57534E;line-height:1.5;"></p>
       <label id="confirmStockQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
         核销数量
         <select id="confirmStockQuantity" class="ios-input" style="margin-top:4px;"></select>
       </label>
       <label id="confirmExtraOptionWrap" class="hidden-view" style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:14px;border-radius:11px;background:#FFF7ED;border:1px solid #FED7AA;cursor:pointer;">
-        <input id="confirmExtraCheckbox" type="checkbox" style="width:18px;height:18px;accent-color:#EA580C;flex-shrink:0;">
+        <input id="confirmExtraCheckbox" type="checkbox" style="width:18px;height:18px;accent-color:#E8590C;flex-shrink:0;">
         <span id="confirmExtraLabel" style="font-size:12px;font-weight:700;color:#7C2D12;line-height:1.35;">同时记入今日饮食记录</span>
       </label>
       <label id="confirmMealQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
@@ -1028,7 +1028,7 @@
   <div id="photoPreviewBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle" style="align-items:center;padding:20px;">
     <div class="ios-card" style="width:100%;max-width:420px;padding:16px;background:#FFFFFF;border-radius:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <h3 id="lightboxTitle" style="margin:0;font-size:15px;font-weight:800;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">查看商品图片</h3>
+        <h3 id="lightboxTitle" style="margin:0;font-size:15px;font-weight:800;color:#2B2320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">查看商品图片</h3>
         <button id="closeLightboxBtn" type="button" aria-label="关闭大图" style="width:30px;height:30px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
       </div>
       <div style="background:#FAFAF9;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;max-height:62vh;">
@@ -1039,16 +1039,16 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=56"></script>
-  <script src="./js/constants.js?v=56"></script>
-  <script src="./js/utils.js?v=56"></script>
-  <script src="./js/domain.js?v=56"></script>
-  <script src="./js/storage.js?v=56"></script>
-  <script src="./js/stats.js?v=56"></script>
-  <script src="./js/modal.js?v=56"></script>
-  <script src="./js/ui.js?v=56"></script>
-  <script src="./js/ui-pantry.js?v=56"></script>
-  <script src="./js/ui-settings.js?v=56"></script>
-  <script src="./js/app.js?v=56"></script>
+  <script src="./js/covers.js?v=59"></script>
+  <script src="./js/constants.js?v=59"></script>
+  <script src="./js/utils.js?v=59"></script>
+  <script src="./js/domain.js?v=59"></script>
+  <script src="./js/storage.js?v=59"></script>
+  <script src="./js/stats.js?v=59"></script>
+  <script src="./js/modal.js?v=59"></script>
+  <script src="./js/ui.js?v=59"></script>
+  <script src="./js/ui-pantry.js?v=59"></script>
+  <script src="./js/ui-settings.js?v=59"></script>
+  <script src="./js/app.js?v=59"></script>
 </body>
 </html>

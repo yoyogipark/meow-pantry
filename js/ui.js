@@ -169,7 +169,7 @@
       } else {
         qfBox.classList.remove('hidden-view');
         qfBox.innerHTML =
-          '<div style="font-size:11px;font-weight:700;color:#78716C;margin-bottom:6px;">⚡ 常喂快捷点选（优先展示已拆封在吃口粮，点一下即填好）：</div>' +
+          '<div style="font-size:11px;font-weight:700;color:#6B5A4C;margin-bottom:6px;">⚡ 常喂快捷点选（优先展示已拆封在吃口粮，点一下即填好）：</div>' +
           '<div class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;">' +
             quickTop.map(function (it) {
               var ci = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
@@ -200,14 +200,14 @@
     var summaryEl = document.getElementById('dailySummaryBar');
     var catKeys = Object.keys(MP.CATEGORIES).filter(function (k) { return catCounts[k] > 0; });
     if (catKeys.length === 0) {
-      summaryEl.innerHTML = '<span style="font-size:12px;color:#A8A29E;">当日暂无饮食记录，可点上方快捷口粮或右上角「＋ 记喂食」</span>';
+      summaryEl.innerHTML = '<span style="font-size:12px;color:#6B5A4C;">当日暂无饮食记录，可点上方快捷口粮或右上角「＋ 记喂食」</span>';
     } else {
       summaryEl.innerHTML = catKeys.map(function (k) {
         var info = MP.CATEGORIES[k] || MP.CATEGORIES.dry;
         var unitW = info.group === 'food' ? '顿' : '次';
         var pillStyle = info.group === 'med'
           ? 'background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;'
-          : (info.group === 'supp' ? 'background:#F0F9FF;border:1px solid #BAE6FD;color:#075985;' : 'background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;');
+          : (info.group === 'supp' ? 'background:#EAF2DC;border:1px solid #C5DDBC;color:#3D5A24;' : 'background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;');
         return '<span style="' + pillStyle + 'padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;">' + info.icon + ' ' + info.label + ' × ' + catCounts[k] + unitW + '</span>';
       }).join('');
     }
@@ -215,7 +215,7 @@
     var timelineEl = document.getElementById('dailyFeedTimeline');
     if (dayLogs.length === 0) {
       timelineEl.innerHTML =
-        '<div style="padding:24px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#78716C;font-size:13px;">' +
+        '<div style="padding:24px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#6B5A4C;font-size:13px;">' +
           '🐾 这天还没有记录主子吃过什么哦' +
         '</div>';
     } else {
@@ -230,7 +230,7 @@
                 '<span style="font-size:11px;font-weight:700;color:#44403C;background:#E7E5E4;padding:2px 7px;border-radius:7px;">' + catInfo.icon + ' ' + Utils.escapeHtml(catInfo.label + (product.subtype ? ' · ' + product.subtype : '')) + '</span>' +
                 '<span style="font-size:12px;font-weight:800;color:#15803D;background:#DCFCE7;padding:2px 8px;border-radius:7px;">份量：' + Utils.escapeHtml(lg.amount || '1份') + '</span>' +
               '</div>' +
-              '<div style="font-size:14px;font-weight:800;color:#1C1917;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
+              '<div style="font-size:14px;font-weight:800;color:#2B2320;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
               (lg.note ? '<div style="margin-top:3px;font-size:12px;color:#57534E;">💬 ' + Utils.escapeHtml(lg.note) + '</div>' : '') +
               (lg.nextDueDate ? '<div style="margin-top:3px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒日：' + Utils.escapeHtml(lg.nextDueDate) + '</div>' : '') +
             '</div>' +
@@ -250,7 +250,7 @@
       var isSelected = (dStr === selDate);
       var dayTitle = dOffset === 0 ? (dStr + ' (今天)') : (dOffset === -1 ? (dStr + ' (昨天)') : (dStr + ' ' + Utils.getWeekdayName(dStr)));
       var itemsPreview = dLogs.length === 0
-        ? '<span style="color:#A8A29E;">未记录</span>'
+        ? '<span style="color:#6B5A4C;">未记录</span>'
         : dLogs.map(function (lg) {
             var product = Domain.resolveLogProduct(lg);
             var ci = MP.CATEGORIES[product.category] || MP.CATEGORIES.dry;
@@ -258,12 +258,12 @@
           }).join(' · ');
 
       sevenHtml.push(
-        '<button type="button" data-jump-date="' + dStr + '" style="width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1.5px solid ' + (isSelected ? '#EA580C' : '#F5F5F4') + ';background:' + (isSelected ? '#FFF7ED' : '#FAFAF9') + ';cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+        '<button type="button" data-jump-date="' + dStr + '" style="width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1.5px solid ' + (isSelected ? '#E8590C' : '#F5F5F4') + ';background:' + (isSelected ? '#FFF7ED' : '#FAFAF9') + ';cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
           '<div style="min-width:0;flex:1;">' +
-            '<div style="font-size:13px;font-weight:800;color:#1C1917;">' + dayTitle + '</div>' +
+            '<div style="font-size:13px;font-weight:800;color:#2B2320;">' + dayTitle + '</div>' +
             '<div style="font-size:12px;color:#57534E;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + itemsPreview + '</div>' +
           '</div>' +
-          '<span style="font-size:12px;font-weight:700;color:' + (dLogs.length > 0 ? '#EA580C' : '#A8A29E') + ';white-space:nowrap;">' + dLogs.length + ' 条 ▶</span>' +
+          '<span style="font-size:12px;font-weight:700;color:' + (dLogs.length > 0 ? '#E8590C' : '#6B5A4C') + ';white-space:nowrap;">' + dLogs.length + ' 条 ▶</span>' +
         '</button>'
       );
     }
@@ -274,7 +274,7 @@
     for (var m = 0; m < modeBtns.length; m++) {
       var mKey = modeBtns[m].getAttribute('data-daily-mode');
       var active = (mKey === st.dailyViewMode);
-      modeBtns[m].style.background = active ? '#1C1917' : 'transparent';
+      modeBtns[m].style.background = active ? '#2B2320' : 'transparent';
       modeBtns[m].style.color = active ? '#FFFFFF' : '#57534E';
     }
     var allBtn = document.getElementById('allDatesModeBtn');
@@ -345,7 +345,7 @@
     if (sortedDates.length === 0) {
       if (logPagerEl) logPagerEl.classList.add('hidden-view');
       listEl.innerHTML =
-        '<div style="padding:28px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#78716C;font-size:13px;">' +
+        '<div style="padding:28px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#6B5A4C;font-size:13px;">' +
           '🐾 没有找到匹配的饮食记录' +
         '</div>';
       return;
@@ -392,7 +392,7 @@
                 '<span style="font-size:11px;font-weight:700;color:#44403C;background:#F5F5F4;padding:1px 6px;border-radius:6px;">' + catInfo.icon + ' ' + Utils.escapeHtml(catInfo.label + (product.subtype ? ' · ' + product.subtype : '')) + '</span>' +
                 '<span style="font-size:11px;font-weight:800;color:#15803D;background:#DCFCE7;padding:1px 7px;border-radius:6px;">' + Utils.escapeHtml(lg.amount || '1份') + '</span>' +
               '</div>' +
-              '<div style="font-size:13px;font-weight:800;color:#1C1917;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
+              '<div style="font-size:13px;font-weight:800;color:#2B2320;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
               (lg.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">💬 ' + Utils.escapeHtml(lg.note) + '</div>' : '') +
               (lg.nextDueDate ? '<div style="margin-top:2px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒：' + Utils.escapeHtml(lg.nextDueDate) + '</div>' : '') +
             '</div>' +
@@ -407,8 +407,8 @@
       return (
         '<div style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
-            '<button type="button" data-jump-date="' + Utils.escapeHtml(dStr) + '" style="background:none;border:none;padding:0;font-size:14px;font-weight:800;color:#1C1917;cursor:pointer;text-align:left;">📅 ' + Utils.escapeHtml(dayHeader) + '</button>' +
-            '<span style="font-size:11px;font-weight:700;color:#78716C;">共 ' + items.length + ' 条</span>' +
+            '<button type="button" data-jump-date="' + Utils.escapeHtml(dStr) + '" style="background:none;border:none;padding:0;font-size:14px;font-weight:800;color:#2B2320;cursor:pointer;text-align:left;">📅 ' + Utils.escapeHtml(dayHeader) + '</button>' +
+            '<span style="font-size:11px;font-weight:700;color:#6B5A4C;">共 ' + items.length + ' 条</span>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:7px;">' + rowsHtml + '</div>' +
         '</div>'
@@ -752,7 +752,7 @@
     if (matched.length === 0) {
       if (pagerEl) pagerEl.classList.add('hidden-view');
       listEl.innerHTML =
-        '<div style="padding:28px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#78716C;font-size:13px;">' +
+        '<div style="padding:28px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#6B5A4C;font-size:13px;">' +
           '📭 暂无匹配的库存变动流水（后续入库、拆封、分顿投喂、核销吃完或撤回退库都会自动记录在这里）' +
         '</div>';
       return;
@@ -780,15 +780,15 @@
         '<div style="padding:10px 12px;border-radius:12px;background:#FAFAF9;border:1px solid #E7E5E4;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
           '<div style="min-width:0;flex:1;">' +
             '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">' +
-              '<span style="font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:6px;background:' + meta.bg + ';color:' + meta.text + ';">' + meta.icon + ' ' + meta.label + '</span>' +
-              '<span style="font-size:11px;color:#78716C;">' + Utils.escapeHtml(h.timestamp) + '</span>' +
+              '<span style="font-size:11px;font-weight:800;padding:1px 7px;border-radius:6px;background:' + meta.bg + ';color:' + meta.text + ';">' + meta.icon + ' ' + meta.label + '</span>' +
+              '<span style="font-size:11px;color:#6B5A4C;">' + Utils.escapeHtml(h.timestamp) + '</span>' +
             '</div>' +
-            '<div style="font-size:13px;font-weight:800;color:#1C1917;">' + ci.icon + ' [' + Utils.escapeHtml(h.brand) + '] ' + Utils.escapeHtml(h.name) + '</div>' +
+            '<div style="font-size:13px;font-weight:800;color:#2B2320;">' + ci.icon + ' [' + Utils.escapeHtml(h.brand) + '] ' + Utils.escapeHtml(h.name) + '</div>' +
             (h.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">' + Utils.escapeHtml(h.note) + '</div>' : '') +
           '</div>' +
           '<div style="text-align:right;flex-shrink:0;">' +
             '<div style="font-size:12.5px;font-weight:800;color:' + meta.text + ';">' + Utils.escapeHtml(h.deltaText || '—') + '</div>' +
-            '<div style="margin-top:2px;font-size:10.5px;color:#78716C;">' + h.beforeQty + ' → ' + h.afterQty + Utils.escapeHtml(h.unit) + '</div>' +
+            '<div style="margin-top:2px;font-size:11px;color:#6B5A4C;">' + h.beforeQty + ' → ' + h.afterQty + Utils.escapeHtml(h.unit) + '</div>' +
           '</div>' +
         '</div>'
       );
@@ -850,7 +850,7 @@
     if (st.formImage) {
       previewEl.src = st.formImage;
       badgeEl.textContent = '实拍图';
-      badgeEl.style.background = '#EA580C';
+      badgeEl.style.background = '#E8590C';
       clearBtn.classList.remove('hidden-view');
       hintEl.textContent = kbHint
         ? ('已自动压缩至约 ' + kbHint + ' KB，存入本地数据库')
@@ -1172,7 +1172,7 @@
     var btns = document.querySelectorAll('#currencyToggleGroup [data-form-currency]');
     for (var i = 0; i < btns.length; i++) {
       var active = btns[i].getAttribute('data-form-currency') === cur;
-      btns[i].style.background = active ? '#1C1917' : 'transparent';
+      btns[i].style.background = active ? '#2B2320' : 'transparent';
       btns[i].style.color = active ? '#FFFFFF' : '#57534E';
     }
     UI.syncModalUnitPriceHint();

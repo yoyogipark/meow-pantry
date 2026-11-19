@@ -462,7 +462,9 @@ async function run() {
   checkProgress(openedCardItem.id, '开封保鲜剩 1 天', 'urgent', '25%');
   checkProgress(multiCardItem.id, '开封保鲜剩 1 天', 'urgent', '25%');
   assert.equal(card(multiCardItem.id).querySelectorAll('.detail-card-open-progress').length, 1);
-  checkProgress(twoDayItem.id, '开封保鲜剩 2 天', 'warning', '100%', 2);
+  checkProgress(twoDayItem.id, '开封保鲜剩 2 天', 'urgent', '100%', 2);
+  assert.ok(card(twoDayItem.id).querySelector('.detail-card-open-badge--urgent'));
+  assert.ok(card(twoDayItem.id).querySelector('.detail-card-open-stock--urgent'));
   assert.ok(progress(defaultLimitItem.id));
   checkProgress(longLimitItem.id, '开封保鲜剩 45 天', 'fresh', '100%', 45);
   for (const entry of [unopenedCardItem, missingLimitItem]) assert.equal(progress(entry.id), null);
@@ -506,9 +508,9 @@ async function run() {
   assert.equal(unopenedCard.querySelector('.detail-card-shelf .detail-card-line').textContent, '有效期剩余 100%');
   const shelfBefore = activeCard.querySelector('.detail-card-shelf').outerHTML;
   for (const [elapsed, label, tone, width] of [
-    [0, '开封保鲜剩 4 天', 'fresh', '100%'],
+    [0, '开封保鲜剩 4 天', 'warning', '100%'],
     [1, '开封保鲜剩 3 天', 'warning', '75%'],
-    [2, '开封保鲜剩 2 天', 'warning', '50%'],
+    [2, '开封保鲜剩 2 天', 'urgent', '50%'],
     [4, '开封保鲜剩 0 天', 'urgent', '0%'],
     [5, '已超保鲜期', 'expired', '0%']
   ]) {
