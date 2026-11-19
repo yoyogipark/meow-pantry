@@ -424,6 +424,7 @@ async function run() {
   state.searchQuery = '';
   state.pantryPage = 1;
   state.pantryDisplayMode = 'card';
+  state.pantryPageSize = 12;
   const openedCardItem = make('opened-card', 3, '罐', {
     prodDate: utils.shiftDaysFromToday(-20), expDate: utils.shiftDaysFromToday(20),
     isOpened: true, openedDate: utils.shiftDaysFromToday(-3), openDaysLimit: 4,
@@ -431,26 +432,35 @@ async function run() {
   });
   const unopenedCardItem = make('unopened-card', 1, '罐', { openDaysLimit: 4 });
   const defaultLimitItem = make('default-limit', 1, '罐', { isOpened: true, openedDate: today });
-  const blankLimitItem = make('blank-limit', 1, '罐', { isOpened: true, openedDate: today, openDaysLimit: 45 });
+  const longLimitItem = make('long-limit', 1, '罐', { isOpened: true, openedDate: today, openDaysLimit: 45 });
+  const twoDayItem = make('two-day-limit', 3, '罐', { isOpened: true, openedDate: today, openDaysLimit: 2, openRemainFraction: 0.75 });
+  const missingLimitItem = make('missing-limit', 1, '罐', { isOpened: true, openedDate: today });
+  delete missingLimitItem.openDaysLimit;
   const multiCardItem = mixed();
   multiCardItem.openDaysLimit = 4;
   multiCardItem.flavors[0].openedDate = utils.shiftDaysFromToday(-2);
   multiCardItem.flavors[1].openedDate = utils.shiftDaysFromToday(-3);
-  reset(openedCardItem, unopenedCardItem, defaultLimitItem, blankLimitItem, multiCardItem);
+  reset(openedCardItem, unopenedCardItem, defaultLimitItem, longLimitItem, twoDayItem, missingLimitItem, multiCardItem);
   const card = id => w.document.querySelector('[data-action="item-history"][data-id="' + id + '"]').closest('article');
   const progress = id => card(id).querySelector('.detail-card-open-progress');
-  const checkProgress = (id, label, tone, width) => {
+  const checkProgress = (id, label, tone, width, limit = 4) => {
     const bar = progress(id);
     assert.equal(bar.querySelector('strong').textContent, label);
-    assert.equal(bar.querySelector('.detail-card-open-progress-label > span').textContent, '共 4 天');
+    assert.equal(bar.querySelector('.detail-card-open-progress-label > span').textContent, '共 ' + limit + ' 天');
     assert.ok(bar.classList.contains('detail-card-open-progress--' + tone));
     assert.equal(bar.querySelector('.progress-bar').style.width, width);
   };
   checkProgress(openedCardItem.id, '开封保鲜剩 1 天', 'urgent', '25%');
   checkProgress(multiCardItem.id, '开封保鲜剩 1 天', 'urgent', '25%');
   assert.equal(card(multiCardItem.id).querySelectorAll('.detail-card-open-progress').length, 1);
-  for (const entry of [unopenedCardItem, defaultLimitItem, blankLimitItem]) assert.equal(progress(entry.id), null);
-  assert.ok(card(defaultLimitItem.id).querySelector('.detail-card-open-badge'));
+  checkProgress(twoDayItem.id, '开封保鲜剩 2 天', 'warning', '100%', 2);
+  assert.ok(progress(defaultLimitItem.id));
+  checkProgress(longLimitItem.id, '开封保鲜剩 45 天', 'fresh', '100%', 45);
+  for (const entry of [unopenedCardItem, missingLimitItem]) assert.equal(progress(entry.id), null);
+  assert.ok(card(missingLimitItem.id).querySelector('.detail-card-open-badge'));
+  twoDayItem.openedDate = utils.shiftDaysFromToday(-1);
+  ui.renderPantryList();
+  checkProgress(twoDayItem.id, '开封保鲜剩 1 天', 'urgent', '50%', 2);
   const activeCard = card(openedCardItem.id);
   assert.match(activeCard.querySelector('.detail-card-open-date').textContent, /开封 \d{4}-\d{2}-\d{2}/);
   assert.equal(activeCard.querySelector('.detail-card-open-stock .detail-card-stock-text'), null);
