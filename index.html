@@ -12,7 +12,7 @@
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
   <script src="https://cdn.tailwindcss.com/3.4.17" defer></script>
-  <link rel="stylesheet" href="./css/styles.css?v=40">
+  <link rel="stylesheet" href="./css/styles.css?v=41">
 </head>
 <body>
 
@@ -22,7 +22,7 @@
 
   <div class="app-shell">
     <!-- Top App Header (Compact Single-Line Mobile Layout) -->
-    <header style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;">
+    <header class="app-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:9px;min-width:0;flex:1;">
         <img
           id="headerMascotImg"
@@ -478,11 +478,11 @@
 
       <!-- Local Data Backup, Restore & Stock Operation Ledger -->
       <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;margin-bottom:4px;">
           <h2 style="margin:0;font-size:16px;font-weight:800;color:#1C1917;">💾 本地数据备份与恢复</h2>
-          <span id="settingsBackupBadge" style="min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;background:#FEF2F2;color:#DC2626;">尚无导出时间记录</span>
+          <span id="settingsBackupBadge" style="margin-left:auto;max-width:100%;font-size:11px;font-weight:800;padding:2px 6px;border-radius:999px;background:#F5F5F4;color:#78716C;">未备份</span>
         </div>
-        <p style="margin:0 0 12px 0;font-size:12px;color:#78716C;line-height:1.45;">纯本地双引擎架构（IndexedDB + LocalStorage 时间戳校验同步），无云端上传，离线可用。支持 v1/v2/v3 全版本备份无损兼容恢复。导出状态记录浏览器发起下载的时间，请在浏览器或「文件」中确认保存结果。</p>
+        <p style="margin:0 0 12px 0;font-size:12px;color:#78716C;line-height:1.45;">数据仅保存在本机，建议定期导出 JSON 备份。</p>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
           <button id="exportJsonBtn" type="button" class="ios-btn ios-btn-primary" style="padding:11px 14px;">
@@ -1034,13 +1034,13 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=40"></script>
-  <script src="./js/constants.js?v=40"></script>
-  <script src="./js/utils.js?v=40"></script>
-  <script src="./js/domain.js?v=40"></script>
-  <script src="./js/storage.js?v=40"></script>
-  <script src="./js/stats.js?v=40"></script>
-  <script src="./js/ui.js?v=40"></script>
-  <script src="./js/app.js?v=40"></script>
+  <script src="./js/covers.js?v=41"></script>
+  <script src="./js/constants.js?v=41"></script>
+  <script src="./js/utils.js?v=41"></script>
+  <script src="./js/domain.js?v=41"></script>
+  <script src="./js/storage.js?v=41"></script>
+  <script src="./js/stats.js?v=41"></script>
+  <script src="./js/ui.js?v=41"></script>
+  <script src="./js/app.js?v=41"></script>
 </body>
 </html>
