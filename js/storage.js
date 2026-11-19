@@ -244,6 +244,9 @@
         var rawHist = Array.isArray(chosenHist) ? chosenHist : [];
         st.stockHistory = rawHist.map(Domain.sanitizeStockHistoryEntry).filter(Boolean).slice(0, MP.MAX_STOCK_HISTORY);
         Storage.applyLoadedSettings(chosenSettings);
+        var exportedAt = chosenSettings && chosenSettings.lastJsonExportAt;
+        st.settings.lastJsonExportAt = typeof exportedAt === 'string' && Number.isFinite(Date.parse(exportedAt))
+          ? exportedAt : '';
       } else {
         // Brand-new user first visit: initialize sample items & logs without touching any existing records
         st.items = Domain.buildSampleItems();
@@ -659,14 +662,17 @@
     }
   };
 
-  Storage.buildBackupObject = function () {
+  Storage.buildBackupObject = function (date) {
     var st = MP.state;
+    var settings = Object.assign({}, st.settings);
+    // The last export attempt belongs to this device, not to the portable backup.
+    delete settings.lastJsonExportAt;
     return {
       app: '喵喵粮仓',
       version: 3,
       schemaVersion: MP.SCHEMA_VERSION,
-      exportedAt: new Date().toISOString(),
-      settings: st.settings,
+      exportedAt: (date || new Date()).toISOString(),
+      settings: settings,
       items: st.items,
       logs: st.logs,
       stockHistory: st.stockHistory
@@ -677,23 +683,49 @@
     var blob = new Blob([content], { type: mimeType });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
+    var clickEvent;
     a.href = url;
     a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1200);
+    a.addEventListener('click', function (event) { clickEvent = event; }, { once: true });
+    try {
+      document.body.appendChild(a);
+      a.click();
+      return Boolean(clickEvent && !clickEvent.defaultPrevented);
+    } finally {
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1200);
+    }
   };
 
   Storage.exportJsonBackup = function (onAfter) {
     var st = MP.state;
-    st.settings.lastBackupDate = Utils.getTodayStr();
+    var now = new Date();
+    var localTime = Utils.getNowDateTimeStr(now);
+    var name = 'meow-pantry-backup-' + localTime.replace(/[-:]/g, '').replace(' ', '-') +
+      String(now.getSeconds()).padStart(2, '0');
+    try {
+      if (st.settings.lastJsonExportAt &&
+          Math.floor(Date.parse(st.settings.lastJsonExportAt) / 1000) === Math.floor(now.getTime() / 1000)) {
+        name += '-' + global.crypto.getRandomValues(new Uint32Array(1))[0].toString(16).padStart(8, '0');
+      }
+      var backupObj = Storage.buildBackupObject(now);
+      backupObj.settings.lastBackupDate = localTime.slice(0, 10);
+      backupObj.settings.unsavedChangesCount = 0;
+      if (!Storage.triggerFileDownload(name + '.json', JSON.stringify(backupObj, null, 2), 'application/json;charset=utf-8')) {
+        if (typeof onAfter === 'function') onAfter(false);
+        return;
+      }
+    } catch (error) {
+      if (typeof onAfter === 'function') onAfter(false);
+      return;
+    }
+
+    // A download request is observable. Saving the file in Safari's system UI is not.
+    st.settings.lastJsonExportAt = now.toISOString();
+    st.settings.lastBackupDate = localTime.slice(0, 10);
     st.settings.unsavedChangesCount = 0;
     Storage.saveToStorage(true);
-    var backupObj = Storage.buildBackupObject();
-    var fname = '喵喵粮仓备份_' + Utils.getTodayStr() + '.json';
-    Storage.triggerFileDownload(fname, JSON.stringify(backupObj, null, 2), 'application/json;charset=utf-8');
-    if (typeof onAfter === 'function') onAfter();
+    if (typeof onAfter === 'function') onAfter(true);
   };
 
   function rowsToCsv(rows) {

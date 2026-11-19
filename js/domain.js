@@ -13,6 +13,7 @@
       pantryPageSize: 6,
       pantryDisplayMode: 'card',
       lastBackupDate: '',
+      lastJsonExportAt: '',
       unsavedChangesCount: 0,
       lastSavedAt: 0
     };
