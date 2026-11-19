@@ -994,19 +994,15 @@ body.is-edit-mode .mode-switch-pill {
 
 .detail-card-open-progress .progress-track {
   margin-top: 4px;
-  background: #F1E6D6;
+  background: var(--open-progress-track, #F1E6D6);
 }
 
 .detail-card-open-progress .progress-bar {
   background: var(--open-progress-color);
 }
 
-.detail-card-open-progress--fresh { --open-progress-color: #5F8F3A; }
-.detail-card-open-progress--warning { --open-progress-color: #B45309; }
-.detail-card-open-progress--urgent,
-.detail-card-open-progress--expired { --open-progress-color: #B91C1C; }
 .detail-card-open-progress--expired .progress-track { box-shadow: inset 0 0 0 1px var(--open-progress-color); }
-.detail-card-open-progress--expired strong { color: var(--open-progress-color); }
+.detail-card-open-progress--expired strong { color: #9B1C1C; }
 
 .detail-card-stock-text {
   color: #30251E;
@@ -1044,10 +1040,25 @@ body.is-edit-mode .mode-switch-pill {
   font-weight: 700;
   overflow-wrap: anywhere;
 }
-.detail-card-open-stock--fresh { background: #EAF2DC; border-color: #C5DDBC; }
-.detail-card-open-stock--warning { background: #FFF6E5; border-color: #F2C9A8; }
+.detail-card-open-stock--fresh {
+  background: #F3F8EC;
+  border-color: #D3E5C6;
+  --open-progress-color: #5F8F3A;
+  --open-progress-track: #E4EDD8;
+}
+.detail-card-open-stock--warning {
+  background: #FFF8EA;
+  border-color: #F2D9B0;
+  --open-progress-color: #C9801A;
+  --open-progress-track: #F6EBD3;
+}
 .detail-card-open-stock--urgent,
-.detail-card-open-stock--expired { background: #FDE2E2; border-color: #F2B8B8; }
+.detail-card-open-stock--expired {
+  background: #FDEEEE;
+  border-color: #F2C4C4;
+  --open-progress-color: #D14343;
+  --open-progress-track: #F6DCDC;
+}
 
 .detail-card-action-buttons {
   display: flex;
