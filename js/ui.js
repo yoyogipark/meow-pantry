@@ -202,9 +202,40 @@
       '</div>';
   };
 
+  function formatPieceCount(pieces) {
+    return pieces === null ? '件数未明' : '共 ' + pieces + ' 件';
+  }
+
+  function summarizeArchivedPieces(items) {
+    var batches = new Map();
+    var total = 0;
+    for (var item of items) {
+      if (!item.unit || Domain.hasSharedSeal(item)) return null;
+      var pieces = 0;
+      if (item.purchasePackaging || Domain.isPackageUnit(item.unit)) {
+        // History lists can fall back to one when the quantity is missing. Totals need a recorded value.
+        var consumed = Number(item.consumedCount) || 0;
+        var last = Number(item.lastQuantity) || 0;
+        pieces = consumed || last;
+        if (!Number.isSafeInteger(pieces) || pieces <= 0 || (consumed && last && consumed !== last)) {
+          return null;
+        }
+      }
+      var batchId = item.sourceBatchId || item.id;
+      var previous = batches.get(batchId);
+      if (previous) {
+        if (previous.unit !== item.unit || previous.pieces !== pieces) return null;
+      } else {
+        batches.set(batchId, { unit: item.unit, pieces: pieces });
+        total += pieces;
+      }
+    }
+    return Number.isSafeInteger(total) ? total : null;
+  }
+
   function renderStockQuantityDetails(items) {
     var summary = Domain.summarizeStockQuantity(items);
-    document.getElementById('countStockPieces').textContent = '共' + summary.pieces + '件';
+    document.getElementById('countStockPieces').textContent = formatPieceCount(summary.pieces);
     var unitKeys = Array.from(new Set(Object.keys(summary.units).concat(Object.keys(summary.otherUnits))));
     var rows = unitKeys.map(function (unit) {
       var entry = summary.units[unit];
@@ -255,8 +286,8 @@
   UI.renderStatusCounts = function () {
     var st = MP.state;
     var cStock = 0;
-    var cExpiring = 0;
-    var cExpired = 0;
+    var expiringItems = [];
+    var expiredItems = [];
     var attrCounts = { all: 0, opened: 0, fresh: 0, pal_love: 0, group_food: 0, group_care: 0 };
     var emptyItems = [];
 
@@ -266,8 +297,8 @@
         emptyItems.push(it);
       } else {
         cStock += 1;
-        if (ev.status === 'expiring') cExpiring += 1;
-        else if (ev.status === 'expired') cExpired += 1;
+        if (ev.status === 'expiring') expiringItems.push(it);
+        else if (ev.status === 'expired') expiredItems.push(it);
         if (st.statusFilter === 'in_stock' || st.statusFilter === ev.status) {
           attrCounts.all += 1;
           if (Domain.isStockOpened(it)) attrCounts.opened += 1;
@@ -279,11 +310,20 @@
     });
     var cEmpty = Domain.groupEmptyItemsByProduct(emptyItems).length;
 
-    document.getElementById('countInStock').textContent = String(cStock);
+    [
+      ['countInStock', cStock],
+      ['countExpiring', expiringItems.length],
+      ['countExpired', expiredItems.length],
+      ['countEmpty', cEmpty]
+    ].forEach(function (entry) {
+      var el = document.getElementById(entry[0]);
+      el.textContent = String(entry[1]);
+      el.classList.toggle('is-zero', entry[1] === 0);
+    });
     renderStockQuantityDetails(st.items);
-    document.getElementById('countExpiring').textContent = String(cExpiring);
-    document.getElementById('countExpired').textContent = String(cExpired);
-    document.getElementById('countEmpty').textContent = String(cEmpty);
+    document.getElementById('countExpiringPieces').textContent = formatPieceCount(Domain.summarizeStockQuantity(expiringItems).pieces);
+    document.getElementById('countExpiredPieces').textContent = formatPieceCount(Domain.summarizeStockQuantity(expiredItems).pieces);
+    document.getElementById('countEmptyPieces').textContent = formatPieceCount(summarizeArchivedPieces(emptyItems));
 
     var cards = document.querySelectorAll('[data-status-filter]');
     for (var i = 0; i < cards.length; i++) {
