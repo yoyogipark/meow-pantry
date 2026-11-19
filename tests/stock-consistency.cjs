@@ -529,6 +529,21 @@ async function run() {
   assert.equal(card(openedCardItem.id).querySelector('.detail-card-open-date'), null);
   console.log('Opened card layout and progress pass');
 
+  const archived = make('archive-balance', 0, '杯', { name: '同款测试', consumedCount: 2 });
+  reset(archived,
+    make('live-balance-a', 1, '杯', { name: archived.name, eatenCount: 2 }),
+    make('live-balance-b', 1, '杯', { name: archived.name }),
+    make('other-unit', 8, '罐', { name: archived.name }));
+  state.statusFilter = 'empty';
+  for (const mode of ['compact', 'card']) {
+    state.pantryDisplayMode = mode;
+    ui.renderPantryList();
+    const archive = w.document.querySelector('.archive-card');
+    assert.equal(archive.querySelector('.archive-total').textContent, '累计 2 杯');
+    assert.equal(archive.querySelector('.archive-footer .stock-quantity-pill').textContent, '在库 2 杯 已用 2 杯');
+    assert.deepEqual(Array.from(archive.querySelectorAll('.archive-footer button'), button => button.textContent), ['流水', '复购入库']);
+  }
+
   const keys = w.MeowPantry.STORAGE_KEYS;
   const originalSetItem = w.Storage.prototype.setItem;
   const photo = 'data:image/jpeg;base64,AAAA';

@@ -406,6 +406,30 @@
     // Product-Grouped Rendering when viewing "已吃完" (empty)
     if (st.statusFilter === 'empty') {
       var productGroups = Domain.groupEmptyItemsByProduct(filtered);
+      var liveTotals = new Map();
+      st.items.forEach(function (item) {
+        if (!(Number(item.quantity) > 0)) return;
+        var key = Domain.getProductGroupKey(item);
+        var totals = liveTotals.get(key) || { quantity: 0, eatenCount: 0 };
+        totals.quantity += Number(item.quantity);
+        totals.eatenCount += Number(item.eatenCount) || 0;
+        liveTotals.set(key, totals);
+      });
+
+      function archiveFooter(group) {
+        var item = group.latestItem;
+        var totals = liveTotals.get(group.groupKey) || { quantity: 0, eatenCount: 0 };
+        return '<div class="archive-footer">' +
+          stockQuantityPill({ unit: item.unit, quantity: Utils.round2(totals.quantity), eatenCount: Utils.round2(totals.eatenCount) }) +
+          '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(item.sourceBatchId || item.id) + '">流水</button>' +
+          '<button type="button" data-action="restock-new" data-id="' + Utils.escapeHtml(item.id) + '">复购入库</button>' +
+          '</div>';
+      }
+
+      function archiveBadge(group) {
+        return '<span class="detail-card-reminder detail-card-status archive-total">累计 ' +
+          group.totalConsumed + ' ' + Utils.escapeHtml(group.latestItem.unit || '件') + '</span>';
+      }
       var gPageSize = Number(st.pantryPageSize) || 6;
       var gTotal = productGroups.length;
       var gPages = Math.max(1, Math.ceil(gTotal / gPageSize));
@@ -433,26 +457,22 @@
         listEl.innerHTML = pagedGroups.map(function (grp) {
           var rep = grp.latestItem;
           var catInfo = MP.CATEGORIES[rep.category] || MP.CATEGORIES.dry;
-          var unitStr = Utils.escapeHtml(rep.unit || '件');
           var palIcon = rep.palatability === 'love' ? '😍' : (rep.palatability === 'meh' ? '😒' : '');
           return (
-            '<div class="ios-card archive-card archive-row" style="padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<div class="ios-card archive-card" style="padding:10px 12px;border-radius:14px;">' +
               '<div data-action="edit" data-id="' + Utils.escapeHtml(rep.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
                 '<div class="archive-row" style="display:flex;align-items:center;gap:5px;min-width:0;">' +
                   '<span style="font-size:14px;flex-shrink:0;">' + catInfo.icon + '</span>' +
                   '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;flex-shrink:0;">' + Utils.escapeHtml(rep.brand) + '</span>' +
                   '<strong style="font-size:13.5px;color:#2B2320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(rep.name) + '</strong>' +
                   (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
+                  archiveBadge(grp) +
                 '</div>' +
                 '<div style="font-size:11px;color:#6B5A4C;margin-top:3px;">' +
                   '共 ' + grp.batches.length + ' 个历史批次' + (rep.spec ? (' · 规格 ' + Utils.escapeHtml(rep.spec)) : '') +
                 '</div>' +
-                stockQuantityPill(rep) +
               '</div>' +
-              '<div class="archive-row" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
-                '<span style="background:#DCFCE7;color:#15803D;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:800;">累计 ' + grp.totalConsumed + unitStr + '</span>' +
-                '<button type="button" data-action="restock-new" data-id="' + Utils.escapeHtml(rep.id) + '" style="padding:4px 8px;border-radius:8px;border:1px solid #FDBA74;background:#E8590C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>' +
-              '</div>' +
+              archiveFooter(grp) +
             '</div>'
           );
         }).join('');
@@ -544,7 +564,7 @@
                     '<span style="background:#FFE3CC;color:#7A3410;padding:2px 9px;border-radius:8px;font-size:12px;font-weight:700;">' + Utils.escapeHtml(rep.brand) + '</span>' +
                     palHtml +
                   '</div>' +
-                  '<span style="background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;">累计 ' + grp.totalConsumed + ' ' + unitStr + '</span>' +
+                  archiveBadge(grp) +
                 '</div>' +
                 '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#2B2320;line-height:1.35;">' + Utils.escapeHtml(rep.name) + '</h3>' +
                 '<div style="margin-top:4px;font-size:12px;color:#6B5A4C;">' +
@@ -556,11 +576,7 @@
               '<div style="font-size:11px;font-weight:700;color:#6B5A4C;margin-bottom:7px;">📦 历史批次明细（总计 ' + grp.totalConsumed + ' ' + unitStr + '）</div>' +
               '<div style="display:flex;flex-direction:column;gap:6px;">' + batchRowsHtml + '</div>' +
             '</div>' +
-            '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
-              stockQuantityPill(rep) +
-              '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(rep.sourceBatchId || rep.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11.5px;font-weight:600;cursor:pointer;">📜 批次流水</button>' +
-              '<button type="button" data-action="restock-new" data-id="' + Utils.escapeHtml(rep.id) + '" style="padding:7px 14px;border-radius:10px;border:1px solid #FDBA74;background:#E8590C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">＋ 同款复购入库</button>' +
-            '</div>' +
+            archiveFooter(grp) +
           '</article>'
         );
       }).join('');
