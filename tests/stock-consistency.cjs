@@ -1,8 +1,8 @@
-// Install jsdom@24 and fake-indexeddb@6, then run: node tests/stock-consistency.cjs
+// Run from the repository root with: npm test
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { JSDOM } = require('jsdom');
+const { JSDOM, VirtualConsole } = require('jsdom');
 const { IDBFactory } = require('fake-indexeddb');
 
 const root = path.resolve(__dirname, '..');
@@ -10,7 +10,10 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const scripts = Array.from(html.matchAll(/<script src="\.\/(js\/[^?]+)/g), ([, file]) => file);
 const db = new IDBFactory();
 const boot = (localEntries = []) => {
-  const { window } = new JSDOM(html, { url: 'https://test.example', runScripts: 'outside-only' });
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', error => { throw error; });
+  const { window } = new JSDOM(html, { url: 'https://test.example', runScripts: 'outside-only', virtualConsole });
+  window.addEventListener('unhandledrejection', event => { throw event.reason; });
   Object.defineProperty(window, 'indexedDB', { value: db });
   window.scrollTo = () => {};
   for (const [key, value] of localEntries) window.localStorage.setItem(key, value);
@@ -520,6 +523,46 @@ async function run() {
   assert.ok(card(openedCardItem.id).querySelector('.detail-card-open-summary .detail-card-stock-text'));
   assert.equal(card(openedCardItem.id).querySelector('.detail-card-open-date'), null);
   console.log('Opened card layout and progress pass');
+
+  const keys = w.MeowPantry.STORAGE_KEYS;
+  const originalSetItem = w.Storage.prototype.setItem;
+  const photo = 'data:image/jpeg;base64,AAAA';
+  reset(make('quota-test', 2, '杯', { imageData: photo }));
+  w.Storage.prototype.setItem = function (key, value) {
+    if (key === keys.ITEMS && JSON.parse(value).some(row => row.imageData)) {
+      throw new w.DOMException('Simulated quota', 'QuotaExceededError');
+    }
+    return originalSetItem.call(this, key, value);
+  };
+  try {
+    assert.equal(await save(), true);
+    assert.equal(JSON.parse(w.localStorage.getItem(keys.SETTINGS)).lsSlimMode, true);
+    assert.equal(JSON.parse(w.localStorage.getItem(keys.ITEMS))[0].imageData, undefined);
+    await persisted(s => assert.equal(s.items.find(row => row.id === 'quota-test').imageData, photo));
+
+    storage.openIDB = callback => callback(null);
+    assert.equal(await save(), false, 'Photo-stripped fallback is not a complete save');
+    assert.match(el('storageWriteWarning').textContent, /本地保存未完成/);
+
+    w.Storage.prototype.setItem = originalSetItem;
+    assert.equal(await save(), true, 'Full LocalStorage save works without IndexedDB');
+    assert.equal(el('storageWriteWarning').textContent, '');
+
+    w.Storage.prototype.setItem = function () {
+      throw new w.DOMException('Simulated unavailable storage', 'QuotaExceededError');
+    };
+    assert.equal(await save(), false, 'Both storage engines failed');
+    assert.match(el('storageWriteWarning').textContent, /本地保存未完成/);
+
+    storage.openIDB = originalOpen;
+    state.items[0].quantity = 3;
+    assert.equal(await save(), true, 'IndexedDB works without LocalStorage');
+    await persisted(s => assert.equal(s.items.find(row => row.id === 'quota-test').quantity, 3));
+  } finally {
+    w.Storage.prototype.setItem = originalSetItem;
+    storage.openIDB = originalOpen;
+  }
+  console.log('Storage failure and photo fallback pass');
   w.close();
 }
 

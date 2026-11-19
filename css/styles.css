@@ -30,6 +30,11 @@ html, body {
   overflow-x: hidden;
 }
 
+body.modal-open {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 .app-shell {
   max-width: 680px;
   margin: 0 auto;
@@ -60,6 +65,24 @@ html, body {
   border-radius: 20px;
   box-shadow: 0 2px 10px rgba(28, 25, 23, 0.04);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.archive-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.archive-row {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.archive-row > * {
+  max-width: 100%;
+}
+
+.archive-card.archive-row > :first-child {
+  flex-basis: 9rem !important;
 }
 
 .ios-btn {

@@ -23,7 +23,10 @@
 │   ├── domain.js       # 核心状态、无损 Schema 清洗迁移、分顿扣减、影子归档同步与库存流水引擎
 │   ├── storage.js      # IndexedDB 单例连接池 + LocalStorage 时间戳双写同步、备份预校验与恢复快照
 │   ├── stats.js        # 食品/营养品/药品分离统计、效期时间轴与品牌深度档案计算
-│   ├── ui.js           # 各视图渲染器、快捷喂食交互与库存操作历史弹窗
+│   ├── modal.js        # 弹窗生命周期、焦点恢复、键盘循环与背景滚动锁定
+│   ├── ui.js           # 公共视图协调、饮食记录、商品表单与库存流水界面
+│   ├── ui-pantry.js    # 库存状态、筛选、数量明细与商品卡片渲染
+│   ├── ui-settings.js  # 设置页、备份提醒与本地存储健康状态渲染
 │   └── app.js          # 全局事件委托、表单校验与 Service Worker 自动更新注册
 ├── sw.js               # PWA 离线缓存服务（同源 HTML/CSS/JS 网络优先 + 离线无缝回退）
 ├── manifest.json       # 主屏幕独立全屏 App 配置文件
@@ -37,3 +40,22 @@
 1. 打开你的 GitHub 仓库（如 `yoyogipark/meow-pantry`）。
 2. 将压缩包内的文件（`index.html`、`sw.js`、`manifest.json`、`css/` 文件夹、`js/` 文件夹及图标文件）上传并覆盖到仓库根目录，点击 **Commit changes**。
 3. 等待约 30～60 秒构建完成后，在手机浏览器或桌面图标刷新一次即可平滑升级——**原有手机浏览器内的库存、实拍图与饮食记录 100% 自动保留并平滑兼容，无需任何手动迁移！**
+
+## 🧪 本地测试
+
+需要 Node.js 18 或更高版本：
+
+```bash
+npm ci
+npm test
+```
+
+`npm test` 会先检查全部 JavaScript 文件的语法，再运行库存扣减、撤销、备份恢复及界面摘要等一致性测试。
+
+发布前可用一个命令同步提升 Service Worker 与全部 CSS/JS 资源版本：
+
+```bash
+npm run version:pwa -- 51
+```
+
+版本脚本会同时更新 `index.html` 和 `sw.js`，随后运行 PWA 资源一致性检查。

@@ -184,6 +184,12 @@
     return 0;
   };
 
+  Utils.parsePortionSpec = function (specStr) {
+    return /^(\d+(?:\.\d+)?)\s*(g|克|kg|千克|ml|毫升)(?:\s*\/\s*(.+))?$/i.exec(
+      String(specStr || '').trim()
+    );
+  };
+
   Utils.formatPer100gPrice = function (price, currency, specStr) {
     var p = Number(price);
     if (!isFinite(p) || p <= 0) return '';
