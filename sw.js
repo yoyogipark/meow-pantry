@@ -1,31 +1,28 @@
 const CACHE_PREFIX = 'meow-pantry-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v49';
+const CACHE_NAME = CACHE_PREFIX + 'v50';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './css/styles.css?v=48',
+  './css/styles.css?v=49',
   './js/covers.js?v=41',
   './js/constants.js?v=41',
   './js/utils.js?v=41',
   './js/domain.js?v=42',
   './js/storage.js?v=41',
   './js/stats.js?v=41',
-  './js/ui.js?v=49',
-  './js/app.js?v=41',
-  'https://cdn.tailwindcss.com/3.4.17'
+  './js/ui.js?v=50',
+  './js/app.js?v=42'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Cache local core assets atomically, and attempt optional external CDN without blocking install offline
-      const localAssets = CORE_ASSETS.filter((u) => !u.startsWith('http'));
-      const remoteAssets = CORE_ASSETS.filter((u) => u.startsWith('http'));
-      return cache.addAll(localAssets.map((url) => new Request(new URL(url, self.location.href), { cache: 'reload' }))).then(() =>
-        Promise.allSettled(remoteAssets.map((url) => cache.add(url)))
+      // Cache local core assets atomically.
+      return cache.addAll(
+        CORE_ASSETS.map((url) => new Request(new URL(url, self.location.href), { cache: 'reload' }))
       );
     }).then(() => self.skipWaiting())
   );
@@ -93,7 +90,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-First with background update & offline .catch() guard for static images/icons & external CDN
+  // Cache-First with background update & offline .catch() guard for static images/icons.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;

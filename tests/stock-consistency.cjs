@@ -1,4 +1,4 @@
-// Install jsdom@24 and fake-indexeddb@6, then run: node tests/stock-consistency.cjs
+// Run from the repository root with: npm test
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');

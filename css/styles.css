@@ -30,6 +30,11 @@ html, body {
   overflow-x: hidden;
 }
 
+body.modal-open {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 .app-shell {
   max-width: 680px;
   margin: 0 auto;

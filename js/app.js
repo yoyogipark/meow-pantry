@@ -1431,6 +1431,7 @@
 
   App.init = function () {
     UI.syncStaticBrandIcons();
+    UI.initModalAccessibility();
     App.bindEvents();
     Storage.loadFromStorage(function () {
       UI.renderAll();
