@@ -315,6 +315,74 @@ async function run() {
   assert.deepEqual(readSummary(), Array.from({ length: 4 }, () => ['0', '共 0 件', true]));
   await settle();
   console.log('Summary cards pass');
+
+  const details = el('stockQuantityDetails');
+  const detailCard = unit => details.querySelector('[data-stock-unit="' + unit + '"]');
+  const assertDetail = (unit, quantity, labels) => {
+    const card = detailCard(unit);
+    assert.equal(card.querySelector('.stock-detail-amount').textContent, quantity + ' ' + unit);
+    assert.deepEqual(Array.from(card.querySelector('.stock-detail-tags').children, node => node.textContent), labels);
+  };
+  assert.equal(el('stockDetailsBtn').getAttribute('aria-controls'), 'stockQuantityDetails');
+  assert.equal(el('stockDetailsBtn').getAttribute('aria-expanded'), 'false');
+  assert.ok(details.classList.contains('hidden-view'));
+  assert.equal(details.querySelector('.stock-detail-heading > span').textContent, '共 0 件');
+  assert.match(details.textContent, /目前没有在库数量/);
+  el('stockDetailsBtn').click();
+  assert.equal(el('stockDetailsBtn').getAttribute('aria-expanded'), 'true');
+  assert.ok(!details.classList.contains('hidden-view'));
+
+  const eight = make('eight', 8, '罐');
+  const twoBags = make('soon-bags', 2, '袋', { expDate: today });
+  reset(eight, twoBags);
+  assertDetail('罐', 8, ['全部未开封']);
+  assertDetail('袋', 2, ['全部未开封', '临期 2']);
+  Object.assign(eight, { isOpened: true, openedDate: today, openDaysLimit: 11, openRemainFraction: 0.25 });
+  ui.renderStatusCounts();
+  assertDetail('罐', 8, ['已开封 1']);
+  eight.openDaysLimit = 2;
+  ui.renderStatusCounts();
+  assertDetail('罐', 8, ['已开封 1', '临期 1']);
+  assert.equal(el('countExpiringPieces').textContent, '共 10 件');
+  eight.expDate = today;
+  ui.renderStatusCounts();
+  assertDetail('罐', 8, ['已开封 1', '临期 8']);
+  eight.openedDate = utils.shiftDaysFromToday(-3);
+  ui.renderStatusCounts();
+  assertDetail('罐', 8, ['已开封 1', '临期 7', '已过期 1']);
+  eight.expDate = yesterday;
+  ui.renderStatusCounts();
+  assertDetail('罐', 8, ['已开封 1', '已过期 8']);
+  eight.expDate = '2099-01-01';
+  eight.openedDate = '';
+  ui.renderStatusCounts();
+  assertDetail('罐', 8, ['已开封 1', '效期待确认 1']);
+
+  const flavors = mixed();
+  Object.assign(flavors, { expDate: utils.shiftDaysFromToday(40), openDaysLimit: 3 });
+  flavors.flavors[0].openedDate = utils.shiftDaysFromToday(-4);
+  flavors.flavors[1].openedDate = today;
+  const sharedDetail = make('shared-detail', 3, '杯', {
+    purchasePackaging: { count: 1, outerUnit: '盒', size: 4, seal: 'shared' },
+    isOpened: true, openedDate: today, openDaysLimit: 2
+  });
+  const noUnit = make('legacy-no-unit', 1, null);
+  reset(flavors, sharedDetail, weighingStock, noUnit);
+  assertDetail('杯', 2, ['已开封 2', '临期 1', '已过期 1']);
+  assertDetail('盒', 1, ['已开封 1', '临期 1']);
+  assert.match(details.querySelector('.stock-detail-other').textContent, /3 杯 · 200 g（不计入总件数）/);
+  assert.equal(details.querySelector('.stock-detail-heading > span').textContent, el('countStockPieces').textContent);
+  const currentDetails = details.innerHTML;
+  state.catFilter = 'med';
+  state.brandFilter = '不存在的品牌';
+  state.searchQuery = '不存在的商品';
+  state.pantryPage = 2;
+  ui.renderAll();
+  assert.equal(details.innerHTML, currentDetails);
+  el('stockDetailsBtn').click();
+  assert.equal(el('stockDetailsBtn').getAttribute('aria-expanded'), 'false');
+  assert.ok(details.classList.contains('hidden-view'));
+  console.log('Stock detail cards pass');
   w.close();
 }
 
