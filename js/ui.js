@@ -278,8 +278,8 @@
     for (var m = 0; m < modeBtns.length; m++) {
       var mKey = modeBtns[m].getAttribute('data-daily-mode');
       var active = (mKey === st.dailyViewMode);
-      modeBtns[m].style.background = active ? '#2B2320' : 'transparent';
-      modeBtns[m].style.color = active ? '#FFFFFF' : '#57534E';
+      modeBtns[m].classList.toggle('active', active);
+      modeBtns[m].setAttribute('aria-pressed', String(active));
     }
     var allBtn = document.getElementById('allDatesModeBtn');
     if (allBtn) allBtn.textContent = '📚 全部日期记录 (' + st.logs.length + ')';
