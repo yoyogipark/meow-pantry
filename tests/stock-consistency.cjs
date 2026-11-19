@@ -430,7 +430,7 @@ async function run() {
     isOpened: true, openedDate: utils.shiftDaysFromToday(-3), openDaysLimit: 4,
     openRemainFraction: 0.25, eatenCount: 1
   });
-  const unopenedCardItem = make('unopened-card', 1, '罐', { openDaysLimit: 4 });
+  const unopenedCardItem = make('unopened-card', 2, '杯', { openDaysLimit: 4, eatenCount: 2 });
   const defaultLimitItem = make('default-limit', 1, '罐', { isOpened: true, openedDate: today });
   const longLimitItem = make('long-limit', 1, '罐', { isOpened: true, openedDate: today, openDaysLimit: 45 });
   const twoDayItem = make('two-day-limit', 3, '罐', { isOpened: true, openedDate: today, openDaysLimit: 2, openRemainFraction: 0.75 });
@@ -440,7 +440,7 @@ async function run() {
   multiCardItem.openDaysLimit = 4;
   multiCardItem.flavors[0].openedDate = utils.shiftDaysFromToday(-2);
   multiCardItem.flavors[1].openedDate = utils.shiftDaysFromToday(-3);
-  reset(openedCardItem, unopenedCardItem, defaultLimitItem, longLimitItem, twoDayItem, missingLimitItem, multiCardItem);
+  reset(openedCardItem, unopenedCardItem, defaultLimitItem, longLimitItem, twoDayItem, missingLimitItem, multiCardItem, sharedDetail);
   const card = id => w.document.querySelector('[data-action="item-history"][data-id="' + id + '"]').closest('article');
   const progress = id => card(id).querySelector('.detail-card-open-progress');
   const checkProgress = (id, label, tone, width, limit = 4) => {
@@ -462,10 +462,26 @@ async function run() {
   ui.renderPantryList();
   checkProgress(twoDayItem.id, '开封保鲜剩 1 天', 'urgent', '50%', 2);
   const activeCard = card(openedCardItem.id);
-  assert.match(activeCard.querySelector('.detail-card-open-date').textContent, /开封 \d{4}-\d{2}-\d{2}/);
-  assert.equal(activeCard.querySelector('.detail-card-open-stock .detail-card-stock-text'), null);
-  assert.equal(activeCard.querySelector('.detail-card-actions .detail-card-stock-text').textContent, '未开封 2 罐 + 开封余 1/4 罐');
-  assert.equal(activeCard.querySelector('.detail-card-actions .detail-card-used').textContent, '已用 1 罐');
+  const banner = activeCard.querySelector('.detail-card-open-stock');
+  const summary = banner.firstElementChild;
+  assert.ok(summary.matches('.detail-card-open-summary'));
+  assert.equal(summary.querySelector('.detail-card-stock-text').textContent, '未开封 2 罐 + 开封余 1/4 罐');
+  assert.equal(summary.querySelector('.detail-card-used').textContent, '已用 1 罐');
+  assert.equal(summary.lastElementChild.textContent, '开封 ' + openedCardItem.openedDate);
+  assert.equal(summary.nextElementSibling, progress(openedCardItem.id));
+  assert.deepEqual(Array.from(progress(openedCardItem.id).children, child => child.className),
+    ['detail-card-open-progress-label', 'progress-track']);
+  for (const opened of [openedCardItem, multiCardItem, sharedDetail]) {
+    const actions = card(opened.id).querySelector('.detail-card-actions');
+    assert.equal(actions.children.length, 1);
+    assert.deepEqual(Array.from(actions.querySelectorAll('button'), button => button.dataset.action), ['item-history', 'log-feed']);
+  }
+  assert.equal(card(multiCardItem.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '未开封 0 杯 + 已开封 2 杯');
+  assert.equal(card(sharedDetail.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '在库 3 杯 · 共用包装已开封');
+  const unopenedCard = card(unopenedCardItem.id);
+  assert.equal(unopenedCard.querySelector('.detail-card-open-stock'), null);
+  assert.equal(unopenedCard.querySelector('.detail-card-unopened-stock .detail-card-stock-text').textContent, '在库 2 杯');
+  assert.equal(unopenedCard.querySelector('.detail-card-unopened-stock .detail-card-used').textContent, '已用 2 杯');
   const shelfBefore = activeCard.querySelector('.detail-card-shelf').outerHTML;
   for (const [elapsed, label, tone, width] of [
     [0, '开封保鲜剩 4 天', 'fresh', '100%'],
@@ -482,7 +498,9 @@ async function run() {
   openedCardItem.openedDate = '';
   ui.renderPantryList();
   assert.equal(progress(openedCardItem.id), null);
-  console.log('Opened card progress passes');
+  assert.ok(card(openedCardItem.id).querySelector('.detail-card-open-summary .detail-card-stock-text'));
+  assert.equal(card(openedCardItem.id).querySelector('.detail-card-open-date'), null);
+  console.log('Opened card layout and progress pass');
   w.close();
 }
 
