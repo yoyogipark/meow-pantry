@@ -409,8 +409,8 @@
       ? (item.openedDate ? [item.openedDate] : [])
       : openPackages.map(function (flavor) { return flavor.name + ' ' + flavor.openedDate; });
     var independent = !shared && (item.purchasePackaging || Domain.isPackageUnit(unit) || unit === '粒');
-    if (independent && (!opened || openPackages.length) && Number.isSafeInteger(quantity) && quantity >= openPackages.length) {
-      stockText = '未拆 ' + (quantity - openPackages.length) + ' ' + unit;
+    if (independent && openPackages.length && Number.isSafeInteger(quantity) && quantity >= openPackages.length) {
+      stockText = '未开封 ' + (quantity - openPackages.length) + ' ' + unit;
       if (openPackages.length === 1) {
         var fractionText = Utils.formatRemainFractionText(openPackages[0].openRemainFraction, unit);
         if (fractionText) {
@@ -782,13 +782,14 @@
 
       var qtyNum = Number(it.quantity) || 0;
       var unitStr = Utils.escapeHtml(unit);
-      var stockHtml = '<span class="detail-card-stock-text">' + Utils.escapeHtml(stock.text) + '</span>' +
-        (Number(it.eatenCount) > 0
-          ? ' <span class="detail-card-used">已用' + Number(it.eatenCount) + unitStr + '</span>'
-          : '');
+      var stockHtml = '<span class="detail-card-stock-text">' + Utils.escapeHtml(stock.text) + '</span>';
+      var usedHtml = Number(it.eatenCount) > 0
+        ? ' <span class="detail-card-used">已用 ' + Number(it.eatenCount) + ' ' + unitStr + '</span>'
+        : '';
       var openedBannerHtml = stock.opened
         ? '<div class="detail-card-open-stock">' + stockHtml +
           (stock.dates.length ? ' <span class="detail-card-open-date">· 开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
+          usedHtml +
           '</div>'
         : '';
 
@@ -861,8 +862,8 @@
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
             '<div class="detail-card-actions">' +
-              (stock.opened ? '' : '<div class="detail-card-unopened-stock">' + stockHtml + '</div>') +
-              '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
+              (stock.opened ? '' : '<div class="detail-card-unopened-stock">' + stockHtml + usedHtml + '</div>') +
+              '<div class="detail-card-action-buttons">' +
                 '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" style="padding:6px 8px;border-radius:10px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📜 此商品记录</button>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +
               '</div>' +
