@@ -83,23 +83,26 @@
     <!-- ==================== TAB 1: 粮仓库存 (PANTRY LIST) ==================== -->
     <main id="viewPantry">
       <!-- 4 Primary Status Filter Cards -->
-      <section style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:8px;">
+      <section class="status-card-grid">
         <button type="button" data-status-filter="in_stock" class="status-card selected" id="statCardStock">
           <div style="font-size:11px;color:#78716C;font-weight:600;">在库批次</div>
-          <div id="countInStock" style="font-size:20px;font-weight:800;color:#1C1917;margin-top:2px;">0</div>
-          <div id="countStockPieces" class="stock-piece-count">共0件</div>
+          <div id="countInStock" class="status-card-count is-zero">0</div>
+          <div id="countStockPieces" class="stock-piece-count">共 0 件</div>
         </button>
         <button type="button" data-status-filter="expiring" class="status-card" id="statCardExpiring">
           <div style="font-size:11px;color:#D97706;font-weight:700;">临期</div>
-          <div id="countExpiring" style="font-size:20px;font-weight:800;color:#D97706;margin-top:2px;">0</div>
+          <div id="countExpiring" class="status-card-count is-zero">0</div>
+          <div id="countExpiringPieces" class="stock-piece-count">共 0 件</div>
         </button>
         <button type="button" data-status-filter="expired" class="status-card" id="statCardExpired">
           <div style="font-size:11px;color:#DC2626;font-weight:700;">已过期</div>
-          <div id="countExpired" style="font-size:20px;font-weight:800;color:#DC2626;margin-top:2px;">0</div>
+          <div id="countExpired" class="status-card-count is-zero">0</div>
+          <div id="countExpiredPieces" class="stock-piece-count">共 0 件</div>
         </button>
         <button type="button" data-status-filter="empty" class="status-card" id="statCardEmpty">
           <div style="font-size:11px;color:#78716C;font-weight:600;">已核销</div>
-          <div id="countEmpty" style="font-size:20px;font-weight:800;color:#57534E;margin-top:2px;">0</div>
+          <div id="countEmpty" class="status-card-count is-zero">0</div>
+          <div id="countEmptyPieces" class="stock-piece-count">共 0 件</div>
         </button>
       </section>
 
