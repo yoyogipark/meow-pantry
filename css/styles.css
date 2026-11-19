@@ -47,6 +47,13 @@ html, body {
   }
 }
 
+/* Use the system text rendering default for the installed app header. */
+@media (display-mode: standalone) {
+  .app-header {
+    -webkit-font-smoothing: auto;
+  }
+}
+
 .ios-card {
   background: var(--card-bg);
   border: 1px solid rgba(231, 229, 228, 0.88);
