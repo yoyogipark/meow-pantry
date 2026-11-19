@@ -1,23 +1,23 @@
 const CACHE_PREFIX = 'meow-pantry-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v55';
+const CACHE_NAME = CACHE_PREFIX + 'v56';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './css/styles.css?v=55',
-  './js/covers.js?v=55',
-  './js/constants.js?v=55',
-  './js/utils.js?v=55',
-  './js/domain.js?v=55',
-  './js/storage.js?v=55',
-  './js/stats.js?v=55',
-  './js/modal.js?v=55',
-  './js/ui.js?v=55',
-  './js/ui-pantry.js?v=55',
-  './js/ui-settings.js?v=55',
-  './js/app.js?v=55'
+  './css/styles.css?v=56',
+  './js/covers.js?v=56',
+  './js/constants.js?v=56',
+  './js/utils.js?v=56',
+  './js/domain.js?v=56',
+  './js/storage.js?v=56',
+  './js/stats.js?v=56',
+  './js/modal.js?v=56',
+  './js/ui.js?v=56',
+  './js/ui-pantry.js?v=56',
+  './js/ui-settings.js?v=56',
+  './js/app.js?v=56'
 ];
 
 self.addEventListener('install', (event) => {
@@ -78,6 +78,7 @@ self.addEventListener('fetch', (event) => {
             const copy = res.clone();
             return caches.open(CACHE_NAME)
               .then((cache) => cache.put(event.request, copy))
+              .catch(() => { /* Keep the network response if caching fails. */ })
               .then(() => res);
           }
           return res;
@@ -105,6 +106,7 @@ self.addEventListener('fetch', (event) => {
             const copy = res.clone();
             return caches.open(CACHE_NAME)
               .then((cache) => cache.put(event.request, copy))
+              .catch(() => { /* Keep the network response if caching fails. */ })
               .then(() => res);
           }
           return res;

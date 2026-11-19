@@ -6,9 +6,19 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const swSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+const listeners = {};
 const sandbox = {
-  self: { addEventListener() {} },
-  caches: {},
+  self: {
+    location: new URL('https://example.test/pantry/'),
+    addEventListener(type, handler) { listeners[type] = handler; }
+  },
+  caches: {
+    match: async () => undefined,
+    open: async () => ({
+      put: async () => { throw new Error('Simulated cache write failure'); }
+    })
+  },
+  fetch: async () => new Response('online'),
   Request,
   URL,
   Promise,
@@ -33,3 +43,19 @@ for (const asset of htmlAssets) {
 const externalAssets = coreAssets.filter(asset => /^https?:/i.test(asset));
 assert.deepEqual(externalAssets, [], 'Offline core cache must not contain external assets');
 console.log(`PWA asset consistency pass (${htmlAssets.length} HTML assets, ${coreAssets.length} cached routes)`);
+async function checkNetworkResponse() {
+  for (const asset of ['index.html', 'icon-192.png']) {
+    const request = new Request(new URL(asset, sandbox.self.location));
+    let responsePromise;
+    listeners.fetch({ request, respondWith(promise) { responsePromise = promise; } });
+    const response = await responsePromise;
+    assert.equal(response.status, 200, asset);
+    assert.equal(await response.text(), 'online', asset);
+  }
+  console.log('Online responses survive cache write failures');
+}
+
+checkNetworkResponse().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

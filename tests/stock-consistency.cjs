@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { JSDOM } = require('jsdom');
+const { JSDOM, VirtualConsole } = require('jsdom');
 const { IDBFactory } = require('fake-indexeddb');
 
 const root = path.resolve(__dirname, '..');
@@ -10,7 +10,10 @@ const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const scripts = Array.from(html.matchAll(/<script src="\.\/(js\/[^?]+)/g), ([, file]) => file);
 const db = new IDBFactory();
 const boot = (localEntries = []) => {
-  const { window } = new JSDOM(html, { url: 'https://test.example', runScripts: 'outside-only' });
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on('jsdomError', error => { throw error; });
+  const { window } = new JSDOM(html, { url: 'https://test.example', runScripts: 'outside-only', virtualConsole });
+  window.addEventListener('unhandledrejection', event => { throw event.reason; });
   Object.defineProperty(window, 'indexedDB', { value: db });
   window.scrollTo = () => {};
   for (const [key, value] of localEntries) window.localStorage.setItem(key, value);

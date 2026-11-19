@@ -425,9 +425,9 @@
           var unitStr = Utils.escapeHtml(rep.unit || '件');
           var palIcon = rep.palatability === 'love' ? '😍' : (rep.palatability === 'meh' ? '😒' : '');
           return (
-            '<div class="ios-card" style="padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<div class="ios-card archive-card archive-row" style="padding:10px 12px;border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
               '<div data-action="edit" data-id="' + Utils.escapeHtml(rep.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
-                '<div style="display:flex;align-items:center;gap:5px;min-width:0;">' +
+                '<div class="archive-row" style="display:flex;align-items:center;gap:5px;min-width:0;">' +
                   '<span style="font-size:14px;flex-shrink:0;">' + catInfo.icon + '</span>' +
                   '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;flex-shrink:0;">' + Utils.escapeHtml(rep.brand) + '</span>' +
                   '<strong style="font-size:13.5px;color:#1C1917;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(rep.name) + '</strong>' +
@@ -437,8 +437,8 @@
                   '共 ' + grp.batches.length + ' 个历史批次' + (rep.spec ? (' · 规格 ' + Utils.escapeHtml(rep.spec)) : '') +
                 '</div>' +
               '</div>' +
-              '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
-                '<span style="background:#DCFCE7;color:#15803D;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:800;white-space:nowrap;">累计 ' + grp.totalConsumed + unitStr + '</span>' +
+              '<div class="archive-row" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
+                '<span style="background:#DCFCE7;color:#15803D;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:800;">累计 ' + grp.totalConsumed + unitStr + '</span>' +
                 '<button type="button" data-action="restock-new" data-id="' + Utils.escapeHtml(rep.id) + '" style="padding:4px 8px;border-radius:8px;border:1px solid #FDBA74;background:#EA580C;color:#FFFFFF;font-size:11px;font-weight:700;cursor:pointer;">＋复购</button>' +
               '</div>' +
             '</div>'
@@ -522,17 +522,17 @@
           : '';
 
         return (
-          '<article class="ios-card p-4" style="padding:15px;">' +
+          '<article class="ios-card archive-card" style="padding:15px;">' +
             '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:11px;">' +
               thumbHtml +
               '<div style="min-width:0;flex:1;">' +
-                '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">' +
+                '<div class="archive-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">' +
                   '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px;">' +
                     '<span style="background:#F5F5F4;color:#44403C;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
                     '<span style="background:#FFEDD5;color:#9A3412;padding:2px 9px;border-radius:8px;font-size:12px;font-weight:700;">' + Utils.escapeHtml(rep.brand) + '</span>' +
                     palHtml +
                   '</div>' +
-                  '<span style="white-space:nowrap;background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;flex-shrink:0;">累计 ' + grp.totalConsumed + ' ' + unitStr + '</span>' +
+                  '<span style="background:#DCFCE7;color:#15803D;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;">累计 ' + grp.totalConsumed + ' ' + unitStr + '</span>' +
                 '</div>' +
                 '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#1C1917;line-height:1.35;">' + Utils.escapeHtml(rep.name) + '</h3>' +
                 '<div style="margin-top:4px;font-size:12px;color:#78716C;">' +
