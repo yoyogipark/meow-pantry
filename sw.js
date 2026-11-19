@@ -1,20 +1,20 @@
 const CACHE_PREFIX = 'meow-pantry-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v50';
+const CACHE_NAME = CACHE_PREFIX + 'v51';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './css/styles.css?v=49',
-  './js/covers.js?v=41',
-  './js/constants.js?v=41',
-  './js/utils.js?v=41',
-  './js/domain.js?v=42',
-  './js/storage.js?v=41',
-  './js/stats.js?v=41',
-  './js/ui.js?v=50',
-  './js/app.js?v=42'
+  './css/styles.css?v=51',
+  './js/covers.js?v=51',
+  './js/constants.js?v=51',
+  './js/utils.js?v=51',
+  './js/domain.js?v=51',
+  './js/storage.js?v=51',
+  './js/stats.js?v=51',
+  './js/ui.js?v=51',
+  './js/app.js?v=51'
 ];
 
 self.addEventListener('install', (event) => {
@@ -73,7 +73,9 @@ self.addEventListener('fetch', (event) => {
         .then((res) => {
           if (res && res.ok) {
             const copy = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+            return caches.open(CACHE_NAME)
+              .then((cache) => cache.put(event.request, copy))
+              .then(() => res);
           }
           return res;
         })
@@ -90,7 +92,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-First with background update & offline .catch() guard for static images/icons.
+  // Cache-First with an offline guard for static images/icons.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
@@ -98,7 +100,9 @@ self.addEventListener('fetch', (event) => {
         .then((res) => {
           if (res && (res.ok || res.type === 'opaque')) {
             const copy = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+            return caches.open(CACHE_NAME)
+              .then((cache) => cache.put(event.request, copy))
+              .then(() => res);
           }
           return res;
         })

@@ -48,3 +48,11 @@ npm test
 ```
 
 `npm test` 会先检查全部 JavaScript 文件的语法，再运行库存扣减、撤销、备份恢复及界面摘要等一致性测试。
+
+发布前可用一个命令同步提升 Service Worker 与全部 CSS/JS 资源版本：
+
+```bash
+npm run version:pwa -- 51
+```
+
+版本脚本会同时更新 `index.html` 和 `sw.js`，随后运行 PWA 资源一致性检查。

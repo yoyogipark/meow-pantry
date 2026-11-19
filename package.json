@@ -5,9 +5,11 @@
   "description": "Pure local-first pantry and feeding tracker for cats",
   "scripts": {
     "check:syntax": "node --check js/covers.js && node --check js/constants.js && node --check js/utils.js && node --check js/domain.js && node --check js/storage.js && node --check js/stats.js && node --check js/ui.js && node --check js/app.js && node --check sw.js",
+    "version:pwa": "node scripts/bump-pwa-version.cjs",
     "test:pwa": "node tests/pwa-consistency.cjs",
     "test:ui": "node tests/modal-accessibility.cjs",
-    "test": "npm run check:syntax && npm run test:pwa && npm run test:ui && node tests/stock-consistency.cjs"
+    "test:utils": "node tests/utils-and-backup.cjs",
+    "test": "npm run check:syntax && npm run test:pwa && npm run test:ui && npm run test:utils && node tests/stock-consistency.cjs"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.0.0",
