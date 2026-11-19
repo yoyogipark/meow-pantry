@@ -51,10 +51,10 @@
   };
 
   MP.PALATABILITY = {
-    love: { label: '😍 超爱吃', suppLabel: '💊 主动爱吃', medLabel: '✅ 顺利无异常', bg: '#FBE4EC', text: '#8A2F52' },
-    ok:   { label: '😋 正常吃', suppLabel: '😋 拌粮顺吃', medLabel: '💊 顺畅好喂',   bg: '#F1E6D6', text: '#4A3A2E' },
-    coax: { label: '🥺 需哄吃', suppLabel: '🥺 需哄喂',   medLabel: '💦 抗拒/流口水', bg: '#DDF0EE', text: '#1F5E58' },
-    meh:  { label: '😒 不爱吃', suppLabel: '😒 抗拒拒食', medLabel: '⚠️ 软便/不适',   bg: '#E9E5F0', text: '#4A3F5C' }
+    love: { label: '😍 超爱吃', suppLabel: '💊 主动爱吃', medLabel: '✅ 顺利无异常', bg: '#FFF0E4', text: '#8A3714' },
+    ok:   { label: '😋 正常吃', suppLabel: '😋 拌粮顺吃', medLabel: '💊 顺畅好喂',   bg: '#FFF6DF', text: '#78531D' },
+    coax: { label: '🥺 需哄吃', suppLabel: '🥺 需哄喂',   medLabel: '💦 抗拒/流口水', bg: '#EDF6FA', text: '#31596C' },
+    meh:  { label: '😒 不爱吃', suppLabel: '😒 抗拒拒食', medLabel: '⚠️ 软便/不适',   bg: '#F1EEEC', text: '#554D47' }
   };
 
   MP.STOCK_ACTION_META = {

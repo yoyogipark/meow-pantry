@@ -79,8 +79,8 @@
     }
 
     if (setBadge) {
-      setBadge.style.background = exportTime ? '#DCFCE7' : '#F5F5F4';
-      setBadge.style.color = exportTime ? '#15803D' : '#6B5A4C';
+      setBadge.style.background = needBackup ? '#FEF3C7' : exportTime ? '#EAF2DC' : '#F5F5F4';
+      setBadge.style.color = needBackup ? '#854D0E' : exportTime ? '#3D5A24' : '#6B5A4C';
       setBadge.textContent = needBackup ? badgeCount + ' 项待备份' : (exportTime ? '✓ 已备份 ' + exportTime : '未备份');
     }
 

@@ -126,6 +126,9 @@
     var cStock = 0;
     var cExpiring = 0;
     var cExpired = 0;
+    var warningDays = Number(st.settings.warnDays) || 60;
+    document.getElementById('statCardExpiring').title =
+      '包装剩 ' + warningDays + ' 天以内，或开封保鲜剩 ' + Math.min(10, warningDays) + ' 天以内';
     var attrCounts = { all: 0, opened: 0, expiring_or_opened: 0, fresh: 0, pal_love: 0, group_food: 0, group_care: 0 };
     var emptyItems = [];
 
@@ -660,7 +663,7 @@
               '<div class="compact-card-tags compact-card-controls">' +
                 '<span class="detail-card-status compact-expiry-badge detail-card-status--' +
                   expiryTone(ev.expDays, 7, 30) + '">' + Utils.escapeHtml(expiryLabel) + '</span>' +
-                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:3px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#E8590C;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🐾喂</button>' +
+                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:3px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:var(--accent-strong);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🐾喂</button>' +
                 '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" class="edit-only" style="padding:3px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">编辑</button>' +
               '</div>' +
             '</div>' +
@@ -778,7 +781,7 @@
               stockQuantityPill(it) +
               '<div class="detail-card-action-buttons">' +
                 '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" style="padding:6px 8px;border-radius:10px;border:1px solid transparent;background:#F1E6D6;color:#3A2A20;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📜 此商品记录</button>' +
-                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid transparent;background:#E8590C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +
+                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid transparent;background:var(--accent);color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +
               '</div>' +
             '</div>' +
             '<div class="edit-only grid-safe" style="margin-top:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +

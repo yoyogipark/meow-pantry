@@ -357,16 +357,45 @@
       return String(a).localeCompare(String(b));
     });
     document.getElementById('expiryTimelineCountBadge').textContent = '· ' + sortedMonths.length + ' 个月份';
-    document.getElementById('expiryMonthTimelineList').innerHTML = sortedMonths.map(function (ym) {
+    function timelineProduct(item) {
+      return '<span class="priority-name"><span>' + Utils.escapeHtml(item.brand) + '</span> <strong>' +
+        Utils.escapeHtml(item.name) + '</strong></span>';
+    }
+    var nearest = null;
+    var nearestDays = Infinity;
+    var monthsHtml = sortedMonths.map(function (ym) {
       var bucket = monthBuckets[ym];
+      bucket.items.sort(function (a, b) { return (a.expDate || '9999').localeCompare(b.expDate || '9999'); });
+      bucket.items.forEach(function (item) {
+        var remaining = Utils.diffDaysFromToday(item.expDate);
+        if (remaining !== null && remaining >= 0 && remaining < nearestDays) {
+          nearest = item;
+          nearestDays = remaining;
+        }
+      });
       var known = bucket.minDays !== 99999;
       var tone = forecastTone(known ? bucket.minDays : null);
       var ymTitle = ym.indexOf('-') !== -1 ? ym.slice(0, 4) + ' 年 ' + Number(ym.slice(5)) + ' 月' : ym;
       var days = !known ? '日期未填' : bucket.minDays < 0 ? '已过期' : bucket.minDays + ' 天';
-      return '<div class="feeding-month forecast-result--' + tone + '"><span class="forecast-dot" aria-hidden="true"></span>' +
-        '<span class="feeding-month-name">' + Utils.escapeHtml(ymTitle) + '</span><span>' + bucket.items.length +
-        ' 批</span><span class="forecast-days">' + days + '</span></div>';
-    }).join('') || '<div class="priority-empty">当前筛选范围暂无在库批次</div>';
+      var multiple = bucket.items.length > 1;
+      var heading = '<span class="feeding-month-name">' + Utils.escapeHtml(ymTitle) + '</span><span>' + bucket.items.length +
+        ' 批</span><span class="forecast-days">' + days + '</span><span class="feeding-month-chevron" aria-hidden="true"></span>' +
+        timelineProduct(bucket.items[0]);
+      return '<li class="feeding-month forecast-result--' + tone + '">' +
+        '<span class="forecast-dot" aria-hidden="true"></span>' +
+        (multiple ? '<details><summary>' + heading + '</summary><ul class="feeding-month-products">' +
+          bucket.items.slice(1).map(function (item) {
+            return '<li>' + timelineProduct(item) + '<time>' + Utils.escapeHtml(item.expDate || '日期未填') + '</time></li>';
+          }).join('') + '</ul></details>' : '<div class="feeding-month-summary">' + heading + '</div>') +
+        '</li>';
+    }).join('');
+    var nearestHtml = nearest ? '<div class="feeding-timeline-nearest"><div><strong>最近到期</strong> <time>' +
+      Utils.escapeHtml(nearest.expDate) + '</time><span class="forecast-days forecast-result--' +
+      forecastTone(nearestDays) + '">' + (nearestDays === 0 ? '今天到期' : '剩 ' + nearestDays + ' 天') +
+      '</span></div>' + timelineProduct(nearest) + '</div>' : '';
+    document.getElementById('expiryMonthTimelineList').innerHTML = monthsHtml
+      ? nearestHtml + '<ol class="feeding-month-track">' + monthsHtml + '</ol>'
+      : '<div class="priority-empty">当前筛选范围暂无在库批次</div>';
 
     // ==================== SUB-VIEW 2: PALATABILITY & TOLERANCE ARCHIVE (Food vs Supp vs Med Separated!) ====================
     var uniqueProducts = Stats.aggregateUniqueProducts();
@@ -402,12 +431,16 @@
     }).join('');
     distribution.classList.toggle('hidden-view', !ratedTiers.length);
     distribution.setAttribute('aria-label', '普通食品适口性分布：' + ratedTiers.map(function (key) {
-      return (key === 'meh' ? '不喜欢' : tierLabels[key]) + ' ' + tierCounts[key] + ' 款';
+      return tierLabels[key] + ' ' + tierCounts[key] + ' 款';
     }).join('，'));
     for (var tIdx = 0; tIdx < tabBtns.length; tIdx++) {
       var tk = tabBtns[tIdx].getAttribute('data-tier-tab');
       var countLabel = tabBtns[tIdx].querySelector('[data-tier-count]');
-      if (countLabel) countLabel.textContent = tierCounts[tk];
+      if (countLabel) {
+        countLabel.textContent = tierCounts[tk];
+        tabBtns[tIdx].style.setProperty('--pal-tier-tint', MP.PALATABILITY[tk].bg);
+        tabBtns[tIdx].style.setProperty('--pal-tier-ink', MP.PALATABILITY[tk].text);
+      }
       else tabBtns[tIdx].textContent = tierLabels[tk] + ' (' + (tierCounts[tk] || 0) + ')';
       tabBtns[tIdx].classList.toggle('active', tk === st.statsTierTab);
       tabBtns[tIdx].setAttribute('aria-pressed', String(tk === st.statsTierTab));
