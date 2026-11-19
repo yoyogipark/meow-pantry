@@ -1357,7 +1357,10 @@
         }
         UI.openConfirm(
           '导入 JSON 备份恢复',
-          '校验通过：包含 ' + check.items.length + ' 条批次记录、' + check.logs.length + ' 条饮食记录与 ' + check.stockHistory.length + ' 条库存流水。请选择导入方式（即使选全量覆盖，系统也会自动保存覆盖前本地快照供随时撤回）：',
+          '校验通过：包含 ' + check.items.length + ' 条批次记录、' + check.logs.length + ' 条饮食记录与 ' + check.stockHistory.length + ' 条库存流水。' +
+          (check.missingDeductionTargets ? ' 有 ' + check.missingDeductionTargets + ' 条扣减记录在备份中缺少原批次，历史会保留，缺少原批次时无法自动退库。' : '') +
+          (check.detachedArchives ? ' 有 ' + check.detachedArchives + ' 条归档在备份中缺少原批次。' : '') +
+          '请选择导入方式（全量覆盖前会保存保护快照）：',
           '确认导入',
           function (useSmartMerge) {
             Storage.applyBackupData(check, useSmartMerge, function (ok, error) {

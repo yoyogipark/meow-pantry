@@ -589,6 +589,29 @@ async function run() {
     storage.openIDB = originalOpen;
   }
   console.log('Storage failure and photo fallback pass');
+
+  const stale = boot(Object.entries(w.localStorage));
+  try {
+    await settle();
+    byId('quota-test').quantity = 4;
+    assert.equal(await save(), true);
+    const staleApp = stale.MeowPantry;
+    staleApp.state.items.find(row => row.id === 'quota-test').quantity = 9;
+    const saveStale = () => new Promise(resolve => staleApp.Storage.saveToStorage(false, resolve));
+    assert.equal(await saveStale(), false);
+    assert.equal(await saveStale(), false);
+    assert.match(stale.document.getElementById('storageWriteWarning').textContent, /其他页面/);
+    await persisted(s => assert.equal(s.items.find(row => row.id === 'quota-test').quantity, 4));
+  } finally {
+    stale.close();
+  }
+
+  const orphaned = storage.validateAndParseBackup(JSON.stringify({
+    items: [], logs: [{ id: 'orphan', itemId: 'removed-batch', date: today, amount: '1杯', deductedUnit: 1 }]
+  }));
+  assert.equal(orphaned.ok, true);
+  assert.equal(orphaned.missingDeductionTargets, 1);
+  assert.equal(orphaned.logs.length, 1);
   w.close();
 }
 
