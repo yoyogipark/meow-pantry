@@ -23,7 +23,9 @@
 │   ├── domain.js       # 核心状态、无损 Schema 清洗迁移、分顿扣减、影子归档同步与库存流水引擎
 │   ├── storage.js      # IndexedDB 单例连接池 + LocalStorage 时间戳双写同步、备份预校验与恢复快照
 │   ├── stats.js        # 食品/营养品/药品分离统计、效期时间轴与品牌深度档案计算
+│   ├── modal.js        # 弹窗生命周期、焦点恢复、键盘循环与背景滚动锁定
 │   ├── ui.js           # 各视图渲染器、快捷喂食交互与库存操作历史弹窗
+│   ├── ui-settings.js  # 设置页、备份提醒与本地存储健康状态渲染
 │   └── app.js          # 全局事件委托、表单校验与 Service Worker 自动更新注册
 ├── sw.js               # PWA 离线缓存服务（同源 HTML/CSS/JS 网络优先 + 离线无缝回退）
 ├── manifest.json       # 主屏幕独立全屏 App 配置文件
