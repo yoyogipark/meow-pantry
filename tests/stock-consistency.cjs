@@ -631,6 +631,57 @@ async function run() {
   assert.equal(orphaned.ok, true);
   assert.equal(orphaned.missingDeductionTargets, 1);
   assert.equal(orphaned.logs.length, 1);
+
+  const weighted = make('weighted', 3, '杯', { unit_net_weight_g: 85, price: 7, currency: 'CNY' });
+  const legacyWet = make('legacy-wet', 2, '罐', { price: 250, currency: 'JPY' });
+  reset(weighted, legacyWet);
+  assert.equal(legacyWet.unit_net_weight_g, null);
+  w.document.querySelector('#categoryStatsGrid [data-forecast-category="can"]').click();
+  assert.equal(w.document.activeElement, el('dailyFeedCan'));
+  set('dailyFeedCan', '85');
+  assert.equal(el('categoryStatsGrid').querySelector('.forecast-tile--can .forecast-days').getAttribute('aria-label'), '约还能吃 3 天');
+  assert.match(el('forecastValues').textContent, /CNY 21\.00/);
+  assert.match(el('forecastValues').textContent, /JPY 500/);
+  assert.ok(el('categoryStatsGrid').querySelector('.forecast-empty'));
+  assert.ok(el('stockHealthBox').classList.contains('hidden-view'));
+  weighted.expDate = utils.shiftDaysFromToday(1);
+  legacyWet.isOpened = true;
+  legacyWet.openedDate = today;
+  ui.renderAll();
+  const healthJump = el('stockHealthBox').querySelector('[data-jump-health="expiring_or_opened"]');
+  assert.ok(healthJump);
+  assert.equal(el('feedingTasks').open, false);
+  assert.equal(el('feedingTaskCount').textContent, '2 项需要处理');
+  assert.ok(el('categoryStatsGrid').querySelector('.forecast-tile--can .forecast-result--urgent'));
+  assert.equal(el('priorityFeedList').querySelector('[data-priority-feed]').dataset.priorityFeed, 'legacy-wet');
+  assert.ok(el('expiryMonthTimelineList').querySelector('.feeding-month'));
+  healthJump.click();
+  assert.equal(state.activeTab, 'pantry');
+  assert.equal(state.attrFilter, 'expiring_or_opened');
+  assert.ok(el('pantryList').querySelector('[data-id="weighted"]'));
+  assert.ok(el('pantryList').querySelector('[data-id="legacy-wet"]'));
+  el('settingsWeightAlert').querySelector('button').click();
+  await settle();
+  assert.equal(el('fieldId').value, 'legacy-wet');
+  assert.equal(w.document.activeElement, el('fieldNetWeight'));
+  ui.closeItemModal();
+  ui.openRestockModal(weighted);
+  assert.equal(el('fieldNetWeight').value, '85');
+  assert.equal(el('fieldNetWeight').required, true);
+  ui.closeItemModal();
+  domain.recordConsumedUnits(weighted, 1, today);
+  assert.equal(state.stockHistory[0].unitWeightGrams, 85);
+  await settle();
+  assert.ok(await save());
+  const predictionBackup = backup();
+  state.settings.dailyFeedGrams.can = null;
+  assert.ok((await restore(predictionBackup, false)).ok);
+  await persisted(s => {
+    assert.equal(s.settings.dailyFeedGrams.can, 85);
+    assert.equal(s.items.find(row => row.id === 'weighted').unit_net_weight_g, 85);
+    assert.equal(s.stockHistory[0].unitWeightGrams, 85);
+  });
+  console.log('Feeding forecast UI and backup round trip pass');
   w.close();
 }
 

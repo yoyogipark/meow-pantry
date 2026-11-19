@@ -749,12 +749,37 @@
       Stats.renderStatsView();
     });
 
-    document.getElementById('groupSeparationSummary').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-stats-scope-jump]');
-      if (!btn) return;
-      var clickedKey = btn.getAttribute('data-stats-scope-jump');
-      st.statsScopeFilter = (st.statsScopeFilter === clickedKey) ? 'all' : clickedKey;
-      Stats.renderStatsView();
+    document.addEventListener('click', function (ev) {
+      var action = ev.target.closest('[data-forecast-action]');
+      if (!action) return;
+      var type = action.getAttribute('data-forecast-action');
+      var category = action.getAttribute('data-forecast-category');
+      if (type === 'settings') {
+        UI.switchTab('settings');
+        var input = document.querySelector('[data-daily-feed="' + category + '"]');
+        input.scrollIntoView?.({ block: 'center' });
+        input.focus();
+      } else if (type === 'weight') {
+        var item = st.items.find(function (row) { return row.id === action.dataset.batchId; });
+        if (!item) return;
+        UI.switchTab('pantry');
+        UI.openEditModal(item.id, 'fieldNetWeight');
+      } else if (type === 'restock') {
+        clearPantryFilters();
+        st.catFilter = category;
+        UI.switchTab('pantry');
+        UI.renderAll();
+      }
+    });
+
+    document.getElementById('dailyFeedSettings').addEventListener('change', function (ev) {
+      var input = ev.target.closest('[data-daily-feed]');
+      if (!input) return;
+      if (!input.validity.valid) { input.reportValidity(); return; }
+      var grams = Number(input.value);
+      st.settings.dailyFeedGrams[input.dataset.dailyFeed] = grams > 0 ? grams : null;
+      Storage.saveToStorage();
+      UI.renderAll();
     });
 
     document.getElementById('categoryStatsGrid').addEventListener('click', function (ev) {
@@ -773,7 +798,9 @@
       if (!btn) return;
       var hk = btn.getAttribute('data-jump-health');
       clearPantryFilters();
-      if (hk === 'opened') {
+      if (hk === 'expiring_or_opened') {
+        st.attrFilter = 'expiring_or_opened';
+      } else if (hk === 'opened') {
         st.statusFilter = 'in_stock';
         st.attrFilter = 'opened';
       } else if (hk === 'fresh') {
@@ -908,6 +935,7 @@
       var newCat = btn.getAttribute('data-form-cat');
       var isEditing = Boolean(document.getElementById('fieldId').value);
       UI.syncModalCategoryUI(newCat, !isEditing);
+      UI.syncNetWeight();
       UI.syncModalUnitPriceHint();
       if (isEditing && !document.getElementById('fieldIsOpened').checked) {
         var cInfo = MP.CATEGORIES[newCat] || MP.CATEGORIES.dry;
@@ -917,7 +945,10 @@
 
     document.getElementById('quickBrandChips').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-pick-brand]');
-      if (btn) document.getElementById('fieldBrand').value = btn.getAttribute('data-pick-brand');
+      if (btn) {
+        document.getElementById('fieldBrand').value = btn.getAttribute('data-pick-brand');
+        UI.syncNetWeight();
+      }
     });
     document.getElementById('quickLocationChips').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-pick-location]');
@@ -1085,6 +1116,10 @@
       Storage.saveToStorage(false, function (ok) { if (ok) UI.showToast('口味库存已调整'); });
     });
 
+    document.getElementById('itemForm').addEventListener('change', function (ev) {
+      if (['fieldBrand', 'fieldName', 'fieldSpec', 'fieldUnit', 'fieldSubtype'].includes(ev.target.id)) UI.syncNetWeight();
+    });
+
     document.getElementById('itemForm').addEventListener('submit', function (ev) {
       ev.preventDefault();
       var id = document.getElementById('fieldId').value;
@@ -1138,9 +1173,17 @@
         return;
       }
 
+      var netWeightInput = document.getElementById('fieldNetWeight');
+      var netWeight = Number(netWeightInput.value);
+      if (st.formCat === 'can' && (!id || netWeightInput.value) && (!Number.isFinite(netWeight) || netWeight <= 0)) {
+        UI.showToast('请填写大于 0 的单件净含量');
+        netWeightInput.focus();
+        return;
+      }
       var record = Domain.sanitizeItem({
         id: id || ('item_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
         category: st.formCat,
+        unit_net_weight_g: netWeight,
         subtype: subtype,
         brand: brand,
         name: name,

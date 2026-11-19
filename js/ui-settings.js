@@ -6,6 +6,14 @@
   var UI = MP.UI = MP.UI || {};
 
   UI.renderSettingsView = function () {
+    var forecastSettings = MP.state.settings.dailyFeedGrams;
+    document.querySelectorAll('[data-daily-feed]').forEach(function (input) {
+      if (input !== document.activeElement) input.value = forecastSettings[input.dataset.dailyFeed] || '';
+    });
+    var missing = MP.Forecast.compute(MP.state.items, [], {}, Utils.getTodayStr()).can.missing;
+    var weightAlert = document.getElementById('settingsWeightAlert');
+    weightAlert.innerHTML = MP.Stats.missingWeightNotice(missing, true);
+    weightAlert.classList.toggle('hidden-view', !missing.length);
     var st = MP.state;
     var btns = document.querySelectorAll('#warnDaysGroup [data-warn-days]');
     for (var i = 0; i < btns.length; i++) {
@@ -73,7 +81,7 @@
     if (setBadge) {
       setBadge.style.background = exportTime ? '#DCFCE7' : '#F5F5F4';
       setBadge.style.color = exportTime ? '#15803D' : '#6B5A4C';
-      setBadge.textContent = exportTime ? '✓ 已备份 ' + exportTime : '未备份';
+      setBadge.textContent = needBackup ? badgeCount + ' 项待备份' : (exportTime ? '✓ 已备份 ' + exportTime : '未备份');
     }
 
     var engineLabel = (st.storageHealth.idbAvailable && st.storageHealth.lsAvailable)

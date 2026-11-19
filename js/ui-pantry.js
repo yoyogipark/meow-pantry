@@ -127,7 +127,7 @@
     var cStock = 0;
     var cExpiring = 0;
     var cExpired = 0;
-    var attrCounts = { all: 0, opened: 0, fresh: 0, pal_love: 0, group_food: 0, group_care: 0 };
+    var attrCounts = { all: 0, opened: 0, expiring_or_opened: 0, fresh: 0, pal_love: 0, group_food: 0, group_care: 0 };
     var emptyItems = [];
 
     st.items.forEach(function (it) {
@@ -141,6 +141,7 @@
         if (st.statusFilter === 'in_stock' || st.statusFilter === ev.status) {
           attrCounts.all += 1;
           if (Domain.isStockOpened(it)) attrCounts.opened += 1;
+          if (ev.status === 'expiring' || Domain.isStockOpened(it)) attrCounts.expiring_or_opened += 1;
           if (ev.status === 'fresh') attrCounts.fresh += 1;
           if ((it.palatability === 'love' || (it.flavors && it.flavors.some(function (f) { return f.palatability === 'love'; }))) && ev.group === 'food') attrCounts.pal_love += 1;
           attrCounts[ev.group === 'food' ? 'group_food' : 'group_care'] += 1;
@@ -182,6 +183,7 @@
     var attrLabels = {
       all: '全部状态',
       opened: '🔓 已拆封',
+      expiring_or_opened: '临期或已拆封',
       fresh: '✅ 效期充裕',
       pal_love: '😍 超爱吃',
       group_food: '🍽️ 普通食品',
@@ -205,6 +207,7 @@
     if (st.statusFilter !== 'in_stock' && ev.status !== st.statusFilter) return false;
 
     if (st.attrFilter === 'opened' && !Domain.isStockOpened(it)) return false;
+    if (st.attrFilter === 'expiring_or_opened' && ev.status !== 'expiring' && !Domain.isStockOpened(it)) return false;
     if (st.attrFilter === 'fresh' && ev.status !== 'fresh') return false;
     if (st.attrFilter === 'pal_love' && !((it.palatability === 'love' || (it.flavors && it.flavors.some(function (f) { return f.palatability === 'love'; }))) && ev.group === 'food')) return false;
     if (st.attrFilter === 'group_food' && ev.group !== 'food') return false;
@@ -664,7 +667,7 @@
             '</div>' +
             '<div data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="cursor:pointer;">' +
               '<div class="compact-title">' + Utils.escapeHtml(it.name) +
-                (it.spec ? ' <span class="compact-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') +
+                (it.spec ? ' <span class="product-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') +
               '</div>' +
               (compactMeta.length ? '<div class="compact-meta-row">' + compactMeta.join('') + '</div>' : '') +
               stockQuantityPill(it) +
@@ -703,14 +706,11 @@
           '</div>' + openedProgress + '</div>'
         : '';
 
-      var specParts = it.spec ? [Utils.escapeHtml(it.spec)] : [];
+      var priceLine = packagedPriceText(it, unit);
       var price = Utils.formatMoney(it.price, it.currency);
-      var packagedPrice = packagedPriceText(it, unit);
-      if (packagedPrice) {
-        specParts.push(packagedPrice);
-      } else if (price) {
+      if (!priceLine && price) {
         var per100 = catInfo.group === 'food' && !it.flavors ? Utils.formatPer100gPrice(it.price, it.currency, it.spec) : '';
-        specParts.push(price + '/' + unitStr + (per100 ? '（' + per100.replace(/^≈¥/, '≈CN¥') + '）' : ''));
+        priceLine = price + '/' + unitStr + (per100 ? '（' + per100.replace(/^≈¥/, '≈CN¥') + '）' : '');
       }
       var locationParts = [];
       if (it.location) locationParts.push('📍' + Utils.escapeHtml(it.location));
@@ -759,9 +759,10 @@
                   : '<span class="detail-card-reminder detail-card-status detail-card-status--' + expiryTone(ev.expDays, 7, 30) +
                   '">' + Utils.escapeHtml(badgeLabel) + '</span>') +
               '</div>' +
-              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#2B2320;line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) + '</h3>' +
+              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#2B2320;line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) +
+                (it.spec ? ' <span class="product-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') + '</h3>' +
               ((palHtml || lastFedHtml) ? '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' + palHtml + lastFedHtml + '</div>' : '') +
-              (specParts.length ? '<div class="detail-card-line">' + specParts.join(' · ') + '</div>' : '') +
+              (priceLine ? '<div class="detail-card-line">' + priceLine + '</div>' : '') +
               (locationParts.length ? '<div class="detail-card-line">' + locationParts.join(' · ') + '</div>' : '') +
             '</div>' +
           '</div>' +

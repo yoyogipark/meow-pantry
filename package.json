@@ -9,7 +9,8 @@
     "test:pwa": "node tests/pwa-consistency.cjs",
     "test:ui": "node tests/modal-accessibility.cjs",
     "test:utils": "node tests/utils-and-backup.cjs",
-    "test": "npm run check:syntax && npm run test:pwa && npm run test:ui && npm run test:utils && node tests/stock-consistency.cjs"
+    "test:forecast": "node tests/forecast.cjs",
+    "test": "npm run check:syntax && npm run test:pwa && npm run test:ui && npm run test:utils && npm run test:forecast && node tests/stock-consistency.cjs"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.0.0",

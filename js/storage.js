@@ -71,6 +71,13 @@
     if (pSet.defaultCurrency === 'JPY' || pSet.defaultCurrency === 'CNY') {
       st.settings.defaultCurrency = pSet.defaultCurrency;
     }
+    if (pSet.dailyFeedGrams && typeof pSet.dailyFeedGrams === 'object') {
+      st.settings.dailyFeedGrams = {};
+      ['dry', 'freeze', 'can'].forEach(function (category) {
+        var grams = Number(pSet.dailyFeedGrams[category]);
+        st.settings.dailyFeedGrams[category] = Number.isFinite(grams) && grams > 0 ? grams : null;
+      });
+    }
     if (typeof pSet.pantryPageSize === 'number' && pSet.pantryPageSize > 0) {
       st.pantryPageSize = pSet.pantryPageSize;
       st.settings.pantryPageSize = pSet.pantryPageSize;
