@@ -650,3 +650,107 @@ body.is-edit-mode .mode-switch-pill {
   grid-column: 1 / -1;
   overflow-wrap: anywhere;
 }
+
+.detail-card-heading,
+.detail-card-tags,
+.detail-card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-width: 0;
+}
+
+.detail-card-heading {
+  margin-bottom: 4px;
+}
+
+.detail-card-status {
+  max-width: 100%;
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.detail-card-line,
+.detail-card-dates,
+.detail-card-open-stock,
+.detail-card-unopened-stock {
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.detail-card-line {
+  margin-top: 4px;
+  color: #78716C;
+  font-size: 11.5px;
+}
+
+.detail-card-dates {
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #FAFAF9;
+  color: #57534E;
+  font-size: 11.5px;
+}
+
+.detail-card-shelf {
+  margin-top: 8px;
+}
+
+.detail-card-shelf .progress-track {
+  margin-top: 4px;
+}
+
+.detail-card-track--fresh .progress-bar { background: #16A34A; }
+.detail-card-track--warning .progress-bar { background: #CA8A04; }
+.detail-card-track--urgent .progress-bar { background: #DC2626; }
+.detail-card-track--urgent,
+.detail-card-track--expired {
+  background: #FEE2E2;
+  box-shadow: inset 0 0 0 1px #DC2626;
+}
+
+.detail-card-track--expired { box-shadow: inset 0 0 0 1px #991B1B; }
+
+.detail-card-open-stock,
+.detail-card-unopened-stock {
+  padding: 5px 9px;
+  border-radius: 10px;
+}
+
+.detail-card-open-stock {
+  margin-top: 8px;
+  border: 1px dashed #FDBA74;
+  background: #FFF7ED;
+  color: #7C2D12;
+  font-size: 11.5px;
+}
+
+.detail-card-unopened-stock {
+  border: 1px solid #E7E5E4;
+  background: #F5F5F4;
+}
+
+.detail-card-stock-text {
+  color: #1C1917;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.detail-card-used {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #DCFCE7;
+  color: #15803D;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.detail-card-actions > :last-child {
+  margin-left: auto;
+}
