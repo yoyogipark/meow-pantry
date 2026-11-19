@@ -261,6 +261,60 @@ async function run() {
     assert.equal(s.logs.length, 2);
   });
   pass(24);
+
+  const readSummary = () => ['InStock', 'Expiring', 'Expired', 'Empty'].map((key, index) => [
+    el('count' + key).textContent,
+    el('count' + (index === 0 ? 'Stock' : key) + 'Pieces').textContent,
+    el('count' + key).classList.contains('is-zero')
+  ]);
+  const soon = make('soon', 2, '罐', { expDate: utils.shiftDaysFromToday(20) });
+  const later = make('later', 3, '袋', { expDate: utils.shiftDaysFromToday(45) });
+  const more = make('more', 4, '杯', { expDate: utils.shiftDaysFromToday(75) });
+  const last = make('last', 5, '杯', { expDate: utils.shiftDaysFromToday(105) });
+  const countedByOpenDate = make('open-soon', 2, '盒', {
+    isOpened: true, openedDate: today, openDaysLimit: 10, openRemainFraction: 0.25
+  });
+  const overdueTwice = make('overdue', 2, '罐', {
+    expDate: yesterday, isOpened: true, openedDate: utils.shiftDaysFromToday(-2), openDaysLimit: 1
+  });
+  const sharedStock = make('shared-stock', 3, '杯', {
+    purchasePackaging: { count: 1, outerUnit: '盒', size: 4, seal: 'shared' }
+  });
+  const weighingStock = make('weight', 200, 'g', { expDate: yesterday });
+  const archive = make('archive', 0, '罐', { name: '同款', consumedCount: 4, lastQuantity: 4 });
+  const otherBatch = make('other-batch', 0, '罐', { name: '同款', lastQuantity: 3 });
+  const partialArchive = make('shadow', 0, '罐', { sourceBatchId: soon.id, consumedCount: 2 });
+  const duplicateArchive = make('duplicate-shadow', 0, '罐', { sourceBatchId: soon.id, consumedCount: 2 });
+  reset(soon, later, more, last, countedByOpenDate, overdueTwice, sharedStock, weighingStock,
+    archive, otherBatch, partialArchive, duplicateArchive);
+  const fixturesBeforeRender = json(state.items);
+  for (const [threshold, batches, pieces] of [[30, 2, 4], [60, 3, 7], [90, 4, 11], [120, 5, 16]]) {
+    el('warnDaysGroup').querySelector('[data-warn-days="' + threshold + '"]').click();
+    assert.equal(state.settings.warnDays, threshold);
+    assert.deepEqual(readSummary(), [
+      ['8', '共 19 件', false], [String(batches), '共 ' + pieces + ' 件', false],
+      ['2', '共 2 件', false], ['3', '共 9 件', false]
+    ]);
+  }
+  assert.deepEqual(json(state.items), fixturesBeforeRender);
+  el('statCardExpiring').click();
+  assert.equal(state.statusFilter, 'expiring');
+  assert.equal(readSummary()[1][1], '共 16 件');
+  reset(soon, make('legacy-archive', 0, '罐'));
+  assert.deepEqual(readSummary()[2], ['0', '共 0 件', true]);
+  assert.deepEqual(readSummary()[3], ['1', '件数未明', false]);
+  reset(archive, make('conflict', 0, '罐', { sourceBatchId: archive.id, consumedCount: 5 }));
+  assert.equal(readSummary()[3][1], '件数未明');
+  reset(make('shared-archive', 0, '杯', {
+    consumedCount: 3, purchasePackaging: { count: 1, outerUnit: '盒', size: 4, seal: 'shared' }
+  }));
+  assert.equal(readSummary()[3][1], '件数未明');
+  reset(make('weight-archive', 0, 'g', { consumedCount: 150 }));
+  assert.deepEqual(readSummary()[3], ['1', '共 0 件', false]);
+  reset();
+  assert.deepEqual(readSummary(), Array.from({ length: 4 }, () => ['0', '共 0 件', true]));
+  await settle();
+  console.log('Summary cards pass');
   w.close();
 }
 
