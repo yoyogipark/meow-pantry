@@ -288,7 +288,7 @@ async function run() {
   reset(soon, later, more, last, countedByOpenDate, overdueTwice, sharedStock, weighingStock,
     archive, otherBatch, partialArchive, duplicateArchive);
   const fixturesBeforeRender = json(state.items);
-  for (const [threshold, batches, pieces] of [[30, 2, 4], [60, 3, 7], [90, 4, 11], [120, 5, 16]]) {
+  for (const [threshold, batches, pieces] of [[30, 2, 3], [60, 3, 6], [90, 4, 10], [120, 5, 15]]) {
     el('warnDaysGroup').querySelector('[data-warn-days="' + threshold + '"]').click();
     assert.equal(state.settings.warnDays, threshold);
     assert.deepEqual(readSummary(), [
@@ -299,7 +299,7 @@ async function run() {
   assert.deepEqual(json(state.items), fixturesBeforeRender);
   el('statCardExpiring').click();
   assert.equal(state.statusFilter, 'expiring');
-  assert.equal(readSummary()[1][1], '共 16 件');
+  assert.equal(readSummary()[1][1], '共 15 件');
   reset(soon, make('legacy-archive', 0, '罐'));
   assert.deepEqual(readSummary()[2], ['0', '共 0 件', true]);
   assert.deepEqual(readSummary()[3], ['1', '件数未明', false]);
@@ -323,6 +323,13 @@ async function run() {
     assert.equal(card.querySelector('.stock-detail-amount').textContent, quantity + ' ' + unit);
     assert.deepEqual(Array.from(card.querySelectorAll('.stock-detail-statuses > *'), node => node.textContent), labels);
   };
+  const assertPieceTotalsMatchDetails = () => {
+    for (const [id, status] of [['countExpiringPieces', 'expiring'], ['countExpiredPieces', 'expired']]) {
+      const tags = details.querySelectorAll('.stock-detail-status--' + status);
+      const total = Array.from(tags).reduce((sum, tag) => sum + Number(tag.textContent.split(' ')[1]), 0);
+      assert.equal(el(id).textContent, '共 ' + total + ' 件');
+    }
+  };
   assert.equal(el('stockDetailsBtn').getAttribute('aria-controls'), 'stockQuantityDetails');
   assert.equal(el('stockDetailsBtn').getAttribute('aria-expanded'), 'false');
   assert.ok(details.classList.contains('hidden-view'));
@@ -331,6 +338,17 @@ async function run() {
   el('stockDetailsBtn').click();
   assert.equal(el('stockDetailsBtn').getAttribute('aria-expanded'), 'true');
   assert.ok(!details.classList.contains('hidden-view'));
+
+  const screenshotCans = make('three-cans', 3, '罐', {
+    isOpened: true, openedDate: today, openDaysLimit: 1, openRemainFraction: 0.25
+  });
+  const screenshotBag = make('soon-single-bag', 1, '袋', { expDate: today });
+  const freshBag = make('fresh-single-bag', 1, '袋');
+  reset(screenshotCans, screenshotBag, freshBag);
+  assertDetail('罐', 3, ['开封 1', '临期 1']);
+  assertDetail('袋', 2, ['临期 1']);
+  assert.deepEqual(readSummary()[1], ['2', '共 2 件', false]);
+  assertPieceTotalsMatchDetails();
 
   const eight = make('eight', 8, '罐');
   const twoBags = make('soon-bags', 2, '袋', { expDate: today });
@@ -346,13 +364,24 @@ async function run() {
   eight.openDaysLimit = 2;
   ui.renderStatusCounts();
   assertDetail('罐', 8, ['开封 1', '临期 1']);
-  assert.equal(el('countExpiringPieces').textContent, '共 10 件');
+  assert.deepEqual(readSummary()[1], ['2', '共 3 件', false]);
+  assertPieceTotalsMatchDetails();
   eight.expDate = today;
   ui.renderStatusCounts();
   assertDetail('罐', 8, ['开封 1', '临期 8']);
+  assert.deepEqual(readSummary()[1], ['2', '共 10 件', false]);
+  assertPieceTotalsMatchDetails();
   eight.openedDate = utils.shiftDaysFromToday(-3);
   ui.renderStatusCounts();
   assertDetail('罐', 8, ['开封 1', '临期 7', '过期 1']);
+  assert.deepEqual(readSummary()[1], ['1', '共 9 件', false]);
+  assert.deepEqual(readSummary()[2], ['1', '共 1 件', false]);
+  assertPieceTotalsMatchDetails();
+  eight.expDate = '2099-01-01';
+  ui.renderStatusCounts();
+  assertDetail('罐', 8, ['开封 1', '过期 1']);
+  assert.deepEqual(readSummary()[2], ['1', '共 1 件', false]);
+  assertPieceTotalsMatchDetails();
   eight.expDate = yesterday;
   ui.renderStatusCounts();
   assertDetail('罐', 8, ['开封 1', '过期 8']);
@@ -373,6 +402,9 @@ async function run() {
   reset(flavors, sharedDetail, weighingStock, noUnit);
   assertDetail('杯', 2, ['开封 2', '临期 1', '过期 1']);
   assertDetail('盒', 1, ['开封 1', '临期 1']);
+  assert.deepEqual(readSummary()[1], ['1', '共 2 件', false]);
+  assert.deepEqual(readSummary()[2], ['2', '共 1 件', false]);
+  assertPieceTotalsMatchDetails();
   assert.match(details.querySelector('.stock-detail-other').textContent, /3 杯 · 200 g（不计入总件数）/);
   assert.equal(details.querySelector('.stock-detail-heading > span').textContent, el('countStockPieces').textContent);
   const currentDetails = details.innerHTML;
