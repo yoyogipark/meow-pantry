@@ -64,9 +64,9 @@
     }
   };
 
-  Storage.applyLoadedSettings = function (pSet) {
+  Storage.applyLoadedSettings = function (pSet, target) {
     if (!pSet || typeof pSet !== 'object') return;
-    var st = MP.state;
+    var st = target || MP.state;
     if (typeof pSet.warnDays === 'number' && pSet.warnDays > 0) st.settings.warnDays = pSet.warnDays;
     if (pSet.defaultCurrency === 'JPY' || pSet.defaultCurrency === 'CNY') {
       st.settings.defaultCurrency = pSet.defaultCurrency;
@@ -101,6 +101,18 @@
     warning.classList.toggle('hidden-view', !message);
   }
 
+  var committedRevision = 0;
+
+  function newerLocalState(revision) {
+    try {
+      var snapshot = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.LOCAL_STATE));
+      var legacy = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.SETTINGS));
+      return [snapshot && snapshot.settings, legacy].some(function (settings) {
+        return settings && settings.lastSavedAt > revision;
+      });
+    } catch (error) { return false; }
+  }
+
   Storage.saveToStorage = function (isSilentInit, onComplete) {
     if (pendingSmartMerge) {
       var merge = pendingSmartMerge;
@@ -124,57 +136,70 @@
     var itemsPayload = JSON.stringify(st.items);
     var logsPayload = JSON.stringify(st.logs);
     var histPayload = JSON.stringify(st.stockHistory);
-    var fullSettingsPayload = JSON.stringify(Object.assign({}, st.settings, { lsSlimMode: false }));
+    var saveSettings = Object.assign({}, st.settings, { lsSlimMode: false });
+    var fullSettingsPayload = JSON.stringify(saveSettings);
 
-    // 1. Synchronous LocalStorage write (with automatic photo-stripping fallback if 5MB quota exceeded)
-    var localComplete = false;
-    try {
-      global.localStorage.setItem(MP.STORAGE_KEYS.LOGS, logsPayload);
-      global.localStorage.setItem(MP.STORAGE_KEYS.STOCK_HISTORY, histPayload);
-      try {
-        global.localStorage.setItem(MP.STORAGE_KEYS.ITEMS, itemsPayload);
-        global.localStorage.setItem(MP.STORAGE_KEYS.SETTINGS, fullSettingsPayload);
-        localComplete = true;
-      } catch (quotaErr) {
-        var slimItems = st.items.map(function (it) {
-          var copy = Object.assign({}, it);
-          delete copy.imageData;
-          return copy;
-        });
-        global.localStorage.setItem(MP.STORAGE_KEYS.ITEMS, JSON.stringify(slimItems));
-        global.localStorage.setItem(MP.STORAGE_KEYS.SETTINGS, JSON.stringify(Object.assign({}, st.settings, { lsSlimMode: true })));
+    function saveLocal() {
+      var items = safeJsonParse(itemsPayload);
+      function writeLocalState(rows, slimMode) {
+        global.localStorage.setItem(MP.STORAGE_KEYS.LOCAL_STATE, JSON.stringify({
+          items: rows, logs: safeJsonParse(logsPayload), stockHistory: safeJsonParse(histPayload),
+          settings: Object.assign({}, saveSettings, { lsSlimMode: slimMode })
+        }));
+        committedRevision = Math.max(committedRevision, nowTs);
       }
-      st.storageHealth.lsAvailable = true;
-    } catch (lsErr) {
-      st.storageHealth.lsAvailable = false;
+      try {
+        writeLocalState(items, false);
+        st.storageHealth.lsAvailable = true;
+        return true;
+      } catch (quotaErr) {
+        items.forEach(function (item) { delete item.imageData; });
+        try {
+          writeLocalState(items, true);
+          st.storageHealth.lsAvailable = true;
+        } catch (error) { st.storageHealth.lsAvailable = false; }
+        return false;
+      }
     }
 
-    function finish(idbComplete) {
-      var ok = localComplete || idbComplete;
+    function finish(idbComplete, conflict) {
+      if (conflict) st.storageHealth.writeConflict = true;
+      var localComplete = !conflict && !newerLocalState(committedRevision) && saveLocal();
+      if (idbComplete) committedRevision = Math.max(committedRevision, nowTs);
+      var ok = !conflict && (localComplete || idbComplete);
       if (st.settings.lastSavedAt === nowTs) {
-        showStorageWriteWarning(ok ? '' : '本地保存未完成，刷新前请导出 JSON 备份。当前修改或图片可能只在本次会话中可用。');
+        showStorageWriteWarning(conflict ? '其他页面已保存更新，本页修改未写入。请先导出备份保留本页修改，再刷新页面。' :
+          (ok ? '' : '本地保存未完成，刷新前请导出 JSON 备份。当前修改或图片可能只在本次会话中可用。'));
       }
       if (typeof onComplete === 'function') onComplete(ok);
     }
 
-    // 2. Asynchronous IndexedDB full write (retains full compressed photos up to hundreds of MB)
+    if (st.storageHealth.writeConflict || newerLocalState(committedRevision)) { finish(false, true); return; }
+
     Storage.openIDB(function (db) {
       if (!db) {
-        finish(false);
+        finish(false, newerLocalState(committedRevision));
         return;
       }
       try {
         var tx = db.transaction(MP.IDB_CONFIG.STORE, 'readwrite');
         var store = tx.objectStore(MP.IDB_CONFIG.STORE);
-        store.put(itemsPayload, MP.STORAGE_KEYS.ITEMS);
-        store.put(fullSettingsPayload, MP.STORAGE_KEYS.SETTINGS);
-        store.put(logsPayload, MP.STORAGE_KEYS.LOGS);
-        store.put(histPayload, MP.STORAGE_KEYS.STOCK_HISTORY);
+        var conflict = false;
+        var settingsRequest = store.get(MP.STORAGE_KEYS.SETTINGS);
+        settingsRequest.onsuccess = function () {
+          var saved = safeJsonParse(settingsRequest.result);
+          conflict = st.storageHealth.writeConflict || (saved && saved.lastSavedAt > committedRevision) || newerLocalState(committedRevision);
+          if (conflict) { tx.abort(); return; }
+          store.put(itemsPayload, MP.STORAGE_KEYS.ITEMS);
+          store.put(fullSettingsPayload, MP.STORAGE_KEYS.SETTINGS);
+          store.put(logsPayload, MP.STORAGE_KEYS.LOGS);
+          store.put(histPayload, MP.STORAGE_KEYS.STOCK_HISTORY);
+        };
         tx.oncomplete = function () {
           finish(true);
         };
         tx.onabort = function () {
-          finish(false);
+          finish(false, conflict || newerLocalState(committedRevision));
         };
       } catch (txErr) {
         finish(false);
@@ -221,6 +246,15 @@
       lsSettings = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.SETTINGS));
       lsLogs = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.LOGS));
       lsHist = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.STOCK_HISTORY));
+      var localState = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.LOCAL_STATE));
+      if (localState && Array.isArray(localState.items) && Array.isArray(localState.logs) &&
+          Array.isArray(localState.stockHistory) && localState.settings &&
+          localState.settings.lastSavedAt >= ((lsSettings && lsSettings.lastSavedAt) || 0)) {
+        lsItems = localState.items;
+        lsLogs = localState.logs;
+        lsHist = localState.stockHistory;
+        lsSettings = localState.settings;
+      }
       lsSnap = safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT));
       st.storageHealth.lsAvailable = true;
     } catch (e) {
@@ -228,6 +262,8 @@
     }
 
     function finalizeLoad(chosenItems, chosenLogs, chosenHist, chosenSettings, snapObj) {
+      st.storageHealth.writeConflict = false;
+      committedRevision = (chosenSettings && Number(chosenSettings.lastSavedAt)) || 0;
       if (snapObj && Array.isArray(snapObj.items)) {
         st.storageHealth.hasPreRestoreSnapshot = true;
         st.storageHealth.preRestoreSnapshotTime = snapObj.savedAt || '';
@@ -380,13 +416,16 @@
         if (typeof callback === 'function') callback(false);
         return;
       }
-      MP.state.items = Domain.reconcileBatches(snap.items);
-      MP.state.logs = Array.isArray(snap.logs) ? snap.logs.map(Domain.sanitizeLog).filter(Boolean) : [];
-      MP.state.stockHistory = Array.isArray(snap.stockHistory)
-        ? snap.stockHistory.map(Domain.sanitizeStockHistoryEntry).filter(Boolean)
-        : [];
-      Storage.applyLoadedSettings(snap.settings);
-      Storage.saveToStorage(false, function (ok) {
+      var settings = { settings: Object.assign({}, MP.state.settings) };
+      Storage.applyLoadedSettings(snap.settings, settings);
+      settings.settings.unsavedChangesCount = (Number(settings.settings.unsavedChangesCount) || 0) + 1;
+      commitBackupState({
+        items: Domain.reconcileBatches(snap.items),
+        logs: Array.isArray(snap.logs) ? snap.logs.map(Domain.sanitizeLog).filter(Boolean) : [],
+        stockHistory: Array.isArray(snap.stockHistory)
+          ? snap.stockHistory.map(Domain.sanitizeStockHistoryEntry).filter(Boolean) : [],
+        settings: settings.settings
+      }, function (ok) {
         if (typeof callback === 'function') callback(ok, !ok);
       });
     }
@@ -477,11 +516,24 @@
     var validItems = Domain.reconcileBatches(rawItems);
     var validLogs = rawLogs.map(Domain.sanitizeLog).filter(Boolean);
     var validHist = rawHist.map(Domain.sanitizeStockHistoryEntry).filter(Boolean);
+    var validById = new Map(validItems.map(function (item) { return [item.id, item]; }));
+    var missingDeductionTargets = validLogs.filter(function (log) {
+      return hasDeduction(log) && !validById.has(log.itemId);
+    }).length;
+    var detachedArchives = validItems.filter(function (item) {
+      return item.sourceBatchId && !validById.has(item.sourceBatchId);
+    }).length;
+    if (validLogs.some(function (log) {
+      var item = validById.get(log.itemId);
+      return item && log.portionChange && item.flavors;
+    })) return { ok: false, error: '备份中的分顿扣减凭据指向了混合口味批次' };
 
     return {
       ok: true,
       version: parsed.version || 1,
       unstableIds: unstableIds,
+      missingDeductionTargets: missingDeductionTargets,
+      detachedArchives: detachedArchives,
       items: validItems,
       logs: validLogs,
       stockHistory: validHist,
@@ -579,20 +631,21 @@
 
   var pendingSmartMerge = null;
 
-  function commitSmartMerge(plan, done) {
+  function commitBackupState(plan, done) {
     if (plan.error) { done(false, plan.error); return; }
-    if (pendingSmartMerge) { done(false, '正在合并备份，请稍后再试。'); return; }
+    if (pendingSmartMerge) { done(false, '正在恢复备份，请稍后再试。'); return; }
     var st = MP.state;
     var operation = { transaction: null };
     pendingSmartMerge = operation;
     function finish(ok) {
       if (pendingSmartMerge === operation) pendingSmartMerge = null;
-      done(ok, ok ? '' : '无法完整保存合并结果，智能合并已取消，本地数据未更改。');
+      done(ok, ok ? '' : '无法完整保存恢复结果，本地数据未更改。');
     }
     Storage.openIDB(function (db) {
       if (pendingSmartMerge !== operation || !db) { finish(false); return; }
-      var settings = Object.assign({}, st.settings, {
-        lastBackupDate: Utils.getTodayStr(), unsavedChangesCount: 0,
+      var settings = Object.assign({}, plan.settings || Object.assign({}, st.settings, {
+        lastBackupDate: Utils.getTodayStr(), unsavedChangesCount: 0
+      }), {
         lastSavedAt: Math.max(Date.now(), (st.settings.lastSavedAt || 0) + 1),
         schemaVersion: MP.SCHEMA_VERSION, lsSlimMode: false
       });
@@ -606,6 +659,9 @@
           st.logs = plan.logs;
           st.stockHistory = plan.stockHistory;
           st.settings = settings;
+          committedRevision = settings.lastSavedAt;
+          st.storageHealth.writeConflict = false;
+          Storage.applyLoadedSettings(settings);
           showStorageWriteWarning('');
           finish(true);
         };
@@ -613,7 +669,8 @@
         var currentSettings = store.get(MP.STORAGE_KEYS.SETTINGS);
         currentSettings.onsuccess = function () {
           var saved = safeJsonParse(currentSettings.result);
-          if (saved && saved.lastSavedAt > st.settings.lastSavedAt) { tx.abort(); return; }
+          if (st.storageHealth.writeConflict || (saved && saved.lastSavedAt > committedRevision) ||
+              newerLocalState(committedRevision)) { tx.abort(); return; }
           try {
             store.put(JSON.stringify(plan.items), MP.STORAGE_KEYS.ITEMS);
             store.put(JSON.stringify(plan.logs), MP.STORAGE_KEYS.LOGS);
@@ -634,30 +691,30 @@
     var incomingLogs = validated.logs || [];
     var incomingHist = validated.stockHistory || [];
 
-    function finishImport() {
-      if (validated.settings) {
-        Storage.applyLoadedSettings(validated.settings);
-      }
-      st.settings.lastBackupDate = Utils.getTodayStr();
-      st.settings.unsavedChangesCount = 0;
-      Storage.saveToStorage(true, function (ok) {
-        if (typeof onDone === 'function') onDone(ok);
-      });
-    }
-
     if (useSmartMerge) {
-      commitSmartMerge(planSmartMerge(validated), onDone || function () {});
+      commitBackupState(planSmartMerge(validated), onDone || function () {});
     } else {
+      var beforeSnapshotRevision = st.settings.lastSavedAt;
       // Save automatic pre-restore snapshot before full overwrite so user never loses local data accidentally!
       Storage.savePreRestoreSnapshot(function (ok) {
         if (!ok) {
           if (typeof onDone === 'function') onDone(false);
           return;
         }
-        st.items = Domain.reconcileBatches(incomingItems);
-        st.logs = incomingLogs;
-        st.stockHistory = incomingHist.slice(0, MP.MAX_STOCK_HISTORY);
-        finishImport();
+        if (st.settings.lastSavedAt !== beforeSnapshotRevision) {
+          if (typeof onDone === 'function') onDone(false, '保存保护快照期间数据发生了变更，请重新发起恢复。');
+          return;
+        }
+        var settings = { settings: Object.assign({}, st.settings) };
+        Storage.applyLoadedSettings(validated.settings, settings);
+        settings.settings.lastBackupDate = Utils.getTodayStr();
+        settings.settings.unsavedChangesCount = 0;
+        commitBackupState({
+          items: Domain.reconcileBatches(incomingItems),
+          logs: incomingLogs,
+          stockHistory: incomingHist.slice(0, MP.MAX_STOCK_HISTORY),
+          settings: settings.settings
+        }, onDone || function () {});
       });
     }
   };
