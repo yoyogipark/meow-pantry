@@ -100,9 +100,15 @@
     return item.purchasePackaging ? Utils.escapeHtml(UI.purchasePackagingLabel(item.purchasePackaging, item.unit)) : '';
   }
 
-  function stockProgressText(item) {
-    var pack = item.purchasePackaging;
-    return pack ? item.quantity + '/' + (pack.count * pack.size) + ' ' + Utils.escapeHtml(item.unit) : '';
+  function stockQuantityPill(item) {
+    var unit = Utils.escapeHtml(item.unit || '件');
+    var used = Number(item.eatenCount);
+    var stock = detailedOpenStock(item, item.unit || '件');
+    var note = used > 0 ? '已用 ' + used + ' ' + unit
+      : stock.packageCount > 0 ? '开封 ' + stock.packageCount + ' ' + unit : '';
+    return '<span class="stock-quantity-pill"><span>在库 ' + (Number(item.quantity) || 0) + ' ' + unit + '</span>' +
+      (note ? ' <span class="stock-quantity-used' + (used > 0 ? '' : ' stock-quantity-open') + '">' + note + '</span>' : '') +
+      '</span>';
   }
 
   UI.renderStatusCounts = function () {
@@ -279,7 +285,8 @@
       ? (item.openedDate ? [item.openedDate] : [])
       : openPackages.map(function (flavor) { return flavor.name + ' ' + flavor.openedDate; });
     var independent = !shared && (item.purchasePackaging || Domain.isPackageUnit(unit) || unit === '粒');
-    if (independent && openPackages.length && Number.isSafeInteger(quantity) && quantity >= openPackages.length) {
+    var packageCount = independent && Number.isSafeInteger(quantity) && quantity >= openPackages.length ? openPackages.length : 0;
+    if (packageCount) {
       var unopenedCount = quantity - openPackages.length;
       var parts = [];
       if (unopenedCount > 0) parts.push('未开封 ' + unopenedCount + ' ' + unit);
@@ -292,7 +299,7 @@
       }
       stockText = parts.join(' + ');
     }
-    return { opened: opened, text: stockText, dates: dates, openCount: openPackages.length };
+    return { opened: opened, text: stockText, dates: dates, openCount: openPackages.length, packageCount: packageCount };
   }
 
   function expiryTone(days, urgentLimit, warningLimit) {
@@ -440,6 +447,7 @@
                 '<div style="font-size:11px;color:#6B5A4C;margin-top:3px;">' +
                   '共 ' + grp.batches.length + ' 个历史批次' + (rep.spec ? (' · 规格 ' + Utils.escapeHtml(rep.spec)) : '') +
                 '</div>' +
+                stockQuantityPill(rep) +
               '</div>' +
               '<div class="archive-row" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
                 '<span style="background:#DCFCE7;color:#15803D;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:800;">累计 ' + grp.totalConsumed + unitStr + '</span>' +
@@ -549,6 +557,7 @@
               '<div style="display:flex;flex-direction:column;gap:6px;">' + batchRowsHtml + '</div>' +
             '</div>' +
             '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+              stockQuantityPill(rep) +
               '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(rep.sourceBatchId || rep.id) + '" style="padding:6px 10px;border-radius:9px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11.5px;font-weight:600;cursor:pointer;">📜 批次流水</button>' +
               '<button type="button" data-action="restock-new" data-id="' + Utils.escapeHtml(rep.id) + '" style="padding:7px 14px;border-radius:10px;border:1px solid #FDBA74;background:#E8590C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">＋ 同款复购入库</button>' +
             '</div>' +
@@ -590,8 +599,6 @@
       listEl.innerHTML = pagedItems.map(function (it) {
         var ev = Domain.evaluateItem(it);
         var catInfo = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
-        var qtyNum = Number(it.quantity) || 0;
-        var unitStr = Utils.escapeHtml(it.unit || '件');
         var badgeBg = '#DCFCE7';
         var badgeText = '#15803D';
         var badgeLabel = formatExpiryCountdown(ev);
@@ -624,7 +631,6 @@
               '</div>' +
               '<div class="compact-card-tags">' +
                 '<span style="background:' + badgeBg + ';color:' + badgeText + ';padding:2px 7px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;">' + badgeLabel + '</span>' +
-                '<span style="background:#F5F5F4;border:1px solid #E7E5E4;color:#2B2320;padding:2px 7px;border-radius:8px;font-size:11.5px;font-weight:800;white-space:nowrap;">余' + (stockProgressText(it) || qtyNum + unitStr) + '</span>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:3px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#E8590C;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🐾喂</button>' +
                 '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" class="edit-only" style="padding:3px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">编辑</button>' +
               '</div>' +
@@ -632,6 +638,7 @@
             '<div data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="cursor:pointer;">' +
               '<div class="compact-title">' + Utils.escapeHtml(it.name) + '</div>' +
               '<div class="compact-meta-row">' + compactMeta.join('') + '</div>' +
+              stockQuantityPill(it) +
             '</div>' +
           '</div>'
         );
@@ -658,14 +665,11 @@
       var qtyNum = Number(it.quantity) || 0;
       var unitStr = Utils.escapeHtml(unit);
       var stockHtml = '<span class="detail-card-stock-text">' + Utils.escapeHtml(stock.text) + '</span>';
-      var usedHtml = Number(it.eatenCount) > 0
-        ? ' <span class="detail-card-used">已用 ' + Number(it.eatenCount) + ' ' + unitStr + '</span>'
-        : '';
       var openedProgress = stock.opened ? detailedOpenedProgress(it, ev.openRemaining) : '';
       var openedBannerHtml = stock.opened
         ? '<div class="detail-card-open-stock detail-card-open-stock--' + expiryTone(ev.openRemaining, 2, 5) + '">' +
           '<div class="detail-card-open-summary">' +
-            '<div>' + stockHtml + usedHtml + '</div>' +
+            '<div>' + stockHtml + '</div>' +
             (stock.dates.length ? '<span class="detail-card-open-date">开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
           '</div>' + openedProgress + '</div>'
         : '';
@@ -739,7 +743,7 @@
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
             '<div class="detail-card-actions">' +
-              (stock.opened ? '' : '<div class="detail-card-unopened-stock">' + stockHtml + usedHtml + '</div>') +
+              stockQuantityPill(it) +
               '<div class="detail-card-action-buttons">' +
                 '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" style="padding:6px 8px;border-radius:10px;border:1px solid transparent;background:#F1E6D6;color:#3A2A20;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📜 此商品记录</button>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid transparent;background:#E8590C;color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +
