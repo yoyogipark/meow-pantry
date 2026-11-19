@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'meow-pantry-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v46';
+const CACHE_NAME = CACHE_PREFIX + 'v47';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -13,7 +13,7 @@ const CORE_ASSETS = [
   './js/domain.js?v=42',
   './js/storage.js?v=41',
   './js/stats.js?v=41',
-  './js/ui.js?v=46',
+  './js/ui.js?v=47',
   './js/app.js?v=41',
   'https://cdn.tailwindcss.com/3.4.17'
 ];
