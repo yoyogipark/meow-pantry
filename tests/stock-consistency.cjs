@@ -430,17 +430,23 @@ async function run() {
     isOpened: true, openedDate: utils.shiftDaysFromToday(-3), openDaysLimit: 4,
     openRemainFraction: 0.25, eatenCount: 1
   });
-  const unopenedCardItem = make('unopened-card', 2, '杯', { openDaysLimit: 4, eatenCount: 2 });
+  const unopenedCardItem = make('unopened-card', 2, '杯', { prodDate: today, openDaysLimit: 4, eatenCount: 2 });
   const defaultLimitItem = make('default-limit', 1, '罐', { isOpened: true, openedDate: today });
   const longLimitItem = make('long-limit', 1, '罐', { isOpened: true, openedDate: today, openDaysLimit: 45 });
   const twoDayItem = make('two-day-limit', 3, '罐', { isOpened: true, openedDate: today, openDaysLimit: 2, openRemainFraction: 0.75 });
   const missingLimitItem = make('missing-limit', 1, '罐', { isOpened: true, openedDate: today });
   delete missingLimitItem.openDaysLimit;
+  const salmonFins = make('salmon-fins', 1, '袋', {
+    brand: 'GOURMATE', name: 'King Salmon Fins', isOpened: true, openedDate: today
+  });
+  const partlyUsedCan = make('partly-used-can', 1, '罐', {
+    isOpened: true, openedDate: today, openRemainFraction: 0.25
+  });
   const multiCardItem = mixed();
   multiCardItem.openDaysLimit = 4;
   multiCardItem.flavors[0].openedDate = utils.shiftDaysFromToday(-2);
   multiCardItem.flavors[1].openedDate = utils.shiftDaysFromToday(-3);
-  reset(openedCardItem, unopenedCardItem, defaultLimitItem, longLimitItem, twoDayItem, missingLimitItem, multiCardItem, sharedDetail);
+  reset(openedCardItem, unopenedCardItem, defaultLimitItem, longLimitItem, twoDayItem, missingLimitItem, multiCardItem, sharedDetail, salmonFins, partlyUsedCan);
   const card = id => w.document.querySelector('[data-action="item-history"][data-id="' + id + '"]').closest('article');
   const progress = id => card(id).querySelector('.detail-card-open-progress');
   const checkProgress = (id, label, tone, width, limit = 4) => {
@@ -476,12 +482,25 @@ async function run() {
     assert.equal(actions.children.length, 1);
     assert.deepEqual(Array.from(actions.querySelectorAll('button'), button => button.dataset.action), ['item-history', 'log-feed']);
   }
-  assert.equal(card(multiCardItem.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '未开封 0 杯 + 已开封 2 杯');
+  assert.equal(card(multiCardItem.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '已开封 2 杯');
   assert.equal(card(sharedDetail.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '在库 3 杯 · 共用包装已开封');
   const unopenedCard = card(unopenedCardItem.id);
   assert.equal(unopenedCard.querySelector('.detail-card-open-stock'), null);
   assert.equal(unopenedCard.querySelector('.detail-card-unopened-stock .detail-card-stock-text').textContent, '在库 2 杯');
   assert.equal(unopenedCard.querySelector('.detail-card-unopened-stock .detail-card-used').textContent, '已用 2 杯');
+  const checkOpenedStock = (item, expected) => {
+    const row = card(item.id).querySelector('.detail-card-open-summary');
+    assert.equal(row.querySelector('.detail-card-stock-text').textContent, expected);
+    assert.equal(row.querySelector('.detail-card-open-date').textContent, '开封 ' + item.openedDate);
+  };
+  checkOpenedStock(salmonFins, '已开封 1 袋');
+  checkOpenedStock(partlyUsedCan, '开封余 1/4 罐');
+  checkOpenedStock(twoDayItem, '未开封 2 罐 + 开封余 3/4 罐');
+  salmonFins.quantity = 3;
+  ui.renderPantryList();
+  checkOpenedStock(salmonFins, '未开封 2 袋 + 已开封 1 袋');
+  assert.equal(activeCard.querySelector('.detail-card-shelf .detail-card-line').textContent, '有效期剩余 50%');
+  assert.equal(unopenedCard.querySelector('.detail-card-shelf .detail-card-line').textContent, '有效期剩余 100%');
   const shelfBefore = activeCard.querySelector('.detail-card-shelf').outerHTML;
   for (const [elapsed, label, tone, width] of [
     [0, '开封保鲜剩 4 天', 'fresh', '100%'],
