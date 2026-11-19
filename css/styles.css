@@ -892,7 +892,6 @@ body.is-edit-mode .mode-switch-pill {
 .detail-card-track--expired { box-shadow: inset 0 0 0 1px #991B1B; }
 
 .detail-card-open-stock,
-.detail-card-open-balance,
 .detail-card-unopened-stock {
   display: flex;
   align-items: center;
@@ -912,11 +911,24 @@ body.is-edit-mode .mode-switch-pill {
   font-size: 11.5px;
 }
 
-.detail-card-open-balance {
-  flex: 1 1 0;
-  min-width: min(100%, 84px);
+.detail-card-open-summary {
+  display: flex;
+  flex: 0 0 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px 6px;
+  min-width: 0;
   overflow-wrap: anywhere;
-  line-height: 1.4;
+}
+
+.detail-card-open-summary .detail-card-stock-text {
+  font-size: inherit;
+}
+
+.detail-card-open-date {
+  margin-inline-start: auto;
+  text-align: end;
 }
 
 .detail-card-open-progress {

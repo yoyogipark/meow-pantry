@@ -468,18 +468,17 @@
       : openPackages.map(function (flavor) { return flavor.name + ' ' + flavor.openedDate; });
     var independent = !shared && (item.purchasePackaging || Domain.isPackageUnit(unit) || unit === '粒');
     if (independent && openPackages.length && Number.isSafeInteger(quantity) && quantity >= openPackages.length) {
-      stockText = '未开封 ' + (quantity - openPackages.length) + ' ' + unit;
-      if (openPackages.length === 1) {
-        var fractionText = Utils.formatRemainFractionText(openPackages[0].openRemainFraction, unit);
-        if (fractionText) {
-          var remaining = fractionText.slice(1, -unit.length);
-          stockText += ' + 开封余 ' + remaining + ' ' + unit;
-        } else {
-          stockText += ' + 已开封 1 ' + unit;
-        }
-      } else if (openPackages.length > 1) {
-        stockText += ' + 已开封 ' + openPackages.length + ' ' + unit;
+      var unopenedCount = quantity - openPackages.length;
+      var parts = [];
+      if (unopenedCount > 0) parts.push('未开封 ' + unopenedCount + ' ' + unit);
+      var fractionText = openPackages.length === 1
+        ? Utils.formatRemainFractionText(openPackages[0].openRemainFraction, unit) : '';
+      if (fractionText) {
+        parts.push('开封余 ' + fractionText.slice(1, -unit.length) + ' ' + unit);
+      } else {
+        parts.push('已开封 ' + openPackages.length + ' ' + unit);
       }
+      stockText = parts.join(' + ');
     }
     return { opened: opened, text: stockText, dates: dates, openCount: openPackages.length };
   }
@@ -502,7 +501,7 @@
     if (!(duration > 0)) return '';
     var percentage = Math.max(0, Math.min(100, Math.round(days / duration * 100)));
     var tone = days > 30 ? 'fresh' : days >= 7 ? 'warning' : days >= 0 ? 'urgent' : 'expired';
-    var label = '未开封效期剩余 ' + percentage + '%';
+    var label = '有效期剩余 ' + percentage + '%';
     return '<div class="detail-card-shelf">' +
       '<div class="detail-card-line">' + label + '</div>' +
       '<div class="progress-track detail-card-track detail-card-track--' + tone + '" aria-hidden="true">' +
@@ -858,12 +857,13 @@
         ? ' <span class="detail-card-used">已用 ' + Number(it.eatenCount) + ' ' + unitStr + '</span>'
         : '';
       var openedProgress = stock.opened ? detailedOpenedProgress(it, ev.openRemaining) : '';
-      var openedBannerHtml = stock.opened && (stock.dates.length || openedProgress)
+      var openedBannerHtml = stock.opened
         ? '<div class="detail-card-open-stock">' +
-          (stock.dates.length ? '<span class="detail-card-open-date">开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
-          openedProgress + '</div>'
+          '<div class="detail-card-open-summary">' +
+            '<div>' + stockHtml + usedHtml + '</div>' +
+            (stock.dates.length ? '<span class="detail-card-open-date">开封 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
+          '</div>' + openedProgress + '</div>'
         : '';
-      var stockClass = stock.opened ? 'detail-card-open-balance' : 'detail-card-unopened-stock';
 
       var specParts = it.spec ? [Utils.escapeHtml(it.spec)] : [];
       var price = Utils.formatMoney(it.price, it.currency);
@@ -934,7 +934,7 @@
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
             '<div class="detail-card-actions">' +
-              '<div class="' + stockClass + '">' + stockHtml + usedHtml + '</div>' +
+              (stock.opened ? '' : '<div class="detail-card-unopened-stock">' + stockHtml + usedHtml + '</div>') +
               '<div class="detail-card-action-buttons">' +
                 '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" style="padding:6px 8px;border-radius:10px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📜 此商品记录</button>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid #FED7AA;background:#FFF7ED;color:#EA580C;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +
