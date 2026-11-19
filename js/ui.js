@@ -233,10 +233,9 @@
     return Number.isSafeInteger(total) ? total : null;
   }
 
-  function renderStockQuantityDetails(items) {
+  function renderStockQuantityDetails(items, statuses) {
     var summary = Domain.summarizeStockQuantity(items);
     document.getElementById('countStockPieces').textContent = formatPieceCount(summary.pieces);
-    var statuses = Domain.summarizeStockDetailStatuses(items);
     var cards = Object.keys(summary.units).map(function (unit) {
       var entry = summary.units[unit];
       var status = statuses[unit];
@@ -298,8 +297,8 @@
   UI.renderStatusCounts = function () {
     var st = MP.state;
     var cStock = 0;
-    var expiringItems = [];
-    var expiredItems = [];
+    var cExpiring = 0;
+    var cExpired = 0;
     var attrCounts = { all: 0, opened: 0, fresh: 0, pal_love: 0, group_food: 0, group_care: 0 };
     var emptyItems = [];
 
@@ -309,8 +308,8 @@
         emptyItems.push(it);
       } else {
         cStock += 1;
-        if (ev.status === 'expiring') expiringItems.push(it);
-        else if (ev.status === 'expired') expiredItems.push(it);
+        if (ev.status === 'expiring') cExpiring += 1;
+        else if (ev.status === 'expired') cExpired += 1;
         if (st.statusFilter === 'in_stock' || st.statusFilter === ev.status) {
           attrCounts.all += 1;
           if (Domain.isStockOpened(it)) attrCounts.opened += 1;
@@ -324,17 +323,24 @@
 
     [
       ['countInStock', cStock],
-      ['countExpiring', expiringItems.length],
-      ['countExpired', expiredItems.length],
+      ['countExpiring', cExpiring],
+      ['countExpired', cExpired],
       ['countEmpty', cEmpty]
     ].forEach(function (entry) {
       var el = document.getElementById(entry[0]);
       el.textContent = String(entry[1]);
       el.classList.toggle('is-zero', entry[1] === 0);
     });
-    renderStockQuantityDetails(st.items);
-    document.getElementById('countExpiringPieces').textContent = formatPieceCount(Domain.summarizeStockQuantity(expiringItems).pieces);
-    document.getElementById('countExpiredPieces').textContent = formatPieceCount(Domain.summarizeStockQuantity(expiredItems).pieces);
+    var statuses = Domain.summarizeStockDetailStatuses(st.items);
+    var expiringPieces = 0;
+    var expiredPieces = 0;
+    Object.values(statuses).forEach(function (status) {
+      expiringPieces += status.expiring;
+      expiredPieces += status.expired;
+    });
+    renderStockQuantityDetails(st.items, statuses);
+    document.getElementById('countExpiringPieces').textContent = formatPieceCount(expiringPieces);
+    document.getElementById('countExpiredPieces').textContent = formatPieceCount(expiredPieces);
     document.getElementById('countEmptyPieces').textContent = formatPieceCount(summarizeArchivedPieces(emptyItems));
 
     var cards = document.querySelectorAll('[data-status-filter]');
