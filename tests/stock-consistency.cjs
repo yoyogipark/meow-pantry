@@ -1102,6 +1102,20 @@ async function run() {
   }
   changeDryGrams('0');
   await persisted(s => assert.equal(s.settings.dailyFeedGrams.dry, 0));
+  ui.switchTab('settings');
+  dryInput.focus();
+  dryInput.value = '57';
+  let downloadedSettings;
+  storage.triggerFileDownload = (_name, content) => {
+    downloadedSettings = JSON.parse(content).settings;
+    return true;
+  };
+  el('settingsBackupNowBtn').click();
+  storage.triggerFileDownload = originalDownload;
+  assert.equal(downloadedSettings.dailyFeedGrams.dry, 57);
+  assert.equal(dryInput.value, '57');
+  await persisted(s => assert.equal(s.settings.dailyFeedGrams.dry, 57));
+
 
 
   reset(make('older-snapshot', 1));
