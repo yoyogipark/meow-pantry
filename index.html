@@ -11,8 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=120">
-  <link rel="stylesheet" href="./css/styles.css?v=120">
+  <link rel="stylesheet" href="./css/tokens.css?v=123">
+  <link rel="stylesheet" href="./css/styles.css?v=123">
 </head>
 <body>
 
@@ -447,21 +447,30 @@
               <div class="daily-feed-field">
                 <label for="dailyFeedDry">猫粮</label>
                 <div class="daily-feed-input">
-                  <input id="dailyFeedDry" data-daily-feed="dry" aria-describedby="dailyFeedUnitDry" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
+                  <div class="daily-feed-value">
+                    <input id="dailyFeedDry" data-daily-feed="dry" aria-describedby="dailyFeedUnitDry" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
+                    <span class="daily-feed-display" aria-hidden="true"></span>
+                  </div>
                   <span id="dailyFeedUnitDry" aria-label="克/天">g</span>
                 </div>
               </div>
               <div class="daily-feed-field">
                 <label for="dailyFeedFreeze">冻干</label>
                 <div class="daily-feed-input">
-                  <input id="dailyFeedFreeze" data-daily-feed="freeze" aria-describedby="dailyFeedUnitFreeze" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
+                  <div class="daily-feed-value">
+                    <input id="dailyFeedFreeze" data-daily-feed="freeze" aria-describedby="dailyFeedUnitFreeze" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
+                    <span class="daily-feed-display" aria-hidden="true"></span>
+                  </div>
                   <span id="dailyFeedUnitFreeze" aria-label="克/天">g</span>
                 </div>
               </div>
               <div class="daily-feed-field">
                 <label for="dailyFeedCan">湿粮</label>
                 <div class="daily-feed-input">
-                  <input id="dailyFeedCan" data-daily-feed="can" aria-describedby="dailyFeedUnitCan" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
+                  <div class="daily-feed-value">
+                    <input id="dailyFeedCan" data-daily-feed="can" aria-describedby="dailyFeedUnitCan" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
+                    <span class="daily-feed-display" aria-hidden="true"></span>
+                  </div>
                   <span id="dailyFeedUnitCan" aria-label="克/天">g</span>
                 </div>
               </div>
@@ -838,13 +847,7 @@
           </div>
           <div>
             <label for="feedMealSlot" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">餐次时段</label>
-            <select id="feedMealSlot" class="ios-input" style="background-color:#FFFFFF;">
-              <option value="🌅 早饭">🌅 早饭</option>
-              <option value="☀️ 午饭">☀️ 午饭</option>
-              <option value="🌙 晚饭">🌙 晚饭</option>
-              <option value="🍪 加餐/零食">🍪 加餐/零食</option>
-              <option value="🩺 用药/护理">🩺 用药/护理</option>
-            </select>
+            <select id="feedMealSlot" class="ios-input" style="background-color:#FFFFFF;"></select>
           </div>
         </div>
 
@@ -1019,18 +1022,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=120"></script>
-  <script src="./js/constants.js?v=120"></script>
-  <script src="./js/utils.js?v=120"></script>
-  <script src="./js/forecast.js?v=120"></script>
-  <script src="./js/domain.js?v=120"></script>
-  <script src="./js/storage.js?v=120"></script>
-  <script src="./js/stats.js?v=120"></script>
-  <script src="./js/modal.js?v=120"></script>
-  <script src="./js/ui.js?v=120"></script>
-  <script src="./js/ui-pantry.js?v=120"></script>
-  <script src="./js/ui-daily.js?v=120"></script>
-  <script src="./js/ui-settings.js?v=120"></script>
-  <script src="./js/app.js?v=120"></script>
+  <script src="./js/covers.js?v=123"></script>
+  <script src="./js/constants.js?v=123"></script>
+  <script src="./js/utils.js?v=123"></script>
+  <script src="./js/forecast.js?v=123"></script>
+  <script src="./js/domain.js?v=123"></script>
+  <script src="./js/storage.js?v=123"></script>
+  <script src="./js/stats.js?v=123"></script>
+  <script src="./js/modal.js?v=123"></script>
+  <script src="./js/ui.js?v=123"></script>
+  <script src="./js/ui-pantry.js?v=123"></script>
+  <script src="./js/ui-daily.js?v=123"></script>
+  <script src="./js/ui-settings.js?v=123"></script>
+  <script src="./js/app.js?v=123"></script>
 </body>
 </html>

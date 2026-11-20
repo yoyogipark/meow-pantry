@@ -2485,7 +2485,7 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
   background: transparent;
   text-align: center;
 }
-#viewSettings #dailyFeedSettings :is(label, .daily-feed-input span) {
+#viewSettings #dailyFeedSettings :is(label, .daily-feed-input > span) {
   margin: 0;
   font-size: var(--font-body);
   color: var(--pref-label);
@@ -2499,11 +2499,18 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
   border-bottom: 2px solid var(--pref-underline);
 }
 #viewSettings #dailyFeedSettings .daily-feed-input:focus-within { border-color: var(--pref-accent); }
-#viewSettings #dailyFeedSettings .daily-feed-input span { position: static; transform: none; }
-#viewSettings #dailyFeedSettings input {
-  flex: 0 1 4ch;
+#viewSettings #dailyFeedSettings .daily-feed-input > span { position: static; transform: none; }
+#viewSettings #dailyFeedSettings .daily-feed-value {
+  display: inline-grid;
   width: 4ch;
   max-width: calc(100% - 16px);
+  color: var(--pref-title);
+  font-size: 19px;
+  font-weight: var(--weight-medium);
+}
+#viewSettings #dailyFeedSettings input {
+  grid-area: 1 / 1;
+  width: 100%;
   height: auto;
   min-height: var(--filter-control-height);
   padding: 0 0 6px;
@@ -2516,6 +2523,20 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
   font-size: 19px;
   font-weight: var(--weight-medium);
   color: var(--pref-title);
+}
+#viewSettings #dailyFeedSettings .daily-feed-display {
+  display: none;
+  position: static;
+  transform: none;
+  grid-area: 1 / 1;
+  align-self: center;
+  font: inherit;
+  color: inherit;
+  padding-bottom: 6px;
+}
+@media (display-mode: standalone) {
+  #viewSettings #dailyFeedSettings input:not(:focus) { opacity: 0; }
+  #viewSettings #dailyFeedSettings input:not(:focus) + .daily-feed-display { display: block; }
 }
 #viewSettings .settings-preferences-card .settings-preference-row {
   grid-template-columns: 66px minmax(0, 1fr);

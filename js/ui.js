@@ -165,7 +165,7 @@
     var cat = document.getElementById('feedCategorySelect').value;
     var slot = document.getElementById('feedMealSlot').value;
     var box = document.getElementById('medNextReminderBox');
-    box.classList.toggle('hidden-view', !(cat === 'med' || slot === '🩺 用药/护理'));
+    box.classList.toggle('hidden-view', !(cat === 'med' || slot === 'care'));
   };
 
   UI.syncFeedSplitCanUI = function (target) {
@@ -298,9 +298,9 @@
       document.getElementById('feedCategorySelect').value = target.category || 'dry';
       if (!document.getElementById('feedLogEditId').value) {
         if (target.category === 'med') {
-          document.getElementById('feedMealSlot').value = '🩺 用药/护理';
+          document.getElementById('feedMealSlot').value = 'care';
         } else if (target.category === 'treat' || target.category === 'freeze') {
-          document.getElementById('feedMealSlot').value = '🍪 加餐/零食';
+          document.getElementById('feedMealSlot').value = 'snack';
         }
       }
       document.getElementById('feedBrandInput').value = target.brand || '';
@@ -356,6 +356,19 @@
     }
   };
 
+  function selectMealSlot(value) {
+    var select = document.getElementById('feedMealSlot');
+    var id = Utils.normalizeMealSlot(value);
+    var options = Utils.mealSlotOptions().map(function (slot) {
+      return new Option(slot.label, slot.id);
+    });
+    if (!options.some(function (option) { return option.value === id; })) {
+      options.push(new Option(id, id));
+    }
+    select.replaceChildren.apply(select, options);
+    select.value = id;
+  }
+
   UI.openFeedModal = function (itemId, customDate) {
     document.getElementById('feedModalTitle').textContent = '🐾 记录饮食 / 营养 / 用药';
     document.getElementById('feedStockSelect').disabled = false;
@@ -365,7 +378,7 @@
     syncPortionChips(null);
     var dateToUse = customDate || (MP.state.activeTab === 'daily' ? MP.state.selectedLogDate : Utils.getTodayStr());
     document.getElementById('feedDateInput').value = dateToUse;
-    document.getElementById('feedMealSlot').value = Utils.getCurrentMealSlot();
+    selectMealSlot(Utils.getCurrentMealSlot());
     document.getElementById('feedDeductStock').checked = false;
     document.getElementById('feedNextReminderDays').value = '0';
     document.getElementById('feedNoteInput').value = '';
@@ -398,7 +411,7 @@
     document.getElementById('feedModalTitle').textContent = '✏️ 编辑饮食记录';
     document.getElementById('feedLogEditId').value = lg.id;
     document.getElementById('feedDateInput').value = lg.date || Utils.getTodayStr();
-    document.getElementById('feedMealSlot').value = lg.mealSlot || '🌅 早饭';
+    selectMealSlot(lg.mealSlot);
     // A deduction belongs to the original batch even when the meal details are edited.
     document.getElementById('feedStockSelect').disabled = Boolean(lg.deductedUnit || lg.deductedFrac || lg.flavorId);
     UI.syncFeedFlavor(null, lg);

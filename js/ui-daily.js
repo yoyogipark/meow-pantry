@@ -7,7 +7,7 @@
   var UI = MP.UI;
   var PAGE_SIZE = 20;
   var categories = ['dry', 'freeze', 'can'];
-  var slots = ['早饭', '午饭', '晚饭', '加餐/零食', '其他'];
+  var slots = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
   var weekEnd = Utils.getTodayStr();
   var showingHistory = false;
   var historyFilter = 'all';
@@ -148,7 +148,7 @@
 
   function mealName(log) {
     if (log.category === 'med') return '用药';
-    return slots.find(function (slot) { return log.mealSlot && log.mealSlot.includes(slot); }) || '其他';
+    return Utils.formatMealSlot(log.mealSlot);
   }
 
   function clock(log) {
@@ -168,8 +168,8 @@
       var bTime = clock(b);
       if (aTime !== null && bTime !== null) return aTime - bTime;
       if (aTime !== null || bTime !== null) return aTime !== null ? -1 : 1;
-      var aMeal = slots.indexOf(mealName(a));
-      var bMeal = slots.indexOf(mealName(b));
+      var aMeal = slots.indexOf(Utils.normalizeMealSlot(a.mealSlot));
+      var bMeal = slots.indexOf(Utils.normalizeMealSlot(b.mealSlot));
       return (aMeal < 0 ? slots.length : aMeal) - (bMeal < 0 ? slots.length : bMeal);
     });
   }

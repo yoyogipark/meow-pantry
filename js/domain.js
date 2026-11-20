@@ -296,7 +296,7 @@
       ? raw.id.trim()
       : ('log_migrated_' + Date.now() + '_' + (fallbackIdx || 0));
     clean.date = Utils.normalizeDateStr(raw.date) || Utils.getTodayStr();
-    clean.mealSlot = String(raw.mealSlot || '🍽️ 投喂').trim();
+    clean.mealSlot = Utils.normalizeMealSlot(raw.mealSlot);
     clean.itemId = typeof raw.itemId === 'string' ? raw.itemId : '';
     clean.category = cat;
     clean.brand = String(raw.brand || '').trim() || '未命名';
@@ -1145,7 +1145,7 @@
       Domain.sanitizeLog({
         id: 'log_sample_1',
         date: today,
-        mealSlot: '🌅 早饭',
+        mealSlot: 'breakfast',
         itemId: 'sample_1',
         category: 'dry',
         brand: '渴望 Orijen',
@@ -1157,7 +1157,7 @@
       Domain.sanitizeLog({
         id: 'log_sample_2',
         date: today,
-        mealSlot: '🌙 晚饭',
+        mealSlot: 'dinner',
         itemId: 'sample_2',
         category: 'can',
         brand: '巅峰 ZiwiPeak',
@@ -1169,7 +1169,7 @@
       Domain.sanitizeLog({
         id: 'log_sample_3',
         date: yest,
-        mealSlot: '🌅 早饭',
+        mealSlot: 'breakfast',
         itemId: 'sample_1',
         category: 'dry',
         brand: '渴望 Orijen',
@@ -1181,7 +1181,7 @@
       Domain.sanitizeLog({
         id: 'log_sample_4',
         date: yest,
-        mealSlot: '🍪 加餐/零食',
+        mealSlot: 'snack',
         itemId: 'sample_3',
         category: 'freeze',
         brand: 'K9 Natural',

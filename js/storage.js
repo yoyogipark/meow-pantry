@@ -877,7 +877,7 @@
       rows.push([
         lg.date || '',
         Utils.getWeekdayName(lg.date || ''),
-        lg.mealSlot || '',
+        Utils.formatMealSlot(lg.mealSlot),
         grpInfo.label,
         catInfo.label,
         product.brand || '',
