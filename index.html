@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=160">
-  <link rel="stylesheet" href="./css/styles.css?v=160">
+  <link rel="stylesheet" href="./css/tokens.css?v=166">
+  <link rel="stylesheet" href="./css/styles.css?v=166">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -884,7 +884,7 @@
     <div class="modal-sheet" style="padding:20px;max-width:480px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <h3 id="feedModalTitle" style="margin:0;font-size:17px;font-weight:800;color:var(--text-main);"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>记录饮食 / 营养 / 用药</h3>
-        <button id="closeFeedModalBtn" type="button" aria-label="关闭记喂食弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:var(--status-neutral-bg);cursor:pointer;font-weight:700;">✕</button>
+        <button id="closeFeedModalBtn" type="button" aria-label="关闭记喂食弹窗" class="feed-modal-close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       </div>
 
       <form id="feedForm" style="display:flex;flex-direction:column;gap:12px;">
@@ -897,14 +897,50 @@
             <div class="ios-date-wrap"><span id="feedDateInputText" class="ios-date-display">选择日期</span><input id="feedDateInput" type="date" required></div>
           </div>
           <div>
-            <label for="feedMealSlot" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;"><span id="feedMealSlotIcon" aria-hidden="true"></span>餐次时段</label>
-            <select id="feedMealSlot" class="ios-input" style="background-color:var(--card-bg);"></select>
+            <span id="feedMealSlotLabel" class="feed-meal-label">餐次时段</span>
+            <input id="feedMealSlot" type="hidden">
+            <details id="feedMealPicker" class="feed-meal-picker">
+              <summary class="ios-input" aria-labelledby="feedMealSlotLabel feedMealSelection">
+                <span id="feedMealSelection"></span>
+                <span aria-hidden="true">⌄</span>
+              </summary>
+              <div id="feedMealChoices" role="group" aria-labelledby="feedMealSlotLabel"></div>
+            </details>
           </div>
         </div>
 
-        <div>
-          <label for="feedStockSelect" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">选择商品批次（含已核销批次，或手动输入）</label>
-          <select id="feedStockSelect" class="ios-input" style="background-color:var(--card-bg);"></select>
+        <div id="feedCareTypeGroup" class="feed-care-segments hidden-view" role="group" aria-label="用药或护理">
+          <button type="button" class="ios-btn ios-btn-secondary" data-feed-care-type="medication" aria-pressed="true">用药</button>
+          <button type="button" class="ios-btn ios-btn-secondary" data-feed-care-type="nursing" aria-pressed="false">护理</button>
+        </div>
+        <fieldset id="feedNursingProjects" class="feed-nursing-projects hidden-view">
+          <legend>护理项目</legend>
+          <div class="feed-nursing-options">
+            <label><input type="checkbox" value="梳毛" data-nursing-project><span>梳毛</span></label>
+            <label><input type="checkbox" value="剪指甲" data-nursing-project><span>剪指甲</span></label>
+            <label><input type="checkbox" value="洗耳朵" data-nursing-project><span>洗耳朵</span></label>
+            <label><input type="checkbox" value="刷牙" data-nursing-project><span>刷牙</span></label>
+            <label><input type="checkbox" value="洗澡" data-nursing-project><span>洗澡</span></label>
+            <label><input type="checkbox" value="清理眼屎" data-nursing-project><span>清理眼屎</span></label>
+            <label><input type="checkbox" value="其他" data-nursing-project><span>其他</span></label>
+          </div>
+          <label id="feedNursingOtherField" class="feed-care-field hidden-view">
+            <span>其他护理项目</span>
+            <input id="feedNursingOther" class="ios-input" type="text" placeholder="填写护理项目">
+          </label>
+        </fieldset>
+        <p id="feedNursingHint" class="daily-support hidden-view">仅记录护理，不影响库存</p>
+
+        <div data-medication-field>
+          <span id="feedStockLabel" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">选择商品批次（含已核销批次，或手动输入）</span>
+          <select id="feedStockSelect" hidden></select>
+          <details id="feedStockPicker" class="feed-meal-picker">
+            <summary id="feedStockPickerTrigger" class="ios-input" aria-labelledby="feedStockLabel feedStockSelection">
+              <span id="feedStockSelection" class="feed-stock-option-text"></span>
+              <span aria-hidden="true">⌄</span>
+            </summary>
+            <div id="feedStockChoices" class="feed-stock-choices" role="group" aria-labelledby="feedStockLabel"></div>
+          </details>
           <div id="feedFlavorFields" class="hidden-view flavor-control">
             <label for="feedFlavorSelect">实际喂食口味</label>
             <select id="feedFlavorSelect" class="ios-input"></select>
@@ -914,7 +950,7 @@
           </div>
         </div>
 
-        <div>
+        <div id="feedPalatabilityField">
             <label for="feedFlavorPal" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">适口性</label>
             <select id="feedFlavorPal" class="ios-input">
               <option value="">未评价</option><option value="love">超爱吃</option><option value="ok">一般</option>
@@ -922,7 +958,14 @@
             </select>
         </div>
 
-        <div class="grid-safe" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:8px;">
+        <div id="feedMedicationOutcomeField" class="hidden-view">
+          <label for="feedMedicationOutcome" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">服药情况</label>
+          <select id="feedMedicationOutcome" class="ios-input">
+            <option value="">未记录</option><option value="smooth">顺利</option>
+            <option value="coaxed">需哄喂</option><option value="resisted">抗拒</option><option value="vomited">吐了</option>
+          </select>
+        </div>
+        <div data-medication-field class="grid-safe" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:8px;">
           <div>
             <label for="feedCategorySelect" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">分类</label>
             <select id="feedCategorySelect" class="ios-input" style="background-color:var(--card-bg);">
@@ -940,15 +983,15 @@
           </div>
         </div>
 
-        <div>
-          <label for="feedNameInput" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">品名 / 口味 <span style="color:var(--accent-strong);">*</span></label>
+        <div data-medication-field>
+          <label for="feedNameInput" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;"><span id="feedNameLabel">品名 / 口味</span> <span style="color:var(--accent-strong);">*</span></label>
           <input id="feedNameInput" type="text" required placeholder="如：无谷鸡肉猫粮 / 马鲛鱼罐头" class="ios-input">
         </div>
 
         <!-- Portion Amount + Smart Last-Portion & Split-Can Chips -->
-        <div>
+        <div data-medication-field>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:6px;flex-wrap:wrap;">
-            <label for="feedAmountInput" style="font-size:12px;font-weight:700;color:var(--text-main);">投喂份量 <span style="color:var(--accent-strong);">*</span></label>
+            <label for="feedAmountInput" style="font-size:12px;font-weight:700;color:var(--text-main);"><span id="feedAmountLabel">投喂份量</span> <span style="color:var(--accent-strong);">*</span></label>
             <span id="feedSplitHintTag" style="font-size:11px;font-weight:700;color:var(--accent-strong);"></span>
           </div>
           <input id="feedAmountInput" type="text" required placeholder="如：1/2、1/3、40g" class="ios-input">
@@ -967,37 +1010,46 @@
         </div>
 
         <!-- Smart Split-Can / Stock Deduction Status Box -->
-        <div id="feedDeductBox" style="padding:10px 12px;border-radius:12px;background:var(--accent-soft);border:1px solid var(--accent-edge);">
+        <div data-medication-field id="feedDeductBox" style="padding:10px 12px;border-radius:12px;background:var(--accent-soft);border:1px solid var(--accent-edge);">
           <div id="feedSplitAutoInfo" class="hidden-view" style="font-size:12px;font-weight:700;color:var(--accent-strong);line-height:1.45;"></div>
           <label id="feedManualDeductLabelWrap" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;">
-            <span id="feedDeductLabel" style="font-size:12px;font-weight:700;color:var(--accent-strong);"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-package"></use></svg>同步扣减库存</span>
+            <span class="feed-deduct-copy"><span id="feedDeductLabel" style="font-size:12px;font-weight:700;color:var(--accent-strong);"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-package"></use></svg>同步扣减库存</span><small id="feedCareDeductHelp" class="hidden-view"></small></span>
             <input id="feedDeductStock" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
           </label>
         </div>
 
         <!-- Indoor Cat Low-Frequency Deworming / Medicine Reminder -->
         <div id="medNextReminderBox" class="hidden-view" style="padding:10px 12px;border-radius:12px;background:var(--ok-soft);border:1px solid var(--positive-border);">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <label for="feedNextReminderDays" style="font-size:12px;font-weight:700;color:var(--ok);"><span data-category-icon="med"></span> 下次用药/驱虫提醒（低频可选）</label>
+          <div class="feed-reminder-fields" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <label for="feedNextReminderDays" style="font-size:12px;font-weight:700;color:var(--ok);"><span data-category-icon="med"></span> <span id="feedReminderTitle">下次用药/驱虫提醒</span><span class="feed-reminder-inline-note">（低频可选）</span></label>
+            <small class="feed-reminder-note">低频可选</small>
             <select id="feedNextReminderDays" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:var(--card-bg);">
               <option value="0">不设提醒</option>
+              <option value="3" data-nursing-interval hidden>3 天后</option>
+              <option value="7" data-care-interval hidden>1 周后</option>
+              <option value="14" data-care-interval hidden>2 周后</option>
               <option value="30">1个月后 (30天)</option>
-              <option value="60">2个月后 (60天)</option>
-              <option value="90">3个月后 / 季度 (90天)</option>
-              <option value="180">半年后 (180天)</option>
-              <option value="365">1年后 (365天)</option>
+              <option value="60" data-medication-interval>2个月后 (60天)</option>
+              <option value="90" data-medication-interval>3个月后 / 季度 (90天)</option>
+              <option value="180" data-medication-interval>半年后 (180天)</option>
+              <option value="365" data-medication-interval>1年后 (365天)</option>
+              <option value="custom" data-care-interval hidden>自定义</option>
             </select>
+            <label id="feedCustomReminderField" class="hidden-view feed-care-field">
+              <span>自定义间隔（天）</span>
+              <input id="feedCustomReminderDays" class="ios-input" type="number" inputmode="numeric" min="1" max="3650" step="1">
+            </label>
           </div>
         </div>
 
         <div>
-          <label for="feedNoteInput" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">光盘情况 / 反应备注 (选填)</label>
+          <label id="feedNoteLabel" for="feedNoteInput" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">光盘情况 / 反应备注 (选填)</label>
           <input id="feedNoteInput" type="text" placeholder="如：秒光盘、兑了40ml温水、便便正常" class="ios-input">
         </div>
 
         <div style="display:flex;gap:10px;padding-top:4px;">
           <button id="cancelFeedModalBtn" type="button" class="ios-btn ios-btn-secondary" style="width:34%;">取消</button>
-          <button type="submit" class="ios-btn ios-btn-primary" style="width:66%;">保存喂食记录</button>
+          <button id="saveFeedBtn" type="submit" class="ios-btn ios-btn-primary" style="width:66%;">保存喂食记录</button>
         </div>
       </form>
     </div>
@@ -1088,18 +1140,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=160"></script>
-  <script src="./js/constants.js?v=160"></script>
-  <script src="./js/utils.js?v=160"></script>
-  <script src="./js/forecast.js?v=160"></script>
-  <script src="./js/domain.js?v=160"></script>
-  <script src="./js/storage.js?v=160"></script>
-  <script src="./js/stats.js?v=160"></script>
-  <script src="./js/modal.js?v=160"></script>
-  <script src="./js/ui.js?v=160"></script>
-  <script src="./js/ui-pantry.js?v=160"></script>
-  <script src="./js/ui-daily.js?v=160"></script>
-  <script src="./js/ui-settings.js?v=160"></script>
-  <script src="./js/app.js?v=160"></script>
+  <script src="./js/covers.js?v=166"></script>
+  <script src="./js/constants.js?v=166"></script>
+  <script src="./js/utils.js?v=166"></script>
+  <script src="./js/forecast.js?v=166"></script>
+  <script src="./js/domain.js?v=166"></script>
+  <script src="./js/storage.js?v=166"></script>
+  <script src="./js/stats.js?v=166"></script>
+  <script src="./js/modal.js?v=166"></script>
+  <script src="./js/ui.js?v=166"></script>
+  <script src="./js/ui-pantry.js?v=166"></script>
+  <script src="./js/ui-daily.js?v=166"></script>
+  <script src="./js/ui-settings.js?v=166"></script>
+  <script src="./js/app.js?v=166"></script>
 </body>
 </html>
