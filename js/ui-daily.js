@@ -17,6 +17,109 @@
   var quantity = Utils.formatQuantity;
   var bell = '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8m-8 12a2 2 0 0 0 4 0"/></svg>';
 
+  var MED_REMINDER_WINDOW_DAYS = 7;
+  var reminderIntervals = { 30: '1个月后', 60: '2个月后', 90: '3个月后', 180: '半年后', 365: '1年后' };
+  var stethoscope = '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 3v1m6-1v1M4 4H3v5a5 5 0 0 0 10 0V4h-1M8 14v2a5 5 0 0 0 10 0v-2"/><circle cx="18" cy="11" r="3"/></svg>';
+  var checkIcon = '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4 10-10"/></svg>';
+
+  function careInfo(log, product) {
+    var subtype = String(log.subtype || product.subtype || '').trim();
+    var group = MP.getCategoryGroup(log.category);
+    if (group === 'supp') return { type: '营养品', verb: '补充', subtype: subtype };
+    if (group === 'med' || log.mealSlot === 'care') {
+      var type = /驱虫|外驱|内驱/.test(subtype) ? '驱虫' : '用药';
+      return { type: type, verb: type, subtype: subtype };
+    }
+    return null;
+  }
+
+  function reminderStatus(days) {
+    return days < 0 ? '已过期 ' + -days + ' 天' : days === 0 ? '今天' : '还有 ' + days + ' 天';
+  }
+
+  function reminderTone(days) {
+    return days < 0 ? 'danger' : days <= MED_REMINDER_WINDOW_DAYS ? 'warning' : '';
+  }
+
+  function reminderInterval(days) {
+    if (!(days > 0)) return '';
+    if (reminderIntervals[days]) return reminderIntervals[days];
+    if (days < 30) return days + '天后';
+    if (days < 360) return Math.round(days / 30) + '个月后';
+    return Math.round(days / 365) + '年后';
+  }
+
+  function detailReminder(log, care, today) {
+    var due = Utils.formatRelativeYearDate(log.nextDueDate, today);
+    if (!due || !care) return '';
+    var days = Utils.diffDaysFromToday(log.nextDueDate, today);
+    var tone = reminderTone(days);
+    var suffix = tone ? reminderStatus(days) : reminderInterval(log.reminderDays);
+    return '<p class="daily-support daily-reminder" data-reminder-tone="' + tone + '">' + bell +
+      '下次' + esc(care.verb) + ' ' + esc(due) + (suffix ? ' · ' + esc(suffix) : '') + '</p>';
+  }
+
+  UI.renderMedReminderBanner = function () {
+    var today = Utils.getTodayStr();
+    var latest = new Map();
+    MP.state.logs.forEach(function (log) {
+      var product = Domain.resolveLogProduct(log);
+      var care = careInfo(log, product);
+      if (!care) return;
+      var key = JSON.stringify([product.brand, product.name, log.category, care.type].map(function (value) {
+        return String(value || '').trim().toLowerCase();
+      }));
+      var previous = latest.get(key);
+      var time = clock(log);
+      if (!previous || log.date > previous.log.date ||
+          (log.date === previous.log.date && time !== null && previous.time !== null && time > previous.time)) {
+        latest.set(key, { log: log, product: product, time: time });
+      }
+    });
+    var due = Array.from(latest.values()).filter(function (entry) {
+      entry.days = Utils.diffDaysFromToday(entry.log.nextDueDate, today);
+      return !entry.log.reminderDone && entry.days !== null && entry.days <= MED_REMINDER_WINDOW_DAYS;
+    }).sort(function (a, b) { return a.days - b.days; });
+
+    var overdue = due.filter(function (entry) { return entry.days < 0; }).length;
+    var box = el('dailyMedReminders');
+    var wasExpanded = Boolean(box.querySelector('details[open]'));
+    var pantry = el('pantryOverdueMedReminder');
+    pantry.classList.toggle('hidden-view', !overdue);
+    pantry.textContent = overdue ? '有 ' + overdue + ' 项用药已过期 ›' : '';
+    el('dailyMedReminderDot').classList.toggle('hidden-view', !due.length);
+    el('navBtnDaily').setAttribute('aria-label', due.length ? '饮食记录，有用药提醒' : '饮食记录');
+    box.classList.toggle('hidden-view', !due.length);
+    if (!due.length) { box.replaceChildren(); return; }
+
+    function renderEntry(entry) {
+      var log = entry.log;
+      var product = entry.product;
+      return '<div class="med-reminder-card" data-reminder-tone="' + reminderTone(entry.days) + '">' +
+        '<span class="med-reminder-icon">' + stethoscope + '</span><div class="med-reminder-copy">' +
+        '<div class="med-reminder-title"><span class="med-reminder-name"><span>' + esc(knownBrand(product)) +
+        '</span> <strong>' + esc(product.name) + '</strong></span><span class="med-reminder-status">' +
+        esc(reminderStatus(entry.days)) + '</span></div><p>上次 ' +
+        esc(Utils.formatRelativeYearDate(log.date, today)) + ' · 计划 ' +
+        esc(Utils.formatRelativeYearDate(log.nextDueDate, today)) + '</p></div>' +
+        '<button class="med-reminder-action" type="button" data-record-reminder="' + esc(log.id) +
+        '"><span>' + checkIcon + '记录</span></button></div>';
+    }
+
+    if (due.length === 1) { box.innerHTML = renderEntry(due[0]); return; }
+    var first = due[0];
+    var more = [];
+    if (overdue > 1) more.push('另 ' + (overdue - 1) + ' 项已过期');
+    if (due.length - Math.max(1, overdue)) more.push('另 ' + (due.length - Math.max(1, overdue)) + ' 项临近计划日');
+    var summary = [knownBrand(first.product), first.product.name].filter(Boolean).join(' ') +
+      ' · ' + reminderStatus(first.days) + (more.length ? '，' + more.join('，') : '');
+    box.innerHTML = '<details class="med-reminder-group" data-reminder-tone="' + reminderTone(first.days) +
+      '"' + (wasExpanded ? ' open' : '') + '><summary class="med-reminder-card"><span class="med-reminder-icon">' +
+      stethoscope + '</span><div class="med-reminder-copy"><strong>' + due.length + ' 项用药提醒</strong><p title="' +
+      esc(summary) + '">' + esc(summary) + '</p></div><span class="med-reminder-action"><span>查看</span></span></summary>' +
+      '<div class="med-reminder-list">' + due.map(renderEntry).join('') + '</div></details>';
+  };
+
   function el(id) { return document.getElementById(id); }
 
   function dateLabel(date) {
@@ -222,12 +325,15 @@
       var brand = knownBrand(product);
       var name = brand ? brand + ' ' + product.name : product.name;
       var category = MP.CATEGORIES[log.category] || MP.CATEGORIES.dry;
+      var care = careInfo(log, product);
+      var heading = care ? care.type + (care.subtype && care.subtype !== care.type ? ' · ' + care.subtype : '')
+        : mealName(log) + ' · ' + category.label;
       var id = esc(log.id);
-      return '<li class="daily-record"><div class="daily-record-copy"><p class="daily-support">' + esc(mealName(log)) +
-        ' · ' + esc(category.label) + '</p><p class="daily-card-title daily-record-name" title="' + esc(name) + '">' +
+      return '<li class="daily-record' + (care ? ' daily-record--care' : '') + '">' + Utils.getCategoryIcon(log.category) +
+        '<div class="daily-record-copy"><p class="daily-support">' + esc(heading) + '</p><p class="daily-card-title daily-record-name" title="' + esc(name) + '">' +
         (brand ? '<span>' + esc(brand) + '</span> ' : '') + '<strong>' + esc(product.name) + '</strong></p>' +
         (log.note ? '<p class="daily-support">' + esc(log.note) + '</p>' : '') +
-        (log.nextDueDate ? '<p class="daily-support daily-reminder">' + bell + '下次提醒 ' + esc(Utils.formatListDate(log.nextDueDate)) + '</p>' : '') +
+        detailReminder(log, care, Utils.getTodayStr()) +
         '</div><div class="daily-record-amount"><strong>' + esc(row.amount.primary) + '</strong>' +
         (row.amount.secondary ? '<span class="daily-support">· ' + esc(row.amount.secondary) + '</span>' : '') + '</div>' +
         '<details class="daily-record-menu"><summary class="daily-record-more" aria-label="更多操作"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></summary><div class="daily-record-menu-items">' +

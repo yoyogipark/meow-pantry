@@ -318,7 +318,15 @@
     clean.finishedDate = qty <= 0 ? Utils.normalizeDateStr(raw.finishedDate) : '';
     clean.openDaysLimit = raw.openDaysLimit === null ? null : Math.max(1, parseInt(raw.openDaysLimit, 10) || defCat.defaultOpenDays || 45);
     clean.openRemainFraction = remFrac;
-    clean.palatability = (raw.palatability && MP.PALATABILITY[raw.palatability]) ? raw.palatability : '';
+    var legacyPalatability = Object.hasOwn(MP.PALATABILITY, raw.palatability) ? raw.palatability : '';
+    if (flavors) {
+      flavors.forEach(function (flavor) {
+        if (!flavor.palatability) flavor.palatability = legacyPalatability;
+      });
+      delete clean.palatability;
+    } else {
+      clean.palatability = legacyPalatability;
+    }
     clean.location = String(raw.location || '').trim();
     clean.batchCode = String(raw.batchCode || '').trim();
     clean.notes = String(raw.notes || '').trim();
@@ -441,7 +449,8 @@
     archiveItem.shelfLifeValue = activeItem.shelfLifeValue;
     archiveItem.shelfLifeUnit = activeItem.shelfLifeUnit;
     archiveItem.expDate = activeItem.expDate;
-    archiveItem.palatability = activeItem.palatability;
+    if (activeItem.flavors) delete archiveItem.palatability;
+    else archiveItem.palatability = activeItem.palatability;
     archiveItem.location = activeItem.location;
     archiveItem.batchCode = activeItem.batchCode;
     if (activeItem.imageData) {

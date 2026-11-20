@@ -73,10 +73,25 @@
     var targetLog = st.logs.find(function (lg) { return lg.id === logId; });
     if (!targetLog) return;
     var product = Domain.resolveLogProduct(targetLog);
-    var logTitle = '「' + targetLog.date + ' ' + product.brand + ' ' + product.name + ' (' + targetLog.amount + ')」';
     var canRevert = targetLog.itemId && (targetLog.flavorChange || Number(targetLog.deductedUnit) > 0 || Number(targetLog.deductedFrac) > 0);
-    var revertOpt = canRevert ? { label: '🔄 同时退回该笔记录扣减的开封余量 / 库存数量', defaultChecked: true } : null;
-    UI.openConfirm('删除饮食记录？', '确定要删除 ' + logTitle + ' 吗？', '确认删除', function (doRevert) {
+    var units = Number(targetLog.deductedUnit) || 0;
+    var unit = targetLog.productUnit || Domain.resolveLogProduct(targetLog, true).unit || '件';
+    var restore = units > 0 ? '库存 +' + Utils.formatNumber(units) + ' ' + unit : '恢复开封余量';
+    if (units > 0 && (targetLog.portionChange || targetLog.flavorChange || targetLog.deductedFrac > 0)) {
+      restore += '，开封余量一并恢复';
+    }
+    var options = {
+      label: canRevert ? '同时退回库存' : '',
+      defaultChecked: Boolean(canRevert),
+      deleteLog: {
+        category: targetLog.category,
+        name: [product.brand, product.name].filter(Boolean).join(' '),
+        meta: [Utils.formatListDate(targetLog.date), product.subtype || targetLog.subtype || MP.CATEGORIES[targetLog.category]?.label].filter(Boolean).join(' · '),
+        amount: String(targetLog.amount || '').replace(/^(\d+(?:[./]\d+)?)\s*(?=[^\d\s])/, '$1 '),
+        restore: restore
+      }
+    };
+    UI.openConfirm('删除这条记录？', '', '删除', function (doRevert) {
       var existsIdx = st.logs.findIndex(function (lg) { return lg.id === logId; });
       if (existsIdx === -1) return;
       var freshLog = st.logs[existsIdx];
@@ -91,7 +106,7 @@
         if (ok) UI.showToast(doRevert ? '已删除记录并退回对应库存余量' : '已删除该条饮食记录');
       });
       UI.renderAll();
-    }, revertOpt);
+    }, options);
   }
 
   function redemptionMealAmount(item, quantity, fraction) {
@@ -354,7 +369,7 @@
 
     // 5. Daily Feeding Log Controls & Quick Feed
     document.getElementById('openQuickFeedBtn').addEventListener('click', function () {
-      UI.openFeedModal('', st.selectedLogDate);
+      UI.openFeedModal('', st.selectedLogDate, true);
     });
     document.getElementById('dailyQuickFeedBox').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-quick-feed-item]');
@@ -476,6 +491,10 @@
       return st.items.find(function (item) { return item.id === id; });
     }
 
+    var feedPalatabilityField = document.getElementById('feedFlavorPal');
+    feedPalatabilityField.addEventListener('change', function () {
+      feedPalatabilityField.dataset.manual = '1';
+    });
     document.getElementById('feedFlavorSelect').addEventListener('change', function () {
       var item = selectedFeedItem();
       UI.updateFeedFlavor(item);
@@ -568,7 +587,15 @@
       var fAmount = document.getElementById('feedAmountInput').value.trim();
       var fNote = document.getElementById('feedNoteInput').value.trim();
       var remDays = parseInt(document.getElementById('feedNextReminderDays').value, 10) || 0;
-      var nextDue = (remDays > 0 && (fCat === 'med' || fSlot === 'care'))
+      var sourceId = document.getElementById('feedForm').dataset.reminderSourceId;
+      var reminderSource = sourceId && st.logs.find(function (log) {
+        return log.id === sourceId && log.category === fCat &&
+          (fItemId ? fItemId === log.itemId : fBrand === log.brand && fName === log.name);
+      });
+      var editingSupplementReminder = fCat === 'supp' && editLogId && st.logs.some(function (log) {
+        return log.id === editLogId && log.category === fCat && log.nextDueDate;
+      });
+      var nextDue = (remDays > 0 && (fCat === 'med' || fSlot === 'care' || (fCat === 'supp' && reminderSource) || editingSupplementReminder))
         ? Utils.addShelfLife(fDate, remDays, 'days')
         : '';
       var deduct = deductionSwitch.checked;
@@ -607,6 +634,7 @@
             st.logs[k].name = fName;
             st.logs[k].amount = fAmount;
             st.logs[k].note = fNote;
+            st.logs[k].flavorPalatability = feedPalatabilityField.value || undefined;
             st.logs[k].reminderDays = remDays;
             st.logs[k].nextDueDate = nextDue;
             break;
@@ -627,7 +655,7 @@
       var flavor = null;
       var flavorChange = null;
       var portionChange = null;
-      var flavorPalatability = '';
+      var flavorPalatability = feedPalatabilityField.value;
 
       if (fItemId) {
         var stItem = st.items.find(function (x) { return x.id === fItemId; });
@@ -641,7 +669,6 @@
             UI.showToast('请选择实际喂食的口味');
             return;
           }
-          flavorPalatability = document.getElementById('feedFlavorPal').value;
         }
         var portion = UI.parseFeedPortion(fAmount, stItem, flavor);
         if (flavor && !portion.valid && !(deduct && portion.finish)) {
@@ -657,7 +684,6 @@
           if (flavor) {
             flavorChange = Domain.feedFlavor(stItem, flavor, portion.fraction, portion.finish, fDate);
             if (!flavorChange) return;
-            flavor.palatability = flavorPalatability;
           } else {
             portionChange = Domain.feedBatchPortion(stItem, plan, fDate, fAmount);
           }
@@ -675,7 +701,7 @@
         mealSlot: fSlot,
         itemId: fItemId,
         category: fCat,
-        subtype: stItem && stItem.category === fCat ? stItem.subtype : undefined,
+        subtype: reminderSource?.subtype || (stItem && stItem.category === fCat ? stItem.subtype : undefined),
         brand: fBrand,
         name: fName,
         amount: fAmount,
@@ -835,19 +861,14 @@
     });
 
 
-    document.getElementById('medReminderBanner').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-dismiss-rem]');
-      if (!btn) return;
-      var logId = btn.getAttribute('data-dismiss-rem');
-      for (var rIdx = 0; rIdx < st.logs.length; rIdx++) {
-        if (st.logs[rIdx].id === logId) {
-          st.logs[rIdx].reminderDone = true;
-          break;
-        }
-      }
-      Storage.saveToStorage();
-      UI.renderMedReminderBanner();
-      UI.showToast('已标记完成本次用药提醒');
+    document.getElementById('dailyMedReminders').addEventListener('click', function (ev) {
+      var button = ev.target.closest('[data-record-reminder]');
+      var log = button && st.logs.find(function (entry) { return entry.id === button.dataset.recordReminder; });
+      if (log) UI.openFeedFromReminder(log);
+    });
+    document.getElementById('pantryOverdueMedReminder').addEventListener('click', function () {
+      UI.switchTab('daily');
+      UI.closeDailyHistory();
     });
 
     // 8. Stock Operation History Modal Controls
@@ -1259,6 +1280,7 @@
         });
         return;
       }
+      if (original?.flavors) flavors = UI.readEditedFlavorRatings(flavors);
       var openLimit = document.getElementById('fieldOpenLimit').value;
       var record = Domain.sanitizeItem({
         id: id || ('item_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
@@ -1283,7 +1305,7 @@
         archivedOpenedDate: newQty <= 0 ? openedInForm : '',
         finishedDate: newQty <= 0 ? (finishedInForm || Utils.getTodayStr()) : '',
         openDaysLimit: openLimit === '' ? null : Number(openLimit),
-        palatability: st.formPal,
+        palatability: flavors ? undefined : st.formPal,
         location: location,
         batchCode: document.getElementById('fieldBatch').value.trim(),
         notes: document.getElementById('fieldNotes').value.trim(),
@@ -1639,6 +1661,9 @@
   App.init = function () {
     var st = MP.state;
     UI.syncStaticBrandIcons();
+    document.querySelectorAll('[data-category-icon]').forEach(function (node) {
+      node.innerHTML = Utils.getCategoryIcon(node.dataset.categoryIcon, 20);
+    });
     UI.initModalAccessibility();
     App.bindEvents();
     Storage.loadFromStorage(function () {

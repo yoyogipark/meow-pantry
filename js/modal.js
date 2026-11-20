@@ -94,6 +94,15 @@
   };
 
   UI.openConfirm = function (title, message, okLabel, onConfirm, extraOpt) {
+    var deleteLog = extraOpt && extraOpt.deleteLog;
+    document.getElementById('confirmModalBackdrop').classList.toggle('confirm-delete-log', Boolean(deleteLog));
+    if (deleteLog) {
+      document.getElementById('deleteLogCategoryIcon').innerHTML = MP.Utils.getCategoryIcon(deleteLog.category);
+      document.getElementById('deleteLogName').textContent = deleteLog.name;
+      document.getElementById('deleteLogMeta').textContent = deleteLog.meta;
+      document.getElementById('deleteLogAmount').textContent = deleteLog.amount;
+      document.getElementById('deleteLogRestoreAmount').textContent = deleteLog.restore;
+    }
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmMessage').textContent = message;
     document.getElementById('confirmOkBtn').textContent = okLabel || '确定';

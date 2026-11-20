@@ -156,3 +156,27 @@ html:has(#viewSettings:not(.hidden-view)) {
     --focus-ring: #FFB084;
   }
 }
+
+:root {
+  --cat-dry: #854F0B;
+  --cat-can: #5F5E5A;
+  --cat-freeze: #185FA5;
+  --cat-treat: #993556;
+  --cat-supp: #3B6D11;
+  --cat-med: #534AB7;
+  --cat-chicken-stroke: #BA7517;
+  --cat-chicken-fill: #FAC775;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cat-dry: #EF9F27;
+    --cat-can: #B4B2A9;
+    --cat-freeze: #85B7EB;
+    --cat-treat: #ED93B1;
+    --cat-supp: #97C459;
+    --cat-med: #AFA9EC;
+    --cat-chicken-stroke: #FAC775;
+    --cat-chicken-fill: #BA7517;
+  }
+}

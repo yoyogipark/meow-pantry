@@ -42,9 +42,13 @@
       }
       if (plain) return text;
       var escaped = Utils.escapeHtml(text);
-      return remainingView && Number(flavor.quantity) <= 0
-        ? '<s class="flavor-stock-finished" aria-label="' + Utils.escapeHtml(flavor.name + ' 已吃完') + '">' + escaped + '</s>'
-        : escaped;
+      if (remainingView && Number(flavor.quantity) <= 0) {
+        escaped = '<s class="flavor-stock-finished" aria-label="' + Utils.escapeHtml(flavor.name + ' 已吃完') + '">' + escaped + '</s>';
+      }
+      if (!remainingView) return escaped;
+      var badge = MP.getPalatabilityBadgeInfo({ category: item.category, palatability: flavor.palatability });
+      return escaped + ' <span class="flavor-stock-rating">' +
+        (badge ? Utils.formatPalatabilityBadge(item, badge) : '未评价') + '</span>';
     }).join(' · ');
   };
 
@@ -70,7 +74,6 @@
   };
 
   UI.switchTab = function (tabName) {
-    var needsHeaderUpdate = (MP.state.activeTab === 'stats') !== (tabName === 'stats');
     MP.state.activeTab = tabName;
     var views = {
       pantry: document.getElementById('viewPantry'),
@@ -91,7 +94,6 @@
     var addButton = document.getElementById('openAddModalBtn');
     addButton.classList.toggle('ios-btn-primary', tabName === 'pantry');
     addButton.classList.toggle('ios-btn-secondary', tabName !== 'pantry');
-    if (needsHeaderUpdate) UI.renderHeaderSubtitle();
     if (tabName === 'daily') UI.syncDailyQuickFeedFade();
     window.scrollTo(0, 0);
   };
@@ -136,12 +138,8 @@
       }
     });
     var brandTotal = Object.keys(brandsSet).length;
-    var isAnalysis = MP.state.activeTab === 'stats';
-    var subText = (isAnalysis ? '普通食品 ' : '口粮 ') + Utils.formatQuantity(counts.food, '款');
-    if (isAnalysis) {
-      if (counts.supp) subText += ' · 营养品 ' + Utils.formatQuantity(counts.supp, '款');
-      if (counts.med) subText += ' · 药品 ' + Utils.formatQuantity(counts.med, '款');
-    } else if (counts.supp || counts.med) {
+    var subText = '口粮 ' + Utils.formatQuantity(counts.food, '款');
+    if (counts.supp || counts.med) {
       subText += ' · 营养/药护 ' + Utils.formatQuantity(counts.supp + counts.med, '款');
     }
     subText += ' · ' + Utils.formatQuantity(brandTotal, '个品牌');
@@ -159,10 +157,10 @@
     }).sort(function (a, b) { return Number(b.quantity > 0) - Number(a.quantity > 0); });
     var html = '<option value="">-- 手动填写或选择商品批次 --</option>';
     active.forEach(function (it) {
-      var ci = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
       var remSuffix = (it.isOpened && it.openRemainFraction > 0) ? (' · ' + Utils.formatRemainFractionText(it.openRemainFraction, it.unit, true)) : '';
       var isSel = (selectedItemId && it.id === selectedItemId) ? ' selected' : '';
-      html += '<option value="' + Utils.escapeHtml(it.id) + '"' + isSel + '>' + ci.icon + ' [' + Utils.escapeHtml(it.brand) + '] ' + Utils.escapeHtml(it.name) + '（' + (it.quantity > 0 ? '余' + Utils.escapeHtml(Utils.formatQuantity(it.quantity, it.unit)) + remSuffix : '已核销，可补记') + '）</option>';
+      var categoryLabel = MP.CATEGORIES[it.category]?.label || '其他';
+      html += '<option value="' + Utils.escapeHtml(it.id) + '"' + isSel + '>' + Utils.escapeHtml(categoryLabel) + ' · [' + Utils.escapeHtml(it.brand) + '] ' + Utils.escapeHtml(it.name) + '（' + (it.quantity > 0 ? '余' + Utils.escapeHtml(Utils.formatQuantity(it.quantity, it.unit)) + remSuffix : '已核销，可补记') + '）</option>';
     });
     sel.innerHTML = html;
   };
@@ -171,7 +169,12 @@
     var cat = document.getElementById('feedCategorySelect').value;
     var slot = document.getElementById('feedMealSlot').value;
     var box = document.getElementById('medNextReminderBox');
-    box.classList.toggle('hidden-view', !(cat === 'med' || slot === 'care'));
+    var fromReminder = document.getElementById('feedForm').dataset.reminderSourceId;
+    var editId = document.getElementById('feedLogEditId').value;
+    var editingReminder = editId && MP.state.logs.some(function (log) {
+      return log.id === editId && log.category === cat && log.nextDueDate;
+    });
+    box.classList.toggle('hidden-view', !(cat === 'med' || slot === 'care' || (cat === 'supp' && (fromReminder || editingReminder))));
   };
 
   UI.syncFeedSplitCanUI = function (target) {
@@ -259,33 +262,43 @@
     return Domain.findFlavor(item, document.getElementById('feedFlavorSelect').value);
   };
 
+  function syncFeedPalatability(item, flavor) {
+    var field = document.getElementById('feedFlavorPal');
+    if (!field.dataset.manual) {
+      field.value = (item?.flavors ? flavor?.palatability : item?.palatability) || '';
+    }
+  }
+
   UI.syncFeedFlavor = function (item, historical) {
     var wrap = document.getElementById('feedFlavorFields');
     var select = document.getElementById('feedFlavorSelect');
     var hasFlavor = Boolean(historical && historical.flavorId || item && item.flavors);
     wrap.classList.toggle('hidden-view', !hasFlavor);
     select.disabled = Boolean(historical);
-    document.getElementById('feedFlavorPal').disabled = Boolean(historical);
     document.getElementById('openFlavorBtn').disabled = Boolean(historical);
     document.getElementById('discardFlavorBtn').disabled = Boolean(historical);
     select.innerHTML = '<option value="">请选择口味</option>';
+    if (historical) {
+      var palField = document.getElementById('feedFlavorPal');
+      palField.value = historical.flavorPalatability || '';
+      palField.dataset.manual = '1';
+    }
     if (historical && hasFlavor) {
       select.add(new Option(historical.flavorName, historical.flavorId, true, true));
-      document.getElementById('feedFlavorPal').value = historical.flavorPalatability || '';
       document.getElementById('feedFlavorHint').textContent = '历史口味与库存流水关联';
     } else if (hasFlavor) {
       item.flavors.forEach(function (f) {
         select.add(new Option(f.name + ' · 余' + Utils.formatQuantity(f.quantity, item.unit), f.id));
       });
       UI.updateFeedFlavor(item);
+    } else if (!historical) {
+      syncFeedPalatability(item, null);
     }
   };
 
   UI.updateFeedFlavor = function (item) {
     var flavor = UI.getFeedFlavor(item);
-    var pal = document.getElementById('feedFlavorPal');
-    pal.disabled = !flavor;
-    pal.value = flavor ? flavor.palatability : '';
+    syncFeedPalatability(item, flavor);
     document.getElementById('discardFlavorBtn').disabled = !MP.state.editMode || !flavor || flavor.quantity <= 0;
     var open = document.getElementById('openFlavorBtn');
     open.textContent = item && Domain.hasSharedSeal(item) ? '记录共用包装开封' : '记录该口味开封';
@@ -377,18 +390,35 @@
     select.value = id;
   }
 
-  UI.openFeedModal = function (itemId, customDate) {
+  UI.feedButtonContent = function (label) {
+    return '<svg class="btn-feed__icon" width="16" height="16" aria-hidden="true"><use href="#feed-paw"></use></svg><span>' + Utils.escapeHtml(label || '记喂食') + '</span>';
+  };
+
+  function setFeedReminderDays(days) {
+    var select = document.getElementById('feedNextReminderDays');
+    select.querySelectorAll('[data-legacy-interval]').forEach(function (option) { option.remove(); });
+    if (days > 0 && !Array.from(select.options).some(function (option) { return Number(option.value) === days; })) {
+      var option = new Option(days + '天后', days);
+      option.dataset.legacyInterval = '1';
+      select.add(option);
+    }
+    select.value = String(days || 0);
+  }
+
+  UI.openFeedModal = function (itemId, customDate, manualEntry) {
     document.getElementById('feedModalTitle').textContent = '🐾 记录饮食 / 营养 / 用药';
     document.getElementById('feedStockSelect').disabled = false;
     document.getElementById('feedLogEditId').value = '';
     document.getElementById('feedAmountInput').placeholder = '如 1/2、1/3、40g';
+    delete document.getElementById('feedFlavorPal').dataset.manual;
     UI.syncFeedFlavor(null);
     syncPortionChips(null);
     var dateToUse = customDate || (MP.state.activeTab === 'daily' ? MP.state.selectedLogDate : Utils.getTodayStr());
     document.getElementById('feedDateInput').value = dateToUse;
     selectMealSlot(Utils.getCurrentMealSlot());
     document.getElementById('feedDeductStock').checked = false;
-    document.getElementById('feedNextReminderDays').value = '0';
+    delete document.getElementById('feedForm').dataset.reminderSourceId;
+    setFeedReminderDays(0);
     document.getElementById('feedNoteInput').value = '';
     UI.populateFeedStockDropdown(itemId || '');
 
@@ -396,7 +426,7 @@
       UI.applyFeedStockSelection(itemId);
     } else {
       var firstOpened = MP.state.items.find(function (it) { return (Number(it.quantity) || 0) > 0 && it.isOpened; });
-      var firstActive = firstOpened || MP.state.items.find(function (it) { return (Number(it.quantity) || 0) > 0; });
+      var firstActive = !manualEntry && (firstOpened || MP.state.items.find(function (it) { return (Number(it.quantity) || 0) > 0; }));
       if (firstActive) {
         document.getElementById('feedStockSelect').value = firstActive.id;
         UI.applyFeedStockSelection(firstActive.id);
@@ -404,13 +434,29 @@
         document.getElementById('feedItemId').value = '';
         document.getElementById('feedBrandInput').value = '';
         document.getElementById('feedNameInput').value = '';
-        document.getElementById('feedAmountInput').value = '40g';
+        document.getElementById('feedAmountInput').value = manualEntry ? '' : '40g';
+        if (manualEntry) document.getElementById('feedCategorySelect').value = 'dry';
         UI.syncFeedSplitCanUI(null);
       }
     }
     UI.syncMedReminderVisibility();
     UI.syncAllDateDisplays();
     UI.showModal('feedModalBackdrop', 'feedStockSelect');
+  };
+
+  UI.openFeedFromReminder = function (log) {
+    var item = MP.state.items.find(function (batch) { return batch.id === log.itemId; });
+    UI.openFeedModal(item ? item.id : '', Utils.getTodayStr(), !item);
+    document.getElementById('feedForm').dataset.reminderSourceId = log.id;
+    document.getElementById('feedCategorySelect').value = log.category;
+    selectMealSlot(log.mealSlot);
+    if (!item) {
+      document.getElementById('feedBrandInput').value = log.brand;
+      document.getElementById('feedNameInput').value = log.name;
+    }
+    document.getElementById('feedAmountInput').value = log.amount || '';
+    setFeedReminderDays(log.reminderDays || Math.max(0, Utils.diffDaysBetween(log.date, log.nextDueDate)));
+    UI.syncMedReminderVisibility();
   };
 
   UI.openEditFeedModal = function (logId) {
@@ -431,7 +477,8 @@
     document.getElementById('feedNameInput').value = lg.name || '';
     document.getElementById('feedAmountInput').value = lg.amount || '';
     document.getElementById('feedNoteInput').value = lg.note || '';
-    document.getElementById('feedNextReminderDays').value = String(lg.reminderDays || 0);
+    delete document.getElementById('feedForm').dataset.reminderSourceId;
+    setFeedReminderDays(lg.reminderDays);
     document.getElementById('feedDeductStock').checked = false;
     document.getElementById('feedDeductBox').classList.add('hidden-view');
     UI.syncMedReminderVisibility();
@@ -524,7 +571,6 @@
 
     listEl.innerHTML = sliced.map(function (h) {
       var meta = MP.STOCK_ACTION_META[h.action] || MP.STOCK_ACTION_META.adjust;
-      var ci = MP.CATEGORIES[h.category] || MP.CATEGORIES.dry;
       return (
         '<div style="padding:10px 12px;border-radius:12px;background:#FAFAF9;border:1px solid #E7E5E4;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
           '<div style="min-width:0;flex:1;">' +
@@ -532,7 +578,7 @@
               '<span style="font-size:11px;font-weight:800;padding:1px 7px;border-radius:6px;background:' + meta.bg + ';color:' + meta.text + ';">' + meta.icon + ' ' + meta.label + '</span>' +
               '<span style="font-size:11px;color:#6B5A4C;">' + Utils.escapeHtml(h.timestamp) + '</span>' +
             '</div>' +
-            '<div style="font-size:13px;font-weight:800;color:#2B2320;">' + ci.icon + ' [' + Utils.escapeHtml(h.brand) + '] ' + Utils.escapeHtml(h.name) + '</div>' +
+            '<div style="font-size:13px;font-weight:800;color:#2B2320;">' + Utils.getCategoryIcon(h.category) + ' [' + Utils.escapeHtml(h.brand) + '] ' + Utils.escapeHtml(h.name) + '</div>' +
             (h.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">' + Utils.escapeHtml(h.note) + '</div>' : '') +
           '</div>' +
           '<div style="text-align:right;flex-shrink:0;">' +
@@ -773,26 +819,33 @@
     var bCoax = document.getElementById('palBtnCoax');
     var bMeh = document.getElementById('palBtnMeh');
     if (catKey === 'med') {
-      if (palTitle) palTitle.textContent = '🩺 给药反应与耐受度记录（选填）';
+      if (palTitle) palTitle.innerHTML = Utils.getCategoryIcon('med', 20) + ' 给药反应与耐受度记录（选填）';
       if (bLove) bLove.textContent = '无异常';
       if (bOk) bOk.textContent = '好喂';
       if (bCoax) bCoax.textContent = '抗拒';
       if (bMeh) bMeh.textContent = '不适';
     } else if (catKey === 'supp') {
-      if (palTitle) palTitle.textContent = '💊 营养品接受度反馈（选填）';
-      if (bLove) bLove.textContent = '主动吃';
-      if (bOk) bOk.textContent = '拌粮吃';
-      if (bCoax) bCoax.textContent = '需哄喂';
-      if (bMeh) bMeh.textContent = '拒食';
+      if (palTitle) palTitle.innerHTML = Utils.getCategoryIcon('supp', 20) + ' 营养品接受度反馈（选填）';
+      if (bLove) bLove.innerHTML = Utils.getPalatabilityIcon('love') + ' 主动吃';
+      if (bOk) bOk.innerHTML = Utils.getPalatabilityIcon('ok') + ' 拌粮吃';
+      if (bCoax) bCoax.innerHTML = Utils.getPalatabilityIcon('coax') + ' 需哄喂';
+      if (bMeh) bMeh.innerHTML = Utils.getPalatabilityIcon('meh') + ' 拒食';
     } else {
       if (palTitle) palTitle.textContent = '猫咪适口性（选填）';
-      if (bLove) bLove.textContent = '超爱';
-      if (bOk) bOk.textContent = '正常';
-      if (bCoax) bCoax.textContent = '需哄';
-      if (bMeh) bMeh.textContent = '不吃';
+      if (bLove) bLove.innerHTML = Utils.getPalatabilityIcon('love') + ' 超爱';
+      if (bOk) bOk.innerHTML = Utils.getPalatabilityIcon('ok') + ' 正常';
+      if (bCoax) bCoax.innerHTML = Utils.getPalatabilityIcon('coax') + ' 需哄';
+      if (bMeh) bMeh.innerHTML = Utils.getPalatabilityIcon('meh') + ' 不吃';
     }
+    document.querySelectorAll('#flavorRows [data-flavor-pal] option[value]:not([value=""])').forEach(function (option) {
+      option.textContent = flavorRatingLabel(catKey, option.value);
+    });
     UI.syncModalUnitPriceHint();
   };
+
+  function flavorRatingLabel(category, key) {
+    return MP.getPalatabilityBadgeInfo({ category: category, palatability: key }).label.replace(/^\S+\s+/, '');
+  }
 
   var flavorRowSequence = 0;
   var flavorColors = ['#C6633B', '#39866F', '#B7873F', '#8C779D', '#577E9A'];
@@ -833,6 +886,7 @@
       (editing ? (opened && !locked ? '<button type="button" data-flavor-open aria-expanded="false">已开封</button>' : '') :
         '<button type="button" data-remove-flavor aria-label="删除口味">×</button>') +
       (editing ? '<small class="flavor-ratio">原始配比：每包装 ' + entry.perPack + '</small>' : '') +
+      '<label class="flavor-rating-field">适口性<select class="ios-input" data-flavor-pal></select></label>' +
       '<small data-flavor-changed class="hidden-view"></small>' +
       (opened && editing && !locked ? '<label data-flavor-open-panel class="hidden-view">已开封单件余量（%，填0表示移除该件）' +
         '<input class="ios-input" type="number" min="0" max="100" step="0.01" inputmode="decimal" data-flavor-percent></label>' : '');
@@ -840,6 +894,12 @@
     row.querySelector('[data-flavor-name]').readOnly = Boolean(editing);
     UI.setFlavorNameEditing(row, !entry.name && !editing);
     row.querySelector('[data-flavor-count]').value = initial;
+    var rating = row.querySelector('[data-flavor-pal]');
+    rating.add(new Option('未评价', ''));
+    Object.keys(MP.PALATABILITY).forEach(function (key) {
+      rating.add(new Option(flavorRatingLabel(MP.state.formCat, key), key));
+    });
+    rating.value = entry.palatability || '';
     var percentField = row.querySelector('[data-flavor-percent]');
     if (percentField) percentField.value = percent;
     if (locked) row.querySelectorAll('button').forEach(function (button) { button.disabled = true; });
@@ -866,8 +926,18 @@
     return flavorRows().map(function (row) {
       var quantity = Number(row.querySelector('[data-flavor-count]').value);
       return { id: row.dataset.flavorId, name: row.querySelector('[data-flavor-name]').value,
-        perPack: quantity / pack.count, quantity: quantity, spec: row.dataset.legacySpec };
+        perPack: quantity / pack.count, quantity: quantity, spec: row.dataset.legacySpec,
+        palatability: row.querySelector('[data-flavor-pal]').value };
     }).filter(function (row) { return row.quantity > 0; });
+  };
+
+  UI.readEditedFlavorRatings = function (flavors) {
+    var ratings = new Map(flavorRows().map(function (row) {
+      return [row.dataset.flavorId, row.querySelector('[data-flavor-pal]').value];
+    }));
+    return flavors.map(function (flavor) {
+      return Object.assign({}, flavor, { palatability: ratings.get(flavor.id) ?? flavor.palatability });
+    });
   };
 
   function flavorDraft(row) {
@@ -941,6 +1011,7 @@
       button.setAttribute('aria-pressed', String(button.dataset.seal === document.getElementById('fieldPackSeal').value));
     });
     document.getElementById('flavorFields').classList.toggle('hidden-view', !enabled);
+    document.getElementById('palatabilityGroup').parentElement.classList.toggle('hidden-view', enabled);
     document.getElementById('flavorQuickActions').classList.toggle('hidden-view', editing);
     var pack = UI.readPurchasePackaging();
     var message = '';

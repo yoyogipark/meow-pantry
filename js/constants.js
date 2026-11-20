@@ -26,18 +26,18 @@
 
   // Explicit `group` property cleanly separates ordinary food, supplements, and medicine!
   MP.CATEGORIES = {
-    dry:    { label: '猫粮',   icon: '🥣', group: 'food', defaultUnit: '袋', defaultOpenDays: 45, defaultShelfMonths: 18 },
-    can:    { label: '湿粮',   icon: '🥫', group: 'food', defaultUnit: '罐', defaultOpenDays: 3,  defaultShelfMonths: 24 },
-    freeze: { label: '冻干',   icon: '🍗', group: 'food', defaultUnit: '包', defaultOpenDays: 60, defaultShelfMonths: 18 },
-    treat:  { label: '零食',   icon: '🍮', group: 'food', defaultUnit: '盒', defaultOpenDays: 14, defaultShelfMonths: 18 },
-    supp:   { label: '营养品', icon: '💊', group: 'supp', defaultUnit: '瓶', defaultOpenDays: 90, defaultShelfMonths: 24 },
-    med:    { label: '药品',   icon: '🩺', group: 'med',  defaultUnit: '支', defaultOpenDays: 30, defaultShelfMonths: 36 }
+    dry:    { label: '猫粮',   group: 'food', defaultUnit: '袋', defaultOpenDays: 45, defaultShelfMonths: 18 },
+    can:    { label: '湿粮',   group: 'food', defaultUnit: '罐', defaultOpenDays: 3,  defaultShelfMonths: 24 },
+    freeze: { label: '冻干',   group: 'food', defaultUnit: '包', defaultOpenDays: 60, defaultShelfMonths: 18 },
+    treat:  { label: '零食',   group: 'food', defaultUnit: '盒', defaultOpenDays: 14, defaultShelfMonths: 18 },
+    supp:   { label: '营养品', group: 'supp', defaultUnit: '瓶', defaultOpenDays: 90, defaultShelfMonths: 24 },
+    med:    { label: '药品',   group: 'med',  defaultUnit: '支', defaultOpenDays: 30, defaultShelfMonths: 36 }
   };
 
   MP.CATEGORY_GROUPS = {
-    food: { key: 'food', label: '普通食品', icon: '🍽️', cats: ['dry', 'can', 'freeze', 'treat'] },
-    supp: { key: 'supp', label: '营养品',   icon: '💊', cats: ['supp'] },
-    med:  { key: 'med',  label: '药品护理', icon: '🩺', cats: ['med'] }
+    food: { key: 'food', label: '普通食品', cats: ['dry', 'can', 'freeze', 'treat'] },
+    supp: { key: 'supp', label: '营养品',   cats: ['supp'] },
+    med:  { key: 'med',  label: '药品护理', cats: ['med'] }
   };
 
   MP.CURRENCIES = {
@@ -86,12 +86,23 @@
     return MP.getCategoryGroup(catKey) === 'food';
   };
 
+  MP.getItemPalatability = function (item) {
+    if (!item) return '';
+    if (!item.flavors?.length) return item.palatability || '';
+    var first = item.flavors[0].palatability || '';
+    return item.flavors.every(function (flavor) { return (flavor.palatability || '') === first; })
+      ? first : 'mixed';
+  };
+
   MP.getPalatabilityBadgeInfo = function (item) {
-    if (!item || !item.palatability || !MP.PALATABILITY[item.palatability]) return null;
-    var p = MP.PALATABILITY[item.palatability];
+    var key = MP.getItemPalatability(item);
+    if (key === 'mixed') return { key: key, label: '口味分化', bg: 'var(--status-neutral-bg)', text: 'var(--status-neutral-text)' };
+    if (!Object.hasOwn(MP.PALATABILITY, key)) return null;
+    var p = MP.PALATABILITY[key];
     var grp = MP.getCategoryGroup(item.category);
     var lbl = grp === 'med' ? p.medLabel : (grp === 'supp' ? p.suppLabel : p.label);
     return {
+      key: key,
       label: lbl,
       bg: p.bg,
       text: p.text

@@ -81,6 +81,11 @@ async function run() {
     state.selectedLogDate = log.date;
     ui.renderDailyView();
     w.document.querySelector('[data-del-log="' + log.id + '"]').click();
+    assert.ok(el('confirmModalBackdrop').classList.contains('confirm-delete-log'));
+    assert.equal(el('confirmTitle').textContent, '删除这条记录？');
+    assert.equal(el('confirmOkBtn').textContent, '删除');
+    assert.ok(el('deleteLogAmount').textContent);
+    assert.equal(el('confirmExtraCheckbox').checked, Boolean(log.itemId && (log.flavorChange || log.deductedUnit || log.deductedFrac)));
     el('confirmOkBtn').click();
   }
 
@@ -643,7 +648,7 @@ async function run() {
   assert.match(packagedCard.textContent, /3\.50元\/杯 · 14\.00元\/盒（4杯）/);
   assert.ok(Array.from(packagedCard.querySelectorAll('.detail-card-line')).some(
     line => line.textContent === '拼多多 · 购入 1盒装，共4杯'));
-  assert.match(packagedCard.querySelector('.flavor-stock').textContent, /剩余：草莓鸡 1 · 蓝莓兔 0/);
+  assert.match(packagedCard.querySelector('.flavor-stock').textContent, /剩余：草莓鸡 1 未评价 · 蓝莓兔 0 未评价/);
   assert.equal(packagedCard.querySelector('s.flavor-stock-finished').textContent, '蓝莓兔 0');
 
   const archived = make('archive-balance', 0, '杯', { name: '同款测试', consumedCount: 2 });
@@ -765,6 +770,23 @@ async function run() {
   assert.equal(month.open, true);
   assert.match(month.querySelector('.feeding-month-products').textContent, /同月到期商品/);
   state.items.pop();
+  const beforeTimelineExamples = state.items;
+  state.items = [
+    make('timeline-medicine', 1, '支', { category: 'med', brand: '大宠爱', name: '外驱', expDate: utils.shiftDaysFromToday(20) }),
+    make('timeline-future', 1, '杯', { expDate: utils.shiftDaysFromToday(547) }),
+    make('timeline-past', 1, '杯', { expDate: utils.shiftDaysFromToday(-90) })
+  ];
+  ui.renderAll();
+  assert.equal(el('medStockWatchBox'), null);
+  assert.equal(timeline.querySelector('.feeding-month.forecast-result--low .feeding-timeline-med-tag').textContent, '药品');
+  assert.match(timeline.querySelector('.feeding-month.forecast-result--low .priority-name').textContent, /大宠爱 外驱/);
+  assert.match(timeline.querySelector('.feeding-month.forecast-result--enough .forecast-days').textContent, /547天/);
+  assert.match(timeline.querySelector('.feeding-month.forecast-result--urgent .forecast-days').textContent, /已过期/);
+  const snackTile = el('categoryStatsGrid').querySelector('.forecast-tile--treat');
+  assert.equal(snackTile.classList.contains('forecast-wide'), false);
+  assert.ok(snackTile.nextElementSibling.classList.contains('forecast-tile--med'));
+  state.items = beforeTimelineExamples;
+  ui.renderAll();
   el('stockHealthBox').querySelector('[data-jump-health="expiring_or_opened"]').click();
   assert.equal(state.activeTab, 'pantry');
   assert.equal(state.pantryHealthFilter, 'expiring_or_opened');
@@ -1024,10 +1046,10 @@ async function run() {
   assert.equal(w.document.querySelectorAll('.status-card.selected').length, 0);
   assert.equal(el('pantryList').querySelectorAll('.archive-card').length, 1);
   assert.equal(el('pantryStatusHint').classList.contains('hidden-view'), true);
-  assert.equal(el('categoryBar').querySelector('[data-cat="can"]').textContent, '🥫 湿粮 3');
+  assert.equal(el('categoryBar').querySelector('[data-cat="can"]').textContent.trim(), '湿粮 3');
   el('statCardExpiring').click();
-  assert.equal(el('categoryBar').querySelector('[data-cat="can"]').textContent, '🥫 湿粮 1');
-  assert.equal(el('categoryBar').querySelector('[data-cat="dry"]').textContent, '🥣 猫粮 0');
+  assert.equal(el('categoryBar').querySelector('[data-cat="can"]').textContent.trim(), '湿粮 1');
+  assert.equal(el('categoryBar').querySelector('[data-cat="dry"]').textContent.trim(), '猫粮 0');
   el('statCardExpired').click();
   assert.match(el('pantryList').textContent, /鸡肉丙/);
   assert.doesNotMatch(el('pantryList').textContent, /鸡肉甲|鸡肉乙/);
@@ -1177,8 +1199,9 @@ async function run() {
   reset(dailyWet);
   state.settings.dailyFeedGrams = { dry: 30, freeze: null, can: 20 };
   const log = (id, properties) => domain.sanitizeLog({ id, date: today, ...properties });
+  const nextReminderYear = Number(today.slice(0, 4)) + 1;
   state.logs = [
-    log('daily-med', { category: 'med', brand: '大宠爱', name: '外驱', amount: '1 支', nextDueDate: '2027-05-19' }),
+    log('daily-med', { category: 'med', brand: '大宠爱', name: '外驱', amount: '1 支', nextDueDate: nextReminderYear + '-05-19' }),
     log('daily-food-late', { category: 'dry', name: '午后猫粮', amount: '22g', time: '14:00' }),
     log('daily-food-early', { category: 'dry', name: '上午猫粮', amount: '19g', time: '09:00' }),
     log('daily-fraction', { itemId: dailyWet.id, category: 'can', mealSlot: '🍪 加餐/零食', amount: '1/4罐' }),
@@ -1208,7 +1231,7 @@ async function run() {
   assert.match(el('dailyFeedTimeline').textContent, /1\/4罐· 约21克/);
   assert.deepEqual(Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-card-title'), node => node.textContent),
     ['上午猫粮', '午后猫粮', '零食', '测试牌 鸡肉湿粮', '大宠爱 外驱']);
-  assert.match(el('dailyFeedTimeline').querySelector('.daily-reminder').textContent, /2027-05-19/);
+  assert.equal(el('dailyFeedTimeline').querySelector('.daily-reminder').textContent, '下次用药 ' + nextReminderYear + '年5月19日');
   el('dailyPrevWeek').click();
   assert.ok(!el('dailyPastWeek').classList.contains('hidden-view'));
   assert.ok(!el('dailyNextWeek').disabled);
@@ -1242,6 +1265,63 @@ async function run() {
   assert.match(el('dailyTotals').textContent, /设置每日喂食量，查看每日对比/);
   console.log('Daily week, portions, care and history navigation pass');
 
+  const medItem = make('reminder-med', 1, '支', { category: 'med', brand: '大宠爱', name: '外驱' });
+  reset(medItem);
+  const medLog = (id, properties) => log(id, {
+    category: 'med', brand: medItem.brand, name: medItem.name, subtype: '外驱', mealSlot: 'care',
+    itemId: medItem.id, amount: '1支', date: yesterday, reminderDays: 30, ...properties
+  });
+  const oldDue = medLog('older-reminder', { date: utils.shiftDaysFromToday(-8), nextDueDate: yesterday });
+  const upcoming = medLog('upcoming-reminder', { nextDueDate: utils.shiftDaysFromToday(7) });
+  const other = log('other-reminder', {
+    category: 'supp', brand: '营养品牌', name: '补充剂', amount: '1支', nextDueDate: yesterday, reminderDays: 30
+  });
+  state.logs = [upcoming, oldDue];
+  ui.switchTab('daily');
+  ui.renderAll();
+  assert.equal(el('dailyMedReminders').querySelectorAll('.med-reminder-card').length, 1);
+  assert.match(el('dailyMedReminders').textContent, /大宠爱 外驱还有 7 天/);
+  assert.ok(el('dailyMedReminders').querySelector('[data-reminder-tone="warning"]'));
+  assert.ok(el('pantryOverdueMedReminder').classList.contains('hidden-view'));
+  assert.ok(!el('dailyMedReminderDot').classList.contains('hidden-view'));
+
+  state.logs.unshift(other);
+  ui.renderAll();
+  assert.ok(el('dailyMedReminders').querySelector('details[data-reminder-tone="danger"]'));
+  assert.match(el('dailyMedReminders').querySelector('summary').textContent, /2 项用药提醒/);
+  assert.match(el('pantryOverdueMedReminder').textContent, /1 项用药已过期/);
+  ui.switchTab('pantry');
+  el('pantryOverdueMedReminder').click();
+  assert.equal(state.activeTab, 'daily');
+  el('dailyMedReminders').querySelector('summary').click();
+  assert.ok(el('dailyMedReminders').querySelector('details').open);
+  el('dailyMedReminders').querySelector('[data-record-reminder="upcoming-reminder"]').click();
+  assert.equal(el('feedItemId').value, medItem.id);
+  assert.equal(el('feedDateInput').value, today);
+  assert.equal(el('feedNextReminderDays').value, '30');
+  el('feedForm').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  assert.equal(state.logs[0].subtype, '外驱');
+  assert.equal(state.logs[0].nextDueDate, utils.shiftDaysFromToday(30));
+  assert.ok(!el('dailyMedReminders').querySelector('[data-record-reminder="upcoming-reminder"]'));
+  assert.match(el('dailyFeedTimeline').textContent, /驱虫 · 外驱/);
+  assert.match(el('dailyFeedTimeline').textContent, /下次补充.*已过期 1 天/);
+  el('dailyMedReminders').querySelector('[data-record-reminder="other-reminder"]').click();
+  assert.equal(el('feedItemId').value, '');
+  assert.equal(el('feedNameInput').value, '补充剂');
+  el('feedForm').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  assert.equal(state.logs[0].category, 'supp');
+  assert.equal(state.logs[0].nextDueDate, utils.shiftDaysFromToday(30));
+  assert.ok(el('dailyMedReminders').classList.contains('hidden-view'));
+  assert.ok(el('dailyMedReminderDot').classList.contains('hidden-view'));
+  assert.ok(el('pantryOverdueMedReminder').classList.contains('hidden-view'));
+  state.logs = [medLog('latest-without-reminder', { date: today }), oldDue,
+    log('legacy-completed', { category: 'med', name: '旧药品', nextDueDate: yesterday, reminderDone: true })];
+  ui.renderAll();
+  assert.ok(el('dailyMedReminders').classList.contains('hidden-view'));
+  assert.equal(utils.formatRelativeYearDate('2026-12-20', '2026-11-20'), '12月20日');
+  assert.equal(utils.formatRelativeYearDate('2027-05-19', '2026-11-20'), '2027年5月19日');
+
+
   ui.switchTab('pantry');
   assert.ok(el('openAddModalBtn').classList.contains('ios-btn-primary'));
   for (const tab of ['daily', 'stats', 'settings']) {
@@ -1260,13 +1340,22 @@ async function run() {
   ui.renderSettingsView();
   assert.equal(el('backupNoticeDot').textContent, '99+');
   assert.equal(el('backupStatusTitle').textContent, '101 项未备份');
+  assert.equal(el('unbackedBannerText').textContent, '101 项改动未备份');
+  el('dismissBackupBannerBtn').click();
+  ui.renderSettingsView();
+  assert.ok(el('unbackedBanner').classList.contains('hidden-view'));
+  state.settings.unsavedChangesCount = 102;
+  ui.renderSettingsView();
+  assert.ok(!el('unbackedBanner').classList.contains('hidden-view'));
+  state.settings.unsavedChangesCount = 101;
+
   const originalDownload = storage.triggerFileDownload;
   storage.triggerFileDownload = () => false;
   el('settingsBackupNowBtn').click();
   assert.equal(state.settings.unsavedChangesCount, 101);
   assert.match(el('toastEl').textContent, /未能发起 JSON 导出/);
   storage.triggerFileDownload = () => true;
-  el('settingsBackupNowBtn').click();
+  el('quickBackupNowBtn').click();
   assert.equal(state.settings.unsavedChangesCount, 0);
   assert.ok(el('backupNoticeDot').classList.contains('hidden-view'));
   assert.equal(el('backupStatusTitle').textContent, '已是最新备份');
@@ -1306,6 +1395,69 @@ async function run() {
   await persisted(s => assert.equal(s.settings.dailyFeedGrams.dry, 57));
 
 
+
+  const rated = make('pal-rated', 2, '袋', { category: 'dry', palatability: 'love' });
+  const unrated = make('pal-unrated', 1);
+  const legacyMix = mixed();
+  legacyMix.palatability = 'ok';
+  const commonMix = domain.sanitizeItem(legacyMix);
+  assert.equal(w.MeowPantry.getPalatabilityBadgeInfo(commonMix).key, 'ok');
+  assert.ok(!Object.hasOwn(commonMix, 'palatability'));
+  legacyMix.flavors[0].palatability = 'coax';
+  const ratedMix = domain.sanitizeItem(legacyMix);
+  assert.equal(w.MeowPantry.getPalatabilityBadgeInfo(ratedMix).label, '口味分化');
+  assert.deepEqual(Array.from(ratedMix.flavors, flavor => flavor.palatability), ['coax', 'ok']);
+  reset(rated, unrated, ratedMix);
+  ui.openFeedModal(rated.id, today);
+  assert.equal(el('feedFlavorPal').value, 'love');
+  set('feedStockSelect', unrated.id);
+  assert.equal(el('feedFlavorPal').value, '');
+  set('feedStockSelect', ratedMix.id);
+  assert.equal(el('feedFlavorPal').value, '');
+  set('feedFlavorSelect', 'chicken');
+  assert.equal(el('feedFlavorPal').value, 'coax');
+  set('feedFlavorSelect', 'fish');
+  assert.equal(el('feedFlavorPal').value, 'ok');
+  set('feedFlavorPal', 'meh');
+  set('feedFlavorSelect', 'chicken');
+  assert.equal(el('feedFlavorPal').value, 'meh');
+  set('feedStockSelect', rated.id);
+  assert.equal(el('feedFlavorPal').value, 'meh');
+  el('feedForm').requestSubmit();
+  assert.equal(state.logs[0].flavorPalatability, 'meh');
+  assert.equal(byId(rated.id).palatability, 'love');
+  ui.openFeedModal(ratedMix.id, today);
+  set('feedFlavorSelect', 'chicken');
+  set('feedFlavorPal', 'meh');
+  set('feedAmountInput', '1' + ratedMix.unit);
+  el('feedDeductStock').click();
+  el('feedForm').requestSubmit();
+  const mixLog = state.logs.find(log => log.itemId === ratedMix.id);
+  assert.equal(mixLog.flavorPalatability, 'meh');
+  assert.equal(mixLog.deductedUnit, 1);
+  assert.ok(!Object.hasOwn(byId(ratedMix.id), 'palatability'));
+  assert.equal(byId(ratedMix.id).flavors[0].palatability, 'coax');
+  ui.openFeedModal('', today, true);
+  assert.equal(el('feedFlavorPal').value, '');
+  ui.closeFeedModal();
+
+  ui.openEditModal(ratedMix.id);
+  const ratings = w.document.querySelectorAll('#flavorRows [data-flavor-pal]');
+  assert.deepEqual(Array.from(ratings, field => field.value), ['coax', 'ok']);
+  ratings[0].value = 'ok';
+  el('itemForm').requestSubmit();
+  assert.equal(w.MeowPantry.getPalatabilityBadgeInfo(byId(ratedMix.id)).key, 'ok');
+  ui.openEditModal(ratedMix.id);
+  w.document.querySelector('#flavorRows [data-flavor-pal]').value = '';
+  el('itemForm').requestSubmit();
+  assert.equal(byId(ratedMix.id).flavors[0].palatability, '');
+  assert.equal(w.MeowPantry.getPalatabilityBadgeInfo(byId(ratedMix.id)).label, '口味分化');
+  assert.ok(await save());
+  await persisted(s => {
+    const item = s.items.find(item => item.id === ratedMix.id);
+    assert.ok(!Object.hasOwn(item, 'palatability'));
+    assert.deepEqual(Array.from(item.flavors, flavor => flavor.palatability), ['', 'ok']);
+  });
 
   reset(make('older-snapshot', 1));
   assert.ok(await new Promise(resolve => storage.savePreRestoreSnapshot(resolve)));

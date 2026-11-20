@@ -76,4 +76,12 @@ assert.equal(Utils.formatItemSpec(weightBackup.items[0]), '1.8kg');
 assert.equal(Utils.formatItemSpec(weightBackup.items[3]), '15g · 独立包装');
 assert.equal(Utils.formatPer100gPrice(36, 'CNY', 1800), '≈2.00元/100g');
 
+const categoryIcons = ['dry', 'can', 'freeze', 'treat', 'supp', 'med', 'other'];
+assert.equal(new Set(categoryIcons.map(key => Utils.getCategoryIcon(key))).size, categoryIcons.length);
+for (const unknown of [undefined, '', 'wet-food', '罐头', 'constructor']) {
+  assert.equal(Utils.getCategoryIcon(unknown), Utils.getCategoryIcon('other'));
+}
+assert.match(Utils.getCategoryIcon('dry', 20), /width="20" height="20".*stroke-width="2"/);
+assert.match(Utils.getCategoryIcon('can'), /width="28" height="28"/);
+
 console.log('Utility date, escaping, and backup validation pass');
