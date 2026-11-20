@@ -11,8 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=113">
-  <link rel="stylesheet" href="./css/styles.css?v=113">
+  <link rel="stylesheet" href="./css/tokens.css?v=119">
+  <link rel="stylesheet" href="./css/styles.css?v=119">
 </head>
 <body>
 
@@ -442,26 +442,26 @@
           <h2 id="settingsPreferencesTitle" class="settings-card-title">偏好设置</h2>
           <div class="settings-preferences-card">
           <section id="dailyFeedSettings" class="settings-preference daily-feed-settings">
-            <div class="daily-feed-heading"><h3 class="settings-card-title">每日喂食量</h3><span>用于预测还能吃几天</span></div>
+            <div class="daily-feed-heading"><h3 class="settings-card-title">每日喂食量</h3></div>
             <div class="daily-feed-grid">
               <div class="daily-feed-field">
                 <label for="dailyFeedDry">猫粮</label>
                 <div class="daily-feed-input">
-                  <input id="dailyFeedDry" data-daily-feed="dry" aria-describedby="dailyFeedUnitDry" class="ios-input" type="number" min="0" step="any" inputmode="numeric" placeholder="0">
+                  <input id="dailyFeedDry" data-daily-feed="dry" aria-describedby="dailyFeedUnitDry" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
                   <span id="dailyFeedUnitDry" aria-label="克/天">g</span>
                 </div>
               </div>
               <div class="daily-feed-field">
                 <label for="dailyFeedFreeze">冻干</label>
                 <div class="daily-feed-input">
-                  <input id="dailyFeedFreeze" data-daily-feed="freeze" aria-describedby="dailyFeedUnitFreeze" class="ios-input" type="number" min="0" step="any" inputmode="numeric" placeholder="0">
+                  <input id="dailyFeedFreeze" data-daily-feed="freeze" aria-describedby="dailyFeedUnitFreeze" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
                   <span id="dailyFeedUnitFreeze" aria-label="克/天">g</span>
                 </div>
               </div>
               <div class="daily-feed-field">
                 <label for="dailyFeedCan">湿粮</label>
                 <div class="daily-feed-input">
-                  <input id="dailyFeedCan" data-daily-feed="can" aria-describedby="dailyFeedUnitCan" class="ios-input" type="number" min="0" step="any" inputmode="numeric" placeholder="0">
+                  <input id="dailyFeedCan" data-daily-feed="can" aria-describedby="dailyFeedUnitCan" class="ios-input" type="text" inputmode="numeric" pattern="[0-9]+" autocomplete="off">
                   <span id="dailyFeedUnitCan" aria-label="克/天">g</span>
                 </div>
               </div>
@@ -472,7 +472,6 @@
 
           <div class="settings-preference settings-preference-row">
             <h3 class="settings-card-title"><svg class="settings-icon " data-lucide="clock" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>临期预警</span></h3>
-            <p class="settings-card-description">包装按所选天数预警，开封保鲜期最多提前10天预警。</p>
             <div id="warnDaysGroup" class="settings-options" role="group" aria-label="临期预警">
               <button type="button" data-warn-days="30" class="ios-btn ios-btn-secondary">30天</button>
               <button type="button" data-warn-days="60" class="ios-btn ios-btn-secondary">60天</button>
@@ -482,10 +481,9 @@
           </div>
           <div class="settings-preference settings-preference-row">
             <h3 class="settings-card-title"><svg class="settings-icon " data-lucide="coins" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6"/><path d="M16 9a6 6 0 1 1-7 7"/></svg><span>默认币种</span></h3>
-            <p class="settings-card-description">录入时仍可切换币种，金额分开统计。</p>
             <div id="defaultCurrencyGroup" class="settings-options" role="group" aria-label="默认币种">
-              <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-primary">人民币 ¥</button>
-              <button type="button" data-def-currency="JPY" class="ios-btn ios-btn-secondary">日元 JP¥</button>
+              <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-primary">人民币（元）</button>
+              <button type="button" data-def-currency="JPY" class="ios-btn ios-btn-secondary">日元（円）</button>
             </div>
           </div>
           </div>
@@ -1021,18 +1019,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=113"></script>
-  <script src="./js/constants.js?v=113"></script>
-  <script src="./js/utils.js?v=113"></script>
-  <script src="./js/forecast.js?v=113"></script>
-  <script src="./js/domain.js?v=113"></script>
-  <script src="./js/storage.js?v=113"></script>
-  <script src="./js/stats.js?v=113"></script>
-  <script src="./js/modal.js?v=113"></script>
-  <script src="./js/ui.js?v=113"></script>
-  <script src="./js/ui-pantry.js?v=113"></script>
-  <script src="./js/ui-daily.js?v=113"></script>
-  <script src="./js/ui-settings.js?v=113"></script>
-  <script src="./js/app.js?v=113"></script>
+  <script src="./js/covers.js?v=119"></script>
+  <script src="./js/constants.js?v=119"></script>
+  <script src="./js/utils.js?v=119"></script>
+  <script src="./js/forecast.js?v=119"></script>
+  <script src="./js/domain.js?v=119"></script>
+  <script src="./js/storage.js?v=119"></script>
+  <script src="./js/stats.js?v=119"></script>
+  <script src="./js/modal.js?v=119"></script>
+  <script src="./js/ui.js?v=119"></script>
+  <script src="./js/ui-pantry.js?v=119"></script>
+  <script src="./js/ui-daily.js?v=119"></script>
+  <script src="./js/ui-settings.js?v=119"></script>
+  <script src="./js/app.js?v=119"></script>
 </body>
 </html>

@@ -2400,41 +2400,6 @@ body:has(#viewSettings:not(.hidden-view)) .backup-notice-dot { background: var(-
 #viewSettings .settings-export-grid button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #viewSettings #settingsOpenHistoryBtn::after { content: none; }
 #viewSettings .settings-chevron { margin-inline-start: auto; }
-#viewSettings .settings-preferences-card {
-  display: grid;
-  gap: var(--card-gap);
-  padding: var(--card-gap);
-  border: var(--border-default-width) solid var(--border-warm);
-  border-radius: var(--radius-card);
-}
-#viewSettings .daily-feed-grid { gap: 4px; }
-#viewSettings .daily-feed-field {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 3px;
-  padding: 3px 4px;
-}
-#viewSettings .daily-feed-field label { margin: 0; font-size: var(--font-caption); }
-#viewSettings .daily-feed-input {
-  display: grid;
-  grid-template-columns: minmax(0, var(--settings-number-width)) auto;
-  align-items: center;
-  gap: 3px;
-}
-#viewSettings .daily-feed-input .ios-input {
-  padding-inline: 2px;
-  color: var(--text-main);
-  font-size: var(--font-body);
-  font-weight: var(--weight-medium);
-}
-#viewSettings .daily-feed-input span { position: static; transform: none; }
-#viewSettings .settings-options .ios-btn { padding-inline: 0; gap: 2px; font-size: var(--font-support); }
-#viewSettings .settings-options .ios-btn-primary::before { content: "✓"; }
-#viewSettings .daily-feed-heading span,
-#viewSettings .daily-feed-settings p,
-#viewSettings .settings-card-description,
-#viewSettings .daily-feed-input span { color: var(--text-support); }
 #viewSettings #settingsWeightAlert,
 #viewSettings #settingsWeightAlert .forecast-missing {
   background: var(--warn-soft);
@@ -2447,12 +2412,11 @@ body:has(#viewSettings:not(.hidden-view)) .backup-notice-dot { background: var(-
 }
 
 @media (max-height: 760px) {
-  #viewSettings .settings-panel, #viewSettings .settings-preferences-card { gap: 6px; padding: 6px; }
+  #viewSettings .settings-panel { gap: 6px; padding: 6px; }
   #viewSettings .settings-section, #viewSettings .settings-export-grid { gap: 4px; }
   #viewSettings .daily-feed-heading > span { display: none; }
   #viewSettings .backup-status-card { gap: 4px; padding: 5px 8px; }
   #viewSettings .settings-snapshot { padding-top: 0; }
-  #viewSettings .daily-feed-field { padding-block: 2px; }
 }
 
 html:has(#viewSettings:not(.hidden-view)) { background: var(--bg-cream); }
@@ -2476,5 +2440,120 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+#viewSettings .settings-section[aria-labelledby="settingsPreferencesTitle"] { gap: 8px; }
+#viewSettings #settingsPreferencesTitle,
+#viewSettings .settings-preferences-card h3.settings-card-title {
+  font-size: var(--font-card-title);
+  font-weight: var(--weight-medium);
+}
+#viewSettings .settings-preferences-card {
+  --pref-card: #FBF8F4;
+  --pref-border: #EADFCF;
+  --pref-divider: #EFE4D5;
+  --pref-title: #3B2A20;
+  --pref-label: #8A7466;
+  --pref-underline: #E3D3BF;
+  --pref-control: #F3E9DC;
+  --pref-option: #6B5648;
+  --pref-accent: #E8590C;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding-inline: 14px;
+  background: var(--pref-card);
+  border: 1px solid var(--pref-border);
+  border-radius: 16px;
+}
+#viewSettings .settings-preferences-card > .settings-preference {
+  padding-block: 14px;
+  border: 0;
+}
+#viewSettings .settings-preferences-card > .settings-preference + .settings-preference {
+  border-top: 1px solid var(--pref-divider);
+}
+#viewSettings .settings-preferences-card h3.settings-card-title { color: var(--pref-title); }
+#viewSettings #dailyFeedSettings .daily-feed-heading { margin-bottom: 11px; }
+#viewSettings #dailyFeedSettings .daily-feed-grid { gap: 14px; }
+#viewSettings #dailyFeedSettings .daily-feed-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  text-align: center;
+}
+#viewSettings #dailyFeedSettings :is(label, .daily-feed-input span) {
+  margin: 0;
+  font-size: var(--font-body);
+  color: var(--pref-label);
+}
+#viewSettings #dailyFeedSettings label { cursor: pointer; }
+#viewSettings #dailyFeedSettings .daily-feed-input {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 4px;
+  border-bottom: 2px solid var(--pref-underline);
+}
+#viewSettings #dailyFeedSettings .daily-feed-input:focus-within { border-color: var(--pref-accent); }
+#viewSettings #dailyFeedSettings .daily-feed-input span { position: static; transform: none; }
+#viewSettings #dailyFeedSettings input {
+  field-sizing: content;
+  width: 3ch;
+  max-width: calc(100% - 16px);
+  height: auto;
+  min-height: var(--filter-control-height);
+  padding: 0 0 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+  text-align: center;
+  font-size: 19px;
+  font-weight: var(--weight-medium);
+  color: var(--pref-title);
+}
+@supports (field-sizing: content) {
+  #viewSettings #dailyFeedSettings input { width: auto; }
+}
+#viewSettings .settings-preferences-card .settings-preference-row {
+  grid-template-columns: 66px minmax(0, 1fr);
+  column-gap: 12px;
+}
+#viewSettings .settings-preferences-card .settings-options {
+  background: var(--pref-control);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 2px;
+}
+#viewSettings .settings-preferences-card .settings-options .ios-btn {
+  min-height: 40px;
+  padding-inline: 0;
+  border-radius: 10px;
+  font-size: var(--font-body);
+  white-space: nowrap;
+  color: var(--pref-option);
+}
+#viewSettings .settings-preferences-card .settings-options .ios-btn-primary {
+  background: var(--pref-accent);
+  color: var(--text-on-accent);
+}
+#viewSettings .settings-preferences-card .settings-options .ios-btn-primary::before { content: none; }
+
+@media (prefers-color-scheme: dark) {
+  #viewSettings .settings-preferences-card {
+    --pref-card: #332B25;
+    --pref-border: #68564A;
+    --pref-divider: #68564A;
+    --pref-title: #F6F0E9;
+    --pref-label: #CBB8A9;
+    --pref-underline: #A88E78;
+    --pref-control: #463B32;
+    --pref-option: #E4D2C4;
+    --pref-accent: var(--accent-fill);
   }
 }

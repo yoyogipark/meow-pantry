@@ -74,8 +74,9 @@
     if (pSet.dailyFeedGrams && typeof pSet.dailyFeedGrams === 'object') {
       st.settings.dailyFeedGrams = {};
       ['dry', 'freeze', 'can'].forEach(function (category) {
-        var grams = Number(pSet.dailyFeedGrams[category]);
-        st.settings.dailyFeedGrams[category] = Number.isFinite(grams) && grams > 0 ? grams : null;
+        var storedGrams = pSet.dailyFeedGrams[category];
+        var grams = storedGrams == null || storedGrams === '' ? NaN : Number(storedGrams);
+        st.settings.dailyFeedGrams[category] = Number.isFinite(grams) && grams >= 0 ? grams : null;
       });
     }
     if (typeof pSet.pantryPageSize === 'number' && pSet.pantryPageSize > 0) {

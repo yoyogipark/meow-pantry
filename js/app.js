@@ -740,9 +740,15 @@
     document.getElementById('dailyFeedSettings').addEventListener('change', function (ev) {
       var input = ev.target.closest('[data-daily-feed]');
       if (!input) return;
-      if (!input.validity.valid) { input.reportValidity(); return; }
+      var category = input.dataset.dailyFeed;
       var grams = Number(input.value);
-      st.settings.dailyFeedGrams[input.dataset.dailyFeed] = grams > 0 ? grams : null;
+      if (!/^[0-9]+$/.test(input.value) || !Number.isSafeInteger(grams)) {
+        input.value = st.settings.dailyFeedGrams[category] ?? 0;
+        return;
+      }
+      input.value = grams;
+      if (grams === st.settings.dailyFeedGrams[category]) return;
+      st.settings.dailyFeedGrams[category] = grams;
       Storage.saveToStorage();
       UI.renderAll();
     });

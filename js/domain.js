@@ -10,7 +10,7 @@
       schemaVersion: MP.SCHEMA_VERSION,
       warnDays: 60,
       defaultCurrency: 'CNY',
-      dailyFeedGrams: { dry: null, freeze: null, can: null },
+      dailyFeedGrams: { dry: 50, freeze: 10, can: 80 },
       pantryPageSize: 6,
       pantryDisplayMode: 'card',
       pantryStatusHintSeen: false,

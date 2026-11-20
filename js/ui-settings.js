@@ -8,7 +8,7 @@
   UI.renderSettingsView = function () {
     var forecastSettings = MP.state.settings.dailyFeedGrams;
     document.querySelectorAll('[data-daily-feed]').forEach(function (input) {
-      if (input !== document.activeElement) input.value = forecastSettings[input.dataset.dailyFeed] || '';
+      if (input !== document.activeElement) input.value = forecastSettings[input.dataset.dailyFeed] ?? 0;
     });
     var missing = MP.Forecast.compute(MP.state.items, [], {}, Utils.getTodayStr()).can.missing;
     var weightAlert = document.getElementById('settingsWeightAlert');

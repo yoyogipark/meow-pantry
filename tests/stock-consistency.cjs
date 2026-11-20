@@ -1088,6 +1088,21 @@ async function run() {
   assert.match(el('backupStatusTime').textContent, /上次 \d+月\d+日 \d{2}:\d{2}/);
   storage.triggerFileDownload = originalDownload;
   console.log('Header button variants and backup status pass');
+  const dryInput = el('dailyFeedDry');
+  state.settings.dailyFeedGrams.dry = 50;
+  ui.renderSettingsView();
+  function changeDryGrams(value) {
+    dryInput.value = value;
+    dryInput.dispatchEvent(new w.Event('change', { bubbles: true }));
+  }
+  for (const invalid of ['', '-1', '1.5', '2e3']) {
+    changeDryGrams(invalid);
+    assert.equal(dryInput.value, '50');
+    assert.equal(state.settings.dailyFeedGrams.dry, 50);
+  }
+  changeDryGrams('0');
+  await persisted(s => assert.equal(s.settings.dailyFeedGrams.dry, 0));
+
 
   reset(make('older-snapshot', 1));
   assert.ok(await new Promise(resolve => storage.savePreRestoreSnapshot(resolve)));
