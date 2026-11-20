@@ -21,16 +21,12 @@
     for (var i = 0; i < btns.length; i++) {
       var d = parseInt(btns[i].getAttribute('data-warn-days'), 10);
       btns[i].setAttribute('aria-pressed', d === st.settings.warnDays);
-      btns[i].className = (d === st.settings.warnDays) ? 'ios-btn ios-btn-primary' : 'ios-btn ios-btn-secondary';
     }
     var curBtns = document.querySelectorAll('#defaultCurrencyGroup [data-def-currency]');
     for (var j = 0; j < curBtns.length; j++) {
       var ck = curBtns[j].getAttribute('data-def-currency');
       var isCurrencySelected = ck === (st.settings.defaultCurrency || 'CNY');
       curBtns[j].setAttribute('aria-pressed', isCurrencySelected);
-      curBtns[j].className = isCurrencySelected
-        ? 'ios-btn ios-btn-primary'
-        : 'ios-btn ios-btn-secondary';
     }
 
     var undoWrap = document.getElementById('undoOverwriteWrap');

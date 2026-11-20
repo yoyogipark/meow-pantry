@@ -243,7 +243,7 @@
 
   function mealName(log) {
     if (log.category === 'med') return '用药';
-    return Utils.formatMealSlot(log.mealSlot);
+    return Utils.formatMealSlotDisplay(log.mealSlot);
   }
 
   function clock(log) {
@@ -339,7 +339,7 @@
         '<details class="daily-record-menu"><summary class="daily-record-more" aria-label="更多操作"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></summary><div class="daily-record-menu-items">' +
         '<button type="button" data-edit-log="' + id + '">编辑</button><button type="button" data-del-log="' + id + '">删除</button></div></details></li>';
     }).join('');
-    el('dailyFeedTimeline').innerHTML = empty + (records ? '<ul class="ios-card daily-records">' + records + '</ul>' : '');
+    el('dailyFeedTimeline').innerHTML = empty + (records ? '<ul class="daily-records">' + records + '</ul>' : '');
   }
 
   function groupedLogs() {

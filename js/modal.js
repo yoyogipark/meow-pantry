@@ -112,7 +112,7 @@
     if (extraOpt && extraOpt.label) {
       extraWrap.classList.remove('hidden-view');
       extraChk.checked = Boolean(extraOpt.defaultChecked);
-      extraLbl.textContent = extraOpt.label;
+      extraLbl.innerHTML = MP.Utils.iconLabel(extraOpt.icon, extraOpt.label);
     } else {
       extraWrap.classList.add('hidden-view');
       extraChk.checked = false;

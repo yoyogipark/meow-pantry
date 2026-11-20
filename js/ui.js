@@ -9,10 +9,10 @@
 
   var toastTimer = null;
 
-  UI.showToast = function (msg) {
+  UI.showToast = function (msg, icon) {
     var el = document.getElementById('toastEl');
     if (!el) return;
-    el.textContent = msg;
+    el.innerHTML = Utils.iconLabel(icon, msg);
     el.classList.remove('hidden-view');
     if (toastTimer) clearTimeout(toastTimer);
     toastTimer = setTimeout(function () {
@@ -66,8 +66,6 @@
   UI.syncStaticBrandIcons = function () {
     var covers = MP.COVERS || {};
     if (covers.appIcon) {
-      var hImg = document.getElementById('headerMascotImg');
-      if (hImg) hImg.src = covers.appIcon;
       var appleIcon = document.getElementById('appleTouchIconLink');
       if (appleIcon && !appleIcon.getAttribute('data-keep-file')) appleIcon.href = covers.appIcon;
     }
@@ -91,16 +89,14 @@
       if (views[k]) views[k].classList.toggle('hidden-view', k !== tabName);
       if (navs[k]) navs[k].classList.toggle('active', k === tabName);
     });
-    var addButton = document.getElementById('openAddModalBtn');
-    addButton.classList.toggle('ios-btn-primary', tabName === 'pantry');
-    addButton.classList.toggle('ios-btn-secondary', tabName !== 'pantry');
     if (tabName === 'daily') UI.syncDailyQuickFeedFade();
     window.scrollTo(0, 0);
   };
 
   UI.renderAll = function () {
     UI.renderSampleBanner();
-    UI.renderHeaderSubtitle();
+    UI.syncEditModeUI();
+    UI.renderHeaderProfile();
     UI.renderStatusCounts();
     UI.renderCategoryPills();
     UI.renderBrandDropdown();
@@ -120,33 +116,16 @@
   UI.syncEditModeUI = function () {
     var st = MP.state;
     var chk = document.getElementById('globalEditModeToggle');
-    var lbl = document.getElementById('globalEditModeText');
     if (chk) chk.checked = Boolean(st.editMode);
+    document.getElementById('globalEditModeText').textContent = st.editMode ? '编辑中' : '编辑';
     document.body.classList.toggle('is-edit-mode', Boolean(st.editMode));
-    if (lbl) lbl.textContent = st.editMode ? '编辑中' : '编辑';
   };
 
-  // Header subtitle cleanly distinguishes ordinary food count from supplement/medicine count!
-  UI.renderHeaderSubtitle = function () {
-    UI.syncEditModeUI();
-    var counts = { food: 0, supp: 0, med: 0 };
-    var brandsSet = {};
-    MP.state.items.forEach(function (it) {
-      if ((Number(it.quantity) || 0) > 0) {
-        counts[MP.getCategoryGroup(it.category)] += 1;
-        if (it.brand) brandsSet[it.brand.trim()] = true;
-      }
-    });
-    var brandTotal = Object.keys(brandsSet).length;
-    var subText = '口粮 ' + Utils.formatQuantity(counts.food, '款');
-    if (counts.supp || counts.med) {
-      subText += ' · 营养/药护 ' + Utils.formatQuantity(counts.supp + counts.med, '款');
-    }
-    subText += ' · ' + Utils.formatQuantity(brandTotal, '个品牌');
-    var subEl = document.getElementById('headerSubtitle');
-    if (subEl) subEl.textContent = subText;
+  UI.renderHeaderProfile = function () {
+    var settings = MP.state.settings;
+    document.getElementById('headerProfileName').textContent = settings.profileName || '喵喵粮仓';
+    document.getElementById('headerMascotImg').src = settings.profileAvatar || MP.COVERS?.appIcon || './icon-192.png';
   };
-
 
   // ==================== DAILY FEEDING LOG & 1-TAP QUICK FEED BAR ====================
   UI.populateFeedStockDropdown = function (selectedItemId) {
@@ -168,6 +147,8 @@
   UI.syncMedReminderVisibility = function () {
     var cat = document.getElementById('feedCategorySelect').value;
     var slot = document.getElementById('feedMealSlot').value;
+    var meal = Utils.mealSlotOptions().find(function (option) { return option.id === slot; });
+    document.getElementById('feedMealSlotIcon').innerHTML = Utils.uiIcon(meal?.icon);
     var box = document.getElementById('medNextReminderBox');
     var fromReminder = document.getElementById('feedForm').dataset.reminderSourceId;
     var editId = document.getElementById('feedLogEditId').value;
@@ -191,9 +172,9 @@
       Boolean(target && !Domain.isPackageUnit(unit) && unit !== '粒') ||
       Boolean(flavor && flavor.quantity < 1);
     if (deduct.disabled) deduct.checked = false;
-    hint.textContent = remaining > 0 ? '🔓 当前' + Utils.formatRemainFractionText(remaining, unit, true) : '';
+    hint.innerHTML = remaining > 0 ? Utils.iconLabel('lock-open', '当前' + Utils.formatRemainFractionText(remaining, unit, true)) : '';
     rest.classList.toggle('hidden-view', !(remaining > 0 && deduct.checked));
-    rest.textContent = '✨ 吃完本' + unit + '剩余';
+    rest.innerHTML = Utils.iconLabel('sparkles', '吃完本' + unit + '剩余');
     info.classList.toggle('hidden-view', !target || editing);
     if (!target || !deduct.checked) {
       info.textContent = deduct.disabled && target && target.quantity > 0
@@ -332,7 +313,7 @@
         if (lastFed && lastFed.amount) {
           lastPortionChip.classList.remove('hidden-view');
           lastPortionChip.setAttribute('data-portion', lastFed.amount);
-          lastPortionChip.textContent = '⚡ 上次：' + lastFed.amount;
+          lastPortionChip.innerHTML = Utils.iconLabel('zap', '上次：' + lastFed.amount);
         } else {
           lastPortionChip.classList.add('hidden-view');
         }
@@ -364,7 +345,6 @@
       }
 
       document.getElementById('feedAmountInput').value = defaultPortion;
-      document.getElementById('feedDeductLabel').textContent = '📦 同步扣减库存';
       document.getElementById('feedAmountInput').placeholder = '如 25g、半' + target.unit + '、1' + target.unit;
       if (target.flavors) {
         if (lastPortionChip) lastPortionChip.classList.add('hidden-view');
@@ -406,7 +386,7 @@
   }
 
   UI.openFeedModal = function (itemId, customDate, manualEntry) {
-    document.getElementById('feedModalTitle').textContent = '🐾 记录饮食 / 营养 / 用药';
+    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel('paw-print', '记录饮食 / 营养 / 用药', 20);
     document.getElementById('feedStockSelect').disabled = false;
     document.getElementById('feedLogEditId').value = '';
     document.getElementById('feedAmountInput').placeholder = '如 1/2、1/3、40g';
@@ -462,7 +442,7 @@
   UI.openEditFeedModal = function (logId) {
     var lg = MP.state.logs.find(function (x) { return x.id === logId; });
     if (!lg) return;
-    document.getElementById('feedModalTitle').textContent = '✏️ 编辑饮食记录';
+    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel('pencil', '编辑饮食记录', 20);
     document.getElementById('feedLogEditId').value = lg.id;
     document.getElementById('feedDateInput').value = lg.date || Utils.getTodayStr();
     selectMealSlot(lg.mealSlot);
@@ -514,10 +494,10 @@
 
     if (st.historyItemFilter) {
       var refItem = st.items.find(function (x) { return x.id === st.historyItemFilter || x.sourceBatchId === st.historyItemFilter; });
-      titleEl.textContent = refItem ? ('📜 流水 · ' + refItem.brand + ' ' + refItem.name) : '📜 单品库存操作流水';
+      titleEl.innerHTML = Utils.iconLabel('scroll-text', refItem ? '流水 · ' + refItem.brand + ' ' + refItem.name : '单品库存操作流水', 20);
       if (clearItemBtn) clearItemBtn.classList.remove('hidden-view');
     } else {
-      titleEl.textContent = '📜 库存操作历史流水';
+      titleEl.innerHTML = Utils.iconLabel('scroll-text', '库存操作历史流水', 20);
       if (clearItemBtn) clearItemBtn.classList.add('hidden-view');
     }
 
@@ -548,8 +528,8 @@
     if (matched.length === 0) {
       if (pagerEl) pagerEl.classList.add('hidden-view');
       listEl.innerHTML =
-        '<div style="padding:28px 12px;text-align:center;background:#FAFAF9;border-radius:14px;color:#6B5A4C;font-size:13px;">' +
-          '📭 暂无匹配的库存变动流水（后续入库、拆封、分顿投喂、核销吃完或撤回退库都会自动记录在这里）' +
+        '<div style="padding:28px 12px;text-align:center;background:var(--control-bg);border-radius:14px;color:var(--text-muted);font-size:13px;">' +
+          Utils.uiIcon('inbox', 20) + '暂无匹配的库存变动流水（后续入库、拆封、分顿投喂、核销吃完或撤回退库都会自动记录在这里）' +
         '</div>';
       return;
     }
@@ -572,18 +552,18 @@
     listEl.innerHTML = sliced.map(function (h) {
       var meta = MP.STOCK_ACTION_META[h.action] || MP.STOCK_ACTION_META.adjust;
       return (
-        '<div style="padding:10px 12px;border-radius:12px;background:#FAFAF9;border:1px solid #E7E5E4;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
+        '<div style="padding:10px 12px;border-radius:12px;background:var(--control-bg);border:1px solid var(--border-warm);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
           '<div style="min-width:0;flex:1;">' +
             '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">' +
-              '<span style="font-size:11px;font-weight:800;padding:1px 7px;border-radius:6px;background:' + meta.bg + ';color:' + meta.text + ';">' + meta.icon + ' ' + meta.label + '</span>' +
-              '<span style="font-size:11px;color:#6B5A4C;">' + Utils.escapeHtml(h.timestamp) + '</span>' +
+              '<span style="font-size:11px;font-weight:800;padding:1px 7px;border-radius:6px;background:' + meta.bg + ';color:' + meta.text + ';">' + Utils.iconLabel(meta.icon, meta.label) + '</span>' +
+              '<span style="font-size:11px;color:var(--text-muted);">' + Utils.escapeHtml(h.timestamp) + '</span>' +
             '</div>' +
-            '<div style="font-size:13px;font-weight:800;color:#2B2320;">' + Utils.getCategoryIcon(h.category) + ' [' + Utils.escapeHtml(h.brand) + '] ' + Utils.escapeHtml(h.name) + '</div>' +
-            (h.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">' + Utils.escapeHtml(h.note) + '</div>' : '') +
+            '<div style="font-size:13px;font-weight:800;color:var(--text-main);">' + Utils.getCategoryIcon(h.category) + ' [' + Utils.escapeHtml(h.brand) + '] ' + Utils.escapeHtml(h.name) + '</div>' +
+            (h.note ? '<div style="margin-top:2px;font-size:11.5px;color:var(--text-muted);">' + Utils.escapeHtml(h.note) + '</div>' : '') +
           '</div>' +
           '<div style="text-align:right;flex-shrink:0;">' +
             '<div style="font-size:12.5px;font-weight:800;color:' + meta.text + ';">' + Utils.escapeHtml(h.deltaText || '—') + '</div>' +
-            '<div style="margin-top:2px;font-size:11px;color:#6B5A4C;">' + Utils.formatNumber(h.beforeQty) + ' → ' + Utils.escapeHtml(Utils.formatQuantity(h.afterQty, h.unit)) + '</div>' +
+            '<div style="margin-top:2px;font-size:11px;color:var(--text-muted);">' + Utils.formatNumber(h.beforeQty) + ' → ' + Utils.escapeHtml(Utils.formatQuantity(h.afterQty, h.unit)) + '</div>' +
           '</div>' +
         '</div>'
       );
@@ -599,7 +579,7 @@
     });
     var box = document.getElementById('quickLocationChips');
     box.innerHTML = chips.map(function (loc) {
-      return '<button type="button" data-pick-location="' + Utils.escapeHtml(loc) + '">📍 ' + Utils.escapeHtml(loc) + '</button>';
+      return '<button type="button" data-pick-location="' + Utils.escapeHtml(loc) + '">' + Utils.iconLabel('map-pin', loc) + '</button>';
     }).join('');
     UI.syncQuickLocationFade();
   };
@@ -628,7 +608,7 @@
     });
     var box = document.getElementById('quickBrandChips');
     box.innerHTML = merged.slice(0, 10).map(function (b) {
-      return '<button type="button" data-pick-brand="' + Utils.escapeHtml(b) + '" style="white-space:nowrap;padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">' + Utils.escapeHtml(b) + '</button>';
+      return '<button type="button" data-pick-brand="' + Utils.escapeHtml(b) + '" style="white-space:nowrap;padding:4px 9px;border-radius:999px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-muted);font-size:11px;cursor:pointer;">' + Utils.escapeHtml(b) + '</button>';
     }).join('');
   };
 
@@ -844,11 +824,11 @@
   };
 
   function flavorRatingLabel(category, key) {
-    return MP.getPalatabilityBadgeInfo({ category: category, palatability: key }).label.replace(/^\S+\s+/, '');
+    return MP.getPalatabilityBadgeInfo({ category: category, palatability: key }).label;
   }
 
   var flavorRowSequence = 0;
-  var flavorColors = ['#C6633B', '#39866F', '#B7873F', '#8C779D', '#577E9A'];
+  var flavorColors = ['var(--flavor-orange)', 'var(--flavor-green)', 'var(--flavor-gold)', 'var(--flavor-purple)', 'var(--flavor-blue)'];
 
   function flavorColor(index) {
     return flavorColors[index] || 'hsl(' + Math.round(index * 137.5 % 360) + ' 39% 47%)';

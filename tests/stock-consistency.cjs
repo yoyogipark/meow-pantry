@@ -1225,7 +1225,7 @@ async function run() {
   assert.deepEqual(Array.from(el('dailyTotals').querySelectorAll('[data-consumed-grams]'), node => node.textContent), ['41', '0克', '21']);
   assert.equal(el('dailyTotals').querySelector('.daily-total-values').textContent, '41/30克 · 超11克');
   assert.equal(el('dailyTotals').querySelector('.daily-total-track .is-over').style.width, '100%');
-  assert.ok(el('openAddModalBtn').classList.contains('ios-btn-secondary'));
+  assert.ok(el('openAddModalBtn').closest('.hidden-view'));
   assert.equal(el('dailyWeekTitle').getAttribute('aria-label'), '查看全部历史记录');
   assert.ok(el('dailyWeekTitle').querySelector('svg'));
   assert.match(el('dailyFeedTimeline').textContent, /1\/4罐· 约21克/);
@@ -1324,11 +1324,28 @@ async function run() {
 
   ui.switchTab('pantry');
   assert.ok(el('openAddModalBtn').classList.contains('ios-btn-primary'));
+  const header = w.document.querySelector('.app-header');
+  assert.deepEqual(Array.from(header.children, node => node.id), ['headerMascotImg', 'headerProfileName']);
+  assert.equal(el('openAddModalBtn').closest('main').id, 'viewPantry');
   for (const tab of ['daily', 'stats', 'settings']) {
     ui.switchTab(tab);
-    assert.ok(el('openAddModalBtn').classList.contains('ios-btn-secondary'));
-    assert.ok(!el('openAddModalBtn').classList.contains('ios-btn-primary'));
+    assert.ok(el('openAddModalBtn').closest('.hidden-view'));
   }
+  assert.equal(el('openProfileEditor'), null);
+  assert.equal(el('profileForm'), null);
+  assert.ok(el('globalEditModeToggle').closest('.pantry-heading-actions'));
+  ui.switchTab('stats');
+  el('statsSubTabSwitch').querySelector('[data-stats-subtab="pal"]').click();
+  assert.equal(el('statsSubTabSwitch').querySelector('[data-stats-subtab="pal"]').getAttribute('aria-pressed'), 'true');
+  el('statsSubTabSwitch').querySelector('[data-stats-subtab="stock"]').click();
+  el('statsScopeBar').querySelector('[data-stats-scope="food"]').click();
+  assert.equal(el('statsScopeBar').querySelector('[data-stats-scope="food"]').getAttribute('aria-pressed'), 'true');
+  const categoryJump = el('categoryStatsGrid').querySelector('.forecast-category');
+  assert.ok(categoryJump.querySelector('svg'));
+  categoryJump.click();
+  assert.equal(state.activeTab, 'pantry');
+  assert.equal(state.catFilter, categoryJump.dataset.jumpCat);
+  ui.switchTab('settings');
   state.settings.unsavedChangesCount = 0;
   state.settings.lastBackupDate = '';
   state.settings.lastJsonExportAt = '';
@@ -1408,6 +1425,16 @@ async function run() {
   assert.equal(w.MeowPantry.getPalatabilityBadgeInfo(ratedMix).label, '口味分化');
   assert.deepEqual(Array.from(ratedMix.flavors, flavor => flavor.palatability), ['coax', 'ok']);
   reset(rated, unrated, ratedMix);
+  rated.notes = '备注🐱';
+  const downloads = [];
+  const downloadBeforeIconTest = storage.triggerFileDownload;
+  storage.triggerFileDownload = (_name, content) => downloads.push(content);
+  storage.exportItemsCsv();
+  storage.triggerFileDownload = downloadBeforeIconTest;
+  assert.match(downloads[0], /超爱吃/);
+  assert.doesNotMatch(downloads[0], /😍/);
+  assert.match(downloads[0], /备注🐱/);
+  assert.equal(backup().items.find(item => item.id === rated.id).notes, '备注🐱');
   ui.openFeedModal(rated.id, today);
   assert.equal(el('feedFlavorPal').value, 'love');
   set('feedStockSelect', unrated.id);

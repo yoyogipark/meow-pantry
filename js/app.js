@@ -11,7 +11,7 @@
 
   function copyTextSummary() {
     var active = MP.state.items.filter(function (it) { return (Number(it.quantity) || 0) > 0; });
-    var lines = ['🐾 【喵喵粮仓盘点】截至 ' + Utils.getTodayStr() + '（共 ' + Utils.formatQuantity(active.length, '批') + '在库）'];
+    var lines = ['【喵喵粮仓盘点】截至 ' + Utils.getTodayStr() + '（共 ' + Utils.formatQuantity(active.length, '批') + '在库）'];
     active.sort(function (a, b) { return Domain.evaluateItem(a).effectiveDays - Domain.evaluateItem(b).effectiveDays; });
     active.forEach(function (it) {
       var ev = Domain.evaluateItem(it);
@@ -126,11 +126,11 @@
     document.getElementById('navBtnStats').addEventListener('click', function () { UI.switchTab('stats'); });
     document.getElementById('navBtnSettings').addEventListener('click', function () { UI.switchTab('settings'); });
 
-    // 2. Header & Edit Mode Toggle
+    // 2. Stock entry & edit mode
     document.getElementById('globalEditModeToggle').addEventListener('change', function () {
       st.editMode = Boolean(this.checked);
-      UI.renderHeaderSubtitle();
-      UI.showToast(st.editMode ? '✏️ 已进入编辑模式，可增删改库存与饮食记录' : '🔒 已锁定为只读浏览模式，防止误触');
+      UI.syncEditModeUI();
+      UI.showToast(st.editMode ? '已进入编辑模式，可增删改库存与饮食记录' : '已锁定为只读浏览模式，防止误触', st.editMode ? 'pencil' : 'lock');
     });
 
     document.getElementById('openAddModalBtn').addEventListener('click', UI.openAddModal);
@@ -1562,7 +1562,7 @@
               UI.showToast(useSmartMerge ? '已智能合并备份数据' : ('已恢复 ' + Utils.formatQuantity(check.items.length, '条') + '记录（需要可点设置页撤回）'));
             });
           },
-          { label: '✅ 智能合并模式（保留手机现有记录并去重合并；取消勾选则为全量覆盖）', defaultChecked: true }
+          { icon: 'circle-check', label: '智能合并模式（保留手机现有记录并去重合并；取消勾选则为全量覆盖）', defaultChecked: true }
         );
         ev.target.value = '';
       };
@@ -1630,7 +1630,7 @@
           newWorker.addEventListener('statechange', function () {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               newWorker.postMessage({ type: 'SKIP_WAITING' });
-              UI.showToast('✨ 检测到新版本已后台静默更新完成');
+              UI.showToast('检测到新版本已后台静默更新完成', 'sparkles');
             }
           });
         });

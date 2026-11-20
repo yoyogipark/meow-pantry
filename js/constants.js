@@ -51,22 +51,22 @@
   };
 
   MP.PALATABILITY = {
-    love: { label: '😍 超爱吃', suppLabel: '💊 主动爱吃', medLabel: '✅ 顺利无异常', bg: '#FFF0E4', text: '#8A3714' },
-    ok:   { label: '😋 正常吃', suppLabel: '😋 拌粮顺吃', medLabel: '💊 顺畅好喂',   bg: '#FFF6DF', text: '#78531D' },
-    coax: { label: '🥺 需哄吃', suppLabel: '🥺 需哄喂',   medLabel: '💦 抗拒/流口水', bg: '#EDF6FA', text: '#31596C' },
-    meh:  { label: '😒 不爱吃', suppLabel: '😒 抗拒拒食', medLabel: '⚠️ 软便/不适',   bg: '#F1EEEC', text: '#554D47' }
+    love: { label: '超爱吃', suppLabel: '主动爱吃', medLabel: '顺利无异常', bg: 'var(--accent-soft)', text: 'var(--accent-strong)' },
+    ok:   { label: '正常吃', suppLabel: '拌粮顺吃', medLabel: '顺畅好喂',   bg: 'var(--warn-soft)', text: 'var(--status-warning-text)' },
+    coax: { label: '需哄吃', suppLabel: '需哄喂',   medLabel: '抗拒/流口水', bg: 'var(--info-bg)', text: 'var(--info-text)' },
+    meh:  { label: '不爱吃', suppLabel: '抗拒拒食', medLabel: '软便/不适',   bg: 'var(--status-neutral-bg)', text: 'var(--text-main)' }
   };
 
   MP.STOCK_ACTION_META = {
-    create:  { label: '新购入库', icon: '📥', bg: '#DCFCE7', text: '#15803D', group: 'in' },
-    restock: { label: '同款复购', icon: '🛒', bg: '#DCFCE7', text: '#15803D', group: 'in' },
-    open:    { label: '拆封启用', icon: '🔓', bg: '#FFEDD5', text: '#C2410C', group: 'consume' },
-    unopen:  { label: '取消拆封', icon: '🔒', bg: '#F5F5F4', text: '#57534E', group: 'adjust' },
-    partial: { label: '分顿投喂', icon: '🥫', bg: '#FEF3C7', text: '#B45309', group: 'consume' },
-    consume: { label: '吃完核销', icon: '✅', bg: '#EAF2DC', text: '#3D5A24', group: 'consume' },
-    revert:  { label: '撤回退库', icon: '🔄', bg: '#F3E8FF', text: '#7E22CE', group: 'adjust' },
-    adjust:  { label: '手动改库存', icon: '✏️', bg: '#F5F5F4', text: '#44403C', group: 'adjust' },
-    delete:  { label: '删除批次', icon: '🗑️', bg: '#FEE2E2', text: '#DC2626', group: 'adjust' }
+    create:  { label: '新购入库', icon: 'package-plus', bg: 'var(--ok-soft)', text: 'var(--ok)', group: 'in' },
+    restock: { label: '同款复购', icon: 'shopping-cart', bg: 'var(--ok-soft)', text: 'var(--ok)', group: 'in' },
+    open:    { label: '拆封启用', icon: 'lock-open', bg: 'var(--accent-soft)', text: 'var(--accent-strong)', group: 'consume' },
+    unopen:  { label: '取消拆封', icon: 'lock', bg: 'var(--status-neutral-bg)', text: 'var(--text-muted)', group: 'adjust' },
+    partial: { label: '分顿投喂', icon: 'utensils', bg: 'var(--warn-soft)', text: 'var(--status-warning-text)', group: 'consume' },
+    consume: { label: '吃完核销', icon: 'circle-check', bg: 'var(--ok-soft)', text: 'var(--ok)', group: 'consume' },
+    revert:  { label: '撤回退库', icon: 'refresh-cw', bg: 'var(--purple-bg)', text: 'var(--purple-text)', group: 'adjust' },
+    adjust:  { label: '手动改库存', icon: 'pencil', bg: 'var(--status-neutral-bg)', text: 'var(--text-main)', group: 'adjust' },
+    delete:  { label: '删除批次', icon: 'trash-2', bg: 'var(--danger-soft)', text: 'var(--status-danger-text)', group: 'adjust' }
   };
 
   MP.COMMON_BRANDS = [
@@ -103,6 +103,7 @@
     var lbl = grp === 'med' ? p.medLabel : (grp === 'supp' ? p.suppLabel : p.label);
     return {
       key: key,
+      icon: grp === 'med' ? { love: 'circle-check', ok: 'pill', coax: 'droplet', meh: 'triangle-alert' }[key] : '',
       label: lbl,
       bg: p.bg,
       text: p.text

@@ -40,6 +40,18 @@
       categoryIconPaths[key] + '</svg>';
   };
 
+  Utils.uiIcon = function (name, size) {
+    if (!name) return '';
+    var pixels = [20, 24].includes(size) ? size : 16;
+    var id = name === 'paw-print' ? 'feed-paw' : 'ui-' + name;
+    return '<svg class="ui-icon" width="' + pixels + '" height="' + pixels +
+      '" aria-hidden="true"><use href="#' + Utils.escapeHtml(id) + '"></use></svg>';
+  };
+
+  Utils.iconLabel = function (name, label, size) {
+    return Utils.uiIcon(name, size) + Utils.escapeHtml(label);
+  };
+
   Utils.getPalatabilityIcon = function (key, size) {
     if (!['love', 'ok', 'coax', 'meh'].includes(key)) return '';
     var pixels = size === 32 ? 32 : 16;
@@ -48,8 +60,9 @@
   };
 
   Utils.formatPalatabilityBadge = function (item, badge) {
-    if (badge.key === 'mixed' || MP.getCategoryGroup(item.category) === 'med') return Utils.escapeHtml(badge.label);
-    return Utils.getPalatabilityIcon(badge.key) + ' ' + Utils.escapeHtml(badge.label.replace(/^\S+\s+/, ''));
+    if (badge.key === 'mixed') return Utils.escapeHtml(badge.label);
+    if (MP.getCategoryGroup(item.category) === 'med') return Utils.iconLabel(badge.icon, badge.label);
+    return Utils.getPalatabilityIcon(badge.key) + ' ' + Utils.escapeHtml(badge.label);
   };
 
   Utils.round2 = function (num) {
@@ -192,12 +205,12 @@
   };
 
   var mealSlots = [
-    { id: 'breakfast', label: '早饭', icon: '🌅', legacy: ['早饭', '🌅 早饭'] },
-    { id: 'lunch', label: '午饭', icon: '☀️', legacy: ['午饭', '☀️ 午饭'] },
-    { id: 'dinner', label: '晚饭', icon: '🌙', legacy: ['晚饭', '🌙 晚饭'] },
-    { id: 'snack', label: '加餐/零食', icon: '🍪', legacy: ['加餐/零食', '🍪 加餐/零食'] },
-    { id: 'care', label: '用药/护理', icon: '🩺', legacy: ['用药/护理', '🩺 用药/护理'] },
-    { id: 'other', label: '其他', icon: '', legacy: ['其他', '投喂', '🍽️ 投喂'] }
+    { id: 'breakfast', label: '早饭', display: 'Morning', icon: 'sunrise', legacy: ['早饭', '🌅 早饭'] },
+    { id: 'lunch', label: '午饭', display: 'Noon', icon: 'sun', legacy: ['午饭', '☀️ 午饭'] },
+    { id: 'dinner', label: '晚饭', display: 'Evening', icon: 'moon', legacy: ['晚饭', '🌙 晚饭'] },
+    { id: 'snack', label: '加餐/零食', display: 'Snack', icon: 'cookie', legacy: ['加餐/零食', '🍪 加餐/零食'] },
+    { id: 'care', label: '用药/护理', display: 'Medication / Care', icon: 'stethoscope', legacy: ['用药/护理', '🩺 用药/护理'] },
+    { id: 'other', label: '其他', display: 'Other', icon: '', legacy: ['其他', '投喂', '🍽️ 投喂'] }
   ];
 
   Utils.normalizeMealSlot = function (value) {
@@ -217,9 +230,15 @@
     return slot ? slot.label : id;
   };
 
+  Utils.formatMealSlotDisplay = function (value) {
+    var id = Utils.normalizeMealSlot(value);
+    var slot = mealSlots.find(function (entry) { return entry.id === id; });
+    return slot ? slot.display : id;
+  };
+
   Utils.mealSlotOptions = function () {
     return mealSlots.map(function (slot) {
-      return { id: slot.id, label: [slot.icon, slot.label].filter(Boolean).join(' ') };
+      return { id: slot.id, label: slot.display, icon: slot.icon };
     });
   };
 
