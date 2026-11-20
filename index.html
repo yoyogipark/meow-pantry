@@ -11,8 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=131">
-  <link rel="stylesheet" href="./css/styles.css?v=131">
+  <link rel="stylesheet" href="./css/tokens.css?v=133">
+  <link rel="stylesheet" href="./css/styles.css?v=133">
 </head>
 <body>
 
@@ -262,7 +262,7 @@
       <!-- Top 3-Segment Switcher -->
       <div class="feeding-tabs">
         <div id="statsSubTabSwitch">
-          <button type="button" data-stats-subtab="stock" class="active">库存与到期</button>
+          <button type="button" data-stats-subtab="stock" class="active">消耗与到期</button>
           <button type="button" data-stats-subtab="pal">适口性档案</button>
           <button type="button" data-stats-subtab="brand">品牌与偏好</button>
         </div>
@@ -593,7 +593,6 @@
               <input id="fieldNetWeight" aria-describedby="netWeightUnit" class="ios-input" type="number" min="0" step="any" inputmode="decimal">
               <span id="netWeightUnit">克</span>
             </div>
-            <p id="netWeightUnitChangeHint" class="stock-form-note hidden-view">单位已更改，请确认净含量。</p>
           </div>
         </div>
 
@@ -615,7 +614,6 @@
               <option value="瓶">瓶</option>
               <option value="杯">杯</option>
             </select>
-            <p id="unitChangeHint" class="stock-form-note hidden-view"></p>
           </div>
           <div>
             <div class="stock-form-price-label">
@@ -632,6 +630,7 @@
           </div>
         </div>
 
+        <p id="unitChangeHint" class="stock-form-unit-change hidden-view" role="status"></p>
         <p id="modalUnitPriceHint" class="stock-form-note" role="status"></p>
         <div class="purchase-packaging stock-form-card stock-form-tinted">
           <label class="purchase-packaging-toggle">
@@ -1011,18 +1010,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=131"></script>
-  <script src="./js/constants.js?v=131"></script>
-  <script src="./js/utils.js?v=131"></script>
-  <script src="./js/forecast.js?v=131"></script>
-  <script src="./js/domain.js?v=131"></script>
-  <script src="./js/storage.js?v=131"></script>
-  <script src="./js/stats.js?v=131"></script>
-  <script src="./js/modal.js?v=131"></script>
-  <script src="./js/ui.js?v=131"></script>
-  <script src="./js/ui-pantry.js?v=131"></script>
-  <script src="./js/ui-daily.js?v=131"></script>
-  <script src="./js/ui-settings.js?v=131"></script>
-  <script src="./js/app.js?v=131"></script>
+  <script src="./js/covers.js?v=133"></script>
+  <script src="./js/constants.js?v=133"></script>
+  <script src="./js/utils.js?v=133"></script>
+  <script src="./js/forecast.js?v=133"></script>
+  <script src="./js/domain.js?v=133"></script>
+  <script src="./js/storage.js?v=133"></script>
+  <script src="./js/stats.js?v=133"></script>
+  <script src="./js/modal.js?v=133"></script>
+  <script src="./js/ui.js?v=133"></script>
+  <script src="./js/ui-pantry.js?v=133"></script>
+  <script src="./js/ui-daily.js?v=133"></script>
+  <script src="./js/ui-settings.js?v=133"></script>
+  <script src="./js/app.js?v=133"></script>
 </body>
 </html>

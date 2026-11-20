@@ -70,6 +70,7 @@
   };
 
   UI.switchTab = function (tabName) {
+    var needsHeaderUpdate = (MP.state.activeTab === 'stats') !== (tabName === 'stats');
     MP.state.activeTab = tabName;
     var views = {
       pantry: document.getElementById('viewPantry'),
@@ -90,6 +91,7 @@
     var addButton = document.getElementById('openAddModalBtn');
     addButton.classList.toggle('ios-btn-primary', tabName === 'pantry');
     addButton.classList.toggle('ios-btn-secondary', tabName !== 'pantry');
+    if (needsHeaderUpdate) UI.renderHeaderSubtitle();
     if (tabName === 'daily') UI.syncDailyQuickFeedFade();
     window.scrollTo(0, 0);
   };
@@ -125,19 +127,23 @@
   // Header subtitle cleanly distinguishes ordinary food count from supplement/medicine count!
   UI.renderHeaderSubtitle = function () {
     UI.syncEditModeUI();
-    var foodCount = 0;
-    var careCount = 0;
+    var counts = { food: 0, supp: 0, med: 0 };
     var brandsSet = {};
     MP.state.items.forEach(function (it) {
       if ((Number(it.quantity) || 0) > 0) {
-        if (MP.getCategoryGroup(it.category) === 'food') foodCount += 1;
-        else careCount += 1;
+        counts[MP.getCategoryGroup(it.category)] += 1;
         if (it.brand) brandsSet[it.brand.trim()] = true;
       }
     });
     var brandTotal = Object.keys(brandsSet).length;
-    var subText = '口粮 ' + Utils.formatQuantity(foodCount, '款');
-    if (careCount > 0) subText += ' · 营养/药护 ' + Utils.formatQuantity(careCount, '款');
+    var isAnalysis = MP.state.activeTab === 'stats';
+    var subText = (isAnalysis ? '普通食品 ' : '口粮 ') + Utils.formatQuantity(counts.food, '款');
+    if (isAnalysis) {
+      if (counts.supp) subText += ' · 营养品 ' + Utils.formatQuantity(counts.supp, '款');
+      if (counts.med) subText += ' · 药品 ' + Utils.formatQuantity(counts.med, '款');
+    } else if (counts.supp || counts.med) {
+      subText += ' · 营养/药护 ' + Utils.formatQuantity(counts.supp + counts.med, '款');
+    }
     subText += ' · ' + Utils.formatQuantity(brandTotal, '个品牌');
     var subEl = document.getElementById('headerSubtitle');
     if (subEl) subEl.textContent = subText;
@@ -641,10 +647,9 @@
     var item = id && MP.state.items.find(function (entry) { return entry.id === id; });
     var changed = Boolean(item && !item.sourceBatchId && unit.value !== item.unit);
     var hint = document.getElementById('unitChangeHint');
-    hint.textContent = item && item.sourceBatchId ? '归档记录不能更正单位。'
-      : changed ? '仅更正单位，数量 ' + Utils.formatNumber(Number(item.quantity) || 0) + ' 不变。' : '';
+    hint.textContent = changed ? '单位已由 ' + item.unit + ' 改为 ' + unit.value + '：数量 ' +
+      Utils.formatNumber(Number(item.quantity) || 0) + ' 不变，请确认每' + unit.value + '净含量。' : '';
     hint.classList.toggle('hidden-view', !hint.textContent);
-    document.getElementById('netWeightUnitChangeHint').classList.toggle('hidden-view', !changed);
   };
 
   function findFormProduct(predicate, useEnteredWeight) {

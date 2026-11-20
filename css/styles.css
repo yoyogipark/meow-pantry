@@ -1653,11 +1653,21 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .stock-form-grid { display: grid; gap: 10px; min-width: 0; }
 .stock-form-grid > * { min-width: 0; }
 .stock-form-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#itemPackageWeight, .stock-form-quantity { align-items: start; }
 .stock-form-two > :only-child,
 .stock-form-two > .hidden-view + :last-child { grid-column: 1 / -1; }
 .stock-form-quantity {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr);
-  align-items: end;
+}
+
+.stock-form-unit-change {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .stock-form-photo {

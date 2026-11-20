@@ -239,8 +239,7 @@ async function run() {
   ui.openEditModal(item.id);
   assert.equal(el('fieldUnit').disabled, false);
   set('fieldUnit', '杯');
-  assert.equal(el('unitChangeHint').textContent, '仅更正单位，数量 2 不变。');
-  assert.ok(!el('netWeightUnitChangeHint').classList.contains('hidden-view'));
+  assert.equal(el('unitChangeHint').textContent, '单位已由 盒 改为 杯：数量 2 不变，请确认每杯净含量。');
   el('itemForm').requestSubmit();
   assert.match(el('confirmMessage').textContent, /历史记录里的单位也会一起更新/);
   el('confirmOkBtn').click();
@@ -291,7 +290,7 @@ async function run() {
   assert.equal(el('fieldUnit').value, '听');
   assert.ok(Array.from(el('fieldUnit').options).some(option => option.value === '听'));
   assert.equal(el('fieldUnit').disabled, true);
-  assert.equal(el('unitChangeHint').textContent, '归档记录不能更正单位。');
+  assert.ok(el('unitChangeHint').classList.contains('hidden-view'));
 
   const cancelledUnit = make('cancelled-unit', 2, '杯', { unit_net_weight_g: 40 });
   reset(cancelledUnit);
