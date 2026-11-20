@@ -21,22 +21,22 @@
   };
 
   UI.purchasePackagingLabel = function (pack, unit) {
-    return pack.count + pack.outerUnit + '装，' + (pack.outerUnit === unit ? '内包装' : '') +
-      '共' + (pack.count * pack.size) + unit;
+    return Utils.formatQuantity(pack.count, pack.outerUnit) + '装，' + (pack.outerUnit === unit ? '内包装' : '') +
+      '共' + Utils.formatQuantity(pack.count * pack.size, unit);
   };
 
   UI.flavorStockText = function (item, plain, remainingView) {
     if (!item.flavors) return '';
     return item.flavors.map(function (flavor) {
-      var text = flavor.name + ' ' + flavor.quantity + (remainingView ? '' : item.unit);
+      var text = flavor.name + ' ' + Utils.formatQuantity(flavor.quantity, remainingView ? '' : item.unit);
       if (Number(flavor.quantity) > 0 && flavor.openedDate) {
         var rest = flavor.openRemainFraction;
         var spec = Utils.parsePortionSpec(flavor.spec || item.spec);
         var left = '';
         if (rest) {
           left = spec && Number(spec[1]) > 0 && (!spec[3] || spec[3] === item.unit)
-            ? '，约余' + Utils.round2(Number(spec[1]) * rest) + spec[2]
-            : '，余' + Utils.round2(rest * 100) + '%';
+            ? '，约余' + Utils.formatQuantity(Number(spec[1]) * rest, spec[2])
+            : '，余' + Utils.formatPercent(rest * 100);
         }
         text += '（1' + item.unit + '使用中' + left + '）';
       }
@@ -132,9 +132,9 @@
       }
     });
     var brandTotal = Object.keys(brandsSet).length;
-    var subText = '口粮 ' + foodCount + ' 款';
-    if (careCount > 0) subText += ' · 营养/药护 ' + careCount + ' 款';
-    subText += ' · ' + brandTotal + ' 个品牌';
+    var subText = '口粮 ' + Utils.formatQuantity(foodCount, '款');
+    if (careCount > 0) subText += ' · 营养/药护 ' + Utils.formatQuantity(careCount, '款');
+    subText += ' · ' + Utils.formatQuantity(brandTotal, '个品牌');
     var subEl = document.getElementById('headerSubtitle');
     if (subEl) subEl.textContent = subText;
   };
@@ -153,7 +153,7 @@
     var diff = Utils.diffDaysFromToday(selDate);
     var relTag = diff === 0 ? '（今天）' : (diff === -1 ? '（昨天）' : (diff === 1 ? '（明天）' : ''));
     document.getElementById('dailyDateLabel').textContent =
-      selDate + ' ' + Utils.getWeekdayName(selDate) + relTag;
+      Utils.formatListDate(selDate) + ' ' + Utils.getWeekdayName(selDate) + relTag;
 
     // Render Quick-Feed Shortcuts (Opened cans/bags & recently fed active food/supplements)
     var qfBox = document.getElementById('dailyQuickFeedBox');
@@ -178,7 +178,7 @@
             quickTop.map(function (it) {
               var ci = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
               var remNote = (it.isOpened && it.openRemainFraction > 0)
-                ? (' · ' + Utils.formatRemainFractionText(it.openRemainFraction, it.unit))
+                ? (' · ' + Utils.formatRemainFractionText(it.openRemainFraction, it.unit, true))
                 : (it.isOpened ? ' · 拆封中' : '');
               return (
                 '<button type="button" data-quick-feed-item="' + Utils.escapeHtml(it.id) + '" style="white-space:nowrap;padding:5px 10px;border-radius:999px;border:1px solid ' + (it.isOpened ? '#FDBA74' : '#E7E5E4') + ';background:' + (it.isOpened ? '#FFF7ED' : '#FAFAF9') + ';color:' + (it.isOpened ? '#9A3412' : '#44403C') + ';font-size:11.5px;font-weight:700;cursor:pointer;">' +
@@ -194,7 +194,7 @@
     var dayFoodCount = dayLogs.filter(function (lg) { return MP.getCategoryGroup(lg.category) === 'food'; }).length;
     var dayCareCount = dayLogs.length - dayFoodCount;
     document.getElementById('dailyTotalCountBadge').textContent =
-      '饮食 ' + dayFoodCount + ' 顿' + (dayCareCount > 0 ? (' · 营养/药护 ' + dayCareCount + ' 次') : '');
+      '饮食 ' + Utils.formatQuantity(dayFoodCount, '顿') + (dayCareCount > 0 ? (' · 营养/药护 ' + Utils.formatQuantity(dayCareCount, '次')) : '');
 
     var catCounts = {};
     dayLogs.forEach(function (lg) {
@@ -212,7 +212,7 @@
         var pillStyle = info.group === 'med'
           ? 'background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;'
           : (info.group === 'supp' ? 'background:#EAF2DC;border:1px solid #C5DDBC;color:#3D5A24;' : 'background:#FFF7ED;border:1px solid #FED7AA;color:#9A3412;');
-        return '<span style="' + pillStyle + 'padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;">' + info.icon + ' ' + info.label + ' × ' + catCounts[k] + unitW + '</span>';
+        return '<span style="' + pillStyle + 'padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;">' + info.icon + ' ' + info.label + ' × ' + Utils.formatQuantity(catCounts[k], unitW) + '</span>';
       }).join('');
     }
 
@@ -236,7 +236,7 @@
               '</div>' +
               '<div style="font-size:14px;font-weight:800;color:#2B2320;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
               (lg.note ? '<div style="margin-top:3px;font-size:12px;color:#57534E;">💬 ' + Utils.escapeHtml(lg.note) + '</div>' : '') +
-              (lg.nextDueDate ? '<div style="margin-top:3px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒日：' + Utils.escapeHtml(lg.nextDueDate) + '</div>' : '') +
+              (lg.nextDueDate ? '<div style="margin-top:3px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒日：' + Utils.escapeHtml(Utils.formatListDate(lg.nextDueDate)) + '</div>' : '') +
             '</div>' +
             '<div class="edit-only" style="display:flex;align-items:center;gap:5px;flex-shrink:0;">' +
               '<button type="button" data-edit-log="' + Utils.escapeHtml(lg.id) + '" style="padding:5px 8px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">编辑</button>' +
@@ -252,7 +252,7 @@
       var dStr = Utils.shiftDaysFromToday(dOffset);
       var dLogs = st.logs.filter(function (lg) { return lg.date === dStr; });
       var isSelected = (dStr === selDate);
-      var dayTitle = dOffset === 0 ? (dStr + ' (今天)') : (dOffset === -1 ? (dStr + ' (昨天)') : (dStr + ' ' + Utils.getWeekdayName(dStr)));
+      var dayTitle = dOffset === 0 ? (Utils.formatListDate(dStr) + ' (今天)') : (dOffset === -1 ? (Utils.formatListDate(dStr) + ' (昨天)') : (Utils.formatListDate(dStr) + ' ' + Utils.getWeekdayName(dStr)));
       var itemsPreview = dLogs.length === 0
         ? '<span style="color:#6B5A4C;">未记录</span>'
         : dLogs.map(function (lg) {
@@ -267,7 +267,7 @@
             '<div style="font-size:13px;font-weight:800;color:#2B2320;">' + dayTitle + '</div>' +
             '<div style="font-size:12px;color:#57534E;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + itemsPreview + '</div>' +
           '</div>' +
-          '<span style="font-size:12px;font-weight:700;color:' + (dLogs.length > 0 ? '#E8590C' : '#6B5A4C') + ';white-space:nowrap;">' + dLogs.length + ' 条 ▶</span>' +
+          '<span style="font-size:12px;font-weight:700;color:' + (dLogs.length > 0 ? '#E8590C' : '#6B5A4C') + ';white-space:nowrap;">' + Utils.formatQuantity(dLogs.length, '条') + ' ▶</span>' +
         '</button>'
       );
     }
@@ -306,10 +306,10 @@
       if (st.logMonthFilter !== 'all' && !monthSet[st.logMonthFilter]) {
         st.logMonthFilter = 'all';
       }
-      var mHtml = '<option value="all">🗓️ 全部月份 (' + st.logs.length + '条)</option>';
+      var mHtml = '<option value="all">🗓️ 全部月份 (' + Utils.formatQuantity(st.logs.length, '条') + ')</option>';
       months.forEach(function (ym) {
         var selAttr = (st.logMonthFilter === ym) ? ' selected' : '';
-        mHtml += '<option value="' + Utils.escapeHtml(ym) + '"' + selAttr + '>' + Utils.escapeHtml(ym) + ' (' + monthSet[ym] + '条)</option>';
+        mHtml += '<option value="' + Utils.escapeHtml(ym) + '"' + selAttr + '>' + Utils.escapeHtml(Utils.formatMonthLabel(ym)) + ' (' + Utils.formatQuantity(monthSet[ym], '条') + ')</option>';
       });
       monthSel.innerHTML = mHtml;
     }
@@ -342,7 +342,7 @@
     });
 
     document.getElementById('allDatesStatsBadge').textContent =
-      '共 ' + sortedDates.length + ' 天 · ' + matched.length + ' 条记录';
+      '共 ' + Utils.formatQuantity(sortedDates.length, '天') + ' · ' + Utils.formatQuantity(matched.length, '条记录');
 
     var listEl = document.getElementById('allDatesArchiveList');
     var logPagerEl = document.getElementById('allDatesPaginationBar');
@@ -364,7 +364,7 @@
     if (sortedDates.length > 7 || lTotalPages > 1) {
       logPagerEl.classList.remove('hidden-view');
       document.getElementById('logPageInfoText').textContent =
-        '第 ' + st.logPage + ' / ' + lTotalPages + ' 页 (共 ' + sortedDates.length + ' 天)';
+        '第 ' + Utils.formatNumber(st.logPage) + ' / ' + Utils.formatQuantity(lTotalPages, '页') + ' (共 ' + Utils.formatQuantity(sortedDates.length, '天') + ')';
       var lpPrev = document.getElementById('prevLogPageBtn');
       var lpNext = document.getElementById('nextLogPageBtn');
       lpPrev.disabled = (st.logPage <= 1);
@@ -383,7 +383,7 @@
       var items = byDate[dStr];
       var diff = Utils.diffDaysFromToday(dStr);
       var rel = diff === 0 ? ' (今天)' : (diff === -1 ? ' (昨天)' : '');
-      var dayHeader = dStr + ' ' + Utils.getWeekdayName(dStr) + rel;
+      var dayHeader = Utils.formatListDate(dStr) + ' ' + Utils.getWeekdayName(dStr) + rel;
 
       var rowsHtml = items.map(function (lg) {
         var product = Domain.resolveLogProduct(lg);
@@ -398,7 +398,7 @@
               '</div>' +
               '<div style="font-size:13px;font-weight:800;color:#2B2320;">[' + Utils.escapeHtml(product.brand) + '] ' + Utils.escapeHtml(product.name) + '</div>' +
               (lg.note ? '<div style="margin-top:2px;font-size:11.5px;color:#57534E;">💬 ' + Utils.escapeHtml(lg.note) + '</div>' : '') +
-              (lg.nextDueDate ? '<div style="margin-top:2px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒：' + Utils.escapeHtml(lg.nextDueDate) + '</div>' : '') +
+              (lg.nextDueDate ? '<div style="margin-top:2px;font-size:11px;font-weight:700;color:#15803D;">🩺 下次提醒：' + Utils.escapeHtml(Utils.formatListDate(lg.nextDueDate)) + '</div>' : '') +
             '</div>' +
             '<div class="edit-only" style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
               '<button type="button" data-edit-log="' + Utils.escapeHtml(lg.id) + '" style="padding:4px 7px;border-radius:7px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">编辑</button>' +
@@ -412,7 +412,7 @@
         '<div style="padding:12px;border-radius:14px;background:#FAFAF9;border:1px solid #E7E5E4;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
             '<button type="button" data-jump-date="' + Utils.escapeHtml(dStr) + '" style="background:none;border:none;padding:0;font-size:14px;font-weight:800;color:#2B2320;cursor:pointer;text-align:left;">📅 ' + Utils.escapeHtml(dayHeader) + '</button>' +
-            '<span style="font-size:11px;font-weight:700;color:#6B5A4C;">共 ' + items.length + ' 条</span>' +
+            '<span style="font-size:11px;font-weight:700;color:#6B5A4C;">共 ' + Utils.formatQuantity(items.length, '条') + '</span>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:7px;">' + rowsHtml + '</div>' +
         '</div>'
@@ -430,9 +430,9 @@
     var html = '<option value="">-- 手动填写或选择商品批次 --</option>';
     active.forEach(function (it) {
       var ci = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
-      var remSuffix = (it.isOpened && it.openRemainFraction > 0) ? (' · ' + Utils.formatRemainFractionText(it.openRemainFraction, it.unit)) : '';
+      var remSuffix = (it.isOpened && it.openRemainFraction > 0) ? (' · ' + Utils.formatRemainFractionText(it.openRemainFraction, it.unit, true)) : '';
       var isSel = (selectedItemId && it.id === selectedItemId) ? ' selected' : '';
-      html += '<option value="' + Utils.escapeHtml(it.id) + '"' + isSel + '>' + ci.icon + ' [' + Utils.escapeHtml(it.brand) + '] ' + Utils.escapeHtml(it.name) + '（' + (it.quantity > 0 ? '余' + it.quantity + Utils.escapeHtml(it.unit || '') + remSuffix : '已核销，可补记') + '）</option>';
+      html += '<option value="' + Utils.escapeHtml(it.id) + '"' + isSel + '>' + ci.icon + ' [' + Utils.escapeHtml(it.brand) + '] ' + Utils.escapeHtml(it.name) + '（' + (it.quantity > 0 ? '余' + Utils.escapeHtml(Utils.formatQuantity(it.quantity, it.unit)) + remSuffix : '已核销，可补记') + '）</option>';
     });
     sel.innerHTML = html;
   };
@@ -458,7 +458,7 @@
       Boolean(target && !Domain.isPackageUnit(unit) && unit !== '粒') ||
       Boolean(flavor && flavor.quantity < 1);
     if (deduct.disabled) deduct.checked = false;
-    hint.textContent = remaining > 0 ? '🔓 当前' + Utils.formatRemainFractionText(remaining, unit) : '';
+    hint.textContent = remaining > 0 ? '🔓 当前' + Utils.formatRemainFractionText(remaining, unit, true) : '';
     rest.classList.toggle('hidden-view', !(remaining > 0 && deduct.checked));
     rest.textContent = '✨ 吃完本' + unit + '剩余';
     info.classList.toggle('hidden-view', !target || editing);
@@ -471,7 +471,7 @@
     var portion = UI.parseFeedPortion(document.getElementById('feedAmountInput').value, target, flavor);
     var plan = Domain.planFeedingPortion(target, flavor, portion);
     info.textContent = plan.error || (plan.after
-      ? '本次将更新开封余量（' + Utils.formatRemainFractionText(plan.after, unit) + '），暂不核销整件。'
+      ? '本次将更新开封余量（' + Utils.formatRemainFractionText(plan.after, unit, true) + '），暂不核销整件。'
       : '本次将核销 1' + unit + '库存。');
   };
 
@@ -543,7 +543,7 @@
       document.getElementById('feedFlavorHint').textContent = '历史口味与库存流水关联';
     } else if (hasFlavor) {
       item.flavors.forEach(function (f) {
-        select.add(new Option(f.name + ' · 余' + f.quantity + item.unit, f.id));
+        select.add(new Option(f.name + ' · 余' + Utils.formatQuantity(f.quantity, item.unit), f.id));
       });
       UI.updateFeedFlavor(item);
     }
@@ -751,7 +751,7 @@
 
     var listEl = document.getElementById('stockHistoryList');
     var pagerEl = document.getElementById('historyPaginationBar');
-    document.getElementById('historyCountBadge').textContent = '共 ' + matched.length + ' 条记录';
+    document.getElementById('historyCountBadge').textContent = '共 ' + Utils.formatQuantity(matched.length, '条记录');
 
     if (matched.length === 0) {
       if (pagerEl) pagerEl.classList.add('hidden-view');
@@ -770,7 +770,7 @@
 
     if (hPages > 1) {
       pagerEl.classList.remove('hidden-view');
-      document.getElementById('historyPageInfo').textContent = '第 ' + st.historyPage + ' / ' + hPages + ' 页';
+      document.getElementById('historyPageInfo').textContent = '第 ' + Utils.formatNumber(st.historyPage) + ' / ' + Utils.formatQuantity(hPages, '页');
       document.getElementById('prevHistoryPageBtn').disabled = (st.historyPage <= 1);
       document.getElementById('nextHistoryPageBtn').disabled = (st.historyPage >= hPages);
     } else {
@@ -792,7 +792,7 @@
           '</div>' +
           '<div style="text-align:right;flex-shrink:0;">' +
             '<div style="font-size:12.5px;font-weight:800;color:' + meta.text + ';">' + Utils.escapeHtml(h.deltaText || '—') + '</div>' +
-            '<div style="margin-top:2px;font-size:11px;color:#6B5A4C;">' + h.beforeQty + ' → ' + h.afterQty + Utils.escapeHtml(h.unit) + '</div>' +
+            '<div style="margin-top:2px;font-size:11px;color:#6B5A4C;">' + Utils.formatNumber(h.beforeQty) + ' → ' + Utils.escapeHtml(Utils.formatQuantity(h.afterQty, h.unit)) + '</div>' +
           '</div>' +
         '</div>'
       );
@@ -1092,8 +1092,8 @@
       var diff = pack.size - allocated;
       var valid = Domain.validateFlavors(rows, pack, pack.count * pack.size, false);
       allocation = valid ? 'complete' : 'incomplete';
-      message = '已分配 ' + allocated + '/' + pack.size + ' 件';
-      if (diff) message += ' · ' + (diff > 0 ? '还差 ' : '超出 ') + Math.abs(diff) + ' 件';
+      message = '已分配 ' + Utils.formatNumber(allocated) + '/' + Utils.formatQuantity(pack.size, '件');
+      if (diff) message += ' · ' + (diff > 0 ? '还差 ' : '超出 ') + Utils.formatQuantity(Math.abs(diff), '件');
       else if (!valid) message += ' · 请核对口味名称和数量';
     }
     var summary = document.getElementById('flavorSummary');
@@ -1271,8 +1271,8 @@
     var unitPrice = price / UI.itemPriceQuantity(pack, qty);
     var currency = MP.state.formCurrency;
     var weight = Number(document.getElementById('fieldNetWeight').value);
-    hint.textContent = '平均 ' + Utils.formatMoney(unitPrice, currency) + '/' + document.getElementById('fieldUnit').value +
-      (weight > 0 ? ' · ' + Utils.formatMoney(unitPrice / weight * 100, currency) + '/100g' : '');
+    hint.textContent = '平均 ' + Utils.formatMoney(unitPrice, currency, document.getElementById('fieldUnit').value) +
+      (weight > 0 ? ' · ' + Utils.formatMoney(unitPrice / weight * 100, currency, '100g') : '');
   };
 
   UI.syncModalPalatabilityUI = function (palKey) {
@@ -1315,7 +1315,7 @@
     document.getElementById('openedExtraFields').classList.toggle('hidden-view', !historical && !count);
     document.getElementById('freshUntilCol').classList.toggle('hidden-view', historical);
     document.getElementById('finishedDateColWrap').classList.toggle('hidden-view', !historical);
-    document.getElementById('openedCheckboxTitle').textContent = historical ? '历史批次日期' : '已拆封 ' + count + ' 件';
+    document.getElementById('openedCheckboxTitle').textContent = historical ? '历史批次日期' : '已拆封 ' + Utils.formatQuantity(count, '件');
     document.getElementById('openingSubtitle').textContent = historical ? '用于计算实际消耗天数' : '单独计算开封保鲜期';
 
     var date = openedInput.value;
@@ -1328,8 +1328,8 @@
     var days = count && !error ? Utils.openShelfDaysRemaining(date, validLimit) : null;
     document.getElementById('fieldFreshUntil').value = days === null ? '—' : Utils.formatCnDateText(Utils.openShelfEndDate(date, validLimit));
     var remaining = document.getElementById('openingDaysLeft');
-    remaining.textContent = days === null ? '' : days < 0 ? '已超 ' + Math.abs(days) + ' 天' : '剩 ' + days + ' 天';
-    remaining.classList.toggle('is-urgent', days !== null && days <= 3);
+    remaining.textContent = days === null ? '' : (days < 0 ? '已超 ' : '剩 ') + Utils.formatDays(days).text;
+    remaining.classList.toggle('is-urgent', ['expired', 'urgent'].includes(Utils.formatDays(days).tone));
     UI.syncAllDateDisplays();
   };
 
@@ -1343,7 +1343,7 @@
         var expiry = document.getElementById('fieldExpDate');
         expiry.value = computed;
         expiry.dataset.computed = computed;
-        document.getElementById('dateCalcHint').textContent = '已由生产日+保质期自动算出过期日';
+        document.getElementById('dateCalcHint').textContent = '已根据生产日期和保质期算出过期日期';
         UI.syncAllDateDisplays();
       }
     }
@@ -1458,7 +1458,7 @@
     document.getElementById('fieldShelfUnit').value = sUnit;
     document.getElementById('fieldExpDate').value = '';
     UI.autoComputeExpDate();
-    document.getElementById('dateCalcHint').textContent = item.prodDate ? '请核对新批次的生产日期与到期日' : '';
+    document.getElementById('dateCalcHint').textContent = item.prodDate ? '请核对新批次的生产日期与过期日期' : '';
 
     document.getElementById('fieldIsOpened').checked = false;
     document.getElementById('fieldOpenedDate').value = '';
@@ -1494,7 +1494,7 @@
     document.getElementById('lightboxTitle').textContent = (item.brand || '') + ' · ' + (item.name || '');
     document.getElementById('lightboxImg').src = MP.getItemCoverSrc(item);
     document.getElementById('lightboxMeta').textContent =
-      '生产日：' + (item.prodDate || '未标注') + ' ｜ 过期日：' + (item.expDate || '—') + (item.batchCode ? (' ｜ ' + item.batchCode) : '');
+      '生产日期：' + Utils.formatListDate(item.prodDate, '未填写') + ' ｜ 过期日期：' + Utils.formatListDate(item.expDate) + (item.batchCode ? (' ｜ ' + item.batchCode) : '');
     UI.showModal('photoPreviewBackdrop', 'closeLightboxBtn');
   };
 

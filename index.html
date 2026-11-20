@@ -11,7 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/styles.css?v=98">
+  <link rel="stylesheet" href="./css/tokens.css?v=104">
+  <link rel="stylesheet" href="./css/styles.css?v=104">
 </head>
 <body>
 
@@ -30,8 +31,8 @@
           style="width:36px;height:36px;border-radius:11px;object-fit:cover;flex-shrink:0;border:1px solid #FED7AA;background:#FFF7ED;"
         >
         <div style="min-width:0;flex:1;">
-          <h1 style="margin:0;font-size:18.5px;font-weight:800;color:#2B2320;white-space:nowrap;line-height:1.2;">喵喵粮仓</h1>
-          <p id="headerSubtitle" style="margin:2px 0 0 0;font-size:11px;color:#6B5A4C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">口粮 0 款 · 0 个品牌</p>
+          <h1 style="margin:0;font-size:var(--font-page-title);font-weight:var(--weight-heading);color:var(--text-main);white-space:nowrap;line-height:1.2;">喵喵粮仓</h1>
+          <p id="headerSubtitle" style="margin:2px 0 0 0;font-size:11px;color:#6B5A4C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">口粮 0款 · 0个品牌</p>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
@@ -83,35 +84,30 @@
     <main id="viewPantry">
       <!-- 4 Primary Status Filter Cards -->
       <section class="status-card-grid">
-        <button type="button" data-status-filter="in_stock" class="status-card selected" id="statCardStock">
+        <button type="button" data-status-filter="in_stock" class="metric-card status-card selected" id="statCardStock">
           <div style="font-size:11px;color:#6B5A4C;font-weight:600;">在库</div>
           <div id="countInStock" class="status-card-count is-zero">0</div>
-          <div id="countStockPieces" class="stock-piece-count">共 0 件</div>
+          <div id="countStockPieces" class="stock-piece-count">共 0件</div>
         </button>
-        <button type="button" data-status-filter="expiring" class="status-card" id="statCardExpiring">
+        <button type="button" data-status-filter="expiring" class="metric-card status-card" id="statCardExpiring">
           <div class="status-card-label">临期预警</div>
           <div id="countExpiring" class="status-card-count is-zero">0</div>
-          <div id="countExpiringPieces" class="stock-piece-count">共 0 件</div>
+          <div id="countExpiringPieces" class="stock-piece-count">共 0件</div>
         </button>
-        <button type="button" data-status-filter="expired" class="status-card is-zero" id="statCardExpired">
+        <button type="button" data-status-filter="expired" class="metric-card status-card is-zero" id="statCardExpired">
           <div class="status-card-label">已过期</div>
           <div id="countExpired" class="status-card-count is-zero">0</div>
-          <div id="countExpiredPieces" class="stock-piece-count">共 0 件</div>
+          <div id="countExpiredPieces" class="stock-piece-count">共 0件</div>
         </button>
-        <button type="button" data-status-filter="empty" class="status-card" id="statCardEmpty">
+        <button type="button" data-status-filter="empty" class="metric-card status-card" id="statCardEmpty">
           <div style="font-size:11px;color:#6B5A4C;font-weight:600;">已核销</div>
           <div id="countEmpty" class="status-card-count is-zero">0</div>
-          <div id="countEmptyPieces" class="stock-piece-count">共 0 件</div>
+          <div id="countEmptyPieces" class="stock-piece-count">共 0件</div>
         </button>
       </section>
 
-      <div class="stock-details-entry">
-        <button id="stockDetailsBtn" type="button" class="ios-btn ios-btn-secondary" aria-expanded="false" aria-controls="stockQuantityDetails">库存数量明细</button>
-      </div>
-      <div id="stockQuantityDetails" class="ios-card stock-quantity-details hidden-view"></div>
-
       <!-- Category Horizontal Pills -->
-      <section id="categoryBar" class="no-scrollbar" style="display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px;">
+      <section id="categoryBar" class="filter-chips no-scrollbar">
         <button type="button" data-cat="all" class="pill-chip active">全部</button>
         <button type="button" data-cat="dry" class="pill-chip">🥣 猫粮</button>
         <button type="button" data-cat="can" class="pill-chip">🥫 湿粮</button>
@@ -141,7 +137,7 @@
           <select id="sortSelect" aria-label="排序方式" class="ios-input">
             <option value="exp_asc">先到期先吃</option>
             <option value="exp_desc">保质期最长</option>
-            <option value="prod_desc">生产日最新</option>
+            <option value="prod_desc">生产日期最新</option>
             <option value="qty_desc">库存量最多</option>
             <option value="brand_asc">按品牌排序</option>
           </select>
@@ -186,10 +182,8 @@
       </div>
 
       <!-- Empty State -->
-      <div id="emptyStateBox" class="ios-card hidden-view" style="padding:36px 20px;text-align:center;">
-        <div style="font-size:40px;margin-bottom:8px;">🐾</div>
-        <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:800;color:#292524;">当前筛选下暂无记录</h3>
-        <p id="emptyStateDesc" style="margin:0 0 16px 0;font-size:13px;color:#6B5A4C;">可点击重置筛选，或点击右上角「记囤货」添加猫粮、湿粮、营养品或药品。</p>
+      <div id="emptyStateBox" class="empty-state-actions hidden-view">
+        <p id="emptyStateDesc" class="empty-state">当前筛选下暂无记录</p>
         <div style="display:flex;justify-content:center;gap:8px;">
           <button id="resetFiltersBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:0 16px;">重置筛选</button>
           <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-primary" style="padding:0 16px;">+ 立即录入</button>
@@ -323,7 +317,7 @@
 
       <!-- SUB-VIEW 1: 📊 库存与效期 (Separated Food / Supp / Med) -->
       <div id="statsSubViewStock">
-        <div class="ios-card feeding-overview">
+        <div class="feeding-overview">
           <div class="feeding-overview-heading">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="12" width="5" height="9" rx="1"/><rect x="9.5" y="4" width="5" height="17" rx="1"/><rect x="16" y="8" width="5" height="13" rx="1"/></svg>
             <div><h2>分类统计与消耗分析</h2><p>点卡片可跳转库存筛选</p></div>
@@ -340,7 +334,7 @@
           </details>
 
           <!-- Scope Filter Pills -->
-          <div id="statsScopeBar" role="group" aria-label="分析分类">
+          <div id="statsScopeBar" class="filter-chips no-scrollbar" role="group" aria-label="分析分类">
             <button type="button" data-stats-scope="all" class="subfilter-chip active">全部</button>
             <button type="button" data-stats-scope="food" class="subfilter-chip">普通食品</button>
             <button type="button" data-stats-scope="supp" class="subfilter-chip">营养品</button>
@@ -354,11 +348,11 @@
 
         <section class="ios-card feeding-extra feeding-priority">
           <h2>近期优先投喂</h2>
-          <p>已拆封优先，其次按到期日排序，已排除药品</p>
+          <p>已拆封优先，其次按过期日期排序，已排除药品</p>
           <div id="priorityFeedList"></div>
         </section>
 
-        <details class="ios-card feeding-extra feeding-timeline">
+        <details class="ios-card feeding-extra feeding-timeline" open>
           <summary>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>
             <span>未来到期时间轴 <small id="expiryTimelineCountBadge">· 0 个月份</small></span>
@@ -422,7 +416,7 @@
             <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
           </div>
 
-          <div id="brandScopeBar" class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;">
+          <div id="brandScopeBar" class="filter-chips no-scrollbar">
             <button type="button" data-brand-scope="all" class="subfilter-chip active">全部品牌</button>
             <button type="button" data-brand-scope="food" class="subfilter-chip">普通食品品牌</button>
             <button type="button" data-brand-scope="supp" class="subfilter-chip">营养品品牌</button>
@@ -483,7 +477,7 @@
       <!-- Warning Threshold Setting -->
       <div class="ios-card" style="padding:16px;margin-bottom:14px;">
         <h2 class="settings-card-title">⏰ 临期预警天数设置</h2>
-        <p class="settings-card-description">包装剩余天数不超过所选天数，或开封保鲜剩 10 天以内，会计入临期预警。商品徽章颜色按剩余天数分档。</p>
+        <p class="settings-card-description">包装剩余天数不超过所选天数，或开封保鲜期剩余 10 天以内，会计入临期预警。商品徽章颜色按剩余天数分档。</p>
         <div id="warnDaysGroup" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
           <button type="button" data-warn-days="30" class="ios-btn ios-btn-secondary">30 天</button>
           <button type="button" data-warn-days="60" class="ios-btn ios-btn-secondary">60 天</button>
@@ -786,15 +780,15 @@
 
           <div class="stock-form-grid stock-form-two">
             <div>
-              <label for="fieldExpDate">过期日 <span class="stock-form-required">*</span></label>
+              <label for="fieldExpDate">过期日期 <span class="stock-form-required">*</span></label>
               <div class="ios-date-wrap"><span id="fieldExpDateText" class="ios-date-display">选择日期</span><input id="fieldExpDate" type="date" required></div>
             </div>
             <div id="openLimitColWrap">
-              <label for="fieldOpenLimit">开封后建议吃完（天）</label>
+              <label for="fieldOpenLimit">开封保鲜期（天）</label>
               <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input">
             </div>
           </div>
-          <button id="calcProdFromExpBtn" type="button" class="stock-form-link">只有到期日？反推生产日</button>
+          <button id="calcProdFromExpBtn" type="button" class="stock-form-link">根据过期日期反推生产日期</button>
           <span id="dateCalcHint" class="stock-form-note" role="status"></span>
         </div>
 
@@ -813,7 +807,7 @@
               <div class="ios-date-wrap"><span id="fieldOpenedDateText" class="ios-date-display">选择日期</span><input id="fieldOpenedDate" type="date" aria-describedby="openedDateError"></div>
             </div>
             <div id="freshUntilCol">
-              <div class="stock-form-fresh-label"><label for="fieldFreshUntil">保鲜至</label><span id="openingDaysLeft" role="status"></span></div>
+              <div class="stock-form-fresh-label"><label for="fieldFreshUntil">保鲜截止日期</label><span id="openingDaysLeft" role="status"></span></div>
               <input id="fieldFreshUntil" type="text" class="ios-input" readonly value="—">
             </div>
             <div id="finishedDateColWrap" class="hidden-view">
@@ -1018,7 +1012,7 @@
         </div>
       </div>
 
-      <div id="historyTypeFilterBar" class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px;">
+      <div id="historyTypeFilterBar" class="filter-chips no-scrollbar">
         <button type="button" data-hist-type="all" class="subfilter-chip active">全部变动</button>
         <button type="button" data-hist-type="in" class="subfilter-chip">📥 入库与复购</button>
         <button type="button" data-hist-type="consume" class="subfilter-chip">🥫 拆封与消耗</button>
@@ -1076,17 +1070,17 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=98"></script>
-  <script src="./js/constants.js?v=98"></script>
-  <script src="./js/utils.js?v=98"></script>
-  <script src="./js/forecast.js?v=98"></script>
-  <script src="./js/domain.js?v=98"></script>
-  <script src="./js/storage.js?v=98"></script>
-  <script src="./js/stats.js?v=98"></script>
-  <script src="./js/modal.js?v=98"></script>
-  <script src="./js/ui.js?v=98"></script>
-  <script src="./js/ui-pantry.js?v=98"></script>
-  <script src="./js/ui-settings.js?v=98"></script>
-  <script src="./js/app.js?v=98"></script>
+  <script src="./js/covers.js?v=104"></script>
+  <script src="./js/constants.js?v=104"></script>
+  <script src="./js/utils.js?v=104"></script>
+  <script src="./js/forecast.js?v=104"></script>
+  <script src="./js/domain.js?v=104"></script>
+  <script src="./js/storage.js?v=104"></script>
+  <script src="./js/stats.js?v=104"></script>
+  <script src="./js/modal.js?v=104"></script>
+  <script src="./js/ui.js?v=104"></script>
+  <script src="./js/ui-pantry.js?v=104"></script>
+  <script src="./js/ui-settings.js?v=104"></script>
+  <script src="./js/app.js?v=104"></script>
 </body>
 </html>

@@ -11,13 +11,13 @@
 
   function copyTextSummary() {
     var active = MP.state.items.filter(function (it) { return (Number(it.quantity) || 0) > 0; });
-    var lines = ['🐾 【喵喵粮仓盘点】截至 ' + Utils.getTodayStr() + '（共 ' + active.length + ' 批在库）'];
+    var lines = ['🐾 【喵喵粮仓盘点】截至 ' + Utils.getTodayStr() + '（共 ' + Utils.formatQuantity(active.length, '批') + '在库）'];
     active.sort(function (a, b) { return Domain.evaluateItem(a).effectiveDays - Domain.evaluateItem(b).effectiveDays; });
     active.forEach(function (it) {
       var ev = Domain.evaluateItem(it);
       var cat = (MP.CATEGORIES[it.category] || MP.CATEGORIES.dry).label;
-      var dayTxt = ev.expDays !== null ? (ev.expDays < 0 ? '已过期' + Math.abs(ev.expDays) + '天' : '剩' + ev.expDays + '天') : '';
-      lines.push('• [' + cat + '] ' + it.brand + ' ' + it.name + ' × ' + it.quantity + (it.unit || '') + ' | 到期:' + (it.expDate || '-') + ' (' + dayTxt + ')');
+      var dayTxt = ev.expDays !== null ? (ev.expDays < 0 ? '已过期' + Utils.formatDays(ev.expDays).text : '剩' + Utils.formatDays(ev.expDays).text) : '';
+      lines.push('• [' + cat + '] ' + it.brand + ' ' + it.name + ' × ' + Utils.formatQuantity(it.quantity, it.unit) + ' ｜ 过期日期 ' + Utils.formatListDate(it.expDate) + ' (' + dayTxt + ')');
     });
     var text = lines.join('\n');
 
@@ -136,12 +136,6 @@
     });
 
     // 3. Pantry status cards, category pills, search and sort
-    document.getElementById('stockDetailsBtn').addEventListener('click', function () {
-      var expanded = this.getAttribute('aria-expanded') === 'true';
-      this.setAttribute('aria-expanded', String(!expanded));
-      this.textContent = expanded ? '库存数量明细' : '收起库存明细';
-      document.getElementById('stockQuantityDetails').classList.toggle('hidden-view', expanded);
-    });
     var statusCards = document.querySelectorAll('[data-status-filter]');
     for (var i = 0; i < statusCards.length; i++) {
       statusCards[i].addEventListener('click', function () {
@@ -435,7 +429,7 @@
       }
       UI.openConfirm(
         '复制前一天饮食记录？',
-        '将把 ' + prevDateStr + ' 的 ' + prevLogs.length + ' 条日常饮食/营养品记录复制到 ' + targetDate + '（自动跳过低频驱虫药记录，复制后可单条微调）。',
+        '将把 ' + prevDateStr + ' 的 ' + Utils.formatQuantity(prevLogs.length, '条') + '日常饮食/营养品记录复制到 ' + targetDate + '（自动跳过低频驱虫药记录，复制后可单条微调）。',
         '确认复制',
         function () {
           for (var idx = prevLogs.length - 1; idx >= 0; idx--) {
@@ -459,7 +453,7 @@
           }
           Storage.saveToStorage();
           UI.renderAll();
-          UI.showToast('已复制 ' + prevLogs.length + ' 条记录到 ' + targetDate);
+          UI.showToast('已复制 ' + Utils.formatQuantity(prevLogs.length, '条') + '记录到 ' + targetDate);
         }
       );
     });
@@ -765,7 +759,9 @@
       if (!action) return;
       var type = action.getAttribute('data-forecast-action');
       var category = action.getAttribute('data-forecast-category');
-      if (type === 'settings') {
+      if (type === 'estimate') {
+        UI.showToast(action.title);
+      } else if (type === 'settings') {
         UI.switchTab('settings');
         var input = document.querySelector('[data-daily-feed="' + category + '"]');
         input.scrollIntoView?.({ block: 'center' });
@@ -799,6 +795,12 @@
       var catKey = btn.getAttribute('data-jump-cat');
       clearPantryFilters();
       st.catFilter = catKey;
+      if (btn.dataset.packageStatus === 'expiring') {
+        st.statusFilter = 'expiring';
+        st.pantryHealthFilter = 'expiring_packages';
+      } else if (btn.dataset.packageStatus === 'opened') {
+        st.pantryHealthFilter = 'opened';
+      }
       UI.renderAll();
       UI.switchTab('pantry');
       UI.showToast('已筛选分类：' + (MP.CATEGORIES[catKey] ? MP.CATEGORIES[catKey].label : catKey));
@@ -1067,14 +1069,14 @@
       var val = document.getElementById('fieldShelfValue').value;
       var unit = document.getElementById('fieldShelfUnit').value;
       if (!exp || !val) {
-        UI.showToast('请先填写「过期日期」和「保质期时长」');
+        UI.showToast('请先填写「过期日期」和「保质期」');
         return;
       }
       var prod = Utils.subtractShelfLife(exp, val, unit);
       if (prod) {
         document.getElementById('fieldProdDate').value = prod;
         UI.confirmProductionDate();
-        document.getElementById('dateCalcHint').textContent = '已根据到期日反推出生产日期';
+        document.getElementById('dateCalcHint').textContent = '已根据过期日期反推出生产日期';
         UI.syncOpenedFieldsVisibility();
         UI.showToast('已自动反推生产日期：' + prod);
       }
@@ -1199,9 +1201,9 @@
         showFieldError('fieldNetWeight', '请填写大于 0 的单件净含量');
         return;
       }
-      if (!expDate) { showFieldError('fieldExpDate', '请填写有效的过期日'); return; }
+      if (!expDate) { showFieldError('fieldExpDate', '请填写有效的过期日期'); return; }
       if (prodDate && expDate < prodDate) {
-        showFieldError('fieldExpDate', '过期日不能早于生产日期');
+        showFieldError('fieldExpDate', '过期日期不能早于生产日期');
         return;
       }
       var packaging = UI.readPurchasePackaging();
@@ -1441,7 +1443,7 @@
       st.settings.warnDays = parseInt(btn.getAttribute('data-warn-days'), 10) || 60;
       Storage.saveToStorage();
       UI.renderAll();
-      UI.showToast('临期预警已设为 ' + st.settings.warnDays + ' 天');
+      UI.showToast('临期预警已设为 ' + Utils.formatQuantity(st.settings.warnDays, '天'));
     });
 
     document.getElementById('defaultCurrencyGroup').addEventListener('click', function (ev) {
@@ -1490,9 +1492,9 @@
         }
         UI.openConfirm(
           '导入 JSON 备份恢复',
-          '校验通过：包含 ' + check.items.length + ' 条批次记录、' + check.logs.length + ' 条饮食记录与 ' + check.stockHistory.length + ' 条库存流水。' +
-          (check.missingDeductionTargets ? ' 有 ' + check.missingDeductionTargets + ' 条扣减记录在备份中缺少原批次，历史会保留，缺少原批次时无法自动退库。' : '') +
-          (check.detachedArchives ? ' 有 ' + check.detachedArchives + ' 条归档在备份中缺少原批次。' : '') +
+          '校验通过：包含 ' + Utils.formatQuantity(check.items.length, '条') + '批次记录、' + Utils.formatQuantity(check.logs.length, '条') + '饮食记录与 ' + Utils.formatQuantity(check.stockHistory.length, '条') + '库存流水。' +
+          (check.missingDeductionTargets ? ' 有 ' + Utils.formatQuantity(check.missingDeductionTargets, '条') + '扣减记录在备份中缺少原批次，历史会保留，缺少原批次时无法自动退库。' : '') +
+          (check.detachedArchives ? ' 有 ' + Utils.formatQuantity(check.detachedArchives, '条') + '归档在备份中缺少原批次。' : '') +
           '请选择导入方式（全量覆盖前会保存保护快照）：',
           '确认导入',
           function (useSmartMerge) {
@@ -1503,7 +1505,7 @@
               }
               UI.renderAll();
               UI.switchTab('pantry');
-              UI.showToast(useSmartMerge ? '已智能合并备份数据' : ('已恢复 ' + check.items.length + ' 条记录（需要可点设置页撤回）'));
+              UI.showToast(useSmartMerge ? '已智能合并备份数据' : ('已恢复 ' + Utils.formatQuantity(check.items.length, '条') + '记录（需要可点设置页撤回）'));
             });
           },
           { label: '✅ 智能合并模式（保留手机现有记录并去重合并；取消勾选则为全量覆盖）', defaultChecked: true }
