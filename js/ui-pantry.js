@@ -367,7 +367,8 @@
     var filtered = st.items.filter(function (it) {
       var ev = Domain.evaluateItem(it);
       if (!itemMatchesStatusAndAttr(it, ev)) return false;
-      if (st.catFilter !== 'all' && it.category !== st.catFilter) return false;
+      if (st.catFilter === 'food' ? ev.group !== 'food' :
+        st.catFilter !== 'all' && it.category !== st.catFilter) return false;
       if (st.brandFilter !== 'all' && (it.brand || '').trim() !== st.brandFilter) return false;
       if (q) {
         var hay = [it.brand, it.name, it.spec, it.location, it.batchCode, it.notes]

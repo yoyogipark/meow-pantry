@@ -26,16 +26,48 @@
   Forecast.compute = function (items, history, dailyFeedGrams, today) {
     var result = {};
     categories.forEach(function (key) {
-      result[key] = { grams: 0, missing: [], dailyGrams: 0, days: null, source: '', low: false };
+      result[key] = { grams: 0, missing: [], estimated: false, dailyGrams: 0, days: null, source: '', low: false };
     });
     var batches = new Map();
     items.forEach(function (item) {
       batches.set(item.id, item);
       var category = result[item.category];
       if (!category || item.isSample || !positive(item.quantity)) return;
+      if (Utils.diffDaysFromToday(item.expDate, today) < 0) return;
+      var shared = item.purchasePackaging && item.purchasePackaging.seal === 'shared';
+      var openingExpired = item.isOpened &&
+        Utils.openShelfDaysRemaining(item.openedDate, item.openDaysLimit, today) < 0;
+      if (shared && openingExpired) return;
+
+      var alreadyUsed = 0;
+      var estimated = false;
+      function accountForOpenPackage(fraction) {
+        if (fraction > 0 && fraction < 1) alreadyUsed += 1 - fraction;
+        else estimated = true;
+      }
+      if (item.flavors && item.flavors.length) {
+        item.flavors.forEach(function (flavor) {
+          if (flavor.quantity <= 0 || !flavor.openedDate) return;
+          if (!shared && Utils.openShelfDaysRemaining(flavor.openedDate, item.openDaysLimit, today) < 0) {
+            alreadyUsed += 1;
+          } else {
+            accountForOpenPackage(flavor.openRemainFraction);
+          }
+        });
+        if (item.isOpened && !item.flavors.some(function (flavor) {
+          return flavor.quantity > 0 && flavor.openedDate;
+        })) estimated = true;
+      } else if (openingExpired) {
+        alreadyUsed += 1;
+      } else if (item.isOpened) {
+        accountForOpenPackage(item.openRemainFraction);
+      }
+      var edible = positive(item.quantity) - alreadyUsed;
+      if (edible <= 0) return;
       var weight = Forecast.unitGrams(item);
-      if (weight) category.grams += positive(item.quantity) * weight;
-      else category.missing.push(item.id);
+      if (!weight) { category.missing.push(item.id); return; }
+      category.estimated = category.estimated || estimated;
+      category.grams += edible * weight;
     });
 
     var eventsByBatch = new Map();
@@ -45,6 +77,7 @@
       if (entry.action === 'revert') {
         var restored = positive(entry.afterQty - entry.beforeQty);
         for (var i = events.length - 1; i >= 0 && restored > 0; i--) {
+          if (entry.revertsHistoryId && events[i].id !== entry.revertsHistoryId) continue;
           var cancelled = Math.min(restored, events[i].quantity);
           events[i].quantity = Utils.round2(events[i].quantity - cancelled);
           restored = Utils.round2(restored - cancelled);
@@ -56,7 +89,7 @@
         var date = Utils.normalizeDateStr(entry.date);
         var quantity = positive(entry.beforeQty - entry.afterQty);
         // Keep unweighable events in sequence so returns cancel the correct units.
-        if (date && date <= today && quantity) events.push({ date: date, category: entry.category, grams: grams, quantity: quantity });
+        if (date && date <= today && quantity) events.push({ id: entry.id, date: date, category: entry.category, grams: grams, quantity: quantity });
       }
       eventsByBatch.set(entry.itemId, events);
     });

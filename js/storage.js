@@ -240,6 +240,16 @@
     return primaryItems;
   }
 
+  function newestRestoreSnapshot(indexed, local) {
+    function snapshotTime(snapshot) {
+      return Number(snapshot.savedAtMs) || Date.parse(String(snapshot.savedAt || '').replace(' ', 'T')) || 0;
+    }
+    if (!indexed || !Array.isArray(indexed.items)) indexed = null;
+    if (!local || !Array.isArray(local.items)) local = null;
+    if (!indexed || !local) return indexed || local;
+    return snapshotTime(local) > snapshotTime(indexed) ? local : indexed;
+  }
+
   Storage.loadFromStorage = function (done) {
     var st = MP.state;
     var lsItems = null;
@@ -319,7 +329,7 @@
           var idbSet = safeJsonParse(reqSet.result);
           var idbLogs = safeJsonParse(reqLogs.result);
           var idbHist = safeJsonParse(reqHist.result);
-          var idbSnap = safeJsonParse(reqSnap.result) || lsSnap;
+          var idbSnap = newestRestoreSnapshot(safeJsonParse(reqSnap.result), lsSnap);
 
           var idbTs = (idbSet && typeof idbSet.lastSavedAt === 'number') ? idbSet.lastSavedAt : 0;
           var lsTs = (lsSettings && typeof lsSettings.lastSavedAt === 'number') ? lsSettings.lastSavedAt : 0;
@@ -373,6 +383,7 @@
     var st = MP.state;
     var snapObj = {
       savedAt: Utils.getNowDateTimeStr(),
+      savedAtMs: Date.now(),
       settings: Object.assign({}, st.settings),
       items: st.items.slice(),
       logs: st.logs.slice(),
@@ -437,23 +448,32 @@
       });
     }
 
+    function readLocalSnapshot() {
+      try {
+        return safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT));
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function restoreLocalSnapshot() {
+      applySnap(readLocalSnapshot());
+    }
+
     Storage.openIDB(function (db) {
       if (!db) {
-        applySnap(safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT)));
+        restoreLocalSnapshot();
         return;
       }
       try {
         var tx = db.transaction(MP.IDB_CONFIG.STORE, 'readonly');
         var req = tx.objectStore(MP.IDB_CONFIG.STORE).get(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT);
         tx.oncomplete = function () {
-          var snap = safeJsonParse(req.result) || safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT));
-          applySnap(snap);
+          applySnap(newestRestoreSnapshot(safeJsonParse(req.result), readLocalSnapshot()));
         };
-        tx.onerror = function () {
-          applySnap(safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT)));
-        };
-      } catch (e) {
-        applySnap(safeJsonParse(global.localStorage.getItem(MP.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT)));
+        tx.onabort = restoreLocalSnapshot;
+      } catch (err) {
+        restoreLocalSnapshot();
       }
     });
   };

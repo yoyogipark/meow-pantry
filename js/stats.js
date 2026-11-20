@@ -106,9 +106,10 @@
       }
     });
 
-    var cutoffStr = Utils.shiftDaysFromToday(-30);
+    var today = Utils.getTodayStr();
+    var cutoffStr = Utils.shiftDaysFromDate(today, -29);
     var recentLogs = (logs || []).filter(function (lg) {
-      return String(lg.date || '') >= cutoffStr;
+      return lg.date >= cutoffStr && lg.date <= today;
     });
     var foodLogs = recentLogs.filter(function (lg) { return MP.getCategoryGroup(lg.category) === 'food'; });
     var suppLogs = recentLogs.filter(function (lg) { return MP.getCategoryGroup(lg.category) === 'supp'; });
@@ -233,6 +234,7 @@
           prediction += key === 'can' ? '<div class="forecast-missing">' + Stats.missingWeightNotice(data.missing) + '</div>'
             : '<div class="forecast-result">有 ' + data.missing.length + ' 批规格无法折算，未计入预测</div>';
         }
+        if (data.estimated) prediction += '<div class="forecast-result">有开封余量未填写，按整件估算</div>';
       } else if (key === 'treat') remaining = '<span class="forecast-rate">不做预测</span>';
 
       return '<article class="forecast-tile' + (fullWidth ? ' forecast-wide' : '') + ' forecast-tile--' + key +
@@ -273,7 +275,7 @@
     var expiringLabel = expiringBatches && !expiring ? expiringBatches + ' 批' : expiring + ' 件';
     healthEl.innerHTML = healthVisible ? '<span>' + expiringLabel +
       '临期 · ' + (openedBatches && !opened ? openedBatches + ' 批' : opened + ' 件') +
-      '已拆封</span><button type="button" data-jump-health="' + healthFilter + '">去查看 ›</button>' : '';
+      '已拆封</span><button type="button" data-jump-health="' + healthFilter + '" data-health-scope="' + scope + '">去查看 ›</button>' : '';
     var taskSummary = [];
     if (showFood && urgent) taskSummary.push(MP.CATEGORIES[urgent].label + '将断粮');
     if (healthVisible) taskSummary.push(expiringBatches ? expiringLabel + '临期' : (opened || openedBatches) + (opened ? ' 件' : ' 批') + '已拆封');
@@ -538,11 +540,12 @@
         var counts = { dry: 0, can: 0 };
         r30.food.forEach(function (log) {
           if (Object.hasOwn(counts, log.category)) counts[log.category] += 1;
-          var product = Domain.resolveLogProduct(log);
-          var key = (product.brand || '') + ' · ' + product.name;
+          var product = Domain.resolveLogProduct(log, true);
+          var key = Domain.getProductGroupKey(product);
+          if (product === log && log.itemId) key = JSON.stringify([key, log.itemId]);
           var row = foods.get(key);
           if (!row) {
-            row = { brand: product.brand, name: product.name, category: log.category, count: 0 };
+            row = { brand: product.brand, name: product.name, spec: product.spec, category: product.category, count: 0 };
             foods.set(key, row);
           }
           row.count += 1;
@@ -562,7 +565,7 @@
             return '<li><span class="feeding-rank">' + (index + 1) + '</span><span aria-label="' + category.label + '">' +
               category.icon + '</span><span class="feeding-rank-product">' +
               (food.brand ? '<span class="feeding-rank-brand">' + Utils.escapeHtml(food.brand) + '</span>' : '') +
-              '<span class="feeding-rank-name">' + Utils.escapeHtml(food.name) +
+              '<span class="feeding-rank-name">' + Utils.escapeHtml(food.name + (food.spec ? ' (' + food.spec + ')' : '')) +
               '</span></span><span>' + food.count + ' 顿</span></li>';
           }).join('');
         var otherCount = total - counts.dry - counts.can;

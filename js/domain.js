@@ -205,7 +205,7 @@
       (before.sharedOpenedDate === '' || Utils.normalizeDateStr(before.sharedOpenedDate) === before.sharedOpenedDate));
   };
 
-  Domain.resolveLogProduct = function (log) {
+  Domain.resolveLogProduct = function (log, forRanking) {
     var item;
     if (log.itemId) {
       item = state.items.find(function (entry) { return entry.id === log.itemId; });
@@ -216,6 +216,13 @@
         });
         if (archives.length === 1) item = archives[0];
       }
+    }
+    if (forRanking) {
+      if (item) return item;
+      if (log.productUnit) {
+        return { brand: log.brand, name: log.name, category: log.category, spec: log.productSpec, unit: log.productUnit };
+      }
+      return log;
     }
     var product = item || log;
     return {
@@ -330,6 +337,8 @@
       afterQty: Utils.round2(Math.max(0, Number(raw.afterQty) || 0)),
       note: String(raw.note || '').trim(),
       ...(Number.isFinite(raw.unitWeightGrams) && raw.unitWeightGrams > 0 ? { unitWeightGrams: raw.unitWeightGrams } : {}),
+      ...(action === 'revert' && typeof raw.revertsHistoryId === 'string' && raw.revertsHistoryId
+        ? { revertsHistoryId: raw.revertsHistoryId } : {}),
       isSample: Boolean(raw.isSample)
     };
   };
@@ -426,6 +435,7 @@
       afterQty: entry.afterQty !== undefined ? entry.afterQty : 0,
       note: entry.note || '',
       unitWeightGrams: entry.action === 'consume' && item && MP.Forecast ? MP.Forecast.unitGrams(item) : 0,
+      revertsHistoryId: entry.revertsHistoryId,
       isSample: Boolean(entry.isSample)
     });
     state.stockHistory.unshift(record);
@@ -601,6 +611,7 @@
       Domain.appendStockHistory({
         date: Utils.getTodayStr(),
         action: adjustmentNote ? 'adjust' : 'revert',
+        revertsHistoryId: lg.consumeHistoryId,
         itemId: target.id,
         category: target.category,
         brand: target.brand,
@@ -842,15 +853,13 @@
     var expDays = Utils.diffDaysFromToday(item.expDate, refTodayStr);
     var openRemaining = null;
     if (item.isOpened && item.openedDate && item.openDaysLimit > 0) {
-      var openEndStr = Utils.addShelfLife(item.openedDate, item.openDaysLimit, 'days');
-      openRemaining = Utils.diffDaysFromToday(openEndStr, refTodayStr);
+      openRemaining = Utils.openShelfDaysRemaining(item.openedDate, item.openDaysLimit, refTodayStr);
     }
 
     if (item.flavors && !Domain.hasSharedSeal(item)) {
       item.flavors.forEach(function (flavor) {
         if (!flavor.openedDate || flavor.quantity <= 0) return;
-        var end = Utils.addShelfLife(flavor.openedDate, item.openDaysLimit, 'days');
-        var days = Utils.diffDaysFromToday(end, refTodayStr);
+        var days = Utils.openShelfDaysRemaining(flavor.openedDate, item.openDaysLimit, refTodayStr);
         if (days !== null && (openRemaining === null || days < openRemaining)) openRemaining = days;
       });
     }
@@ -976,6 +985,7 @@
   };
 
   Domain.appendFeedingLog = function (entry) {
+    var product = Domain.resolveLogProduct(entry, true);
     var record = Domain.sanitizeLog({
       id: 'log_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
       date: entry.date || Utils.getTodayStr(),
@@ -985,6 +995,8 @@
       subtype: entry.subtype || undefined,
       brand: entry.brand || '',
       name: entry.name || '',
+      productSpec: product.spec || undefined,
+      productUnit: product.unit || undefined,
       amount: entry.amount || '1份',
       note: entry.note || '',
       nextDueDate: entry.nextDueDate || '',
@@ -997,6 +1009,7 @@
       flavorPalatability: entry.flavorPalatability || undefined,
       flavorChange: entry.flavorChange || undefined,
       portionChange: entry.portionChange || undefined,
+      consumeHistoryId: entry.consumeHistoryId || undefined,
       isSample: Boolean(entry.isSample)
     });
     state.logs.unshift(record);

@@ -713,6 +713,11 @@ async function run() {
   state.logs = ['recent-wet', 'recent-dry', 'recent-wet'].map((itemId, index) =>
     domain.sanitizeLog({ id: 'recent-' + index, date: today, itemId, category: byId(itemId).category }));
   state.logs.push(domain.sanitizeLog({ id: 'recent-care', date: today, category: 'med', name: '药品记录' }));
+  state.logs.push(domain.sanitizeLog({
+    id: 'recent-future', date: utils.shiftDaysFromDate(today, 1), itemId: 'recent-dry', category: 'dry'
+  }), domain.sanitizeLog({
+    id: 'recent-too-old', date: utils.shiftDaysFromDate(today, -30), itemId: 'recent-dry', category: 'dry'
+  }));
   ui.renderAll();
   brandScope('all');
   assert.equal(el('recent30CountBadge').textContent, '3 顿');
@@ -727,6 +732,42 @@ async function run() {
   ui.syncModalCurrencyUI('CNY');
   assert.equal(el('priceCurrencyUnit').textContent, '元');
   assert.equal(el('fieldPrice').step, '0.01');
+  const nearDate = utils.shiftDaysFromToday(1);
+  reset(make('near-wet-a', 2, '杯', { name: '同名湿粮', spec: '50g', expDate: nearDate }),
+    make('near-wet-b', 1, '杯', { name: '同名湿粮', spec: '50g', expDate: nearDate }),
+    make('near-wet-c', 1, '杯', { name: '同名湿粮', spec: '85g', expDate: nearDate }),
+    make('near-med', 1, '支', { category: 'med', expDate: nearDate }),
+    make('fresh-med', 1, '支', { category: 'med' }));
+  const verifyHealthJump = (scope, expectedIds) => {
+    el('statsScopeBar').querySelector('[data-stats-scope="' + scope + '"]').click();
+    el('stockHealthBox').querySelector('[data-jump-health]').click();
+    assert.equal(state.activeTab, 'pantry');
+    assert.equal(state.catFilter, scope);
+    for (const item of state.items) {
+      assert.equal(Boolean(el('pantryList').querySelector('[data-id="' + item.id + '"]')), expectedIds.includes(item.id));
+    }
+  };
+  verifyHealthJump('med', ['near-med']);
+  verifyHealthJump('food', ['near-wet-a', 'near-wet-b', 'near-wet-c']);
+  for (const id of ['near-wet-a', 'near-wet-b', 'near-wet-c']) {
+    const item = byId(id);
+    domain.appendFeedingLog({ date: today, itemId: id, category: item.category, brand: item.brand, name: item.name });
+  }
+  state.items = state.items.filter(item => item.id !== 'near-wet-b');
+  ui.renderAll();
+  assert.deepEqual(Array.from(el('recent30PrefBox').querySelectorAll('.feeding-rank-name'), node => node.textContent),
+    ['同名湿粮 (50g)', '同名湿粮 (85g)']);
+  assert.match(el('recent30PrefBox').querySelector('.feeding-rank-name').closest('li').textContent, /2 顿/);
+
+  reset(make('older-snapshot', 1));
+  assert.ok(await new Promise(resolve => storage.savePreRestoreSnapshot(resolve)));
+  const snapshotKey = w.MeowPantry.STORAGE_KEYS.PRE_RESTORE_SNAPSHOT;
+  const newer = JSON.parse(w.localStorage.getItem(snapshotKey));
+  newer.savedAtMs += 1000;
+  newer.items = [make('newer-snapshot', 2)];
+  w.localStorage.setItem(snapshotKey, JSON.stringify(newer));
+  assert.ok(await new Promise(resolve => storage.restorePreRestoreSnapshot(resolve)));
+  assert.equal(state.items[0].id, 'newer-snapshot');
   w.close();
 }
 

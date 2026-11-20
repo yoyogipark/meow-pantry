@@ -315,7 +315,7 @@
               itemId: target.id, category: target.category, subtype: target.subtype,
               brand: target.brand, name: target.name, amount: amount,
               note: '库存核销 ' + usedCount + unit + '，仅补记确认喂食的份量',
-              deductedUnit: confirmed, deductedFrac: fraction
+              deductedUnit: confirmed, deductedFrac: fraction, consumeHistoryId: st.stockHistory[0].id
             });
           }
           Storage.saveToStorage(false, function (ok) {
@@ -448,6 +448,8 @@
               subtype: srcLog.subtype,
               brand: srcLog.brand,
               name: srcLog.name,
+              productSpec: srcLog.productSpec,
+              productUnit: srcLog.productUnit,
               flavorId: srcLog.flavorId,
               flavorName: srcLog.flavorName,
               flavorPalatability: srcLog.flavorPalatability,
@@ -552,7 +554,8 @@
             mealSlot: item.category === 'med' ? '🩺 用药/护理' : Utils.getCurrentMealSlot(),
             note: '库存核销时补记', deductedUnit: change.units, deductedFrac: change.fraction,
             flavorId: flavor.id, flavorName: flavor.name,
-            flavorPalatability: flavor.palatability, flavorChange: change
+            flavorPalatability: flavor.palatability, flavorChange: change,
+            consumeHistoryId: change.units ? st.stockHistory[0].id : undefined
           });
         }
         UI.closeFeedModal();
@@ -635,7 +638,14 @@
               previousLog.flavorChange || previousLog.deductedUnit || previousLog.deductedFrac);
             st.logs[k].date = fDate;
             st.logs[k].mealSlot = fSlot;
-            if (!st.logs[k].flavorId && !st.logs[k].deductedUnit && !st.logs[k].deductedFrac) st.logs[k].itemId = fItemId;
+            if (!previousLog.flavorId && !previousLog.deductedUnit && !previousLog.deductedFrac && previousLog.itemId !== fItemId) {
+              previousLog.itemId = fItemId;
+              delete previousLog.productSpec;
+              delete previousLog.productUnit;
+              var product = Domain.resolveLogProduct(previousLog, true);
+              previousLog.productSpec = product.spec;
+              previousLog.productUnit = product.unit;
+            }
             if (st.logs[k].category !== fCat) delete st.logs[k].subtype;
             st.logs[k].category = fCat;
             st.logs[k].brand = fBrand;
@@ -723,7 +733,8 @@
         flavorName: flavor && flavor.name,
         flavorPalatability: flavorPalatability,
         flavorChange: flavorChange,
-        portionChange: portionChange
+        portionChange: portionChange,
+        consumeHistoryId: actualDeductedUnit > 0 ? st.stockHistory[0].id : undefined
       });
 
       selectLogDate(fDate);
@@ -798,6 +809,7 @@
       if (!btn) return;
       var hk = btn.getAttribute('data-jump-health');
       clearPantryFilters();
+      st.catFilter = btn.dataset.healthScope || 'all';
       if (hk === 'expiring_or_opened') {
         st.attrFilter = 'expiring_or_opened';
       } else if (hk === 'opened') {

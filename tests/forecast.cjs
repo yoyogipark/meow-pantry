@@ -29,6 +29,29 @@ assert.equal(Forecast.compute([wet], history.map(row => ({ ...row, date: today }
 const undo = { ...history[0], action: 'revert', beforeQty: 1, afterQty: 2 };
 assert.equal(Forecast.compute([wet], [undo, ...history], defaults, today).can.source, 'default');
 
+const openedWet = { ...wet, isOpened: true, openRemainFraction: 0.25 };
+assert.equal(Forecast.compute([openedWet], [], defaults, today).can.grams, 62.5);
+assert.equal(Forecast.compute([{ ...openedWet, openRemainFraction: 0 }], [], defaults, today).can.estimated, true);
+const mixedWet = { ...wet, flavors: [{ quantity: 1, openedDate: today, openRemainFraction: 0.5 }, { quantity: 1 }] };
+assert.equal(Forecast.compute([mixedWet], [], defaults, today).can.grams, 75);
+
+const staleWet = { ...openedWet, openedDate: '2026-11-15', openDaysLimit: 2 };
+assert.equal(Forecast.compute([staleWet], [], defaults, today).can.grams, 50);
+assert.equal(Forecast.compute([{ ...staleWet, openedDate: '2026-11-17' }], [], defaults, today).can.grams, 62.5);
+assert.equal(Forecast.compute([{ ...mixedWet, openDaysLimit: 2,
+  flavors: [{ ...mixedWet.flavors[0], openedDate: staleWet.openedDate }, mixedWet.flavors[1]]
+}], [], defaults, today).can.grams, 50);
+const staleShared = { ...staleWet, purchasePackaging: { seal: 'shared' }, flavors: mixedWet.flavors };
+const noEdible = Forecast.compute([staleShared, { ...wet, expDate: '2026-11-18' }], [], defaults, today).can;
+assert.equal(noEdible.days, 0);
+assert.equal(noEdible.low, true);
+assert.equal(Forecast.compute([{ ...wet, expDate: today }], [], defaults, today).can.grams, 100);
+
+const weightedHistory = [...history, { ...history[2], date: '2026-11-15' }]
+  .map((row, index) => ({ ...row, id: 'consume-' + index, unitWeightGrams: 100 * (index + 1) }));
+const linkedUndo = { ...undo, revertsHistoryId: 'consume-2' };
+assert.equal(Forecast.compute([wet], [linkedUndo, ...weightedHistory], defaults, today).can.dailyGrams, 140);
+
 const missing = { ...wet, id: 'missing', unit: '罐', quantity: 7, unit_net_weight_g: null, spec: '85g' };
 const incomplete = Forecast.compute([wet, missing], [], defaults, today).can;
 assert.equal(incomplete.grams, 100);
