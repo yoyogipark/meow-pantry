@@ -113,6 +113,14 @@
     return Utils.diffDaysBetween(refTodayStr || Utils.getTodayStr(), targetDateStr);
   };
 
+  Utils.openShelfEndDate = function (openedDate, limit) {
+    return openedDate && limit > 0 ? Utils.addShelfLife(openedDate, limit, 'days') : '';
+  };
+
+  Utils.openShelfDaysRemaining = function (openedDate, limit, today) {
+    return Utils.diffDaysFromToday(Utils.openShelfEndDate(openedDate, limit), today);
+  };
+
   Utils.shiftDaysFromDate = function (baseDateStr, offsetDays) {
     var d = Utils.parseLocalDate(baseDateStr || Utils.getTodayStr());
     if (!d) return '';
@@ -153,18 +161,48 @@
     return '🍪 加餐/零食';
   };
 
-  Utils.formatMoney = function (price, currency) {
+  Utils.formatNumber = function (value, digits) {
+    if (!Number.isFinite(value)) return '—';
+    return value.toLocaleString('en-US', { maximumFractionDigits: digits === undefined ? 2 : digits });
+  };
+
+  Utils.formatQuantity = function (value, unit) {
+    return Utils.formatNumber(value, /^(克|g)$/i.test(unit) ? 0 : undefined) + (unit || '');
+  };
+
+  Utils.formatPercent = function (value) {
+    return Number.isFinite(value)
+      ? value.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%' : '—';
+  };
+
+  Utils.formatDays = function (days) {
+    if (!Number.isFinite(days)) return { text: '—', tone: 'unknown' };
+    var rounded = Math.round(days);
+    var tone = days < 0 ? 'expired' : rounded <= 3 ? 'urgent' : rounded <= 14 ? 'warning' : 'fresh';
+    return { text: Utils.formatQuantity(Math.abs(rounded), '天'), tone: tone };
+  };
+
+  Utils.formatListDate = function (value, fallback) {
+    return Utils.normalizeDateStr(value) || (fallback || '—');
+  };
+
+  Utils.formatSentenceDate = function (value) {
+    var date = Utils.parseLocalDate(value);
+    return date ? (date.getMonth() + 1) + '月' + date.getDate() + '日' : '—';
+  };
+
+  Utils.formatMonthLabel = function (value) {
+    var match = /^(\d{4})-(\d{2})$/.exec(value);
+    return match ? match[1] + '年' + Number(match[2]) + '月' : value;
+  };
+
+  Utils.formatMoney = function (price, currency, perUnit) {
     var num = Number(price);
-    if (!isFinite(num) || num <= 0) return '';
-    var cur = currency === 'JPY' ? 'JPY' : 'CNY';
-    if (cur === 'JPY') {
-      var yen = Math.round(num).toLocaleString('en-US');
-      return yen + '円';
-    }
-    var yuan = num.toLocaleString('en-US', {
-      maximumFractionDigits: 2
-    });
-    return yuan + '元';
+    if (!Number.isFinite(num) || num <= 0) return '';
+    var yen = currency === 'JPY';
+    var digits = yen ? 0 : 2;
+    var amount = num.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    return amount + (yen ? '円' : '元') + (perUnit ? '/' + perUnit : '');
   };
 
   Utils.parseSpecToGrams = function (specStr) {
@@ -199,10 +237,10 @@
     var totalGrams = Utils.parseSpecToGrams(specStr);
     if (!totalGrams || totalGrams <= 0) return '';
     var per100g = (p / totalGrams) * 100;
-    return '≈' + Utils.formatMoney(per100g, currency) + '/100g';
+    return '≈' + Utils.formatMoney(per100g, currency, '100g');
   };
 
-  Utils.formatRemainFractionText = function (remFrac, unitStr) {
+  Utils.formatRemainFractionText = function (remFrac, unitStr, display) {
     var r = Number(remFrac);
     if (!isFinite(r) || r <= 0 || r >= 1) return '';
     var u = unitStr || '罐';
@@ -211,7 +249,7 @@
     if (Math.abs(r - 1 / 3) <= 0.005) return '余1/3' + u;
     if (Math.abs(r - 0.75) <= 0.005) return '余3/4' + u;
     if (Math.abs(r - 0.25) <= 0.005) return '余1/4' + u;
-    return '余' + (r < 0.0001 ? '不足0.01' : Utils.round2(r * 100)) + '%' + u;
+    return '余' + (display ? Utils.formatPercent(r * 100) : (r < 0.0001 ? '不足0.01' : Utils.round2(r * 100)) + '%') + u;
   };
 
   Utils.computePortionGramLabel = function (baseLabel, frac, specStr) {

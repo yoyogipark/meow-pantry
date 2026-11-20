@@ -1,0 +1,65 @@
+/* Shared visual values for Meow Pantry. Load before styles.css. */
+:root {
+  --bg-cream: #F8F3EA;
+  --card-bg: #FFFFFF;
+  --text-main: #2B2320;
+  --text-muted: #6B5A4C;
+  --accent: #E8590C;
+  --accent-strong: #B64008;
+  --selection-bg: #FFF1E6;
+  --accent-soft: #FFEDD5;
+  --border-warm: #E8DCCB;
+  --danger: #B91C1C;
+  --danger-soft: #FDE2E2;
+  --warn: #B45309;
+  --warn-soft: #FEF3C7;
+  --ok: #3D5A24;
+  --ok-soft: #EAF2DC;
+
+  --text-weak: #75695F;
+  --text-on-accent: #FFFFFF;
+  --control-bg: #FAFAF9;
+  --control-border: #D6D3D1;
+  --secondary-bg: #F1E6D6;
+  --secondary-text: #3A2A20;
+
+  --status-danger-text: #9B1C1C;
+  --status-danger-bg: var(--danger-soft);
+  --status-danger-progress: var(--danger);
+  --status-warning-text: #92400E;
+  --status-warning-bg: var(--warn-soft);
+  --status-warning-progress: #C9801A;
+  --status-normal-text: var(--ok);
+  --status-normal-bg: var(--ok-soft);
+  --status-normal-progress: #5F8F3A;
+  --status-neutral-text: var(--text-muted);
+  --status-neutral-bg: #F5F5F4;
+  --status-neutral-progress: #A8A29E;
+  --progress-track-bg: #EBE5DA;
+
+  --font-page-title: 17px;
+  --font-section-title: 15px;
+  --font-card-title: 14px;
+  --font-number: 20px;
+  --font-body: 13px;
+  --font-support: 12px;
+  --font-caption: 11px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-heading: 700;
+
+  --radius-card: 12px;
+  --radius-pill: 999px;
+  --radius-input: 10px;
+  --border-default-width: 0.5px;
+  --border-selected-width: 1.5px;
+  --page-gutter: 14px;
+  --card-padding: 12px;
+  --card-gap: 8px;
+  --form-gap: 10px;
+  --control-height: 38px;
+  --filter-control-height: 36px;
+  --action-height: 40px;
+  --status-progress-height: 6px;
+}

@@ -13,6 +13,23 @@ for (const file of ['constants.js', 'utils.js', 'domain.js', 'storage.js']) {
 
 const { Utils, Storage } = sandbox.MeowPantry;
 
+assert.equal(Utils.formatQuantity(1250.7, '克'), '1,251克');
+assert.equal(Utils.formatQuantity(2.5, '袋'), '2.5袋');
+assert.equal(Utils.formatMoney(128.5, 'CNY'), '128.50元');
+assert.equal(Utils.formatMoney(4880.2, 'JPY', '袋'), '4,880円/袋');
+assert.equal(Utils.formatMoney(0, 'CNY'), '');
+assert.equal(Utils.formatPercent(100), '100.0%');
+assert.equal(Utils.formatListDate('2026-1-2'), '2026-01-02');
+assert.equal(Utils.formatSentenceDate('2026-01-02'), '1月2日');
+assert.equal(Utils.formatCnDateText('2026-01-02'), '2026年1月2日');
+for (const [days, label, tone] of [
+  [null, '—', 'unknown'], [-1, '1天', 'expired'], [0, '0天', 'urgent'],
+  [3.2, '3天', 'urgent'], [4, '4天', 'warning'], [14, '14天', 'warning'], [15, '15天', 'fresh']
+]) {
+  assert.equal(Utils.formatDays(days).text, label);
+  assert.equal(Utils.formatDays(days).tone, tone);
+}
+
 assert.equal(Utils.normalizeDateStr('2024-2-29'), '2024-02-29');
 assert.equal(Utils.normalizeDateStr('2023-02-29'), '');
 assert.equal(Utils.normalizeDateStr('2026-02-31'), '');

@@ -46,7 +46,7 @@
   };
 
   MP.FOOD_SUBTYPES = {
-    can: { label: '包装类型', options: ['罐头', '餐盒', '餐包'], units: ['罐', '盒', '袋'] },
+    can: { label: '包装类型', options: ['罐头', '餐盒', '餐包'], units: ['罐', '杯', '包'] },
     freeze: { label: '冻干类型', options: ['主食冻干', '零食冻干'] }
   };
 

@@ -58,7 +58,7 @@
 
     if (needBackup) {
       if (dotEl) {
-        dotEl.textContent = badgeCount > 99 ? '99+' : String(badgeCount);
+        dotEl.textContent = badgeCount > 99 ? '99+' : Utils.formatNumber(badgeCount);
         dotEl.classList.remove('hidden-view');
       }
       if (topBanner) {
@@ -66,8 +66,8 @@
           topBanner.classList.remove('hidden-view');
           if (topBannerTxt) {
             topBannerTxt.innerHTML = exportTime
-              ? ('<strong>备份提醒：</strong>自上次发起导出 (' + Utils.escapeHtml(exportTime) + ') 后已有 <strong>' + badgeCount + ' 项</strong>改动未备份')
-              : ('<strong>备份提醒：</strong>已累计 <strong>' + badgeCount + ' 项</strong>数据变动未导出 JSON 备份');
+              ? ('<strong>备份提醒：</strong>自上次发起导出 (' + Utils.escapeHtml(exportTime) + ') 后已有 <strong>' + Utils.formatQuantity(badgeCount, '项') + '</strong>改动未备份')
+              : ('<strong>备份提醒：</strong>已累计 <strong>' + Utils.formatQuantity(badgeCount, '项') + '</strong>数据变动未导出 JSON 备份');
           }
         } else {
           topBanner.classList.add('hidden-view');
@@ -81,7 +81,7 @@
     if (setBadge) {
       setBadge.style.background = needBackup ? '#FEF3C7' : exportTime ? '#EAF2DC' : '#F5F5F4';
       setBadge.style.color = needBackup ? '#854D0E' : exportTime ? '#3D5A24' : '#6B5A4C';
-      setBadge.textContent = needBackup ? badgeCount + ' 项待备份' : (exportTime ? '✓ 已备份 ' + exportTime : '未备份');
+      setBadge.textContent = needBackup ? Utils.formatQuantity(badgeCount, '项待备份') : (exportTime ? '✓ 已备份 ' + exportTime : '未备份');
     }
 
     var engineLabel = (st.storageHealth.idbAvailable && st.storageHealth.lsAvailable)
@@ -89,6 +89,6 @@
       : (st.storageHealth.lsAvailable ? 'LocalStorage 本地存储正常' : '内存会话模式');
 
     document.getElementById('storageStatusText').textContent =
-      engineLabel + ' · 已存 ' + activeItemsCount + ' 批商品、' + st.logs.length + ' 条饮食记录、' + st.stockHistory.length + ' 条库存流水（含 ' + customPhotos + ' 张实拍图）';
+      engineLabel + ' · 已存 ' + Utils.formatQuantity(activeItemsCount, '批商品') + '、' + Utils.formatQuantity(st.logs.length, '条') + '饮食记录、' + Utils.formatQuantity(st.stockHistory.length, '条') + '库存流水（含 ' + Utils.formatQuantity(customPhotos, '张实拍图') + '）';
   };
 })(typeof window !== 'undefined' ? window : globalThis);
