@@ -1115,41 +1115,6 @@
       if (item) UI.openRestockModal(item);
     });
 
-    function editingItem() {
-      var id = document.getElementById('fieldId').value;
-      return st.items.find(function (item) { return item.id === id; });
-    }
-
-    document.getElementById('correctedUnit').addEventListener('change', function () {
-      var item = editingItem();
-      UI.syncUnitCorrection(item ? item.unit : '');
-    });
-
-    document.getElementById('correctUnitBtn').addEventListener('click', function () {
-      var item = editingItem();
-      var unit = document.getElementById('correctedUnit').value;
-      if (!item || !Domain.canCorrectStockUnit(item, unit)) {
-        UI.showToast('请选择不同且代表同一独立计数对象的单位。涉及拆箱、重量或数量换算时不可更正。');
-        return;
-      }
-      var oldUnit = item.unit;
-      UI.openConfirm('确认更正库存计数单位？',
-        '将该批商品的计数单位由「' + oldUnit + '」更正为「' + unit + '」。库存件数、原始配比、购买总价和历史扣减数量保持不变。',
-        '确认更正', function (samePiece) {
-          if (!samePiece) {
-            UI.showToast('请确认新旧单位代表同一件库存后再更正。');
-            return;
-          }
-          if (editingItem() !== item || item.unit !== oldUnit || !Domain.correctStockUnit(item, unit)) return;
-          var unitField = document.getElementById('fieldUnit');
-          unitField.value = unit;
-          UI.syncNetWeight();
-          UI.syncModalUnitPriceHint();
-          UI.renderAll();
-          Storage.saveToStorage(false, function (ok) { if (ok) UI.showToast('库存单位已更正'); });
-        }, { label: '确认新旧单位代表同一件库存，无需数量换算', defaultChecked: false });
-    });
-
     document.getElementById('itemForm').addEventListener('change', function (ev) {
       if (!['fieldBrand', 'fieldName', 'fieldSpec', 'fieldUnit', 'fieldSubtype'].includes(ev.target.id)) return;
       UI.syncNetWeight();
@@ -1163,7 +1128,7 @@
       saveItemForm();
     });
 
-    function saveItemForm(confirmedLocation) {
+    function saveItemForm(confirmedLocation, unitConfirmed, unitSnapshotReady) {
       var id = document.getElementById('fieldId').value;
       var isRestockMode = document.getElementById('fieldIsRestockMode').value === '1';
       var brand = document.getElementById('fieldBrand').value.trim();
@@ -1212,6 +1177,12 @@
         ? purchasedQty
         : Math.max(0, Utils.round2(Number(document.getElementById('fieldQty').value) || 0));
       var original = id && st.items.find(function (item) { return item.id === id; });
+      var selectedUnit = document.getElementById('fieldUnit').value;
+      var unitChanged = Boolean(original && selectedUnit !== original.unit);
+      if (unitChanged) {
+        var unitError = Domain.stockUnitCorrectionError(original, selectedUnit);
+        if (unitError) { showFieldError('fieldUnit', unitError); return; }
+      }
       if (original && original.flavors) {
         newQty = original.quantity;
         packaging = original.purchasePackaging;
@@ -1271,8 +1242,21 @@
       if (similar) {
         UI.openConfirm('确认存放位置', '已有相似位置：' + similar + '，是否合并？', '合并', function () {
           locationInput.value = similar;
-          saveItemForm(similar);
-        }, { alternativeLabel: '保持独立', onAlternative: function () { saveItemForm(location); } });
+          saveItemForm(similar, unitConfirmed, unitSnapshotReady);
+        }, { alternativeLabel: '保持独立', onAlternative: function () { saveItemForm(location, unitConfirmed, unitSnapshotReady); } });
+        return;
+      }
+      if (unitChanged && !unitConfirmed) {
+        UI.openConfirm('确认更正内包装单位？',
+          '仅更正单位，数量 ' + Utils.formatNumber(Number(original.quantity) || 0) + ' 不变，历史记录里的单位也会一起更新。',
+          '确认保存', function () { saveItemForm(confirmedLocation, true, false); });
+        return;
+      }
+      if (unitChanged && !unitSnapshotReady) {
+        Storage.savePreRestoreSnapshot(function (ok) {
+          if (ok) saveItemForm(confirmedLocation, true, true);
+          else UI.showToast('无法保存操作前快照，单位更正已取消。');
+        });
         return;
       }
       var openLimit = document.getElementById('fieldOpenLimit').value;
@@ -1285,7 +1269,7 @@
         name: name,
         spec: document.getElementById('fieldSpec').value.trim(),
         quantity: newQty,
-        unit: document.getElementById('fieldUnit').value,
+        unit: selectedUnit,
         purchasePackaging: packaging,
         flavors: flavors,
         price: unitPrice,
@@ -1306,6 +1290,14 @@
         imageData: st.formImage || '',
         isSample: false
       });
+
+      var rollbackState = unitChanged ? {
+        items: JSON.parse(JSON.stringify(st.items)),
+        logs: JSON.parse(JSON.stringify(st.logs)),
+        stockHistory: JSON.parse(JSON.stringify(st.stockHistory)),
+        settings: JSON.parse(JSON.stringify(st.settings)),
+        statusFilter: st.statusFilter
+      } : null;
 
       if (id) {
         var prevIt = st.items.find(function (x) { return x.id === id; });
@@ -1416,10 +1408,25 @@
         }
       }
 
+      if (unitChanged) Domain.syncStockUnitCorrection(record, original.unit);
+
       Storage.saveToStorage(false, function (ok) {
-        if (ok) UI.showToast(id ? '修改已保存' : (isRestockMode ? '同款新批次已复购入库' : '新批次已入库'));
+        if (!ok && rollbackState) {
+          st.items = rollbackState.items;
+          st.logs = rollbackState.logs;
+          st.stockHistory = rollbackState.stockHistory;
+          st.settings = rollbackState.settings;
+          st.statusFilter = rollbackState.statusFilter;
+          UI.renderAll();
+          UI.showToast('保存失败，单位及历史记录已恢复原状。');
+          return;
+        }
+        if (ok) {
+          UI.showToast(id ? '修改已保存' : (isRestockMode ? '同款新批次已复购入库' : '新批次已入库'));
+          if (unitChanged) UI.closeItemModal();
+        }
       });
-      UI.closeItemModal();
+      if (!unitChanged) UI.closeItemModal();
       UI.renderAll();
     }
 

@@ -293,17 +293,22 @@
     var quantities = Domain.summarizeStockQuantity(scopedItems);
     var expiring = Object.values(detailStatuses).reduce(function (sum, row) { return sum + row.expiring; }, 0);
     var opened = Object.values(quantities.units).reduce(function (sum, row) { return sum + row.opened; }, 0);
+    var expiringUnits = Object.keys(detailStatuses).filter(function (unit) { return detailStatuses[unit].expiring > 0; })
+      .map(function (unit) { return Utils.formatQuantity(detailStatuses[unit].expiring, unit); }).join(' · ');
+    var openedUnits = Object.keys(quantities.units).filter(function (unit) { return quantities.units[unit].opened > 0; })
+      .map(function (unit) { return Utils.formatQuantity(quantities.units[unit].opened, unit); }).join(' · ');
     var healthEl = document.getElementById('stockHealthBox');
     var healthVisible = Boolean(expiringBatches || openedBatches);
     var healthFilter = expiringBatches && openedBatches ? 'expiring_or_opened' : expiringBatches ? 'expiring' : 'opened';
     healthEl.classList.toggle('hidden-view', !healthVisible);
-    var expiringLabel = expiringBatches && !expiring ? Utils.formatQuantity(expiringBatches, '批') : Utils.formatQuantity(expiring, '件');
+    var expiringLabel = expiringBatches && !expiring ? Utils.formatQuantity(expiringBatches, '批') : expiringUnits;
+    var openedLabel = openedBatches && !opened ? Utils.formatQuantity(openedBatches, '批') : openedUnits;
     healthEl.innerHTML = healthVisible ? '<span>' + expiringLabel +
-      '临期 · ' + (openedBatches && !opened ? Utils.formatQuantity(openedBatches, '批') : Utils.formatQuantity(opened, '件')) +
+      '临期 · ' + openedLabel +
       '已拆封</span><button type="button" data-jump-health="' + healthFilter + '" data-health-scope="' + scope + '">去查看 ›</button>' : '';
     var taskSummary = [];
     if (showFood && urgent) taskSummary.push(MP.CATEGORIES[urgent].label + '将断粮');
-    if (healthVisible) taskSummary.push(expiringBatches ? expiringLabel + '临期' : (opened || openedBatches) + (opened ? ' 件' : ' 批') + '已拆封');
+    if (healthVisible) taskSummary.push(expiringBatches ? expiringLabel + '临期' : openedLabel + '已拆封');
     document.getElementById('feedingTasks').classList.toggle('hidden-view', !taskSummary.length);
     document.getElementById('feedingTaskCount').textContent = Utils.formatQuantity(taskSummary.length, '项需要处理');
     document.getElementById('feedingTaskSummary').textContent = taskSummary.join(' · ');

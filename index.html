@@ -11,8 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=130">
-  <link rel="stylesheet" href="./css/styles.css?v=130">
+  <link rel="stylesheet" href="./css/tokens.css?v=131">
+  <link rel="stylesheet" href="./css/styles.css?v=131">
 </head>
 <body>
 
@@ -593,6 +593,7 @@
               <input id="fieldNetWeight" aria-describedby="netWeightUnit" class="ios-input" type="number" min="0" step="any" inputmode="decimal">
               <span id="netWeightUnit">克</span>
             </div>
+            <p id="netWeightUnitChangeHint" class="stock-form-note hidden-view">单位已更改，请确认净含量。</p>
           </div>
         </div>
 
@@ -614,6 +615,7 @@
               <option value="瓶">瓶</option>
               <option value="杯">杯</option>
             </select>
+            <p id="unitChangeHint" class="stock-form-note hidden-view"></p>
           </div>
           <div>
             <div class="stock-form-price-label">
@@ -631,27 +633,6 @@
         </div>
 
         <p id="modalUnitPriceHint" class="stock-form-note" role="status"></p>
-        <p id="unitCorrectionHint" class="purchase-packaging-note hidden-view" style="font-size:11px;color:#57534E;">内包装不能直接改，需要调整请用下方「库存单位更正」。</p>
-        <section id="unitCorrectionFields" class="purchase-packaging stock-form-card hidden-view">
-          <strong>库存单位更正</strong>
-          <p class="purchase-packaging-note">仅更正计数单位，库存数量保持不变。确认后立即保存，无需点击底部「保存」。</p>
-          <div class="unit-correction-grid">
-            <label for="currentStockUnit">当前单位
-              <input id="currentStockUnit" class="ios-input" type="text" readonly>
-            </label>
-            <label for="correctedUnit">更正为
-              <select id="correctedUnit" class="ios-input">
-                <option value="">请选择</option>
-                <option>袋</option><option>罐</option><option>包</option><option>盒</option>
-                <option>支</option><option>粒</option><option>瓶</option><option>杯</option>
-              </select>
-            </label>
-          </div>
-          <div class="unit-correction-actions">
-            <button type="button" id="correctUnitBtn" class="ios-btn" disabled>仅确认更正</button>
-          </div>
-        </section>
-
         <div class="purchase-packaging stock-form-card stock-form-tinted">
           <label class="purchase-packaging-toggle">
             <input id="fieldPackagingEnabled" type="checkbox">
@@ -762,7 +743,7 @@
           <div class="stock-form-opening-header">
             <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>
             <div>
-              <div id="openedCheckboxTitle">已拆封 0 件</div>
+              <div id="openedCheckboxTitle">已拆封 0</div>
               <div id="openingSubtitle" class="stock-form-note">单独计算开封保鲜期</div>
             </div>
             <input id="fieldIsOpened" type="checkbox" role="switch" aria-label="已拆封" aria-checked="false" aria-controls="openedExtraFields">
@@ -905,14 +886,14 @@
             <label for="feedAmountInput" style="font-size:12px;font-weight:700;color:#44403C;">投喂份量 <span style="color:var(--accent-strong);">*</span></label>
             <span id="feedSplitHintTag" style="font-size:11px;font-weight:700;color:var(--accent-strong);"></span>
           </div>
-          <input id="feedAmountInput" type="text" required placeholder="如：半罐 (85g) / 1/3罐 / 40g / 1支" class="ios-input">
+          <input id="feedAmountInput" type="text" required placeholder="如：1/2、1/3、40g" class="ios-input">
           <div id="feedPortionChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
-            <button type="button" data-portion="吃完本罐剩余" data-frac="rest" id="chipFinishRestCan" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #16A34A;background:#DCFCE7;color:#15803D;font-size:11.5px;font-weight:800;cursor:pointer;">✨ 吃完本罐剩余</button>
+            <button type="button" data-portion="吃完当前剩余" data-frac="rest" id="chipFinishRestCan" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #16A34A;background:#DCFCE7;color:#15803D;font-size:11.5px;font-weight:800;cursor:pointer;">✨ 吃完当前剩余</button>
             <button type="button" data-portion="" data-frac="0" id="chipLastPortion" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #C5DDBC;background:#EAF2DC;color:#3D5A24;font-size:11px;font-weight:800;cursor:pointer;">⚡ 上次份量</button>
-            <button type="button" data-portion="半罐 (1/2)" data-package-portion data-frac="0.5" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 半罐 (1/2)</button>
-            <button type="button" data-portion="1/3罐" data-package-portion data-frac="0.34" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 1/3罐</button>
-            <button type="button" data-portion="1/4罐" data-package-portion data-frac="0.25" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 1/4罐</button>
-            <button type="button" data-package-portion data-portion="1罐" data-frac="1" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1罐</button>
+            <button type="button" data-package-portion data-frac="0.5" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">1/2</button>
+            <button type="button" data-package-portion data-frac="0.34" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">1/3</button>
+            <button type="button" data-package-portion data-frac="0.25" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">1/4</button>
+            <button type="button" data-package-portion data-frac="1" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1</button>
             <button type="button" data-portion="30g" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">30g</button>
             <button type="button" data-portion="50g" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">50g</button>
             <button type="button" data-portion="15g冻干" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">15g冻干</button>
@@ -1030,18 +1011,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=130"></script>
-  <script src="./js/constants.js?v=130"></script>
-  <script src="./js/utils.js?v=130"></script>
-  <script src="./js/forecast.js?v=130"></script>
-  <script src="./js/domain.js?v=130"></script>
-  <script src="./js/storage.js?v=130"></script>
-  <script src="./js/stats.js?v=130"></script>
-  <script src="./js/modal.js?v=130"></script>
-  <script src="./js/ui.js?v=130"></script>
-  <script src="./js/ui-pantry.js?v=130"></script>
-  <script src="./js/ui-daily.js?v=130"></script>
-  <script src="./js/ui-settings.js?v=130"></script>
-  <script src="./js/app.js?v=130"></script>
+  <script src="./js/covers.js?v=131"></script>
+  <script src="./js/constants.js?v=131"></script>
+  <script src="./js/utils.js?v=131"></script>
+  <script src="./js/forecast.js?v=131"></script>
+  <script src="./js/domain.js?v=131"></script>
+  <script src="./js/storage.js?v=131"></script>
+  <script src="./js/stats.js?v=131"></script>
+  <script src="./js/modal.js?v=131"></script>
+  <script src="./js/ui.js?v=131"></script>
+  <script src="./js/ui-pantry.js?v=131"></script>
+  <script src="./js/ui-daily.js?v=131"></script>
+  <script src="./js/ui-settings.js?v=131"></script>
+  <script src="./js/app.js?v=131"></script>
 </body>
 </html>

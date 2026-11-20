@@ -235,10 +235,12 @@
   };
 
   function syncPortionChips(item) {
-    var unit = item && item.unit || '罐';
-    var presets = { '0.5': '半', '0.34': '1/3', '0.25': '1/4', '1': '1' };
+    var unit = item && item.unit || '';
+    var natural = /^(杯|罐|包|盒|支|粒|瓶|袋)$/.test(unit);
+    var presets = { '0.5': natural ? '半' + unit : '1/2', '0.34': natural ? '1/3' + unit : '1/3',
+      '0.25': natural ? '1/4' + unit : '1/4', '1': '1' + unit };
     document.querySelectorAll('#feedPortionChips [data-package-portion]').forEach(function (button) {
-      var portion = presets[button.dataset.frac] + unit;
+      var portion = presets[button.dataset.frac];
       button.dataset.portion = portion;
       button.textContent = portion;
       button.classList.toggle('hidden-view', Boolean(item && !Domain.isPackageUnit(unit) && unit !== '粒'));
@@ -373,7 +375,7 @@
     document.getElementById('feedModalTitle').textContent = '🐾 记录饮食 / 营养 / 用药';
     document.getElementById('feedStockSelect').disabled = false;
     document.getElementById('feedLogEditId').value = '';
-    document.getElementById('feedAmountInput').placeholder = '如 40g、半罐、1支';
+    document.getElementById('feedAmountInput').placeholder = '如 1/2、1/3、40g';
     UI.syncFeedFlavor(null);
     syncPortionChips(null);
     var dateToUse = customDate || (MP.state.activeTab === 'daily' ? MP.state.selectedLogDate : Utils.getTodayStr());
@@ -628,7 +630,22 @@
     if (!manualItemUnit && !unit.disabled && config && config.units && index >= 0) unit.value = config.units[index];
   };
 
-  UI.markItemUnitManual = function () { manualItemUnit = true; };
+  UI.markItemUnitManual = function () {
+    manualItemUnit = true;
+    UI.syncUnitChangeHints();
+  };
+
+  UI.syncUnitChangeHints = function () {
+    var unit = document.getElementById('fieldUnit');
+    var id = document.getElementById('fieldId').value;
+    var item = id && MP.state.items.find(function (entry) { return entry.id === id; });
+    var changed = Boolean(item && !item.sourceBatchId && unit.value !== item.unit);
+    var hint = document.getElementById('unitChangeHint');
+    hint.textContent = item && item.sourceBatchId ? '归档记录不能更正单位。'
+      : changed ? '仅更正单位，数量 ' + Utils.formatNumber(Number(item.quantity) || 0) + ' 不变。' : '';
+    hint.classList.toggle('hidden-view', !hint.textContent);
+    document.getElementById('netWeightUnitChangeHint').classList.toggle('hidden-view', !changed);
+  };
 
   function findFormProduct(predicate, useEnteredWeight) {
     var product = { category: MP.state.formCat };
@@ -655,6 +672,7 @@
     document.getElementById('itemModalBackdrop').classList.toggle('is-editing-item', Boolean(id));
     document.getElementById('fieldSpecLabel').textContent = '规格备注 · 选填';
     document.getElementById('fieldNetWeightLabel').textContent = unit ? '每' + unit + '净含量' : '单件净含量';
+    UI.syncUnitChangeHints();
     var subtype = document.getElementById('fieldSubtype').value;
     input.required = required;
     document.getElementById('netWeightRequired').classList.toggle('hidden-view', !required);
@@ -1006,15 +1024,6 @@
     }, document.getElementById('fieldUnit').value);
   };
 
-  UI.syncUnitCorrection = function (currentUnit) {
-    var current = document.getElementById('currentStockUnit');
-    var target = document.getElementById('correctedUnit');
-    if (current.value !== currentUnit) target.value = '';
-    current.value = currentUnit;
-    document.getElementById('correctUnitBtn').disabled =
-      !current.value || !target.value || current.value === target.value;
-  };
-
   UI.syncPurchasePackaging = function () {
     var enabled = document.getElementById('fieldPackagingEnabled').checked;
     var editing = Boolean(document.getElementById('fieldId').value);
@@ -1026,13 +1035,9 @@
     document.getElementById('fieldQtyLabel').textContent = editing ? '剩余数量' : '入库数量';
     qty.readOnly = enabled && (!editing || Boolean(document.getElementById('fieldMixedFlavors').checked));
     qty.step = enabled ? '1' : '0.01';
-    unitField.disabled = editing;
-    var correction = document.getElementById('unitCorrectionFields');
     var item = editing && MP.state.items.find(function (entry) { return entry.id === document.getElementById('fieldId').value; });
-    var canShowCorrection = Boolean(item && !item.sourceBatchId);
-    correction.classList.toggle('hidden-view', !canShowCorrection);
-    document.getElementById('unitCorrectionHint').classList.toggle('hidden-view', !canShowCorrection);
-    UI.syncUnitCorrection(item ? item.unit : '');
+    unitField.disabled = Boolean(item && item.sourceBatchId);
+    UI.syncUnitChangeHints();
     ['fieldPackCount', 'fieldPackOuterUnit', 'fieldPackSize'].forEach(function (id) {
       document.getElementById(id).disabled = !enabled || editing;
     });
@@ -1082,9 +1087,12 @@
     size.value = pack ? pack.size : 8;
     count.disabled = outer.disabled = size.disabled = editing || !pack;
     var unit = document.getElementById('fieldUnit');
+    unit.querySelectorAll('[data-historical-unit]').forEach(function (option) { option.remove(); });
     if (item) {
       if (!Array.from(unit.options).some(function (option) { return option.value === item.unit; })) {
-        unit.add(new Option(item.unit, item.unit));
+        var historicalUnit = new Option(item.unit, item.unit);
+        historicalUnit.dataset.historicalUnit = 'true';
+        unit.add(historicalUnit);
       }
       unit.value = item.unit;
     } else {
@@ -1095,7 +1103,6 @@
     });
     document.getElementById('adjustFlavorReason').value = '';
     renderFlavorSuggestions();
-    document.getElementById('correctedUnit').value = '';
     var price = item && item.price;
     var qty = document.getElementById('fieldQty');
     delete qty.dataset.manualQuantity;
@@ -1191,7 +1198,8 @@
     document.getElementById('openedExtraFields').classList.toggle('hidden-view', !historical && !count);
     document.getElementById('freshUntilCol').classList.toggle('hidden-view', historical);
     document.getElementById('finishedDateColWrap').classList.toggle('hidden-view', !historical);
-    document.getElementById('openedCheckboxTitle').textContent = historical ? '历史批次日期' : '已拆封 ' + Utils.formatQuantity(count, '件');
+    var countUnit = item ? item.unit : document.getElementById('fieldUnit').value;
+    document.getElementById('openedCheckboxTitle').textContent = historical ? '历史批次日期' : '已拆封 ' + Utils.formatQuantity(count, countUnit || '件');
     document.getElementById('openingSubtitle').textContent = historical ? '用于计算实际消耗天数' : '单独计算开封保鲜期';
 
     var date = openedInput.value;

@@ -74,20 +74,61 @@
   Domain.canCorrectStockUnit = function (item, unit) {
     var countingUnit = /^(盒|杯|罐|袋|包|支|粒|瓶|件|听|袋装)$/;
     return Boolean(item && !item.sourceBatchId && item.unit !== unit &&
-      countingUnit.test(item.unit) && countingUnit.test(unit) && Number.isSafeInteger(item.quantity));
+      countingUnit.test(item.unit) && countingUnit.test(unit) && Number.isSafeInteger(item.quantity) &&
+      (!item.purchasePackaging || item.purchasePackaging.outerUnit !== unit));
   };
 
-  Domain.correctStockUnit = function (item, unit) {
-    if (!Domain.canCorrectStockUnit(item, unit)) return false;
-    var previousUnit = item.unit;
-    item.unit = unit;
+  Domain.stockUnitCorrectionError = function (item, unit) {
+    var countingUnit = /^(盒|杯|罐|袋|包|支|粒|瓶|件|听|袋装)$/;
+    if (!item || item.sourceBatchId) return '归档记录不能更正单位。';
+    if (!countingUnit.test(item.unit) || !countingUnit.test(unit)) return '该单位暂不支持更正。';
+    if (!Number.isSafeInteger(item.quantity)) return '当前剩余数量不是整数，无法仅更正计数单位。';
+    if (item.purchasePackaging && item.purchasePackaging.outerUnit === unit) return '内包装不能与外包装相同。';
+    return '';
+  };
+
+  function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  Domain.rewriteStockUnitDelta = function (text, previousUnit, unit) {
+    var value = String(text || '');
+    var old = escapeRegExp(previousUnit);
+    var quantity = '([+-]\\d+(?:\\.\\d+)?)';
+    var fraction = '(余(?:1\\/2|2\\/3|1\\/3|3\\/4|1\\/4|不足0\\.01|\\d+(?:\\.\\d+)?%))';
+    var match = new RegExp('^' + quantity + old + '$').exec(value);
+    if (match) return match[1] + unit;
+    match = new RegExp('^' + quantity + old + '\\(' + fraction + old + '\\)$').exec(value);
+    if (match) return match[1] + unit + '(' + match[2] + unit + ')';
+    match = new RegExp('^' + fraction + old + '$').exec(value);
+    if (match) return match[1] + unit;
+    if (value === '拆封 1' + previousUnit) return '拆封 1' + unit;
+    if (value === '恢复整' + previousUnit) return '恢复整' + unit;
+    if (value === '恢复整' + previousUnit + '未拆') return '恢复整' + unit + '未拆';
+    var correction = /^(盒|杯|罐|袋|包|支|粒|瓶|件|听|袋装) → (盒|杯|罐|袋|包|支|粒|瓶|件|听|袋装)$/.exec(value);
+    if (correction && correction[2] === previousUnit && correction[1] !== unit) return correction[1] + ' → ' + unit;
+    return value;
+  };
+
+  Domain.syncStockUnitCorrection = function (item, previousUnit) {
+    if (!item || !previousUnit || item.unit === previousUnit) return false;
+    var unit = item.unit;
     state.items.forEach(function (archive) {
       if (archive.sourceBatchId === item.id && archive.quantity === 0) archive.unit = unit;
+    });
+    state.stockHistory.forEach(function (entry) {
+      if (entry.itemId !== item.id) return;
+      entry.unit = unit;
+      entry.deltaText = Domain.rewriteStockUnitDelta(entry.deltaText, previousUnit, unit);
+    });
+    state.logs.forEach(function (log) {
+      if (log.itemId === item.id) log.productUnit = unit;
     });
     Domain.appendStockHistory({
       action: 'adjust', itemId: item.id, category: item.category, brand: item.brand,
       name: item.name, unit: unit, beforeQty: item.quantity, afterQty: item.quantity,
-      deltaText: previousUnit + ' → ' + unit, note: '更正库存计数单位，件数不变', isSample: item.isSample, preservePortionRevision: true
+      deltaText: '内包装单位由 ' + previousUnit + ' 更正为 ' + unit,
+      note: '仅更正单位，数量不变', isSample: item.isSample, preservePortionRevision: true
     });
     return true;
   };
@@ -784,7 +825,7 @@
       Domain.appendStockHistory({
         action: 'revert', itemId: item.id, category: item.category, brand: item.brand, name: item.name,
         unit: item.unit, beforeQty: item.quantity, afterQty: item.quantity, note: '撤销分顿喂食，恢复开封状态及余量',
-        deltaText: before.fraction ? Utils.formatRemainFractionText(before.fraction, item.unit) : '恢复整件'
+        deltaText: before.fraction ? Utils.formatRemainFractionText(before.fraction, item.unit) : '恢复整' + item.unit
       });
     }
     item.isOpened = before.opened;

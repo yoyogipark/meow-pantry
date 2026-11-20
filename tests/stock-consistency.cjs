@@ -226,19 +226,128 @@ async function run() {
   });
   pass(20);
 
-  item = make('box', 2, '盒', { purchasePackaging: { count: 1, outerUnit: '盒', size: 4 } });
-  reset(item);
+  item = make('box', 2, '盒', { purchasePackaging: { count: 1, outerUnit: '盒', size: 4 }, unit_net_weight_g: 50, price: 3 });
+  const boxArchive = make('empty_box', 0, '盒', { sourceBatchId: 'box' });
+  const otherItem = make('other-unit', 1, '罐');
+  reset(item, boxArchive, otherItem);
+  domain.appendStockHistory({ action: 'consume', itemId: item.id, category: item.category, brand: item.brand,
+    name: item.name, unit: '盒', deltaText: '-1盒', beforeQty: 3, afterQty: 2, note: '自由文字盒装备注' });
+  domain.appendStockHistory({ action: 'adjust', itemId: otherItem.id, category: otherItem.category, brand: otherItem.brand,
+    name: otherItem.name, unit: '罐', deltaText: '-1罐', beforeQty: 2, afterQty: 1 });
+  state.logs.push(domain.sanitizeLog({ id: 'box-log', date: today, itemId: item.id, category: item.category,
+    brand: item.brand, name: item.name, productUnit: '盒', amount: '半盒', note: '自由文字盒装备注' }));
   ui.openEditModal(item.id);
-  set('correctedUnit', '杯');
-  el('correctUnitBtn').click();
-  el('confirmExtraCheckbox').click();
+  assert.equal(el('fieldUnit').disabled, false);
+  set('fieldUnit', '杯');
+  assert.equal(el('unitChangeHint').textContent, '仅更正单位，数量 2 不变。');
+  assert.ok(!el('netWeightUnitChangeHint').classList.contains('hidden-view'));
+  el('itemForm').requestSubmit();
+  assert.match(el('confirmMessage').textContent, /历史记录里的单位也会一起更新/);
   el('confirmOkBtn').click();
-  assert.equal(item.quantity, 2);
-  assert.equal(item.unit, '杯');
+  await settle();
+  await settle();
+  assert.equal(byId('box').quantity, 2);
+  assert.equal(byId('box').unit, '杯');
+  assert.equal(byId('box').price, 3);
+  assert.equal(byId('box').unit_net_weight_g, 50);
+  assert.equal(byId('empty_box').unit, '杯');
+  assert.equal(state.stockHistory.find(row => row.itemId === 'box' && row.action === 'consume').unit, '杯');
+  assert.equal(state.stockHistory.find(row => row.itemId === 'box' && row.action === 'consume').deltaText, '-1杯');
+  assert.equal(state.stockHistory.find(row => row.itemId === 'box' && row.action === 'consume').note, '自由文字盒装备注');
+  assert.equal(state.stockHistory.find(row => row.itemId === 'other-unit').unit, '罐');
+  assert.equal(state.logs[0].productUnit, '杯');
+  assert.equal(state.logs[0].amount, '半盒');
+  assert.equal(state.logs[0].note, '自由文字盒装备注');
+  assert.equal(state.stockHistory[0].deltaText, '内包装单位由 盒 更正为 杯');
   pass(21);
   await settle();
   await persisted(s => { assert.equal(s.items[0].unit, '杯'); assert.equal(s.items[0].quantity, 2); });
+  assert.ok(await new Promise(resolve => storage.restorePreRestoreSnapshot(resolve)));
+  assert.equal(byId('box').unit, '盒');
+  assert.equal(byId('empty_box').unit, '盒');
+  assert.equal(state.stockHistory.find(row => row.itemId === 'box').unit, '盒');
+  assert.equal(state.logs.find(row => row.id === 'box-log').productUnit, '盒');
+  assert.ok(!state.stockHistory.some(row => row.deltaText === '内包装单位由 盒 更正为 杯'));
   pass(22);
+
+  assert.equal(domain.stockUnitCorrectionError(make('fractional-unit', 0.5, '杯'), '盒'),
+    '当前剩余数量不是整数，无法仅更正计数单位。');
+  assert.equal(domain.stockUnitCorrectionError(make('unsupported-unit', 1, '桶'), '杯'), '该单位暂不支持更正。');
+  assert.equal(domain.stockUnitCorrectionError(make('same-outer', 1, '杯', {
+    purchasePackaging: { count: 1, outerUnit: '盒', size: 1 }
+  }), '盒'), '内包装不能与外包装相同。');
+  assert.equal(domain.rewriteStockUnitDelta('+2杯', '杯', '盒'), '+2盒');
+  assert.equal(domain.rewriteStockUnitDelta('-1杯', '杯', '盒'), '-1盒');
+  assert.equal(domain.rewriteStockUnitDelta('+1杯(余1/2杯)', '杯', '盒'), '+1盒(余1/2盒)');
+  assert.equal(domain.rewriteStockUnitDelta('余25%杯', '杯', '盒'), '余25%盒');
+  assert.equal(domain.rewriteStockUnitDelta('拆封 1杯', '杯', '盒'), '拆封 1盒');
+  assert.equal(domain.rewriteStockUnitDelta('恢复整杯', '杯', '盒'), '恢复整盒');
+  assert.equal(domain.rewriteStockUnitDelta('恢复整杯未拆', '杯', '盒'), '恢复整盒未拆');
+  assert.equal(domain.rewriteStockUnitDelta('罐 → 杯', '杯', '盒'), '罐 → 盒');
+  assert.equal(domain.rewriteStockUnitDelta('自由文字：送人1杯', '杯', '盒'), '自由文字：送人1杯');
+  const archivedUnit = make('archived-unit', 0, '听', { sourceBatchId: 'parent-unit' });
+  reset(archivedUnit);
+  ui.openEditModal(archivedUnit.id);
+  assert.equal(el('fieldUnit').value, '听');
+  assert.ok(Array.from(el('fieldUnit').options).some(option => option.value === '听'));
+  assert.equal(el('fieldUnit').disabled, true);
+  assert.equal(el('unitChangeHint').textContent, '归档记录不能更正单位。');
+
+  const cancelledUnit = make('cancelled-unit', 2, '杯', { unit_net_weight_g: 40 });
+  reset(cancelledUnit);
+  ui.openEditModal(cancelledUnit.id);
+  set('fieldUnit', '盒');
+  el('itemForm').requestSubmit();
+  el('confirmCancelBtn').click();
+  assert.equal(byId(cancelledUnit.id).unit, '杯');
+  assert.equal(el('fieldUnit').value, '盒');
+  assert.ok(!el('itemModalBackdrop').classList.contains('hidden-view'));
+  assert.equal(state.stockHistory.length, 0);
+  ui.closeItemModal();
+
+  const unchangedFractional = make('unchanged-fractional', 0.5, '杯', { unit_net_weight_g: 40 });
+  reset(unchangedFractional);
+  ui.openEditModal(unchangedFractional.id);
+  el('itemForm').requestSubmit();
+  assert.ok(el('confirmModalBackdrop').classList.contains('hidden-view'));
+  assert.equal(byId(unchangedFractional.id).unit, '杯');
+  await settle();
+
+  const rollbackItem = make('rollback-unit', 2, '杯', { unit_net_weight_g: 40, price: 5 });
+  reset(rollbackItem);
+  domain.appendStockHistory({ action: 'create', itemId: rollbackItem.id, category: rollbackItem.category,
+    brand: rollbackItem.brand, name: rollbackItem.name, unit: '杯', deltaText: '+2杯', beforeQty: 0, afterQty: 2 });
+  state.logs.push(domain.sanitizeLog({ id: 'rollback-log', date: today, itemId: rollbackItem.id,
+    category: rollbackItem.category, brand: rollbackItem.brand, name: rollbackItem.name,
+    productUnit: '杯', amount: '半杯', note: '保留杯字' }));
+  const originalSaveToStorage = storage.saveToStorage;
+  storage.saveToStorage = (_silent, done) => done(false);
+  ui.openEditModal(rollbackItem.id);
+  set('fieldUnit', '盒');
+  el('itemForm').requestSubmit();
+  el('confirmOkBtn').click();
+  await settle();
+  await settle();
+  assert.equal(byId(rollbackItem.id).unit, '杯');
+  assert.equal(state.stockHistory.length, 1);
+  assert.equal(state.stockHistory[0].unit, '杯');
+  assert.equal(state.logs[0].productUnit, '杯');
+  assert.ok(!el('itemModalBackdrop').classList.contains('hidden-view'));
+  storage.saveToStorage = originalSaveToStorage;
+  ui.closeItemModal();
+  const grainItem = make('grain-unit', 2, '粒', { category: 'med' });
+  reset(grainItem);
+  ui.openFeedModal(grainItem.id, today);
+  assert.deepEqual(Array.from(w.document.querySelectorAll('#feedPortionChips [data-package-portion]'), button => button.textContent),
+    ['半粒', '1/3粒', '1/4粒', '1粒']);
+  ui.closeFeedModal();
+  const legacyPortionItem = make('legacy-portion-unit', 2, '听');
+  reset(legacyPortionItem);
+  ui.openFeedModal(legacyPortionItem.id, today);
+  assert.deepEqual(Array.from(w.document.querySelectorAll('#feedPortionChips [data-package-portion]'), button => button.textContent),
+    ['1/2', '1/3', '1/4', '1听']);
+  ui.closeFeedModal();
+  console.log('Stock unit edit validation, legacy option and rollback pass');
 
   item = make('backup', 1, '杯', { spec: '规格备注', unit_net_weight_g: 50 });
   reset(item);
@@ -974,7 +1083,7 @@ async function run() {
   assert.equal(el('fieldNetWeight').value, '1700');
   assert.equal(el('fieldIsOpened').getAttribute('role'), 'switch');
   assert.equal(el('fieldIsOpened').getAttribute('aria-checked'), 'true');
-  assert.equal(el('openedCheckboxTitle').textContent, '已拆封 1件');
+  assert.equal(el('openedCheckboxTitle').textContent, '已拆封 1袋');
   assert.equal(el('openingDaysLeft').textContent, '剩 ' + domain.evaluateItem(currentBatch).openRemaining + '天');
   assert.equal(el('fieldFreshUntil').value, utils.formatCnDateText(utils.openShelfEndDate(yesterday, 3)));
   assert.ok(el('openingDaysLeft').classList.contains('is-urgent'));
