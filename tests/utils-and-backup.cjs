@@ -60,8 +60,8 @@ assert.deepEqual(Array.from(mealBackup.logs, log => log.mealSlot),
   ['dinner', 'dinner', 'dinner', 'lunch', '自定义餐次']);
 assert.equal(Utils.formatMealSlot('dinner'), '晚饭');
 assert.deepEqual(Array.from(Utils.mealSlotOptions(), slot => slot.label),
-  ['Morning', 'Noon', 'Evening', 'Snack', 'Medication / Care', 'Other']);
-assert.equal(Utils.formatMealSlotDisplay('🌙 晚饭'), 'Evening');
+  ['早上', '中午', '晚上', '零食加餐', '用药／护理']);
+assert.equal(Utils.formatMealSlotDisplay('🌙 晚饭'), '晚上');
 assert.equal(Utils.formatMealSlotDisplay('自定义餐次'), '自定义餐次');
 assert.equal(Utils.formatMealSlot('自定义餐次'), '自定义餐次');
 

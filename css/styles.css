@@ -1264,7 +1264,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .forecast-category {
   display: flex;
   justify-content: space-between;
-  gap: 4px;
+  gap: 8px;
   width: 100%;
   padding: 0;
   background: transparent;
@@ -1273,7 +1273,14 @@ input[type="checkbox"] { accent-color: var(--accent); }
   color: var(--text-main);
   cursor: pointer;
 }
-.forecast-category span { white-space: nowrap; color: var(--text-muted); }
+.forecast-category-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+}
 .forecast-meter {
   margin: 5px 0 3px;
   border-radius: var(--radius-pill);
@@ -1451,7 +1458,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .forecast-units { margin-inline-start: 5px; color: var(--text-muted); font-size: var(--font-support); }
 .forecast-remaining { margin-inline-start: auto; text-align: end; }
 .forecast-days { white-space: nowrap; }
-.forecast-tile--can > .forecast-days { position: absolute; top: 8px; right: 10px; pointer-events: none; }
 .forecast-category .batch-count { display: inline-flex; align-items: center; gap: 3px; }
 .forecast-tile--can .forecast-balance { align-items: baseline; }
 .forecast-days small, .forecast-rate { font-size: var(--font-support); }
@@ -3041,3 +3047,189 @@ input[type="checkbox"] { accent-color: var(--accent); }
     transition: none;
   }
 }
+
+.feed-meal-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-main);
+  font-size: var(--font-support);
+  font-weight: var(--weight-heading);
+}
+.feed-meal-picker { position: relative; min-width: 0; }
+.feed-meal-picker summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  background: var(--card-bg);
+  cursor: pointer;
+  list-style: none;
+}
+.feed-meal-picker summary::-webkit-details-marker { display: none; }
+#feedMealChoices {
+  position: absolute;
+  z-index: 3;
+  inset: calc(100% + 4px) 0 auto;
+  padding: 4px;
+  background: var(--card-bg);
+  border: var(--border-default-width) solid var(--control-border);
+  border-radius: var(--radius-input);
+}
+#feedMealChoices button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding-inline: 8px;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+#feedMealChoices button[aria-pressed="true"] {
+  background: var(--selection-bg);
+  color: var(--accent-strong);
+}
+
+.feed-modal-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--status-neutral-bg);
+  color: var(--text-main);
+  cursor: pointer;
+}
+.feed-care-field { display: grid; gap: 4px; font-weight: var(--weight-medium); }
+.feed-care-mode #feedPortionChips button:not([data-package-portion], #chipLastPortion),
+.feed-care-mode .feed-reminder-inline-note,
+.feed-reminder-note { display: none; }
+.feed-care-mode .feed-reminder-fields { display: grid !important; justify-content: stretch !important; gap: 4px !important; }
+.feed-care-mode .feed-reminder-fields > label { white-space: nowrap; }
+.feed-care-mode .feed-reminder-note,
+#feedCareDeductHelp { display: block; color: var(--text-muted); font-size: var(--font-caption); }
+.feed-care-mode #feedNextReminderDays { width: 100% !important; }
+.feed-care-mode #feedDeductStock {
+  appearance: none;
+  position: relative;
+  width: 42px !important;
+  height: 26px !important;
+  margin: 0;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-pill);
+  background: var(--status-neutral-bg);
+  cursor: pointer;
+}
+.feed-care-mode #feedDeductStock:checked { background: var(--accent-fill); }
+.feed-care-mode #feedDeductStock::after {
+  content: "";
+  position: absolute;
+  inset: 3px auto 3px 3px;
+  width: 18px;
+  border-radius: 50%;
+  background: var(--text-on-accent);
+}
+.feed-care-mode #feedDeductStock:checked::after { inset-inline-start: auto; inset-inline-end: 3px; }
+.feed-care-mode #feedDeductStock:disabled { opacity: .55; cursor: default; }
+
+.feed-care-segments {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  background: var(--secondary-bg);
+  border-radius: var(--radius-input);
+}
+.feed-care-segments button[aria-pressed="true"] {
+  background: var(--accent-fill);
+  color: var(--text-on-accent);
+}
+.feed-nursing-mode [data-medication-field] { display: none !important; }
+.feed-nursing-projects {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.feed-nursing-projects legend { margin-bottom: 6px; font-weight: var(--weight-semibold); }
+.feed-nursing-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.feed-nursing-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 0 8px;
+  margin: 0;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-pill);
+  background: var(--control-bg);
+  cursor: pointer;
+}
+.feed-nursing-options label:has(:checked) { background: var(--selection-bg); color: var(--accent-strong); }
+#feedNursingOtherField { margin-top: 8px; }
+.daily-care-icon { justify-self: center; color: var(--text-muted); }
+.daily-care-icon .ui-icon,
+.med-reminder-icon .ui-icon { margin: 0; }
+.feeding-nursing-summary {
+  padding: 7px 10px;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-input);
+  background: var(--status-neutral-bg);
+  color: var(--text-main);
+  font-size: var(--font-support);
+}
+
+.feed-care-mode #feedPortionChips :is([data-package-portion], #chipLastPortion) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 9px !important;
+  border: 1px solid var(--control-border) !important;
+  background: var(--control-bg) !important;
+  color: var(--text-muted) !important;
+  font-size: var(--font-caption) !important;
+  font-weight: var(--weight-medium) !important;
+}
+.feed-care-mode #feedPortionChips :is([data-package-portion], #chipLastPortion)[aria-pressed="true"] {
+  border-color: var(--accent) !important;
+  background: var(--selection-bg) !important;
+  color: var(--accent-strong) !important;
+}
+
+.feed-stock-choices {
+  position: absolute;
+  z-index: 4;
+  inset: calc(100% + 4px) 0 auto;
+  max-height: min(240px, 36dvh);
+  overflow-y: auto;
+  padding: 4px;
+  border: var(--border-default-width) solid var(--control-border);
+  border-radius: var(--radius-input);
+  background: var(--card-bg);
+}
+.feed-stock-choices button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--text-main);
+  text-align: start;
+  cursor: pointer;
+}
+.feed-stock-option-text { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feed-stock-balance { flex: none; white-space: nowrap; }
+.feed-stock-group-label { padding: 5px 8px 0; font-size: var(--font-caption); color: var(--text-muted); }
+.feed-stock-choices button.feed-stock-archived { color: var(--text-muted); }
+.feed-stock-choices button[aria-pressed="true"] { background: var(--selection-bg); }
+#feedStockPickerTrigger[aria-disabled="true"] { cursor: default; color: var(--text-muted); }

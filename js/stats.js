@@ -113,9 +113,16 @@
     var recentLogs = (logs || []).filter(function (lg) {
       return lg.date >= cutoffStr && lg.date <= today;
     });
-    var foodLogs = recentLogs.filter(function (lg) { return MP.getCategoryGroup(lg.category) === 'food'; });
-    var suppLogs = recentLogs.filter(function (lg) { return MP.getCategoryGroup(lg.category) === 'supp'; });
-    var medLogs = recentLogs.filter(function (lg) { return MP.getCategoryGroup(lg.category) === 'med'; });
+    var nursingLogs = recentLogs.filter(function (log) { return Domain.getCareType(log) === 'nursing'; });
+    var foodLogs = recentLogs.filter(function (log) {
+      return MP.getCategoryGroup(log.category) === 'food' && !Domain.getCareType(log);
+    });
+    var suppLogs = recentLogs.filter(function (log) {
+      return MP.getCategoryGroup(log.category) === 'supp' && Domain.getCareType(log) !== 'nursing';
+    });
+    var medLogs = recentLogs.filter(function (log) {
+      return MP.getCategoryGroup(log.category) !== 'supp' && Domain.getCareType(log) === 'medication';
+    });
 
     return {
       groupTotals: groupTotals,
@@ -124,7 +131,8 @@
         all: recentLogs,
         food: foodLogs,
         supp: suppLogs,
-        med: medLogs
+        med: medLogs,
+        nursing: nursingLogs
       }
     };
   };
@@ -269,9 +277,9 @@
       return '<article class="ios-card metric-card forecast-tile' + (fullWidth ? ' forecast-wide' : '') + ' forecast-tile--' + key + (showsPackageStatus ? ' forecast-tile--with-package-status' : '') +
         (tone === 'urgent' ? ' forecast-tile--urgent' : '') + '">' +
         '<button type="button" class="forecast-category" data-jump-cat="' + key + '"><strong>' +
-          category.label + '</strong><span class="batch-count">' + Utils.formatQuantity(stock.skus, '批') +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></span></button>' +
-        (key === 'can' ? remaining : '') +
+          category.label + '</strong><span class="forecast-category-meta"><span class="batch-count">' + Utils.formatQuantity(stock.skus, '批') +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></span>' +
+          (key === 'can' ? remaining : '') + '</span></button>' +
         '<div class="forecast-balance"><div><strong class="forecast-quantity">' +
           (key === 'can' ? Utils.formatQuantity(data.grams, '克') : Utils.escapeHtml(stockLabel)) + '</strong>' +
           (key === 'can' ? '<small class="forecast-units">' + Utils.escapeHtml(stockLabel) + '</small>' : '') + '</div>' +
@@ -591,12 +599,12 @@
 
       // Separate Supplement & Medicine 30-day block
       var careHtml = '';
-      if (r30.supp.length > 0 || r30.med.length > 0) {
+      if (r30.supp.length || r30.med.length || r30.nursing.length) {
         var summarizeCare = function (arr) {
-          var m = {};
+          var m = Object.create(null);
           arr.forEach(function (lg) {
             var product = Domain.resolveLogProduct(lg);
-            var k = '[' + (product.brand || '') + '] ' + product.name;
+            var k = product.brand ? '[' + product.brand + '] ' + product.name : product.name;
             m[k] = (m[k] || 0) + 1;
           });
           return Object.keys(m).map(function (k) { return Utils.escapeHtml(k) + ' ×' + Utils.formatQuantity(m[k], '次'); }).join(' · ');
@@ -608,7 +616,11 @@
               ? '<div style="padding:7px 10px;border-radius:9px;background:var(--ok-soft);border:1px solid var(--positive-border);font-size:11.5px;color:var(--ok);"><strong>' + Utils.getCategoryIcon('supp', 20) + ' 营养品 (' + Utils.formatQuantity(r30.supp.length, '次') + ')：</strong>' + summarizeCare(r30.supp) + '</div>'
               : '') +
             (r30.med.length > 0
-              ? '<div style="padding:7px 10px;border-radius:9px;background:var(--ok-soft);border:1px solid var(--positive-border);font-size:11.5px;color:var(--ok);"><strong>' + Utils.getCategoryIcon('med', 20) + ' 药品/驱虫 (' + Utils.formatQuantity(r30.med.length, '次') + ')：</strong>' + summarizeCare(r30.med) + '</div>'
+              ? '<div style="padding:7px 10px;border-radius:9px;background:var(--ok-soft);border:1px solid var(--positive-border);font-size:11.5px;color:var(--ok);"><strong>' + Utils.uiIcon('stethoscope', 20) + '用药 (' + Utils.formatQuantity(r30.med.length, '次') + ')：</strong>' + summarizeCare(r30.med) + '</div>'
+              : '') +
+            (r30.nursing.length
+              ? '<div class="feeding-nursing-summary"><strong>' + Utils.uiIcon('clipboard-copy', 20) + '护理 (' +
+                Utils.formatQuantity(r30.nursing.length, '次') + ')：</strong>' + summarizeCare(r30.nursing) + '</div>'
               : '') +
           '</div>';
       }
