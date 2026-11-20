@@ -1022,7 +1022,7 @@ async function run() {
   assert.ok(el('dailyWeekTitle').querySelector('svg'));
   assert.match(el('dailyFeedTimeline').textContent, /1\/4罐· 约21克/);
   assert.deepEqual(Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-card-title'), node => node.textContent),
-    ['上午猫粮', '午后猫粮', '零食', '鸡肉湿粮', '大宠爱 外驱']);
+    ['上午猫粮', '午后猫粮', '零食', '测试牌 鸡肉湿粮', '大宠爱 外驱']);
   assert.match(el('dailyFeedTimeline').querySelector('.daily-reminder').textContent, /2027-05-19/);
   el('dailyPrevWeek').click();
   assert.ok(!el('dailyPastWeek').classList.contains('hidden-view'));
@@ -1074,7 +1074,7 @@ async function run() {
   state.settings.unsavedChangesCount = 101;
   ui.renderSettingsView();
   assert.equal(el('backupNoticeDot').textContent, '99+');
-  assert.equal(el('backupStatusTitle').textContent, '有 101项更改尚未备份');
+  assert.equal(el('backupStatusTitle').textContent, '101 项未备份');
   const originalDownload = storage.triggerFileDownload;
   storage.triggerFileDownload = () => false;
   el('settingsBackupNowBtn').click();
@@ -1085,7 +1085,7 @@ async function run() {
   assert.equal(state.settings.unsavedChangesCount, 0);
   assert.ok(el('backupNoticeDot').classList.contains('hidden-view'));
   assert.equal(el('backupStatusTitle').textContent, '已是最新备份');
-  assert.match(el('backupStatusTime').textContent, /上次备份：\d+月\d+日 \d{2}:\d{2}/);
+  assert.match(el('backupStatusTime').textContent, /上次 \d+月\d+日 \d{2}:\d{2}/);
   storage.triggerFileDownload = originalDownload;
   console.log('Header button variants and backup status pass');
 

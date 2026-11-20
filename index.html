@@ -11,8 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=106">
-  <link rel="stylesheet" href="./css/styles.css?v=106">
+  <link rel="stylesheet" href="./css/tokens.css?v=113">
+  <link rel="stylesheet" href="./css/styles.css?v=113">
 </head>
 <body>
 
@@ -270,10 +270,10 @@
 
       <!-- SUB-VIEW 1: 📊 库存与效期 (Separated Food / Supp / Med) -->
       <div id="statsSubViewStock">
-        <div class="feeding-overview">
+        <div class="ios-card stats-panel feeding-overview">
           <div class="feeding-overview-heading">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="12" width="5" height="9" rx="1"/><rect x="9.5" y="4" width="5" height="17" rx="1"/><rect x="16" y="8" width="5" height="13" rx="1"/></svg>
-            <div><h2>分类统计与消耗分析</h2><p>点卡片可跳转库存筛选</p></div>
+            <div><h2 class="stats-panel-title">分类统计与消耗分析</h2><p class="stats-panel-description">点卡片可跳转库存筛选</p></div>
           </div>
           <div id="forecastValues" class="forecast-grid"></div>
           <details id="feedingTasks" class="feeding-alerts hidden-view">
@@ -317,11 +317,11 @@
 
       <!-- SUB-VIEW 2: 🐾 适口与耐受 -->
       <div id="statsSubViewPal" class="hidden-view">
-        <div class="ios-card" style="padding:15px;">
+        <div class="ios-card stats-panel">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
             <div>
-              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">🐾 适口性与耐受度档案</h2>
-              <p style="margin:2px 0 0 0;font-size:11.5px;color:#6B5A4C;">普通食品适口性、营养品接受度与药品反应独立建档</p>
+              <h2 class="stats-panel-title">🐾 适口性与耐受度档案</h2>
+              <p class="stats-panel-description">普通食品适口性、营养品接受度与药品反应独立建档</p>
             </div>
             <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
           </div>
@@ -349,10 +349,10 @@
       <!-- SUB-VIEW 3: 🏷️ 品牌与偏好 -->
       <div id="statsSubViewBrand" class="hidden-view">
         <!-- 30-Day Feeding Preferences & Separate Care Stats -->
-        <div class="ios-card" style="padding:15px;margin-bottom:14px;">
+        <div class="ios-card stats-panel" style="margin-bottom:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <div>
-              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">近30天喂食统计</h2>
+              <h2 class="stats-panel-title">近30天喂食统计</h2>
             </div>
             <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">0 顿</span>
           </div>
@@ -360,11 +360,11 @@
         </div>
 
         <!-- Brand Deep Archive Directory -->
-        <div class="ios-card" style="padding:15px;">
+        <div class="ios-card stats-panel">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
             <div>
-              <h2 style="margin:0;font-size:16px;font-weight:800;color:#2B2320;">🏷️ 品牌囤货档案</h2>
-              <p style="margin:2px 0 0 0;font-size:11.5px;color:#6B5A4C;">点击任意品牌卡片可一键回粮仓筛选</p>
+              <h2 class="stats-panel-title">🏷️ 品牌囤货档案</h2>
+              <p class="stats-panel-description">点击任意品牌卡片可一键回粮仓筛选</p>
             </div>
             <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
           </div>
@@ -399,107 +399,97 @@
 
     <!-- ==================== TAB 4: 备份设置 (SETTINGS & BACKUP) ==================== -->
     <section id="viewSettings" class="hidden-view">
-      <section id="backupStatusCard" class="ios-card backup-status-card" aria-label="备份状态">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-3.5 7-9V5l-7-3-7 3v8c0 5.5 7 9 7 9z"/><path d="m9 12 2 2 4-4"/></svg>
-        <div class="backup-status-copy" role="status">
-          <p id="backupStatusTitle"></p>
-          <p id="backupStatusTime"></p>
-        </div>
-        <button id="settingsBackupNowBtn" type="button" class="ios-btn-text hidden-view">立即备份</button>
-      </section>
-      <section id="dailyFeedSettings" class="ios-card daily-feed-settings">
-        <div class="daily-feed-heading"><h2 class="settings-card-title">每日喂食量</h2><span>用于预测还能吃几天</span></div>
-        <div class="daily-feed-grid">
-          <div class="daily-feed-field">
-            <label for="dailyFeedDry">猫粮</label>
-            <div class="daily-feed-input">
-              <input id="dailyFeedDry" data-daily-feed="dry" aria-describedby="dailyFeedUnitDry" class="ios-input" type="number" min="0" step="any" inputmode="decimal" placeholder="0">
-              <span id="dailyFeedUnitDry">克/天</span>
+      <div class="ios-card settings-panel">
+        <section class="settings-section" aria-labelledby="settingsBackupTitle">
+          <div class="settings-heading">
+            <h2 id="settingsBackupTitle" class="settings-card-title"><svg class="settings-icon " data-lucide="database-backup" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6m18-6v4M3 11c0 1.7 4 3 9 3m-9-3v6c0 1.7 4 3 9 3m3-4a3.5 3.5 0 1 1 .7 4m-.7-7v3h3"/></svg><span>备份与恢复</span></h2>
+            <p id="storageStatusText" class="settings-storage-status">本地存储已就绪</p>
+          </div>
+          <section id="backupStatusCard" class="backup-status-card" aria-label="备份状态">
+            <div class="backup-status-copy" role="status">
+              <svg class="settings-icon settings-backup-warning" data-lucide="shield-alert" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-3.5 7-9V5l-7-3-7 3v8c0 5.5 7 9 7 9z"/><path d="M12 8v4m0 4h.01"/></svg><svg class="settings-icon settings-backup-ready" data-lucide="shield-check" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-3.5 7-9V5l-7-3-7 3v8c0 5.5 7 9 7 9z"/><path d="m9 12 2 2 4-4"/></svg>
+              <p id="backupStatusTitle"></p>
+              <p id="backupStatusTime"></p>
+            </div>
+            <div class="settings-backup-actions">
+              <button id="settingsBackupNowBtn" type="button" class="ios-btn ios-btn-primary"><svg class="settings-icon " data-lucide="download" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span>立即备份</span></button>
+              <button id="openBackupRestoreBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="rotate-ccw" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7"/></svg><span>恢复</span></button>
+              <input id="importJsonInput" type="file" accept=".json,application/json" class="hidden-view">
+            </div>
+            <div id="undoOverwriteWrap" class="settings-snapshot hidden-view">
+              <div>
+                <strong><svg class="settings-icon " data-lucide="shield-check" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-3.5 7-9V5l-7-3-7 3v8c0 5.5 7 9 7 9z"/><path d="m9 12 2 2 4-4"/></svg><span>本地快照保护</span></strong>
+                <p id="undoSnapshotTimeText" class="settings-card-description">可撤回最近一次覆盖或清空操作</p>
+              </div>
+              <button id="undoOverwriteBtn" type="button" class="ios-btn-text"><svg class="settings-icon " data-lucide="rotate-ccw" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7"/></svg><span>撤回恢复</span></button>
+            </div>
+          </section>
+        </section>
+
+        <section class="settings-section" aria-labelledby="settingsExportTitle">
+          <h2 id="settingsExportTitle" class="settings-card-title">导出与记录</h2>
+          <div class="settings-action-list settings-export-grid">
+            <button id="exportJsonBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="file-json" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M10 12c-1 0-1 1-1 2s-1 1-1 1 1 0 1 1 0 2 1 2m4-6c1 0 1 1 1 2s1 1 1 1-1 0-1 1 0 2-1 2"/></svg><span>JSON 完整备份</span></button>
+            <button id="exportCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="file-spreadsheet" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><rect x="8" y="12" width="8" height="6" rx="1"/><path d="M8 15h8m-4-3v6"/></svg><span>库存盘点 .csv</span></button>
+            <button id="exportLogsCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="file-spreadsheet" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><rect x="8" y="12" width="8" height="6" rx="1"/><path d="M8 15h8m-4-3v6"/></svg><span>饮食记录 .csv</span></button>
+            <button id="copySummaryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="clipboard-copy" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v3M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4m2-7h8m-3-3 3 3-3 3"/></svg><span>复制在库清单</span></button>
+            <button id="settingsOpenHistoryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="history" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7m2-5v5l3 2"/></svg><span>查看库存操作历史流水</span><svg class="settings-icon settings-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+            <button id="clearAllDataBtn" type="button" class="edit-only ios-btn-text settings-danger-action">清空全部数据</button>
+          </div>
+        </section>
+
+        <section class="settings-section" aria-labelledby="settingsPreferencesTitle">
+          <h2 id="settingsPreferencesTitle" class="settings-card-title">偏好设置</h2>
+          <div class="settings-preferences-card">
+          <section id="dailyFeedSettings" class="settings-preference daily-feed-settings">
+            <div class="daily-feed-heading"><h3 class="settings-card-title">每日喂食量</h3><span>用于预测还能吃几天</span></div>
+            <div class="daily-feed-grid">
+              <div class="daily-feed-field">
+                <label for="dailyFeedDry">猫粮</label>
+                <div class="daily-feed-input">
+                  <input id="dailyFeedDry" data-daily-feed="dry" aria-describedby="dailyFeedUnitDry" class="ios-input" type="number" min="0" step="any" inputmode="numeric" placeholder="0">
+                  <span id="dailyFeedUnitDry" aria-label="克/天">g</span>
+                </div>
+              </div>
+              <div class="daily-feed-field">
+                <label for="dailyFeedFreeze">冻干</label>
+                <div class="daily-feed-input">
+                  <input id="dailyFeedFreeze" data-daily-feed="freeze" aria-describedby="dailyFeedUnitFreeze" class="ios-input" type="number" min="0" step="any" inputmode="numeric" placeholder="0">
+                  <span id="dailyFeedUnitFreeze" aria-label="克/天">g</span>
+                </div>
+              </div>
+              <div class="daily-feed-field">
+                <label for="dailyFeedCan">湿粮</label>
+                <div class="daily-feed-input">
+                  <input id="dailyFeedCan" data-daily-feed="can" aria-describedby="dailyFeedUnitCan" class="ios-input" type="number" min="0" step="any" inputmode="numeric" placeholder="0">
+                  <span id="dailyFeedUnitCan" aria-label="克/天">g</span>
+                </div>
+              </div>
+            </div>
+            <p>湿粮按克合并计算，有消耗记录时优先按实际用量</p>
+            <div id="settingsWeightAlert" class="forecast-alert hidden-view" role="status"></div>
+          </section>
+
+          <div class="settings-preference settings-preference-row">
+            <h3 class="settings-card-title"><svg class="settings-icon " data-lucide="clock" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>临期预警</span></h3>
+            <p class="settings-card-description">包装按所选天数预警，开封保鲜期最多提前10天预警。</p>
+            <div id="warnDaysGroup" class="settings-options" role="group" aria-label="临期预警">
+              <button type="button" data-warn-days="30" class="ios-btn ios-btn-secondary">30天</button>
+              <button type="button" data-warn-days="60" class="ios-btn ios-btn-secondary">60天</button>
+              <button type="button" data-warn-days="90" class="ios-btn ios-btn-secondary">90天</button>
+              <button type="button" data-warn-days="120" class="ios-btn ios-btn-secondary">120天</button>
             </div>
           </div>
-          <div class="daily-feed-field">
-            <label for="dailyFeedFreeze">冻干</label>
-            <div class="daily-feed-input">
-              <input id="dailyFeedFreeze" data-daily-feed="freeze" aria-describedby="dailyFeedUnitFreeze" class="ios-input" type="number" min="0" step="any" inputmode="decimal" placeholder="0">
-              <span id="dailyFeedUnitFreeze">克/天</span>
+          <div class="settings-preference settings-preference-row">
+            <h3 class="settings-card-title"><svg class="settings-icon " data-lucide="coins" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6"/><path d="M16 9a6 6 0 1 1-7 7"/></svg><span>默认币种</span></h3>
+            <p class="settings-card-description">录入时仍可切换币种，金额分开统计。</p>
+            <div id="defaultCurrencyGroup" class="settings-options" role="group" aria-label="默认币种">
+              <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-primary">人民币 ¥</button>
+              <button type="button" data-def-currency="JPY" class="ios-btn ios-btn-secondary">日元 JP¥</button>
             </div>
           </div>
-          <div class="daily-feed-field">
-            <label for="dailyFeedCan">湿粮</label>
-            <div class="daily-feed-input">
-              <input id="dailyFeedCan" data-daily-feed="can" aria-describedby="dailyFeedUnitCan" class="ios-input" type="number" min="0" step="any" inputmode="decimal" placeholder="0">
-              <span id="dailyFeedUnitCan">克/天</span>
-            </div>
           </div>
-        </div>
-        <p>湿粮含餐盒、罐头、餐包，按克数合并。有核销记录后按实际速度预测，这里仅作默认值。</p>
-        <div id="settingsWeightAlert" class="forecast-alert hidden-view" role="status"></div>
-      </section>
-      <!-- Warning Threshold Setting -->
-      <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <h2 class="settings-card-title">⏰ 临期预警天数设置</h2>
-        <p class="settings-card-description">包装剩余天数不超过所选天数，或开封保鲜期剩余 10 天以内，会计入临期预警。商品徽章颜色按剩余天数分档。</p>
-        <div id="warnDaysGroup" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-          <button type="button" data-warn-days="30" class="ios-btn ios-btn-secondary">30 天</button>
-          <button type="button" data-warn-days="60" class="ios-btn ios-btn-secondary">60 天</button>
-          <button type="button" data-warn-days="90" class="ios-btn ios-btn-secondary">90 天</button>
-          <button type="button" data-warn-days="120" class="ios-btn ios-btn-secondary">120 天</button>
-        </div>
-      </div>
-
-      <!-- Default Currency Preference -->
-      <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <h2 class="settings-card-title">💴 新录入默认币种</h2>
-        <p class="settings-card-description">新增商品时默认选中的货币（录入时也可随时切换人民币/日元，统计总值按币种独立核算）</p>
-        <div id="defaultCurrencyGroup" class="grid-safe" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-primary">🇨🇳 人民币 (CN¥ / 元)</button>
-          <button type="button" data-def-currency="JPY" class="ios-btn ios-btn-secondary">🇯🇵 日元 (JP¥ / 円)</button>
-        </div>
-      </div>
-
-      <!-- Local Data Backup, Restore & Stock Operation Ledger -->
-      <div class="ios-card" style="padding:16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px;flex-wrap:wrap;">
-          <h2 class="settings-card-title">💾 本地数据备份与恢复</h2>
-          <span id="settingsBackupBadge" style="margin-left:auto;max-width:100%;font-size:11px;font-weight:800;padding:2px 6px;border-radius:999px;background:#F5F5F4;color:#6B5A4C;">未备份</span>
-        </div>
-        <p class="settings-card-description">数据仅保存在本机，建议定期导出 JSON 备份。</p>
-
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
-          <button id="exportJsonBtn" type="button" class="ios-btn ios-btn-primary" style="padding:11px 14px;">
-            <span>📥 导出 JSON 完整备份</span>
-          </button>
-          <label for="importJsonInput" class="ios-btn ios-btn-secondary" style="margin:0;padding:11px 14px;">
-            <span>📤 从 JSON 备份恢复</span>
-          </label>
-          <input id="importJsonInput" type="file" accept=".json,application/json" class="hidden-view">
-          <button id="exportCsvBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:11px 14px;">
-            <span>📊 导出库存盘点表 (.csv)</span>
-          </button>
-          <button id="exportLogsCsvBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:11px 14px;">
-            <span>🗓️ 导出饮食记录 (.csv)</span>
-          </button>
-          <button id="settingsOpenHistoryBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:11px 14px;">
-            <span>📜 查看库存操作历史流水</span>
-          </button>
-          <button id="copySummaryBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:11px 14px;">
-            <span>📋 复制文字版在库清单</span>
-          </button>
-        </div>
-
-        <!-- Automatic Pre-Restore Snapshot Undo Box -->
-        <div id="undoOverwriteWrap" class="hidden-view" style="margin-top:12px;padding:10px 12px;border-radius:12px;background:#FFF7ED;border:1px solid #FED7AA;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <div style="font-size:11.5px;color:#9A3412;">
-            <strong>🛡️ 本地快照保护可用</strong>
-            <div id="undoSnapshotTimeText" style="font-size:11px;color:#6B5A4C;margin-top:1px;">可一键撤回最近一次覆盖或清空操作</div>
-          </div>
-          <button id="undoOverwriteBtn" type="button" style="border:1px solid #E8590C;background:#FFFFFF;color:var(--accent-strong);padding:5px 10px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">⏪ 撤回恢复快照</button>
-        </div>
-
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #F5F5F4;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span id="storageStatusText" style="font-size:11.5px;color:#6B5A4C;">本地双引擎存储已就绪</span>
-          <button id="clearAllDataBtn" type="button" class="edit-only" style="font-size:12px;font-weight:700;color:#DC2626;background:none;border:none;cursor:pointer;white-space:nowrap;">清空全部数据</button>
-        </div>
+        </section>
       </div>
     </section>
   </div>
@@ -1031,18 +1021,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=106"></script>
-  <script src="./js/constants.js?v=106"></script>
-  <script src="./js/utils.js?v=106"></script>
-  <script src="./js/forecast.js?v=106"></script>
-  <script src="./js/domain.js?v=106"></script>
-  <script src="./js/storage.js?v=106"></script>
-  <script src="./js/stats.js?v=106"></script>
-  <script src="./js/modal.js?v=106"></script>
-  <script src="./js/ui.js?v=106"></script>
-  <script src="./js/ui-pantry.js?v=106"></script>
-  <script src="./js/ui-daily.js?v=106"></script>
-  <script src="./js/ui-settings.js?v=106"></script>
-  <script src="./js/app.js?v=106"></script>
+  <script src="./js/covers.js?v=113"></script>
+  <script src="./js/constants.js?v=113"></script>
+  <script src="./js/utils.js?v=113"></script>
+  <script src="./js/forecast.js?v=113"></script>
+  <script src="./js/domain.js?v=113"></script>
+  <script src="./js/storage.js?v=113"></script>
+  <script src="./js/stats.js?v=113"></script>
+  <script src="./js/modal.js?v=113"></script>
+  <script src="./js/ui.js?v=113"></script>
+  <script src="./js/ui-pantry.js?v=113"></script>
+  <script src="./js/ui-daily.js?v=113"></script>
+  <script src="./js/ui-settings.js?v=113"></script>
+  <script src="./js/app.js?v=113"></script>
 </body>
 </html>

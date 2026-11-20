@@ -1438,6 +1438,9 @@
     });
     document.getElementById('copySummaryBtn').addEventListener('click', copyTextSummary);
 
+    document.getElementById('openBackupRestoreBtn').addEventListener('click', function () {
+      document.getElementById('importJsonInput').click();
+    });
     document.getElementById('importJsonInput').addEventListener('change', function (ev) {
       var file = ev.target.files && ev.target.files[0];
       if (!file) return;

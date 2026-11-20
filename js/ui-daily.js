@@ -207,13 +207,15 @@
       }).join('') + '</div>' + (unknown ? '<p class="daily-support">' + quantity(unknown, '条') + '份量无法换算，未计入合计</p>' : '');
   }
 
+  function knownBrand(product) {
+    var brand = String(product.brand || '').trim();
+    return brand === '未命名' || brand === '未命名品牌' ? '' : brand;
+  }
+
   function displayedProductName(log) {
     var product = Domain.resolveLogProduct(log);
-    var brand = String(product.brand || '').trim();
-    if (!isFood(log) && brand && brand !== '未命名' && brand !== '未命名品牌') {
-      return brand + ' ' + product.name;
-    }
-    return product.name;
+    var brand = knownBrand(product);
+    return !isFood(log) && brand ? brand + ' ' + product.name : product.name;
   }
 
   function renderDetails(rows, isToday) {
@@ -224,11 +226,14 @@
       '</span><button type="button" class="ios-btn-text" data-daily-add>记一条</button></div>';
     var records = rows.map(function (row) {
       var log = row.log;
-      var name = displayedProductName(log);
+      var product = Domain.resolveLogProduct(log);
+      var brand = knownBrand(product);
+      var name = brand ? brand + ' ' + product.name : product.name;
       var category = MP.CATEGORIES[log.category] || MP.CATEGORIES.dry;
       var id = esc(log.id);
       return '<li class="daily-record"><div class="daily-record-copy"><p class="daily-support">' + esc(mealName(log)) +
-        ' · ' + esc(category.label) + '</p><p class="daily-card-title daily-record-name" title="' + esc(name) + '">' + esc(name) + '</p>' +
+        ' · ' + esc(category.label) + '</p><p class="daily-card-title daily-record-name" title="' + esc(name) + '">' +
+        (brand ? '<span>' + esc(brand) + '</span> ' : '') + '<strong>' + esc(product.name) + '</strong></p>' +
         (log.note ? '<p class="daily-support">' + esc(log.note) + '</p>' : '') +
         (log.nextDueDate ? '<p class="daily-support daily-reminder">' + bell + '下次提醒 ' + esc(Utils.formatListDate(log.nextDueDate)) + '</p>' : '') +
         '</div><div class="daily-record-amount"><strong>' + esc(row.amount.primary) + '</strong>' +
