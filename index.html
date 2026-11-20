@@ -11,8 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=127">
-  <link rel="stylesheet" href="./css/styles.css?v=127">
+  <link rel="stylesheet" href="./css/tokens.css?v=130">
+  <link rel="stylesheet" href="./css/styles.css?v=130">
 </head>
 <body>
 
@@ -530,8 +530,8 @@
   <div id="itemModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-sheet stock-form-sheet">
       <div class="stock-form-header">
-        <h2 id="modalTitle" style="margin:0;font-size:18px;font-weight:800;color:#2B2320;">录入粮仓商品</h2>
-        <button id="closeItemModalBtn" type="button" aria-label="关闭弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;"><span class="stock-close-text" aria-hidden="true">✕</span><svg class="stock-close-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        <h2 id="modalTitle" style="margin:0;font-size:18px;font-weight:800;color:#2B2320;">录入商品</h2>
+        <button id="closeItemModalBtn" type="button" aria-label="关闭弹窗"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       </div>
 
       <form id="itemForm" novalidate>
@@ -655,7 +655,7 @@
         <div class="purchase-packaging stock-form-card stock-form-tinted">
           <label class="purchase-packaging-toggle">
             <input id="fieldPackagingEnabled" type="checkbox">
-            组合包装
+            组合包装 <small>选填</small>
           </label>
           <div id="purchasePackagingFields" class="hidden-view">
             <div class="grid-safe purchase-packaging-grid">
@@ -674,34 +674,36 @@
                 <input id="fieldPackSize" type="number" min="1" step="1" inputmode="numeric" value="8" class="ios-input">
               </label>
             </div>
-            <p class="stock-form-edit-hint stock-form-note">已有库存，不能直接改，请用下方「调整口味库存」。</p>
-            <label class="stock-form-seal flavor-control">密封方式
-              <select id="fieldPackSeal" class="ios-input">
-                <option value="independent">各件独立密封</option>
-                <option value="shared">共用一个密封包装</option>
-              </select>
-            </label>
-            <label class="purchase-packaging-toggle stock-form-flavor-toggle">
-              <input id="fieldMixedFlavors" type="checkbox">混合口味
-            </label>
-            <div id="flavorFields" class="hidden-view">
-              <div id="flavorRows"></div>
-              <p class="stock-form-edit-hint stock-form-note">已有库存，不能直接改，请用下方「调整口味库存」。</p>
-              <div class="stock-form-flavor-footer">
-                <button id="addFlavorBtn" type="button" class="stock-form-link">＋ 添加口味</button>
-                <p id="flavorSummary" role="status" tabindex="-1"></p>
+            <div class="stock-form-seal">
+              <label id="packSealLabel">密封方式</label>
+              <input id="fieldPackSeal" type="hidden" value="independent">
+              <div id="packSealOptions" role="group" aria-labelledby="packSealLabel">
+                <button type="button" data-seal="independent">各件独立密封</button>
+                <button type="button" data-seal="shared">共用一个密封包装</button>
               </div>
-              <section id="flavorAdjustmentFields" class="hidden-view">
-                <strong>调整口味库存</strong>
-                <label>口味<select id="adjustFlavorSelect" class="ios-input"></select></label>
-                <label>未开封完整件数<input id="adjustFlavorWhole" class="ios-input" type="number" min="0" step="1" inputmode="numeric"></label>
-                <label>已开封单件余量（%，填0表示移除该件）<input id="adjustFlavorPercent" class="ios-input" type="number" min="0" max="100" step="0.01" inputmode="decimal"></label>
-                <label>调整原因（可选）<input id="adjustFlavorReason" class="ios-input" maxlength="100"></label>
-                <button type="button" id="adjustFlavorBtn" class="ios-btn ios-btn-secondary">仅保存库存调整</button>
-              </section>
+            </div>
+            <div class="stock-form-flavor-heading">
+              <label class="purchase-packaging-toggle">
+                <input id="fieldMixedFlavors" type="checkbox">混合口味 <small>选填</small>
+              </label>
+              <p id="flavorSummary" role="status" tabindex="-1"></p>
+            </div>
+            <div id="flavorFields" class="hidden-view">
+              <div id="flavorProgress" aria-hidden="true"></div>
+              <div id="flavorRows"></div>
+              <div id="flavorQuickActions">
+                <div id="flavorSuggestions"></div>
+                <div class="stock-form-flavor-shortcuts">
+                  <button type="button" class="stock-form-link" data-flavor-distribute="last">余量补给最后一个</button>
+                  <button type="button" class="stock-form-link" data-flavor-distribute="even">平均分配</button>
+                </div>
+              </div>
+              <label id="flavorReasonWrap" class="hidden-view">调整原因（选填）
+                <input id="adjustFlavorReason" class="ios-input" maxlength="100" placeholder="盘点少了 / 送人了 / 过期">
+              </label>
             </div>
             <p id="purchasePackagingPreview" class="purchase-packaging-preview" role="status"></p>
-            <p class="purchase-packaging-note">独立包装分别计时，共用密封包装按整批计时。</p>
+            <p id="packSealHelp" class="purchase-packaging-note"></p>
           </div>
         </div>
 
@@ -734,6 +736,7 @@
             <button type="button" data-preset-months="6" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">6个月</button>
             <button type="button" data-preset-months="12" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">12个月</button>
             <button type="button" data-preset-months="18" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">18个月</button>
+            <button type="button" data-preset-months="21" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">21个月</button>
             <button type="button" data-preset-months="24" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">24个月</button>
             <button type="button" data-preset-months="36" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">36个月</button>
           </div>
@@ -1027,18 +1030,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=127"></script>
-  <script src="./js/constants.js?v=127"></script>
-  <script src="./js/utils.js?v=127"></script>
-  <script src="./js/forecast.js?v=127"></script>
-  <script src="./js/domain.js?v=127"></script>
-  <script src="./js/storage.js?v=127"></script>
-  <script src="./js/stats.js?v=127"></script>
-  <script src="./js/modal.js?v=127"></script>
-  <script src="./js/ui.js?v=127"></script>
-  <script src="./js/ui-pantry.js?v=127"></script>
-  <script src="./js/ui-daily.js?v=127"></script>
-  <script src="./js/ui-settings.js?v=127"></script>
-  <script src="./js/app.js?v=127"></script>
+  <script src="./js/covers.js?v=130"></script>
+  <script src="./js/constants.js?v=130"></script>
+  <script src="./js/utils.js?v=130"></script>
+  <script src="./js/forecast.js?v=130"></script>
+  <script src="./js/domain.js?v=130"></script>
+  <script src="./js/storage.js?v=130"></script>
+  <script src="./js/stats.js?v=130"></script>
+  <script src="./js/modal.js?v=130"></script>
+  <script src="./js/ui.js?v=130"></script>
+  <script src="./js/ui-pantry.js?v=130"></script>
+  <script src="./js/ui-daily.js?v=130"></script>
+  <script src="./js/ui-settings.js?v=130"></script>
+  <script src="./js/app.js?v=130"></script>
 </body>
 </html>

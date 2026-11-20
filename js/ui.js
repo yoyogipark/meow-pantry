@@ -655,7 +655,6 @@
     document.getElementById('itemModalBackdrop').classList.toggle('is-editing-item', Boolean(id));
     document.getElementById('fieldSpecLabel').textContent = '规格备注 · 选填';
     document.getElementById('fieldNetWeightLabel').textContent = unit ? '每' + unit + '净含量' : '单件净含量';
-    document.getElementById('saveItemBtn').textContent = id ? '保存' : '保存记录';
     var subtype = document.getElementById('fieldSubtype').value;
     input.required = required;
     document.getElementById('netWeightRequired').classList.toggle('hidden-view', !required);
@@ -773,75 +772,228 @@
   };
 
   var flavorRowSequence = 0;
+  var flavorColors = ['#C6633B', '#39866F', '#B7873F', '#8C779D', '#577E9A'];
 
-  UI.addFlavorRow = function (flavor, editing) {
+  function flavorColor(index) {
+    return flavorColors[index] || 'hsl(' + Math.round(index * 137.5 % 360) + ' 39% 47%)';
+  }
+
+  UI.addFlavorRow = function (flavor, editing, pack, locked) {
     var entry = flavor || {};
+    var opened = Boolean(entry.openedDate && entry.quantity > 0);
     var row = document.createElement('div');
     row.className = 'flavor-row';
-    row.dataset.flavorId = entry.id || 'flavor-' + (++flavorRowSequence);
-    row.innerHTML =
-      '<input class="ios-input" data-flavor-name aria-label="口味名称" placeholder="口味名称">' +
-      '<input class="ios-input" data-flavor-count aria-label="每盒口味件数" placeholder="每盒件数" type="number" min="1" step="1" inputmode="numeric">' +
-      '<button type="button" class="ios-btn ios-btn-secondary" data-remove-flavor aria-label="删除口味">×</button>';
-    row.querySelector('[data-flavor-name]').value = entry.name || '';
-    row.querySelector('[data-flavor-count]').value = entry.perPack || '';
-    row.dataset.legacySpec = entry.spec || '';
-    if (editing) {
-      row.classList.add('flavor-row--editing');
-      Array.from(row.children).forEach(function (control) { control.disabled = true; });
-      row.lastElementChild.textContent = '余 ' + entry.quantity + document.getElementById('fieldUnit').value;
+    var id = entry.id;
+    while (!id || (!entry.id && flavorRows().some(function (existing) { return existing.dataset.flavorId === id; }))) {
+      id = 'flavor-' + (++flavorRowSequence);
     }
+    row.dataset.flavorId = id;
+    row.dataset.legacySpec = entry.spec || '';
+    var initial = editing ? entry.quantity - Number(opened) : entry.perPack * pack?.count || 0;
+    var percent = opened ? Utils.round2((entry.openRemainFraction || 1) * 100) : 0;
+    row.dataset.initialCount = initial;
+    row.dataset.initialPercent = percent;
+    if (editing) {
+      row.dataset.capacity = entry.perPack * pack.count;
+      row.dataset.packSize = pack.size;
+    }
+    row.innerHTML =
+      '<i class="flavor-dot" aria-hidden="true"></i>' +
+      '<div class="flavor-name-field">' +
+        '<input class="ios-input" data-flavor-name aria-label="口味名称" placeholder="口味名称">' +
+        (editing ? '<span data-flavor-name-display></span>' : '<button type="button" data-flavor-name-display></button>') +
+      '</div>' +
+      '<div class="flavor-quantity">' + (editing ? '<span>余</span>' : '') + '<div class="flavor-stepper">' +
+        '<button type="button" data-flavor-step="-1" aria-label="减少一件">−</button>' +
+        '<output data-flavor-count></output>' +
+        '<button type="button" data-flavor-step="1" aria-label="增加一件">+</button></div></div>' +
+      (editing ? (opened && !locked ? '<button type="button" data-flavor-open aria-expanded="false">已开封</button>' : '') :
+        '<button type="button" data-remove-flavor aria-label="删除口味">×</button>') +
+      (editing ? '<small class="flavor-ratio">原始配比：每包装 ' + entry.perPack + '</small>' : '') +
+      '<small data-flavor-changed class="hidden-view"></small>' +
+      (opened && editing && !locked ? '<label data-flavor-open-panel class="hidden-view">已开封单件余量（%，填0表示移除该件）' +
+        '<input class="ios-input" type="number" min="0" max="100" step="0.01" inputmode="decimal" data-flavor-percent></label>' : '');
+    row.querySelector('[data-flavor-name]').value = entry.name || '';
+    row.querySelector('[data-flavor-name]').readOnly = Boolean(editing);
+    UI.setFlavorNameEditing(row, !entry.name && !editing);
+    row.querySelector('[data-flavor-count]').value = initial;
+    var percentField = row.querySelector('[data-flavor-percent]');
+    if (percentField) percentField.value = percent;
+    if (locked) row.querySelectorAll('button').forEach(function (button) { button.disabled = true; });
     document.getElementById('flavorRows').appendChild(row);
+    return row;
   };
 
-  UI.readFlavorRows = function (pack) {
-    return Array.from(document.querySelectorAll('#flavorRows .flavor-row')).map(function (row) {
-      var perPack = Number(row.querySelector('[data-flavor-count]').value);
-      return {
-        id: row.dataset.flavorId,
-        name: row.querySelector('[data-flavor-name]').value,
-        perPack: perPack,
-        quantity: perPack * pack.count,
-        spec: row.dataset.legacySpec
-      };
-    });
+  UI.setFlavorNameEditing = function (row, editing) {
+    var input = row.querySelector('[data-flavor-name]');
+    var display = row.querySelector('[data-flavor-name-display]');
+    input.classList.toggle('hidden-view', !editing);
+    display.classList.toggle('hidden-view', editing);
+    var name = input.value.trim() || '口味名称';
+    display.textContent = name;
+    display.title = name;
+    if (display.tagName === 'BUTTON') display.setAttribute('aria-label', '编辑口味名称 ' + name);
   };
+
+  function flavorRows() {
+    return Array.from(document.querySelectorAll('#flavorRows .flavor-row'));
+  }
+
+  UI.readFlavorRows = function (pack) {
+    return flavorRows().map(function (row) {
+      var quantity = Number(row.querySelector('[data-flavor-count]').value);
+      return { id: row.dataset.flavorId, name: row.querySelector('[data-flavor-name]').value,
+        perPack: quantity / pack.count, quantity: quantity, spec: row.dataset.legacySpec };
+    }).filter(function (row) { return row.quantity > 0; });
+  };
+
+  function flavorDraft(row) {
+    var count = Number(row.querySelector('[data-flavor-count]').value);
+    var field = row.querySelector('[data-flavor-percent]');
+    var percent = field ? (field.value === '' || !field.validity.valid ? NaN : Number(field.value)) : Number(row.dataset.initialPercent);
+    return { id: row.dataset.flavorId, whole: count, percent: percent,
+      changed: count !== Number(row.dataset.initialCount) || percent !== Number(row.dataset.initialPercent) };
+  }
+
+  UI.readFlavorAdjustments = function () {
+    return flavorRows().map(flavorDraft).filter(function (draft) { return draft.changed; });
+  };
+
+  UI.changeFlavorCount = function (row, amount) {
+    var output = row.querySelector('[data-flavor-count]');
+    var draft = flavorDraft(row);
+    var max = row.dataset.capacity ? Math.min(
+      Number(row.dataset.capacity) - Number(draft.percent > 0),
+      Math.max(Number(row.dataset.packSize), Number(row.dataset.initialCount))
+    ) : Number.MAX_SAFE_INTEGER;
+    output.value = Math.min(max, Math.max(0, draft.whole + amount));
+    UI.syncFlavorForm();
+  };
+
+  UI.distributeFlavors = function (mode) {
+    var pack = UI.readPurchasePackaging();
+    var rows = flavorRows().filter(function (row) { return row.querySelector('[data-flavor-name]').value.trim(); });
+    if (!pack || !rows.length) return;
+    var outputs = rows.map(function (row) { return row.querySelector('[data-flavor-count]'); });
+    if (mode === 'last') {
+      var remaining = pack.size * pack.count - flavorRows().reduce(function (sum, row) {
+        return sum + Number(row.querySelector('[data-flavor-count]').value);
+      }, 0);
+      if (remaining > 0) outputs[outputs.length - 1].value = Number(outputs[outputs.length - 1].value) + remaining;
+    } else {
+      flavorRows().forEach(function (row) { row.querySelector('[data-flavor-count]').value = 0; });
+      var total = pack.size * pack.count;
+      outputs.forEach(function (output, i) {
+        output.value = Math.floor(total / outputs.length) + Number(i < total % outputs.length);
+      });
+    }
+    UI.syncFlavorForm();
+  };
+
+  function renderFlavorSuggestions() {
+    var counts = new Map();
+    MP.state.items.forEach(function (item) {
+      if (!item.isSample && !item.sourceBatchId) (item.flavors || []).forEach(function (flavor) {
+        counts.set(flavor.name, (counts.get(flavor.name) || 0) + 1);
+      });
+    });
+    var names = Array.from(counts.keys()).sort(function (a, b) { return counts.get(b) - counts.get(a); }).slice(0, 5);
+    if (!names.length) names = ['鸡肉', '鸭肉', '牛肉', '三文鱼', '兔肉'];
+    document.getElementById('flavorSuggestions').innerHTML = names.map(function (name) {
+      return '<button type="button" class="pill-chip" data-suggest-flavor="' + Utils.escapeHtml(name) + '"><span>＋ ' + Utils.escapeHtml(name) + '</span></button>';
+    }).join('') + '<button type="button" class="pill-chip" id="addFlavorBtn"><span>＋ 自定义口味</span></button>';
+  }
 
   UI.syncFlavorForm = function () {
     var packaging = document.getElementById('fieldPackagingEnabled').checked;
     var editing = Boolean(document.getElementById('fieldId').value);
     var toggle = document.getElementById('fieldMixedFlavors');
-    var enabled = packaging && toggle.checked;
-    toggle.disabled = !packaging || editing;
-    document.getElementById('fieldPackSeal').disabled = !packaging || editing;
-    document.getElementById('flavorFields').classList.toggle('hidden-view', !enabled);
-    document.getElementById('addFlavorBtn').classList.toggle('hidden-view', editing);
     var fields = document.getElementById('flavorRows');
-    if (enabled && !fields.children.length) {
-      UI.addFlavorRow();
-      UI.addFlavorRow();
-    }
-    Array.from(fields.querySelectorAll('input')).forEach(function (control) { control.disabled = !enabled || editing; });
+    if (!packaging && !editing) toggle.checked = false;
+    var enabled = packaging && toggle.checked;
+    if (!enabled && !editing) fields.replaceChildren();
+    toggle.disabled = !packaging || editing;
+    document.querySelectorAll('#packSealOptions button').forEach(function (button) {
+      button.disabled = !packaging || editing;
+      button.setAttribute('aria-pressed', String(button.dataset.seal === document.getElementById('fieldPackSeal').value));
+    });
+    document.getElementById('flavorFields').classList.toggle('hidden-view', !enabled);
+    document.getElementById('flavorQuickActions').classList.toggle('hidden-view', editing);
     var pack = UI.readPurchasePackaging();
     var message = '';
     var allocation = '';
+    var saveLabel = editing ? '保存' : '保存记录';
+    var progress = document.getElementById('flavorProgress');
+    progress.replaceChildren();
+    progress.classList.toggle('hidden-view', editing || !enabled || !pack);
+    var rows = flavorRows();
+    var selectedNames = new Set(rows.map(function (row) {
+      return row.querySelector('[data-flavor-name]').value.trim().toLowerCase();
+    }));
+    document.querySelectorAll('#flavorSuggestions [data-suggest-flavor]').forEach(function (button) {
+      button.classList.toggle('hidden-view', selectedNames.has(button.dataset.suggestFlavor.toLowerCase()));
+    });
+    var fillLast = document.querySelector('[data-flavor-distribute="last"]');
+    fillLast.classList.add('hidden-view');
+    rows.forEach(function (row, i) { row.style.setProperty('--flavor-color', flavorColor(i)); });
+    var changes = editing && enabled ? UI.readFlavorAdjustments() : [];
+    document.getElementById('flavorReasonWrap').classList.toggle('hidden-view', !changes.length);
     if (enabled && editing) {
       message = '原始配比保留，盘点差异可按口味调整。';
+      if (changes.length) saveLabel = '保存并记录库存调整';
+      rows.forEach(function (row) {
+        var draft = flavorDraft(row);
+        var mark = row.querySelector('[data-flavor-changed]');
+        mark.classList.toggle('hidden-view', !draft.changed);
+        mark.textContent = draft.whole !== Number(row.dataset.initialCount)
+          ? '已改 ' + row.dataset.initialCount + '→' + draft.whole
+          : '已改余量 ' + row.dataset.initialPercent + '%→' + (Number.isFinite(draft.percent) ? draft.percent + '%' : '待填写');
+      });
     } else if (enabled && pack) {
-      var rows = UI.readFlavorRows(pack);
-      var allocated = rows.reduce(function (sum, row) { return sum + row.perPack; }, 0);
-      var diff = pack.size - allocated;
-      var valid = Domain.validateFlavors(rows, pack, pack.count * pack.size, false);
-      allocation = valid ? 'complete' : 'incomplete';
-      message = '已分配 ' + Utils.formatNumber(allocated) + '/' + Utils.formatQuantity(pack.size, '件');
-      if (diff) message += ' · ' + (diff > 0 ? '还差 ' : '超出 ') + Utils.formatQuantity(Math.abs(diff), '件');
-      else if (!valid) message += ' · 请核对口味名称和数量';
+      var allocations = UI.readFlavorRows(pack);
+      var allocated = allocations.reduce(function (sum, row) { return sum + row.quantity; }, 0);
+      var total = pack.size * pack.count;
+      var diff = total - allocated;
+      var unit = document.getElementById('fieldUnit').value;
+      if (diff > 0) {
+        allocation = 'pending';
+        message = '已分配 ' + allocated + '/' + total + ' ' + unit + ' · 还差 ' + diff + ' ' + unit;
+        fillLast.classList.remove('hidden-view');
+        saveLabel += '（还差 ' + diff + ' ' + unit + '未分配）';
+      } else if (diff < 0) {
+        allocation = 'incomplete';
+        message = '超出 ' + (-diff) + ' ' + unit;
+        saveLabel += '（' + message + '）';
+      } else if (Domain.validateFlavors(allocations, pack, total, false)) {
+        allocation = 'complete';
+        message = '已分配 ' + total + '/' + total + ' ' + unit + ' ✓';
+      } else {
+        allocation = 'incomplete';
+        message = allocations.some(function (row) { return !Number.isInteger(row.perPack); })
+          ? '各口味件数须能整除购买数量。' : '请核对口味名称，至少填写两种不同口味。';
+        saveLabel += '（请核对口味配比）';
+      }
+      // Limit DOM size for unusually large wholesale batches.
+      var cellCount = Math.min(total, 200);
+      progress.classList.toggle('is-dense', cellCount > 100);
+      var boundaries = [];
+      var tally = 0;
+      rows.forEach(function (row, i) {
+        tally += Number(row.querySelector('[data-flavor-count]').value);
+        boundaries.push({ until: tally, color: flavorColor(i) });
+      });
+      for (var c = 0, cursor = 0; c < cellCount; c++) {
+        var position = c * total / cellCount;
+        while (cursor < boundaries.length && position >= boundaries[cursor].until) cursor++;
+        var cell = document.createElement('span');
+        if (boundaries[cursor]) cell.style.backgroundColor = boundaries[cursor].color;
+        progress.appendChild(cell);
+      }
     }
     var summary = document.getElementById('flavorSummary');
-    summary.textContent = message;
+    if (summary.textContent !== message) summary.textContent = message;
     summary.dataset.allocation = allocation;
-    if (enabled) document.getElementById('fieldQty').readOnly = true;
-
+    document.getElementById('saveItemBtn').textContent = saveLabel;
   };
 
   UI.readPurchasePackaging = function () {
@@ -869,11 +1021,10 @@
     var pack = UI.readPurchasePackaging();
     var qty = document.getElementById('fieldQty');
     var unitField = document.getElementById('fieldUnit');
-    var unit = unitField.value;
     var total = pack ? pack.count * pack.size : 0;
     document.getElementById('purchasePackagingFields').classList.toggle('hidden-view', !enabled);
     document.getElementById('fieldQtyLabel').textContent = editing ? '剩余数量' : '入库数量';
-    qty.readOnly = enabled && !editing;
+    qty.readOnly = enabled && (!editing || Boolean(document.getElementById('fieldMixedFlavors').checked));
     qty.step = enabled ? '1' : '0.01';
     unitField.disabled = editing;
     var correction = document.getElementById('unitCorrectionFields');
@@ -885,7 +1036,7 @@
     ['fieldPackCount', 'fieldPackOuterUnit', 'fieldPackSize'].forEach(function (id) {
       document.getElementById(id).disabled = !enabled || editing;
     });
-    if (qty.readOnly) {
+    if (qty.readOnly && !editing) {
       if (qty.dataset.manualQuantity === undefined) qty.dataset.manualQuantity = qty.value;
       qty.value = total || '';
     } else if (!editing && qty.dataset.manualQuantity !== undefined) {
@@ -894,28 +1045,17 @@
     }
     var preview = '';
     if (enabled) {
-      preview = pack
-        ? UI.purchasePackagingLabel(pack, unit)
-        : (document.getElementById('fieldPackSeal').value === 'shared'
+      preview = pack ? '' : (document.getElementById('fieldPackSeal').value === 'shared'
           ? '每个共用密封包装单独录入一批，购买数量填 1。'
           : '请输入有效的整包装数量，并选择内包装单位。');
 
     }
     document.getElementById('purchasePackagingPreview').textContent = preview;
+    document.getElementById('packSealHelp').textContent = document.getElementById('fieldPackSeal').value === 'shared'
+      ? '共用一个密封包装：整批一起计算开封保鲜期。'
+      : '各件独立密封：每件单独计算开封保鲜期。';
     UI.syncFlavorForm();
     UI.syncOpenedFieldsVisibility();
-  };
-
-  UI.syncFlavorAdjustment = function (item) {
-    var flavor = Domain.findFlavor(item, document.getElementById('adjustFlavorSelect').value);
-    var qty = document.getElementById('adjustFlavorWhole');
-    var percent = document.getElementById('adjustFlavorPercent');
-    var opened = Boolean(flavor && flavor.openedDate && flavor.quantity > 0);
-    qty.value = flavor ? flavor.quantity - Number(opened) : '';
-    qty.max = flavor ? flavor.perPack * item.purchasePackaging.count - Number(opened) : 0;
-    percent.closest('label').classList.toggle('hidden-view', !opened);
-    percent.disabled = !opened;
-    percent.value = opened ? Utils.round2((flavor.openRemainFraction || 1) * 100) : '';
   };
 
   function setPurchasePackagingForm(item) {
@@ -950,16 +1090,11 @@
     } else {
       unit.value = (MP.CATEGORIES[MP.state.formCat] || MP.CATEGORIES.dry).defaultUnit;
     }
-    if (item && item.flavors) item.flavors.forEach(function (flavor) { UI.addFlavorRow(flavor, editing); });
-    var adjustment = document.getElementById('flavorAdjustmentFields');
-    adjustment.classList.toggle('hidden-view', !(editing && item && item.flavors && !item.sourceBatchId));
-    var flavorSelect = document.getElementById('adjustFlavorSelect');
-    flavorSelect.options.length = 0;
-    if (editing && item.flavors) item.flavors.forEach(function (flavor) {
-      flavorSelect.add(new Option(flavor.name, flavor.id));
+    if (item && item.flavors) item.flavors.forEach(function (flavor) {
+      UI.addFlavorRow(flavor, editing, pack, Boolean(item.sourceBatchId));
     });
     document.getElementById('adjustFlavorReason').value = '';
-    UI.syncFlavorAdjustment(item);
+    renderFlavorSuggestions();
     document.getElementById('correctedUnit').value = '';
     var price = item && item.price;
     var qty = document.getElementById('fieldQty');
@@ -1100,7 +1235,7 @@
 
   UI.openAddModal = function () {
     var st = MP.state;
-    document.getElementById('modalTitle').textContent = '录入粮仓商品';
+    document.getElementById('modalTitle').textContent = '录入商品';
     document.getElementById('fieldId').value = '';
     document.getElementById('fieldIsRestockMode').value = '';
     document.getElementById('cloneBatchFromEditWrap').classList.add('hidden-view');

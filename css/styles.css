@@ -1550,7 +1550,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   display: flex;
   flex-direction: column;
   max-height: 92vh;
-  max-height: 92dvh;
+  max-height: min(92dvh, var(--stock-form-viewport-height, 92dvh));
   padding: 0;
   overflow: hidden;
 }
@@ -1717,15 +1717,147 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #itemForm input::-webkit-inner-spin-button,
 #itemForm input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-#itemForm .stock-form-flavor-toggle { padding-top: 8px; border-top: 0.5px solid #FED7AA; }
-#itemForm .flavor-row { grid-template-columns: minmax(0, 1fr) 64px 32px; align-items: center; }
-#itemForm .flavor-row--editing { grid-template-columns: minmax(0, 1fr) 64px minmax(0, .65fr); }
-#itemForm .flavor-row button { margin: 0; padding: 0; }
-.stock-form-flavor-footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-#flavorSummary { margin: 0; font-size: 12px; font-weight: 400; color: var(--text-muted); }
-#flavorSummary[data-allocation="complete"] { color: #3D6B22; }
-#flavorSummary[data-allocation="incomplete"] { color: #9B1C1C; }
-#flavorAdjustmentFields { margin-top: 8px; }
+#itemForm .stock-form-flavor-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  border-top: var(--border-default-width) solid var(--border-warm);
+  margin-top: 8px;
+}
+#itemForm #purchasePackagingFields .ios-input { height: 40px; min-height: 40px; max-height: 40px; font-size: 16px !important; }
+#itemForm :is(.purchase-packaging-toggle, #flavorQuickActions button, #packSealOptions button, .flavor-row button) {
+  min-height: 40px;
+}
+#itemForm :is(.purchase-packaging-toggle small, .flavor-ratio) { color: var(--text-muted); }
+#itemForm .stock-form-flavor-heading label { margin: 0; }
+#flavorSummary { margin: 0; font-size: 12px; color: var(--text-muted); }
+#flavorSummary[data-allocation="complete"] { color: var(--status-normal-text); }
+#flavorSummary[data-allocation="pending"] { color: var(--status-warning-text); }
+#flavorSummary[data-allocation="incomplete"] { color: var(--status-danger-text); }
+#packSealOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+#packSealOptions {
+  padding: 3px;
+  background: var(--secondary-bg);
+  border-radius: var(--radius-input);
+}
+#packSealOptions button, #itemForm .flavor-row button {
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-input);
+  background: var(--card-bg);
+  color: var(--secondary-text);
+  cursor: pointer;
+}
+#packSealOptions button[aria-pressed="true"] {
+  background: var(--selection-bg);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+#flavorProgress {
+  display: flex;
+  gap: 2px;
+  height: 6px;
+  margin-bottom: 6px;
+}
+#flavorProgress.is-dense { gap: 0; }
+#flavorProgress span {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+}
+#itemForm .flavor-row {
+  grid-template-columns: 7px minmax(0, 1fr) auto auto;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+#itemForm .flavor-name-field { min-width: 0; }
+#itemForm .flavor-row input[data-flavor-name] { padding-inline: 5px; }
+#itemForm .flavor-row [data-flavor-name-display] {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--text-main);
+  font: inherit;
+  text-align: start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#itemForm .flavor-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--flavor-color); }
+#itemForm .flavor-quantity, #itemForm .flavor-stepper {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+#itemForm .flavor-quantity { gap: 4px; }
+#itemForm .flavor-stepper {
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+}
+#itemForm .flavor-stepper output { min-width: 2ch; text-align: center; }
+#itemForm .flavor-row button { min-width: 40px; margin: 0; padding: 0 3px; }
+#itemForm .flavor-row button:disabled { opacity: 0.55; }
+#itemForm .flavor-stepper button, #itemForm .flavor-row [data-remove-flavor] {
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+}
+#itemForm .flavor-row [data-remove-flavor] { color: var(--text-muted); font-size: 18px; }
+#itemForm .flavor-row [data-flavor-open] { font-size: 11px; }
+#itemForm .flavor-row :is([data-flavor-open-panel], [data-flavor-changed], .flavor-ratio) { grid-column: 2 / -1; }
+#itemForm .flavor-row [data-flavor-changed] { color: var(--accent-strong); }
+#flavorSuggestions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin-block: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#flavorSuggestions::-webkit-scrollbar { display: none; }
+#flavorSuggestions .pill-chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+#flavorSuggestions .pill-chip span {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding-inline: 12px;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  font-size: 13px;
+  white-space: nowrap;
+}
+#flavorSuggestions #addFlavorBtn span { border-style: dashed; }
+#itemForm .stock-form-flavor-shortcuts {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+#itemForm .stock-form-flavor-shortcuts button { min-width: 40px; font-size: 13px; }
+#flavorReasonWrap { margin-top: 8px !important; }
+#purchasePackagingPreview:empty { display: none; }
 #itemForm #palatabilityGroup .pill-chip { white-space: nowrap; min-width: 0; }
 
 #itemForm #fieldShelfUnit {
@@ -2600,17 +2732,19 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
   }
 }
 
-.stock-close-icon,
-.is-editing-item .stock-close-text { display: none; }
-#itemModalBackdrop.is-editing-item #closeItemModalBtn {
+#itemModalBackdrop #closeItemModalBtn {
   display: grid;
   place-items: center;
-  width: 36px !important;
-  height: 36px !important;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
   color: var(--secondary-text);
-  background: var(--secondary-bg) !important;
+  background: var(--secondary-bg);
+  cursor: pointer;
 }
-.is-editing-item .stock-close-icon { display: block; }
 #itemModalBackdrop.is-editing-item #fieldQty { background: #FFFCF7; }
 #itemModalBackdrop.is-editing-item #currencyToggleGroup button[aria-pressed="true"] {
   background: var(--accent);
@@ -2620,11 +2754,10 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
 #viewPantry .stock-action-icon { vertical-align: middle; }
 
 
-#itemModalBackdrop:not(.is-editing-item) :is(.stock-form-edit-hint, .stock-form-open-limit-suffix span) {
+#itemModalBackdrop:not(.is-editing-item) .stock-form-open-limit-suffix span {
   display: none;
 }
-#itemModalBackdrop.is-editing-item .stock-form-edit-hint { margin: 4px 0 6px; }
-#itemModalBackdrop.is-editing-item :is(#correctUnitBtn, #adjustFlavorBtn) {
+#itemModalBackdrop.is-editing-item #correctUnitBtn {
   display: flex;
   width: fit-content;
   margin-inline-start: auto;
@@ -2632,3 +2765,5 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
   background: var(--secondary-bg);
   color: var(--secondary-text);
 }
+
+#itemModalBackdrop { bottom: var(--stock-form-keyboard-offset, 0px); }

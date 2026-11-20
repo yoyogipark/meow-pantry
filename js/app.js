@@ -959,19 +959,73 @@
       if (btn) UI.syncModalPalatabilityUI(btn.getAttribute('data-pal'));
     });
 
-    ['fieldMixedFlavors', 'fieldPackSeal'].forEach(function (id) {
-      document.getElementById(id).addEventListener('change', UI.syncPurchasePackaging);
+    var itemViewport = global.visualViewport;
+    if (itemViewport) {
+      var itemBackdrop = document.getElementById('itemModalBackdrop');
+      function syncItemKeyboardSpace() {
+        var keyboard = itemViewport.scale === 1 &&
+          itemViewport.height < document.documentElement.clientHeight - 100;
+        var offset = keyboard ? Math.max(0, document.documentElement.clientHeight - itemViewport.height - itemViewport.offsetTop) : 0;
+        itemBackdrop.style.setProperty('--stock-form-keyboard-offset', offset + 'px');
+        itemBackdrop.style.setProperty('--stock-form-viewport-height', keyboard ? itemViewport.height + 'px' : '92dvh');
+        var field = document.activeElement;
+        if (keyboard && field?.closest('#itemForm .stock-form-body') && !itemBackdrop.classList.contains('hidden-view')) {
+          field.scrollIntoView?.({ block: 'nearest' });
+        }
+      }
+      itemViewport.addEventListener('resize', syncItemKeyboardSpace);
+      itemViewport.addEventListener('scroll', syncItemKeyboardSpace);
+    }
+
+    document.getElementById('fieldMixedFlavors').addEventListener('change', UI.syncPurchasePackaging);
+    document.getElementById('packSealOptions').addEventListener('click', function (ev) {
+      var button = ev.target.closest('[data-seal]');
+      if (!button || button.disabled) return;
+      document.getElementById('fieldPackSeal').value = button.dataset.seal;
+      UI.syncModalUnitPriceHint();
     });
     document.getElementById('flavorRows').addEventListener('input', UI.syncFlavorForm);
-    document.getElementById('flavorRows').addEventListener('click', function (ev) {
-      var remove = ev.target.closest('[data-remove-flavor]');
-      if (!remove || remove.disabled) return;
-      remove.closest('.flavor-row').remove();
-      UI.syncFlavorForm();
+    document.getElementById('flavorRows').addEventListener('focusout', function (ev) {
+      if (ev.target.matches('[data-flavor-name]') && ev.target.value.trim()) {
+        UI.setFlavorNameEditing(ev.target.closest('.flavor-row'), false);
+      }
     });
-    document.getElementById('addFlavorBtn').addEventListener('click', function () {
-      UI.addFlavorRow();
-      UI.syncFlavorForm();
+    document.getElementById('flavorRows').addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' && !ev.isComposing && ev.target.matches('[data-flavor-name]')) {
+        ev.preventDefault();
+        ev.target.blur();
+      }
+    });
+    document.getElementById('flavorRows').addEventListener('click', function (ev) {
+      var button = ev.target.closest('button');
+      if (!button || button.disabled) return;
+      var row = button.closest('.flavor-row');
+      if (button.hasAttribute('data-remove-flavor')) {
+        row.remove();
+        UI.syncFlavorForm();
+      } else if (button.hasAttribute('data-flavor-name-display')) {
+        UI.setFlavorNameEditing(row, true);
+        row.querySelector('[data-flavor-name]').focus();
+      } else if (button.dataset.flavorStep) {
+        UI.changeFlavorCount(row, Number(button.dataset.flavorStep));
+      } else if (button.hasAttribute('data-flavor-open')) {
+        var panel = row.querySelector('[data-flavor-open-panel]');
+        button.setAttribute('aria-expanded', String(!panel.classList.toggle('hidden-view')));
+      }
+    });
+    document.getElementById('flavorQuickActions').addEventListener('click', function (ev) {
+      var button = ev.target.closest('button');
+      if (!button) return;
+      if (button.dataset.flavorDistribute) {
+        UI.distributeFlavors(button.dataset.flavorDistribute);
+      } else if (button.dataset.suggestFlavor) {
+        if (button.classList.contains('hidden-view')) return;
+        UI.addFlavorRow({ name: button.dataset.suggestFlavor });
+        UI.syncFlavorForm();
+      } else if (button.id === 'addFlavorBtn') {
+        UI.addFlavorRow().querySelector('[data-flavor-name]').focus();
+        UI.syncFlavorForm();
+      }
     });
     document.getElementById('fieldSubtype').addEventListener('change', UI.updateItemSubtype);
     document.getElementById('fieldUnit').addEventListener('change', UI.markItemUnitManual);
@@ -1090,47 +1144,10 @@
           var unitField = document.getElementById('fieldUnit');
           unitField.value = unit;
           UI.syncNetWeight();
-          document.querySelectorAll('#flavorRows .flavor-row').forEach(function (row) {
-            var flavor = Domain.findFlavor(item, row.dataset.flavorId);
-            if (flavor) row.lastElementChild.textContent = '余 ' + flavor.quantity + unit;
-          });
           UI.syncModalUnitPriceHint();
           UI.renderAll();
           Storage.saveToStorage(false, function (ok) { if (ok) UI.showToast('库存单位已更正'); });
         }, { label: '确认新旧单位代表同一件库存，无需数量换算', defaultChecked: false });
-    });
-
-    document.getElementById('adjustFlavorSelect').addEventListener('change', function () {
-      UI.syncFlavorAdjustment(editingItem());
-    });
-    document.getElementById('adjustFlavorBtn').addEventListener('click', function () {
-      var item = editingItem();
-      var flavor = Domain.findFlavor(item, document.getElementById('adjustFlavorSelect').value);
-      var whole = document.getElementById('adjustFlavorWhole');
-      var percent = document.getElementById('adjustFlavorPercent');
-      if (!flavor || whole.value === '' || !whole.checkValidity() ||
-          (!percent.disabled && (percent.value === '' || !percent.checkValidity()))) {
-        UI.showToast('请核对该口味的完整件数和开封余量。');
-        return;
-      }
-      var result = Domain.adjustFlavorStock(item, flavor, Number(whole.value),
-        percent.disabled ? 0 : Number(percent.value), document.getElementById('adjustFlavorReason').value.trim());
-      if (!result) {
-        UI.showToast('库存未变更，请核对数量、原始配比及开封状态。');
-        return;
-      }
-      document.getElementById('fieldQty').value = item.quantity;
-      document.getElementById('fieldIsOpened').checked = item.isOpened;
-      document.getElementById('fieldOpenedDate').value = (item.quantity > 0 ? item.openedDate : item.archivedOpenedDate || item.openedDate) || '';
-      document.getElementById('fieldFinishedDate').value = item.finishedDate;
-      document.querySelectorAll('#flavorRows .flavor-row').forEach(function (row) {
-        if (row.dataset.flavorId === flavor.id) row.lastElementChild.textContent = '余 ' + flavor.quantity + item.unit;
-      });
-      document.getElementById('adjustFlavorReason').value = '';
-      UI.syncFlavorAdjustment(item);
-      UI.syncOpenedFieldsVisibility();
-      UI.renderAll();
-      Storage.saveToStorage(false, function (ok) { if (ok) UI.showToast('口味库存已调整'); });
     });
 
     document.getElementById('itemForm').addEventListener('change', function (ev) {
@@ -1186,7 +1203,7 @@
         var sizeField = document.getElementById('fieldPackSize');
         var invalidCount = !Number.isSafeInteger(Number(countField.value)) || Number(countField.value) < 1;
         var invalidSize = !Number.isSafeInteger(Number(sizeField.value)) || Number(sizeField.value) < 1;
-        showFieldError(invalidCount ? countField.id : invalidSize ? sizeField.id : 'fieldPackSeal',
+        showFieldError(invalidCount ? countField.id : invalidSize ? sizeField.id : document.querySelector('#packSealOptions [aria-pressed="true"]'),
           '请核对购买数量、每包装件数、内包装单位和密封方式');
         return;
       }
@@ -1200,11 +1217,22 @@
         packaging = original.purchasePackaging;
       }
       var flavors = original && original.flavors;
+      var adjustments = flavors ? UI.readFlavorAdjustments() : [];
+      if (adjustments.some(function (draft) {
+        var flavor = Domain.findFlavor(original, draft.id);
+        return !flavor || original.sourceBatchId || !Number.isSafeInteger(draft.whole) || draft.whole < 0 ||
+          !Number.isFinite(draft.percent) || draft.percent < 0 || draft.percent > 100 ||
+          (draft.percent > 0 && !flavor.openedDate) ||
+          draft.whole + Number(draft.percent > 0) > flavor.perPack * packaging.count;
+      })) {
+        showFieldError('flavorSummary', '请核对口味件数和开封余量，不能超过原始配比。');
+        return;
+      }
       if (!id && packaging && document.getElementById('fieldMixedFlavors').checked) {
         flavors = Domain.validateFlavors(UI.readFlavorRows(packaging), packaging, newQty, false);
         if (!flavors) {
           UI.syncFlavorForm();
-          showFieldError('flavorSummary', '请核对每包装口味分配');
+          showFieldError('flavorSummary', document.getElementById('flavorSummary').textContent);
           return;
         }
       }
@@ -1350,6 +1378,18 @@
                 ' → ' + (record.isOpened ? ('已开封 ' + (record.openedDate || '日期未填')) : '未开封')
             });
           }
+        }
+        if (adjustments.length) {
+          var reason = document.getElementById('adjustFlavorReason').value.trim();
+          // Restore stock first so an intermediate zero does not archive a batch that will still contain stock.
+          adjustments.sort(function (a, b) {
+            function delta(draft) {
+              return draft.whole + Number(draft.percent > 0) - Domain.findFlavor(record, draft.id).quantity;
+            }
+            return delta(b) - delta(a);
+          }).forEach(function (draft) {
+            Domain.adjustFlavorStock(record, Domain.findFlavor(record, draft.id), draft.whole, draft.percent, reason);
+          });
         }
         if (record.quantity > 0 && st.statusFilter === 'empty') {
           st.statusFilter = 'in_stock';

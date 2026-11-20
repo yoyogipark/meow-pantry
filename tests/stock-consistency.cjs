@@ -754,7 +754,7 @@ async function run() {
     price: 3.333, location: '蓝色铁皮柜', batchCode: '历史渠道与批号', palatability: 'ok',
     purchasePackaging: { count: 1, size: 4, outerUnit: '组' },
     flavors: [
-      { id: 'chicken', name: '鸡', perPack: 2, quantity: 1, spec: '旧规格' },
+      { id: 'chicken', name: '鸡', perPack: 2, quantity: 1, spec: '旧规格', openedDate: yesterday },
       { id: 'fish', name: '鱼', perPack: 2, quantity: 2 }
     ]
   });
@@ -798,20 +798,48 @@ async function run() {
   assert.equal(el('fieldQty').readOnly, false);
   el('fieldPackagingEnabled').click();
   el('fieldMixedFlavors').click();
+  assert.equal(el('flavorProgress').children.length, 8);
+  el('fieldMixedFlavors').click();
+  assert.equal(el('flavorRows').children.length, 0);
+  el('fieldMixedFlavors').click();
+  const chooseFlavor = name => el('flavorSuggestions').querySelector('[data-suggest-flavor="' + name + '"]').click();
+  chooseFlavor('鸡');
+  chooseFlavor('鱼');
   const flavorRows = el('flavorRows').querySelectorAll('.flavor-row');
-  for (const [index, name] of ['鸡', '鱼'].entries()) {
-    flavorRows[index].querySelector('[data-flavor-name]').value = name;
-    flavorRows[index].querySelector('[data-flavor-count]').value = '1';
-  }
-  ui.syncFlavorForm();
-  assert.match(el('flavorSummary').textContent, /还差 2件/);
+  assert.equal(flavorRows[0].querySelector('[data-flavor-count]').value, '0');
+  assert.ok(el('flavorSuggestions').querySelector('[data-suggest-flavor="鸡"]').classList.contains('hidden-view'));
+  assert.equal(flavorRows[0].querySelector('[data-flavor-name-display]').textContent, '鸡');
+  flavorRows[0].querySelector('[data-flavor-name-display]').click();
+  assert.equal(w.document.activeElement, flavorRows[0].querySelector('[data-flavor-name]'));
+  flavorRows[0].querySelector('[data-flavor-name]').blur();
+  for (const row of flavorRows) row.querySelector('[data-flavor-step="1"]').click();
+  assert.match(el('flavorSummary').textContent, /已分配 2\/8 罐 · 还差 6 罐/);
+  assert.match(el('saveItemBtn').textContent, /还差 6 罐未分配/);
   el('saveItemBtn').click();
   assert.equal(state.items.length, 1);
   assert.equal(w.document.activeElement, el('flavorSummary'));
-  flavorRows[1].querySelector('[data-flavor-count]').value = '3';
-  ui.syncFlavorForm();
+  el('flavorQuickActions').querySelector('[data-flavor-distribute="last"]').click();
+  assert.match(el('flavorSummary').textContent, /整除购买数量/);
+  el('flavorQuickActions').querySelector('[data-flavor-distribute="even"]').click();
+  assert.equal(flavorRows[0].querySelector('[data-flavor-count]').value, '4');
   assert.equal(el('flavorSummary').dataset.allocation, 'complete');
-  assert.equal(el('flavorSummary').textContent, '已分配 4/4件');
+  assert.equal(el('flavorSummary').textContent, '已分配 8/8 罐 ✓');
+  set('fieldPackCount', '1');
+  const distributeEven = el('flavorQuickActions').querySelector('[data-flavor-distribute="even"]');
+  const distributeLast = el('flavorQuickActions').querySelector('[data-flavor-distribute="last"]');
+  distributeEven.click();
+  assert.equal(el('flavorSummary').textContent, '已分配 4/4 罐 ✓');
+  el('addFlavorBtn').click();
+  const thirdRow = el('flavorRows').lastElementChild;
+  thirdRow.querySelector('[data-flavor-name]').value = '牛肉';
+  thirdRow.querySelector('[data-flavor-name]').dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert.ok(distributeLast.classList.contains('hidden-view'));
+  distributeEven.click();
+  assert.deepEqual(Array.from(el('flavorRows').querySelectorAll('[data-flavor-count]'), output => output.value), ['2', '1', '1']);
+  thirdRow.querySelector('[data-remove-flavor]').click();
+  set('fieldPackCount', '2');
+  distributeEven.click();
+  assert.equal(el('flavorSummary').textContent, '已分配 8/8 罐 ✓');
   el('fieldPrice').value = '40';
   el('fieldPrice').dispatchEvent(new w.Event('input', { bubbles: true }));
   assert.match(el('modalUnitPriceHint').textContent, /5\.00元\/罐.*元\/100g/);
@@ -831,11 +859,45 @@ async function run() {
   assert.equal(byId(oldBundle.id).flavors[0].spec, '旧规格');
   assert.equal(byId(oldBundle.id).price, 3.333);
   assert.equal(byId(oldBundle.id).quantity, 3);
+  ui.openEditModal(oldBundle.id);
+  await settle();
+  const editRows = el('flavorRows').querySelectorAll('.flavor-row');
+  assert.ok(editRows[0].querySelector('[data-flavor-name]').readOnly);
+  assert.ok(editRows[0].querySelector('[data-flavor-open-panel]').classList.contains('hidden-view'));
+  editRows[0].querySelector('[data-flavor-open]').click();
+  assert.equal(editRows[0].querySelector('[data-flavor-open]').getAttribute('aria-expanded'), 'true');
+  const openPercent = editRows[0].querySelector('[data-flavor-percent]');
+  openPercent.value = '0';
+  openPercent.dispatchEvent(new w.Event('input', { bubbles: true }));
+  editRows[1].querySelector('[data-flavor-step="-1"]').click();
+  assert.equal(byId(oldBundle.id).quantity, 3);
+  assert.equal(el('saveItemBtn').textContent, '保存并记录库存调整');
+  assert.equal(el('flavorReasonWrap').classList.contains('hidden-view'), false);
+  el('adjustFlavorReason').value = '盘点少了';
+  el('saveItemBtn').click();
+  await settle();
+  assert.equal(byId(oldBundle.id).quantity, 1);
+  const adjustments = state.stockHistory.filter(row => row.itemId === oldBundle.id && row.action === 'adjust');
+  assert.equal(adjustments.length, 2);
+  assert.ok(adjustments.every(row => row.note.includes('盘点少了')));
+  assert.deepEqual(Array.from(byId(oldBundle.id).flavors, row => row.perPack), [2, 2]);
+  const flavorBackup = backup();
+  assert.equal((await restore(flavorBackup, false)).ok, true);
+  assert.deepEqual(Array.from(byId(oldBundle.id).flavors, row => row.quantity), [0, 1]);
+  assert.equal(state.stockHistory.filter(row => row.itemId === oldBundle.id && row.action === 'adjust').length, 2);
+
   ui.openRestockModal(byId(oldBundle.id));
   await settle();
   assert.equal(el('palatabilityGroup').querySelector('.active').dataset.pal, '');
   assert.equal(el('productionDatePending').classList.contains('hidden-view'), false);
-  ui.closeItemModal();
+  el('fieldPackagingEnabled').click();
+  assert.equal(el('fieldMixedFlavors').checked, false);
+  assert.equal(el('flavorRows').children.length, 0);
+  set('fieldExpDate', '2099-01-01');
+  el('saveItemBtn').click();
+  await settle();
+  assert.equal(state.items[0].purchasePackaging, undefined);
+  assert.equal(state.items[0].flavors, undefined);
 
   reset(make('filter-fresh', 5, '袋', { category: 'dry', brand: '测试长品牌', name: '鸡肉甲' }),
     make('filter-near', 2, '罐', { brand: '测试长品牌', name: '鸡肉乙', expDate: nearDate }),
