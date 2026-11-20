@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=166">
-  <link rel="stylesheet" href="./css/styles.css?v=166">
+  <link rel="stylesheet" href="./css/tokens.css?v=190">
+  <link rel="stylesheet" href="./css/styles.css?v=190">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -226,22 +226,21 @@
       <section id="pantryList" style="display:flex;flex-direction:column;gap:12px;"></section>
 
       <!-- Pantry Pagination Controls -->
-      <div id="pantryPaginationBar" class="ios-card hidden-view" style="padding:10px 12px;margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button id="prevPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>上一页</button>
-          <span id="pageInfoText" style="font-size:12px;font-weight:700;color:var(--text-main);padding:0 4px;white-space:nowrap;">第 1 / 1 页</span>
-          <button id="nextPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;">下一页<svg class="ui-icon ui-icon--trailing" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
-        </div>
-        <div style="display:flex;align-items:center;gap:5px;">
-          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">每页</span>
-          <select id="pageSizeSelect" aria-label="每页显示条数" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:var(--card-bg);">
-            <option value="6">6 条</option>
-            <option value="10">10 条</option>
-            <option value="20">20 条</option>
-            <option value="9999">全部</option>
+      <nav id="pantryPaginationBar" class="list-pagination hidden-view" aria-label="库存列表分页">
+        <label class="list-pagination-size"><span>每页</span>
+          <select id="pageSizeSelect" aria-label="库存列表分页每页数量">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
           </select>
+        </label>
+        <span id="pageInfoText" class="list-pagination-count" role="status">1 / 1</span>
+        <div class="list-pagination-buttons">
+          <button id="prevPageBtn" type="button" aria-label="上一页" disabled><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button>
+          <button id="nextPageBtn" type="button" aria-label="下一页" disabled><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
         </div>
-      </div>
+      </nav>
 
       <!-- Empty State -->
       <div id="emptyStateBox" class="empty-state-actions hidden-view">
@@ -377,22 +376,33 @@
       <!-- SUB-VIEW 2: 适口与耐受 -->
       <div id="statsSubViewPal" class="hidden-view">
         <div class="ios-card stats-panel">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
-            <div>
-              <h2 class="stats-panel-title"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>适口性与耐受度档案</h2>
-              <p class="stats-panel-description">普通食品适口性、营养品接受度与药品反应独立建档</p>
-            </div>
-            <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--status-neutral-bg);padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
+          <div class="pal-archive-heading">
+            <h2 class="stats-panel-title"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>适口性与耐受度档案</h2>
+            <details class="pal-evaluated-details">
+              <summary><span id="tierTotalEvaluatedBadge">已评 0款</span></summary>
+              <p id="tierEvaluatedBreakdown"></p>
+            </details>
           </div>
+          <p class="stats-panel-description pal-archive-description" title="食品适口性 · 营养品接受度 · 药品反应">食品适口性 · 营养品接受度 · 药品反应</p>
 
           <div id="palTierDistribution" class="pal-tier-distribution hidden-view" role="img"></div>
-          <div id="palTierTabBar" class="pal-tier-grid">
-            <button type="button" data-tier-tab="love" class="pill-chip pal-tier-button active"><svg class="pal-cat-face" width="28" height="28" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-love"></use></svg><span>超爱吃</span><strong data-tier-count>0</strong></button>
-            <button type="button" data-tier-tab="ok" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="28" height="28" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-ok"></use></svg><span>正常吃</span><strong data-tier-count>0</strong></button>
-            <button type="button" data-tier-tab="coax" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="28" height="28" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-coax"></use></svg><span>需哄吃</span><strong data-tier-count>0</strong></button>
-            <button type="button" data-tier-tab="meh" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="28" height="28" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-meh"></use></svg><span>不爱吃</span><strong data-tier-count>0</strong></button>
-            <button type="button" data-tier-tab="supp" class="pill-chip" style="padding:6px 11px;font-size:12px;"><span data-category-icon="supp"></span> 营养品接受度</button>
-            <button type="button" data-tier-tab="med" class="pill-chip" style="padding:6px 11px;font-size:12px;"><span data-category-icon="med"></span> 药品耐受反应</button>
+          <div id="palTierTabBar">
+            <div class="pal-tier-grid">
+              <button type="button" data-tier-tab="love" class="pill-chip pal-tier-button active"><svg class="pal-cat-face" width="40" height="40" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-love"></use></svg><span>超爱吃</span><strong data-tier-count>0</strong></button>
+              <button type="button" data-tier-tab="ok" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="40" height="40" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-ok"></use></svg><span>正常吃</span><strong data-tier-count>0</strong></button>
+              <button type="button" data-tier-tab="coax" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="40" height="40" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-coax"></use></svg><span>需哄吃</span><strong data-tier-count>0</strong></button>
+              <button type="button" data-tier-tab="meh" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="40" height="40" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-meh"></use></svg><span>不爱吃</span><strong data-tier-count>0</strong></button>
+            </div>
+            <div class="pal-other-heading">其他类别</div>
+            <div class="pal-other-filters">
+              <button type="button" data-tier-tab="supp" class="pill-chip">营养品接受度</button>
+              <button type="button" data-tier-tab="med" class="pill-chip">药品耐受反应</button>
+            </div>
+          </div>
+
+          <div class="pal-filter-summary">
+            <span id="palFilterSummary" role="status"></span>
+            <button id="clearPalFilterBtn" class="ios-btn-text" type="button">清除</button>
           </div>
 
           <div id="palTierCardsList" class="pal-record-list"></div>
@@ -428,30 +438,32 @@
             <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--status-neutral-bg);padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
           </div>
 
-          <div id="brandScopeBar" class="filter-chips no-scrollbar">
-            <button type="button" data-brand-scope="all" class="subfilter-chip active">全部品牌</button>
-            <button type="button" data-brand-scope="food" class="subfilter-chip">普通食品品牌</button>
-            <button type="button" data-brand-scope="supp" class="subfilter-chip">营养品品牌</button>
-            <button type="button" data-brand-scope="med" class="subfilter-chip"><span data-category-icon="med"></span> 药品品牌</button>
+          <div class="brand-scope-wrap">
+            <div id="brandScopeBar" class="filter-chips no-scrollbar">
+              <button type="button" data-brand-scope="all" class="subfilter-chip active"><span>全部品牌</span></button>
+              <button type="button" data-brand-scope="food" class="subfilter-chip"><span>食品品牌</span></button>
+              <button type="button" data-brand-scope="supp" class="subfilter-chip"><span>营养品品牌</span></button>
+              <button type="button" data-brand-scope="med" class="subfilter-chip"><span>药品品牌</span></button>
+            </div>
           </div>
 
           <div id="brandStatsList" class="brand-list"></div>
 
-          <div id="brandPaginationBar" class="hidden-view" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--status-neutral-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <button id="prevBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>上一页</button>
-              <span id="brandPageInfoText" style="font-size:11.5px;font-weight:700;color:var(--text-main);white-space:nowrap;">第 1 / 1 页</span>
-              <button id="nextBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页<svg class="ui-icon ui-icon--trailing" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
-            </div>
-            <div style="display:flex;align-items:center;gap:5px;">
-              <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">每页</span>
-              <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background-color:var(--card-bg);">
-                <option value="5">5 个品牌</option>
-                <option value="10">10 个品牌</option>
-                <option value="9999">全部</option>
+          <nav id="brandPaginationBar" class="list-pagination hidden-view" aria-label="品牌档案分页">
+            <label class="list-pagination-size"><span>每页</span>
+              <select id="brandPageSizeSelect" aria-label="品牌档案分页每页数量">
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
               </select>
+            </label>
+            <span id="brandPageInfoText" class="list-pagination-count" role="status">1 / 1</span>
+            <div class="list-pagination-buttons">
+              <button id="prevBrandPageBtn" type="button" aria-label="上一页" disabled><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button>
+              <button id="nextBrandPageBtn" type="button" aria-label="下一页" disabled><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
             </div>
-          </div>
+          </nav>
         </div>
       </div>
     </section>
@@ -1140,18 +1152,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=166"></script>
-  <script src="./js/constants.js?v=166"></script>
-  <script src="./js/utils.js?v=166"></script>
-  <script src="./js/forecast.js?v=166"></script>
-  <script src="./js/domain.js?v=166"></script>
-  <script src="./js/storage.js?v=166"></script>
-  <script src="./js/stats.js?v=166"></script>
-  <script src="./js/modal.js?v=166"></script>
-  <script src="./js/ui.js?v=166"></script>
-  <script src="./js/ui-pantry.js?v=166"></script>
-  <script src="./js/ui-daily.js?v=166"></script>
-  <script src="./js/ui-settings.js?v=166"></script>
-  <script src="./js/app.js?v=166"></script>
+  <script src="./js/covers.js?v=190"></script>
+  <script src="./js/constants.js?v=190"></script>
+  <script src="./js/utils.js?v=190"></script>
+  <script src="./js/forecast.js?v=190"></script>
+  <script src="./js/domain.js?v=190"></script>
+  <script src="./js/storage.js?v=190"></script>
+  <script src="./js/stats.js?v=190"></script>
+  <script src="./js/modal.js?v=190"></script>
+  <script src="./js/ui.js?v=190"></script>
+  <script src="./js/ui-pantry.js?v=190"></script>
+  <script src="./js/ui-daily.js?v=190"></script>
+  <script src="./js/ui-settings.js?v=190"></script>
+  <script src="./js/app.js?v=190"></script>
 </body>
 </html>

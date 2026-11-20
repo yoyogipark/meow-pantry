@@ -84,9 +84,9 @@
         st.settings.dailyFeedGrams[category] = Number.isFinite(grams) && grams >= 0 ? grams : null;
       });
     }
-    if (typeof pSet.pantryPageSize === 'number' && pSet.pantryPageSize > 0) {
-      st.pantryPageSize = pSet.pantryPageSize;
-      st.settings.pantryPageSize = pSet.pantryPageSize;
+    if (typeof pSet.pantryPageSize === 'number') {
+      st.pantryPageSize = [5, 10, 20, 50].includes(pSet.pantryPageSize) ? pSet.pantryPageSize : 5;
+      st.settings.pantryPageSize = st.pantryPageSize;
     }
     if (pSet.pantryDisplayMode === 'compact' || pSet.pantryDisplayMode === 'card') {
       st.pantryDisplayMode = pSet.pantryDisplayMode;
