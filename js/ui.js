@@ -27,6 +27,7 @@
 
   UI.flavorStockText = function (item, plain, remainingView) {
     if (!item.flavors) return '';
+    var overallRating = remainingView ? MP.getItemPalatability(item) : '';
     return item.flavors.map(function (flavor) {
       var text = flavor.name + ' ' + Utils.formatQuantity(flavor.quantity, remainingView ? '' : item.unit);
       if (Number(flavor.quantity) > 0 && flavor.openedDate) {
@@ -45,9 +46,9 @@
       if (remainingView && Number(flavor.quantity) <= 0) {
         escaped = '<s class="flavor-stock-finished" aria-label="' + Utils.escapeHtml(flavor.name + ' 已吃完') + '">' + escaped + '</s>';
       }
-      if (!remainingView) return escaped;
+      if (!remainingView || (flavor.palatability || '') === overallRating) return escaped;
       var badge = MP.getPalatabilityBadgeInfo({ category: item.category, palatability: flavor.palatability });
-      return escaped + ' <span class="flavor-stock-rating">' +
+      return escaped + ' · <span class="flavor-stock-rating">' +
         (badge ? Utils.formatPalatabilityBadge(item, badge) : '未评价') + '</span>';
     }).join(' · ');
   };

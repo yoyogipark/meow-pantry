@@ -530,7 +530,7 @@ async function run() {
   state.searchQuery = '';
   state.pantryPage = 1;
   state.pantryDisplayMode = 'card';
-  state.pantryPageSize = 12;
+  state.pantryPageSize = 20;
   const openedCardItem = make('opened-card', 3, '罐', {
     prodDate: utils.shiftDaysFromToday(-20), expDate: utils.shiftDaysFromToday(20),
     isOpened: true, openedDate: utils.shiftDaysFromToday(-3), openDaysLimit: 4,
@@ -566,12 +566,12 @@ async function run() {
   checkProgress(multiCardItem.id, '开封保鲜期剩余 1天', 'urgent', '25%');
   assert.equal(card(multiCardItem.id).querySelectorAll('.detail-card-open-progress').length, 1);
   checkProgress(twoDayItem.id, '开封保鲜期剩余 2天', 'urgent', '100%', 2);
-  assert.ok(card(twoDayItem.id).querySelector('.detail-card-open-badge--urgent'));
+  assert.equal(card(twoDayItem.id).querySelector('.detail-card-open-badge'), null);
   assert.ok(card(twoDayItem.id).querySelector('.detail-card-open-stock--urgent'));
   assert.ok(progress(defaultLimitItem.id));
   checkProgress(longLimitItem.id, '开封保鲜期剩余 45天', 'fresh', '100%', 45);
   for (const entry of [unopenedCardItem, missingLimitItem]) assert.equal(progress(entry.id), null);
-  assert.ok(card(missingLimitItem.id).querySelector('.detail-card-open-badge'));
+  assert.ok(card(missingLimitItem.id).querySelector('.detail-card-expiry-days'));
   twoDayItem.openedDate = utils.shiftDaysFromToday(-1);
   ui.renderPantryList();
   checkProgress(twoDayItem.id, '开封保鲜期剩余 1天', 'urgent', '50%', 2);
@@ -585,7 +585,7 @@ async function run() {
   assert.equal(summary.lastElementChild.textContent, '开封日期 ' + openedCardItem.openedDate);
   assert.equal(summary.nextElementSibling, progress(openedCardItem.id));
   assert.deepEqual(Array.from(progress(openedCardItem.id).children, child => child.className),
-    ['detail-card-open-progress-label', 'progress-track']);
+    ['detail-card-open-progress-label', 'progress-track', 'detail-card-shelf-tip hidden-view']);
   for (const opened of [openedCardItem, multiCardItem, sharedDetail]) {
     const actions = card(opened.id).querySelector('.detail-card-actions');
     assert.equal(actions.querySelector('.stock-quantity-pill').firstElementChild.textContent,
@@ -610,9 +610,19 @@ async function run() {
   salmonFins.quantity = 3;
   ui.renderPantryList();
   checkOpenedStock(salmonFins, '未开封 2袋 + 已开封 1袋');
-  assert.equal(activeCard.querySelector('.detail-card-shelf .detail-card-line').textContent, '保质期剩余 50.0%');
-  assert.equal(unopenedCard.querySelector('.detail-card-shelf .detail-card-line').textContent, '保质期剩余 100.0%');
-  const shelfBefore = activeCard.querySelector('.detail-card-shelf').outerHTML;
+  assert.equal(activeCard.querySelector('[data-shelf-progress]').getAttribute('aria-label'), '保质期剩余 50.0%');
+  assert.equal(unopenedCard.querySelector('[data-shelf-progress]').getAttribute('aria-label'), '保质期剩余 100.0%');
+  assert.ok(card(openedCardItem.id).querySelector('.detail-card-shelf-tip').classList.contains('hidden-view'));
+  card(openedCardItem.id).querySelector('[data-shelf-progress]').click();
+  assert.equal(card(openedCardItem.id).querySelector('.detail-card-shelf-tip').textContent, '保质期剩余 50.0%');
+  const openTrack = progress(openedCardItem.id).querySelector('[data-open-progress]');
+  openTrack.click();
+  const openTip = progress(openedCardItem.id).querySelector('.detail-card-shelf-tip');
+  assert.equal(openTip.textContent, '开封保鲜期剩余 25.0%');
+  assert.ok(!openTip.classList.contains('hidden-view'));
+  assert.ok(card(openedCardItem.id).querySelector('.detail-card-shelf .detail-card-shelf-tip').classList.contains('hidden-view'));
+  ui.renderPantryList();
+  const shelfBefore = card(openedCardItem.id).querySelector('.detail-card-shelf').outerHTML;
   for (const [elapsed, label, tone, width] of [
     [0, '开封保鲜期剩余 4天', 'warning', '100%'],
     [1, '开封保鲜期剩余 3天', 'urgent', '75%'],
@@ -648,7 +658,7 @@ async function run() {
   assert.match(packagedCard.textContent, /3\.50元\/杯 · 14\.00元\/盒（4杯）/);
   assert.ok(Array.from(packagedCard.querySelectorAll('.detail-card-line')).some(
     line => line.textContent === '拼多多 · 购入 1盒装，共4杯'));
-  assert.match(packagedCard.querySelector('.flavor-stock').textContent, /剩余：草莓鸡 1 未评价 · 蓝莓兔 0 未评价/);
+  assert.match(packagedCard.querySelector('.flavor-stock').textContent, /剩余：草莓鸡 1 · 蓝莓兔 0/);
   assert.equal(packagedCard.querySelector('s.flavor-stock-finished').textContent, '蓝莓兔 0');
 
   const archived = make('archive-balance', 0, '杯', { name: '同款测试', consumedCount: 2 });
@@ -785,6 +795,15 @@ async function run() {
   const snackTile = el('categoryStatsGrid').querySelector('.forecast-tile--treat');
   assert.equal(snackTile.classList.contains('forecast-wide'), false);
   assert.ok(snackTile.nextElementSibling.classList.contains('forecast-tile--med'));
+  state.items.push(make('timeline-supplement', 1, '瓶', { category: 'supp' }),
+    make('weighted-snack', 3, '袋', { category: 'treat', unit_net_weight_g: 20, isOpened: true, openRemainFraction: 0.5 }),
+    make('unweighed-snack', 2, '袋', { category: 'treat' }));
+  ui.renderAll();
+  assert.match(el('categoryStatsGrid').querySelector('.forecast-tile--treat').textContent, /共 50克 · 部分未填克重/);
+  assert.ok(el('categoryStatsGrid').querySelector('.forecast-tile--supp').classList.contains('forecast-wide'));
+  state.items = state.items.filter(item => item.id !== 'weighted-snack');
+  ui.renderAll();
+  assert.match(el('categoryStatsGrid').querySelector('.forecast-tile--treat .forecast-rate').textContent, /^未填克重$/);
   state.items = beforeTimelineExamples;
   ui.renderAll();
   el('stockHealthBox').querySelector('[data-jump-health="expiring_or_opened"]').click();

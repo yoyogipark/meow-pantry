@@ -11,7 +11,7 @@
       warnDays: 60,
       defaultCurrency: 'CNY',
       dailyFeedGrams: { dry: 50, freeze: 10, can: 80 },
-      pantryPageSize: 6,
+      pantryPageSize: 5,
       pantryDisplayMode: 'card',
       pantryStatusHintSeen: false,
       pantryHistoryHintSeen: false,
@@ -44,7 +44,7 @@
     editMode: false,          // Default read-only browse mode to prevent accidental edits
     pantryDisplayMode: 'card', // 'card' | 'compact'
     pantryPage: 1,
-    pantryPageSize: 6,
+    pantryPageSize: 5,
     statsSubTab: 'stock',     // 'stock' | 'pal' | 'brand'
     statsScopeFilter: 'all',  // 'all' | 'food' | 'supp' | 'med'
     statsTierTab: 'love',     // 'love' | 'ok' | 'coax' | 'meh' | 'supp' | 'med'

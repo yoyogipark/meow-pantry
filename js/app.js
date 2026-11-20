@@ -207,20 +207,23 @@
       UI.showToast(st.pantryDisplayMode === 'compact' ? '已切换为「极简清单」视图' : '已切换为「详细卡片」视图');
     });
 
-    document.getElementById('prevPageBtn').addEventListener('click', function () {
-      if (st.pantryPage > 1) {
-        st.pantryPage -= 1;
-        UI.renderPantryList();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    });
-    document.getElementById('nextPageBtn').addEventListener('click', function () {
-      st.pantryPage += 1;
-      UI.renderPantryList();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    function bindListPageButtons(pagerId, listId, pageKey, render) {
+      var buttons = document.getElementById(pagerId).querySelectorAll('button');
+      buttons.forEach(function (button, index) {
+        button.addEventListener('click', function () {
+          st[pageKey] += index === 0 ? -1 : 1;
+          render();
+          var reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+          document.getElementById(listId).scrollIntoView?.({
+            block: 'start',
+            behavior: reduceMotion ? 'instant' : 'smooth'
+          });
+        });
+      });
+    }
+    bindListPageButtons('pantryPaginationBar', 'pantryList', 'pantryPage', UI.renderPantryList);
     document.getElementById('pageSizeSelect').addEventListener('change', function () {
-      st.pantryPageSize = parseInt(this.value, 10) || 6;
+      st.pantryPageSize = Number(this.value) || 5;
       st.settings.pantryPageSize = st.pantryPageSize;
       st.pantryPage = 1;
       Storage.saveToStorage(true);
@@ -228,7 +231,39 @@
     });
 
     // 4. Pantry Card Delegated Actions (Preview, History, Feed & Restock allowed in Read-Only; Destructive edits require Edit Mode)
-    document.getElementById('pantryList').addEventListener('click', function (ev) {
+    var shelfTipTimer;
+    var currentShelfTip;
+    var shelfPressTimer;
+    var pantryList = document.getElementById('pantryList');
+    function showShelfTip(progress) {
+      if (currentShelfTip) currentShelfTip.classList.add('hidden-view');
+      var tip = progress.closest('.detail-card-shelf, .detail-card-open-progress').querySelector('.detail-card-shelf-tip');
+      tip.textContent = progress.getAttribute('aria-label');
+      tip.classList.remove('hidden-view');
+      currentShelfTip = tip;
+      clearTimeout(shelfTipTimer);
+      shelfTipTimer = setTimeout(function () { tip.classList.add('hidden-view'); }, 2000);
+    }
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (event) {
+      pantryList.addEventListener(event, function () { clearTimeout(shelfPressTimer); });
+    });
+    pantryList.addEventListener('pointerdown', function (ev) {
+      var progress = ev.target.closest('[data-shelf-progress], [data-open-progress]');
+      if (progress && ev.isPrimary && ev.button === 0) {
+        clearTimeout(shelfPressTimer);
+        shelfPressTimer = setTimeout(function () { if (progress.isConnected) showShelfTip(progress); }, 450);
+      }
+    });
+    function handleShelfTip(ev) {
+      var progress = ev.target.closest('[data-shelf-progress], [data-open-progress]');
+      if (!progress) return false;
+      ev.preventDefault();
+      showShelfTip(progress);
+      return true;
+    }
+    pantryList.addEventListener('contextmenu', handleShelfTip);
+    pantryList.addEventListener('click', function (ev) {
+      if (handleShelfTip(ev)) return;
       var btn = ev.target.closest('[data-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
@@ -933,6 +968,12 @@
       st.tierPage = 1;
       Stats.renderStatsView();
     });
+    document.getElementById('clearPalFilterBtn').addEventListener('click', function () {
+      st.statsTierTab = 'all';
+      st.tierPage = 1;
+      Stats.renderStatsView();
+      document.querySelector('#palTierTabBar [data-tier-tab]').focus();
+    });
     document.getElementById('prevTierPageBtn').addEventListener('click', function () {
       if (st.tierPage > 1) { st.tierPage -= 1; Stats.renderStatsView(); }
     });
@@ -947,14 +988,9 @@
       st.brandPage = 1;
       Stats.renderStatsView();
     });
-    document.getElementById('prevBrandPageBtn').addEventListener('click', function () {
-      if (st.brandPage > 1) { st.brandPage -= 1; Stats.renderStatsView(); }
-    });
-    document.getElementById('nextBrandPageBtn').addEventListener('click', function () {
-      st.brandPage += 1; Stats.renderStatsView();
-    });
+    bindListPageButtons('brandPaginationBar', 'brandStatsList', 'brandPage', Stats.renderStatsView);
     document.getElementById('brandPageSizeSelect').addEventListener('change', function () {
-      st.brandPageSize = parseInt(this.value, 10) || 5;
+      st.brandPageSize = Number(this.value) || 5;
       st.brandPage = 1;
       Stats.renderStatsView();
     });
@@ -1516,9 +1552,6 @@
           }).forEach(function (draft) {
             Domain.adjustFlavorStock(record, Domain.findFlavor(record, draft.id), draft.whole, draft.percent, reason);
           });
-        }
-        if (record.quantity > 0 && st.statusFilter === 'empty') {
-          st.statusFilter = 'in_stock';
         }
       } else {
         record.lastQuantity = newQty;

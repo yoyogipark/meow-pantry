@@ -27,7 +27,8 @@
       '<path d="M8.5 12c2-2.6 5.4-2.8 7.8 0-2.4 2.8-5.8 2.6-7.8 0z"/><path d="M16.3 12l2.5-2v4z"/>',
     supp: '<rect x="9" y="3" width="6" height="3" rx="1"/><path d="M8 8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/>' +
       '<path d="M12 12v4"/><path d="M10 14h4"/>',
-    med: '<path d="M4.5 12.5l8-8a4.94 4.94 0 0 1 7 7l-8 8a4.94 4.94 0 0 1-7-7"/><path d="M8.5 8.5l7 7"/>',
+    med: '<g transform="translate(12 12) scale(.88) translate(-12 -12)">' +
+      '<path d="M4.5 12.5l8-8a4.94 4.94 0 0 1 7 7l-8 8a4.94 4.94 0 0 1-7-7"/><path d="M8.5 8.5l7 7"/></g>',
     other: '<path d="M12 12.5c-2.5 0-5 2.2-5 4.6 0 1.6 1.3 2.4 2.7 2.4 1 0 1.5-.4 2.3-.4s1.3.4 2.3.4c1.4 0 2.7-.8 2.7-2.4 0-2.4-2.5-4.6-5-4.6z"/>' +
       '<circle cx="5.5" cy="11" r="1.5"/><circle cx="9" cy="7" r="1.5"/><circle cx="15" cy="7" r="1.5"/><circle cx="18.5" cy="11" r="1.5"/>'
   };
@@ -257,6 +258,24 @@
 
   Utils.formatQuantity = function (value, unit) {
     return Utils.formatNumber(value, /^(克|g)$/i.test(unit) ? 0 : undefined) + (unit || '');
+  };
+
+  Utils.paginateList = function (entries, state, pageKey, pager) {
+    var size = state[pageKey + 'Size'];
+    if (![5, 10, 20, 50].includes(size)) size = 5;
+    var totalPages = Math.max(1, Math.ceil(entries.length / size));
+    var page = Math.min(totalPages, Math.max(1, state[pageKey]));
+    state[pageKey] = page;
+    pager.classList.toggle('hidden-view', entries.length === 0);
+    var count = pager.querySelector('.list-pagination-count');
+    count.textContent = page + ' / ' + totalPages;
+    count.classList.toggle('hidden-view', totalPages === 1);
+    pager.querySelector('.list-pagination-buttons').classList.toggle('hidden-view', totalPages === 1);
+    pager.querySelector('select').value = size;
+    var buttons = pager.querySelectorAll('button');
+    buttons[0].disabled = page === 1;
+    buttons[1].disabled = page === totalPages;
+    return entries.slice((page - 1) * size, page * size);
   };
 
   Utils.formatPercent = function (value) {
