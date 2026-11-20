@@ -354,7 +354,11 @@ body:not(.is-edit-mode) .edit-only {
 
 .app-header #openAddModalBtn {
   width: 65px;
-  background: var(--accent);
+  min-height: var(--action-height);
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.app-header #openAddModalBtn.ios-btn-secondary {
+  border: var(--border-default-width) solid var(--border-warm);
 }
 
 .app-header .mode-switch-pill > svg,
@@ -991,16 +995,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #statCardExpiring .status-card-label, #countExpiring { color: #B45309; }
 #statCardExpired .status-card-label, #countExpired { color: #B91C1C; }
 #statCardExpired.is-zero .status-card-label, #countExpired.is-zero { color: #75695F; }
-
-#dailyModeSwitch button {
-  min-height: 34px; border: 0; border-radius: 9px; background: transparent;
-  color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer;
-}
-#dailyModeSwitch button.active {
-  background: var(--selection-bg);
-  color: var(--accent-strong);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
 
 #viewPantry .status-card > :first-child { white-space: nowrap; }
 #viewPantry .status-card { padding-inline: 8px; }
@@ -1789,4 +1783,297 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .forecast-package-status [data-package-status="expiring"] {
   color: var(--status-warning-text);
   font-weight: var(--weight-medium);
+}
+
+/* Daily feeding and history */
+.daily-stack, .daily-history-days { display: grid; gap: var(--card-gap); min-width: 0; }
+.daily-stack { grid-template-columns: minmax(0, 1fr); }
+.daily-heading, .daily-actions, .daily-history-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--card-gap);
+}
+.daily-heading { justify-content: space-between; }
+.daily-heading > * { min-width: 0; }
+.daily-actions { flex: none; }
+.daily-actions .ios-btn {
+  padding-inline: var(--card-gap);
+  min-height: var(--action-height);
+  font-size: var(--font-support);
+  white-space: nowrap;
+  box-shadow: none;
+}
+.daily-page-title, .daily-section-title, .daily-card-title, .daily-support { margin: 0; }
+.daily-page-title { font-size: var(--font-page-title); font-weight: var(--weight-heading); }
+.daily-section-title { font-size: var(--font-section-title); font-weight: var(--weight-medium); }
+.daily-card-title { font-size: var(--font-card-title); font-weight: var(--weight-medium); }
+.daily-support { color: var(--text-muted); font-size: var(--font-support); }
+.daily-card { padding: var(--card-padding); }
+.daily-week { display: grid; gap: var(--card-gap); min-width: 0; }
+.daily-week-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--card-gap);
+}
+.daily-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  padding: 0;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-input);
+  background: var(--card-bg);
+  color: var(--text-main);
+  font-size: var(--font-number);
+  line-height: 1;
+  cursor: pointer;
+}
+.daily-icon-btn:disabled { color: var(--status-neutral-progress); cursor: default; }
+.daily-week-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--daily-week-gap);
+  min-width: 0;
+  min-height: var(--action-height);
+  border: 0;
+  border-radius: var(--radius-input);
+  background: none;
+  color: var(--text-main);
+  font-size: var(--font-body);
+  cursor: pointer;
+}
+.daily-week-title span {
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.daily-week-title svg {
+  flex: none;
+  width: var(--inline-icon-size);
+  height: var(--inline-icon-size);
+  color: var(--text-muted);
+}
+.daily-week-title:active, .daily-record-more:active { background: var(--status-neutral-bg); }
+.daily-week-title:focus-visible, .daily-record-more:focus-visible {
+  outline: var(--border-selected-width) solid var(--accent);
+  outline-offset: calc(-1 * var(--border-selected-width));
+}
+.daily-week-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--daily-week-gap);
+}
+.daily-week-days button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--daily-date-gap);
+  min-width: 0;
+  padding: var(--card-gap) 0;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: var(--font-caption);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.daily-week-days button strong {
+  color: var(--text-main);
+  font-size: var(--font-section-title);
+  font-weight: var(--weight-medium);
+}
+.daily-week-days button i {
+  width: var(--daily-date-marker);
+  height: var(--daily-date-marker);
+  border-radius: var(--radius-pill);
+}
+.daily-week-days .has-record { background: var(--accent); }
+.daily-week-days [aria-current="date"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+.daily-week-days [aria-current="date"] strong { color: inherit; }
+.daily-week-days [aria-current="date"] .has-record { background: var(--text-on-accent); }
+#dailyQuickFeedBox .filter-chips, #dailyHistoryFilters { margin: 0; }
+#dailyQuickFeedBox > p { margin-bottom: var(--daily-week-gap); }
+.daily-total-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--card-gap);
+  margin-top: var(--card-gap);
+}
+.daily-total-cell, .daily-total-unset { display: grid; align-content: start; gap: var(--daily-date-gap); min-width: 0; }
+.daily-total-cell strong, .daily-total-unset strong, .daily-record-amount strong {
+  font-size: var(--font-card-title);
+  font-weight: var(--weight-medium);
+}
+.daily-target { color: var(--text-muted); font-size: var(--font-caption); }
+.daily-total-values {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.daily-total-values > :not(.daily-over) { flex: none; }
+.daily-total-values > .daily-over {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+  color: var(--status-warning-text);
+}
+.daily-total-unset { padding: 0; border: 0; background: transparent; color: var(--text-main); text-align: start; cursor: pointer; }
+.daily-total-unset .daily-target { color: var(--accent-strong); }
+.daily-total-track {
+  height: var(--daily-date-marker);
+  border-radius: var(--radius-pill);
+  background: var(--progress-track-bg);
+  overflow: hidden;
+}
+.daily-total-track span { display: block; height: 100%; background: var(--status-normal-progress); }
+.daily-total-track .is-over { background: var(--status-warning-progress); }
+#dailyTotals > .daily-support { margin-top: var(--card-gap); }
+.daily-detail-heading { margin-bottom: var(--card-gap); }
+.daily-empty { display: flex; align-items: center; justify-content: space-between; gap: var(--card-gap); }
+.daily-empty button { flex: none; }
+.daily-records { margin: 0; padding: 0; list-style: none; }
+.daily-empty + .daily-records { margin-top: var(--card-gap); }
+.daily-record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content) auto;
+  gap: var(--card-gap);
+  align-items: center;
+  padding: var(--card-gap) var(--card-padding);
+}
+.daily-record + .daily-record { border-top: var(--border-default-width) solid var(--border-warm); }
+.daily-record-copy, .daily-record-amount { display: grid; gap: var(--daily-date-gap); min-width: 0; overflow-wrap: anywhere; }
+.daily-record-amount { text-align: end; max-width: var(--daily-amount-max); }
+.daily-reminder { display: flex; align-items: center; gap: var(--daily-date-gap); }
+.daily-reminder svg { flex: none; }
+.daily-record-menu { position: relative; }
+.daily-record-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.daily-record-more {
+  display: grid;
+  place-items: center;
+  width: var(--action-height);
+  height: var(--action-height);
+  border: 0;
+  border-radius: var(--radius-pill);
+  list-style: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.daily-record-more svg {
+  width: var(--menu-icon-size);
+  height: var(--menu-icon-size);
+}
+.daily-record-menu summary::-webkit-details-marker { display: none; }
+.daily-record-menu-items {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 100%;
+  z-index: 2;
+  display: grid;
+  min-width: max-content;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-input);
+  background: var(--card-bg);
+}
+.daily-record-menu-items button {
+  padding: var(--card-gap) var(--card-padding);
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  font-size: var(--font-body);
+  cursor: pointer;
+}
+.daily-record-menu-items [data-del-log] { color: var(--status-danger-text); }
+.daily-history-day {
+  display: grid;
+  grid-template-columns: var(--daily-history-date-width) minmax(0, 1fr) auto;
+  gap: var(--card-gap);
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: var(--card-gap) var(--card-padding);
+  color: var(--text-main);
+  font-size: var(--font-body);
+  text-align: start;
+  cursor: pointer;
+}
+.daily-history-date, .daily-history-copy { display: grid; gap: var(--daily-date-gap); min-width: 0; }
+.daily-history-date { justify-items: center; font-size: var(--font-caption); color: var(--text-muted); }
+.daily-history-date strong { font-size: var(--font-date-number); font-weight: var(--weight-medium); color: var(--text-main); }
+.daily-history-copy > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.daily-history-day > :last-child { white-space: nowrap; }
+.daily-history-end { text-align: center; }
+.daily-history-heading { margin-bottom: var(--daily-week-gap); }
+
+.daily-quick-feed-strip { position: relative; min-width: 0; }
+.daily-quick-feed-strip.has-more::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--scroll-fade-width);
+  background: linear-gradient(to right, transparent, var(--bg-cream));
+  pointer-events: none;
+}
+#dailyQuickFeedTrack .pill-chip { min-height: var(--action-height); }
+
+.backup-status-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--card-gap);
+  align-items: center;
+  padding: var(--card-gap) var(--card-padding);
+  margin-bottom: var(--card-gap);
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
+  font-size: var(--font-body);
+  box-shadow: none;
+}
+.backup-status-card.needs-backup {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+}
+.backup-status-card > svg { width: var(--menu-icon-size); height: var(--menu-icon-size); }
+.backup-status-copy p { margin: 0; }
+#backupStatusTitle { font-weight: var(--weight-medium); }
+#backupStatusTime { color: var(--text-muted); font-size: var(--font-support); }
+#settingsBackupNowBtn {
+  min-height: var(--action-height);
+  min-width: var(--action-height);
+  font-size: var(--font-support);
+  white-space: nowrap;
+}
+.backup-notice-dot {
+  position: absolute;
+  top: calc(-1 * var(--badge-offset-block));
+  left: calc(100% - var(--border-default-width));
+  min-width: var(--badge-size);
+  height: var(--badge-size);
+  padding-inline: var(--daily-week-gap);
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: var(--text-on-accent);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-heading);
+  line-height: var(--badge-size);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Keep the feeding action primary when the global backup reminder is visible. */
+.app-shell:has(#viewDaily:not(.hidden-view)) #quickBackupNowBtn {
+  min-height: var(--action-height);
+  background: transparent !important;
+  color: var(--accent-strong) !important;
 }

@@ -39,17 +39,27 @@
 
     var activeItemsCount = st.items.filter(function (it) { return !(it.sourceBatchId && (Number(it.quantity) || 0) <= 0); }).length;
     var customPhotos = st.items.filter(function (it) { return Boolean(it.imageData) && !it.sourceBatchId; }).length;
-    var hasCustomItems = st.items.some(function (it) { return !it.isSample; }) || st.logs.some(function (lg) { return !lg.isSample; });
     var unsaved = Number(st.settings.unsavedChangesCount) || 0;
     var lastBk = st.settings.lastBackupDate || '';
-    var lastExport = new Date(st.settings.lastJsonExportAt);
+    var lastExport = new Date(st.settings.lastJsonExportAt || NaN);
     var exportTime = '';
     if (Number.isFinite(lastExport.getTime())) {
       exportTime = Utils.getNowDateTimeStr(lastExport);
       if (lastExport.getFullYear() === new Date().getFullYear()) exportTime = exportTime.slice(5);
     }
-    var needBackup = (unsaved > 0) || (hasCustomItems && !lastBk);
-    var badgeCount = unsaved > 0 ? unsaved : (needBackup ? 1 : 0);
+    var badgeCount = Math.max(0, Math.floor(unsaved));
+    var needBackup = badgeCount > 0;
+    var backupTime = exportTime
+      ? Utils.formatSentenceDate(Utils.formatDateObj(lastExport)) + ' ' + Utils.getNowDateTimeStr(lastExport).slice(11, 16)
+      : lastBk ? Utils.formatSentenceDate(lastBk) : '';
+    var statusCard = document.getElementById('backupStatusCard');
+    if (statusCard) {
+      statusCard.classList.toggle('needs-backup', needBackup);
+      document.getElementById('backupStatusTitle').textContent = needBackup
+        ? '有 ' + Utils.formatQuantity(badgeCount, '项') + '更改尚未备份' : '已是最新备份';
+      document.getElementById('backupStatusTime').textContent = backupTime ? '上次备份：' + backupTime : '尚未备份过';
+      document.getElementById('settingsBackupNowBtn').classList.toggle('hidden-view', !needBackup);
+    }
 
     var dotEl = document.getElementById('backupNoticeDot');
     var topBanner = document.getElementById('unbackedBanner');
@@ -59,6 +69,7 @@
     if (needBackup) {
       if (dotEl) {
         dotEl.textContent = badgeCount > 99 ? '99+' : Utils.formatNumber(badgeCount);
+        dotEl.setAttribute('aria-label', Utils.formatQuantity(badgeCount, '项') + '更改尚未备份');
         dotEl.classList.remove('hidden-view');
       }
       if (topBanner) {

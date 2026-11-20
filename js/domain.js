@@ -45,7 +45,6 @@
     pantryDisplayMode: 'card', // 'card' | 'compact'
     pantryPage: 1,
     pantryPageSize: 6,
-    dailyViewMode: 'day',     // 'day' | 'all'
     statsSubTab: 'stock',     // 'stock' | 'pal' | 'brand'
     statsScopeFilter: 'all',  // 'all' | 'food' | 'supp' | 'med'
     statsTierTab: 'love',     // 'love' | 'ok' | 'coax' | 'meh' | 'supp' | 'med'
@@ -54,11 +53,6 @@
     brandScopeFilter: 'all',  // 'all' | 'food' | 'supp' | 'med'
     brandPage: 1,
     brandPageSize: 5,
-    logSearchQuery: '',
-    logCatFilter: 'all',
-    logMonthFilter: 'all',
-    logPage: 1,
-    logPageSize: 7,
     historyTypeFilter: 'all', // 'all' | 'in' | 'consume' | 'adjust'
     historyItemFilter: '',    // itemId or ''
     historySearchQuery: '',

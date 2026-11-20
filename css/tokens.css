@@ -62,4 +62,16 @@
   --filter-control-height: 36px;
   --action-height: 40px;
   --status-progress-height: 6px;
+  --icon-button-size: 32px;
+  --daily-date-marker: 5px;
+  --daily-week-gap: 4px;
+  --daily-date-gap: 2px;
+  --daily-amount-max: 100px;
+  --daily-history-date-width: 44px;
+  --font-date-number: 18px;
+  --inline-icon-size: 14px;
+  --menu-icon-size: 20px;
+  --scroll-fade-width: 24px;
+  --badge-size: 16px;
+  --badge-offset-block: 5px;
 }
