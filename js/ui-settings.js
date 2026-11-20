@@ -21,16 +21,12 @@
     for (var i = 0; i < btns.length; i++) {
       var d = parseInt(btns[i].getAttribute('data-warn-days'), 10);
       btns[i].setAttribute('aria-pressed', d === st.settings.warnDays);
-      btns[i].className = (d === st.settings.warnDays) ? 'ios-btn ios-btn-primary' : 'ios-btn ios-btn-secondary';
     }
     var curBtns = document.querySelectorAll('#defaultCurrencyGroup [data-def-currency]');
     for (var j = 0; j < curBtns.length; j++) {
       var ck = curBtns[j].getAttribute('data-def-currency');
       var isCurrencySelected = ck === (st.settings.defaultCurrency || 'CNY');
       curBtns[j].setAttribute('aria-pressed', isCurrencySelected);
-      curBtns[j].className = isCurrencySelected
-        ? 'ios-btn ios-btn-primary'
-        : 'ios-btn ios-btn-secondary';
     }
 
     var undoWrap = document.getElementById('undoOverwriteWrap');
@@ -45,11 +41,6 @@
     var unsaved = Number(st.settings.unsavedChangesCount) || 0;
     var lastBk = st.settings.lastBackupDate || '';
     var lastExport = new Date(st.settings.lastJsonExportAt || NaN);
-    var exportTime = '';
-    if (Number.isFinite(lastExport.getTime())) {
-      exportTime = Utils.getNowDateTimeStr(lastExport);
-      if (lastExport.getFullYear() === new Date().getFullYear()) exportTime = exportTime.slice(5);
-    }
     var badgeCount = Math.max(0, Math.floor(unsaved));
     var needBackup = badgeCount > 0;
     var backupDate = Number.isFinite(lastExport.getTime()) ? Utils.formatDateObj(lastExport) : lastBk;
@@ -61,7 +52,7 @@
         ? Utils.formatNumber(badgeCount) + ' 项未备份' : '已是最新备份';
       var timeLabel = document.getElementById('backupStatusTime');
       timeLabel.textContent = backupDate
-        ? '上次 ' + Utils.formatSentenceDate(backupDate) + (backupTime ? ' ' + backupTime : '') : '尚未备份过';
+        ? '上次 ' + Utils.formatRelativeYearDate(backupDate) + (backupTime ? ' ' + backupTime : '') : '尚未备份过';
       timeLabel.title = backupDate ? '上次备份：' + backupDate + (backupTime ? ' ' + backupTime : '（时间未记录）') : '';
     }
 
@@ -79,9 +70,7 @@
         if (badgeCount >= 5 && st.backupBannerDismissedCount !== badgeCount) {
           topBanner.classList.remove('hidden-view');
           if (topBannerTxt) {
-            topBannerTxt.innerHTML = exportTime
-              ? ('<strong>备份提醒：</strong>自上次发起导出 (' + Utils.escapeHtml(exportTime) + ') 后已有 <strong>' + Utils.formatQuantity(badgeCount, '项') + '</strong>改动未备份')
-              : ('<strong>备份提醒：</strong>已累计 <strong>' + Utils.formatQuantity(badgeCount, '项') + '</strong>数据变动未导出 JSON 备份');
+            topBannerTxt.textContent = Utils.formatNumber(badgeCount) + ' 项改动未备份';
           }
         } else {
           topBanner.classList.add('hidden-view');

@@ -6,75 +6,122 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="喵喵粮仓">
-  <meta name="theme-color" content="#F8F3EA">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F6F3EE">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1E1B18">
   <title>喵喵粮仓 · 猫咪囤货与喂养管家</title>
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=123">
-  <link rel="stylesheet" href="./css/styles.css?v=123">
+  <link rel="stylesheet" href="./css/tokens.css?v=160">
+  <link rel="stylesheet" href="./css/styles.css?v=160">
 </head>
 <body>
+  <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
+    <symbol id="feed-paw" viewBox="0 0 24 24">
+      <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="5" cy="10" rx="2" ry="2.6"/><ellipse cx="9.5" cy="5.8" rx="2" ry="2.7"/>
+        <ellipse cx="14.5" cy="5.8" rx="2" ry="2.7"/><ellipse cx="19" cy="10" rx="2" ry="2.6"/>
+        <path d="M6 17c0-2 3.5-6 6-6s6 4 6 6c0 2.4-2.4 3-4.3 2l-1.7-.7-1.7.7C8.4 20 6 19.4 6 17Z"/>
+      </g>
+    </symbol>
+    <symbol id="ui-chevron-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-chevron-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-tag" viewBox="0 0 24 24"><path d="M20 13 13 20 4 11V4h7z M8 8h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-sparkles" viewBox="0 0 24 24"><path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z M20 2v4m-2-2h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-zap" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-12h-7z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-package" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z M3 7l9 4 9-4M12 11v10M7 5l9 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-scroll-text" viewBox="0 0 24 24"><path d="M7 19V5a2 2 0 1 0-4 0v2h4m0-2a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v11m-9-8h5m-5 4h5M7 19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3H11v3a2 2 0 0 1-2 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-package-plus" viewBox="0 0 24 24"><path d="M12 21l-9-4V7l9-4 9 4v4M3 7l9 4 9-4M12 11v10m4-4h6m-3-3v6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-package-open" viewBox="0 0 24 24"><path d="m3 10 9 4 9-4v8l-9 4-9-4zM12 14v8M3 10l-1-5 8-3 2 4 2-4 8 3-1 5M12 6l9 4M12 6l-9 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-refresh-cw" viewBox="0 0 24 24"><path d="M20 10a8 8 0 0 0-14-4L3 9m0-5v5h5m-4 5a8 8 0 0 0 14 4l3-3m0 5v-5h-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-pencil" viewBox="0 0 24 24"><path d="m4 16 12-12a2.8 2.8 0 0 1 4 4L8 20l-5 1z M14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v10H5z M12 14v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-lock-open" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0M5 10h14v10H5z M12 14v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-circle-check" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0z M8 12l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-inbox" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3z M3 13h5l2 3h4l2-3h5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z M15 10a3 3 0 1 1-6 0 3 3 0 1 1 6 0z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-utensils" viewBox="0 0 24 24"><path d="M4 3v5a3 3 0 0 0 6 0V3M7 3v18M19 3c-3 2-4 5-4 9h4m0-9v18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-timer" viewBox="0 0 24 24"><path d="M10 2h4m-2 11 3-3m3-4 2-2m0 9a8 8 0 1 1-16 0 8 8 0 1 1 16 0z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-message-circle" viewBox="0 0 24 24"><path d="M21 11a9 9 0 0 1-12 8l-6 2 2-6a9 9 0 1 1 16-4z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-shopping-cart" viewBox="0 0 24 24"><path d="M2 3h3l3 12h11l2-8H6m4 13h.01m8 0h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-trash-2" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-pill" viewBox="0 0 24 24"><path d="m5 12 7-7a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7z M8 9l7 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-droplet" viewBox="0 0 24 24"><path d="M12 3c3 5 7 8 7 12a7 7 0 0 1-14 0c0-4 4-7 7-12z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-triangle-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20z M12 9v4m0 4h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-sunrise" viewBox="0 0 24 24"><path d="M3 17h18M5 21h14M7 17a5 5 0 1 1 10 0M12 9V3m-3 3 3-3 3 3M4 10l2 2m14-2-2 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-sun" viewBox="0 0 24 24"><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1m-2 6a5 5 0 1 1-10 0 5 5 0 1 1 10 0z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-moon" viewBox="0 0 24 24"><path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-cookie" viewBox="0 0 24 24"><path d="M21 12a4 4 0 0 1-4-4 4 4 0 0 1-4-5 9 9 0 1 0 8 9z M8 9h.01M8 15h.01m5 2h.01m2-5h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-stethoscope" viewBox="0 0 24 24"><path d="M4 3h2M4 3v6a5 5 0 0 0 10 0V3h-2M9 14v2a5 5 0 0 0 10 0v-2m2-2a2 2 0 1 1-4 0 2 2 0 1 1 4 0z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <g id="pal-cat-base" stroke-linejoin="round">
+      <path fill="#F9F2E5" stroke="#9B735D" stroke-width="1" d="M9 23q-3 2-4 6l2-.4-1 2.4 3-.5-.1 1.8 3-.5q2.5 2.5 5.7 2.9 4.2-.4 7-2.7l2.8.4-.2-1.9 3.3.6-1.2-2.5 2.1.3q-.8-3.5-4.7-6Z"/>
+      <path fill="#CB8349" stroke="#8B5A3D" stroke-width="1.1" d="M7.1 14.2C5.5 10.3 4.2 4.4 4.9 1.8q.3-.7 1.1-.2c3.2 1.7 6.4 5 8 7.8 2.2-.7 5.1-.6 7.7.1 1.9-3.3 5.5-6.6 8.5-8.2q.6-.3.9.5c.7 2.5-.5 8.6-2.5 12.2 2.4 2.7 3.2 6.5 2.8 9.8l-2.1-.6.6 2.2-2.3-.4C25.6 29 22.2 31.1 18 31.4c-4.5-.3-8-2.1-10.1-6l-2.3.8.6-2.6-2.2.6c-.3-3.8.7-7.5 3.1-10Z"/>
+      <path fill="#E9BDAB" d="M6.1 4.3c2.4 1.3 4.7 3.9 6.1 6.5-1.5.7-2.5 1.7-3.4 2.8-1.5-2.8-2.6-6.4-2.7-9.3Zm23.6-.2c-2.4 1.1-5 3.9-6 6.5 1.6.8 2.7 1.7 3.6 2.8 1.4-2.7 2.3-6 2.4-9.3Z"/>
+      <path fill="none" stroke="#FFF0DB" stroke-width=".9" stroke-linecap="round" d="m7.4 7.1 2.7 4m-2.3-2 1.2 2.7m19.2-4.7-2.6 4m2.2-2-1.1 2.7"/>
+      <path fill="#FFF9EF" d="m17.7 10.6 1 3.4.6-1.2.8 4.4c.7 2.1 1.2 3.2 3 3.8l1.7-.5-.6 1.2 2.1-.5 1.2.9 2.5 1.5-1.9.1.5 1.2-1.8-.1c-2.1 4-5.4 5.6-8.8 5.9-4-.3-7.3-2.1-9.5-5.8l-1.7.4.7-1.6-1.2.1 2-1.8 2.9-.5-1.2-.9 2.4.1c1.4-.8 2.6-2.4 3.2-4.7l.4 1.6Z"/>
+      <path fill="none" stroke="#A76337" stroke-width="1.05" stroke-linecap="round" d="m12.5 10.9 2.5 3.6m-.9-4.2 1.8 2.5m6.9-1.8-1.7 2.9m-13.5 4 1.9.8m18.6-1.1-2 .9"/>
+      <path fill="none" stroke="#A88A75" stroke-width=".75" stroke-linecap="round" d="m4.8 23 6.2 1.1m-5.4 1.5 5.2-.8m20.3-1.5-5.5 1m4.4 1.4-4.6-.9"/>
+      <path fill="#D59098" stroke="#A76371" stroke-width=".65" d="M16 22.7q1.8-.6 3.9-.1.4.3-.1.8l-1.3 1.2q-.4.4-.8 0l-1.5-1.1q-.5-.4-.2-.8Z"/>
+    </g>
+    <g id="pal-cat-green-eyes">
+      <path fill="#9DAA79" stroke="#524A38" stroke-width=".9" d="M8.5 17.7q2.9-4.1 6.6-.6.7 3.4-2 4.3-3.2.7-4.6-3.7Zm12.6-.6q3.6-3.5 6.4.5-1.2 4.3-4.5 3.8-2.6-.7-1.9-4.3Z"/>
+      <ellipse cx="12.4" cy="18.3" rx="1.2" ry="2" fill="#37382E"/><ellipse cx="23.7" cy="18.2" rx="1.2" ry="2" fill="#37382E"/>
+      <circle cx="11.9" cy="17.6" r=".62" fill="#FFF6E6"/><circle cx="23.2" cy="17.5" r=".62" fill="#FFF6E6"/>
+    </g>
+    <symbol id="pal-cat-love" viewBox="0 0 36 36">
+      <use href="#pal-cat-base"/>
+      <use href="#pal-cat-green-eyes"/>
+      <path fill="#D96175" d="M5.2 18.4c-1-.8-2.8-1.7-2.8-3 0-1.5 1.8-1.8 2.7-.6.8-1.3 2.7-1.1 2.8.4.1 1.2-1.5 2.4-2.7 3.2Zm25.5-1.3c-.9-.8-2.8-1.9-2.7-3.2.1-1.5 1.9-1.7 2.7-.5.8-1.2 2.7-.9 2.7.5 0 1.3-1.8 2.4-2.7 3.2Z"/>
+      <path fill="#753E33" d="M14.8 25.1q3.2 2.2 6.6-.2-.8 4.1-3.2 4.2-2.5-.1-3.4-4Z"/>
+      <path fill="#E58C9A" d="M16.6 28q1.6-1.2 3.3 0-1.5 1.8-3.3 0Z"/>
+    </symbol>
+    <symbol id="pal-cat-ok" viewBox="0 0 36 36">
+      <use href="#pal-cat-base"/>
+      <path fill="none" stroke="#614331" stroke-width="1.35" stroke-linecap="round" d="M9 18.6q2.6-2.6 5.6-.2m6.2 0q3-2.4 5.6.1M14.5 25.1q1.7 1.5 3.5-.1 1.6 1.8 3.6.1"/>
+      <path fill="#DD8C98" stroke="#A76272" stroke-width=".55" d="M21.1 25.6q2.7-.9 2.7.7c0 1.2-1.5 1.7-2.5.9Z"/>
+    </symbol>
+    <symbol id="pal-cat-coax" viewBox="0 0 36 36">
+      <g transform="rotate(5 18 19)">
+        <use href="#pal-cat-base"/>
+        <use href="#pal-cat-green-eyes"/>
+        <path fill="none" stroke="#8B5A3D" stroke-width="1" stroke-linecap="round" d="m9.8 15.5 3.8-1.9m8.6 0 3.8 1.9m-10.4 12q2.4-2.5 4.7-.1"/>
+        <path fill="#B8DCE9" d="M8.7 21.5q2.7 1.2 5.4.1-1.1 1.8-3 1.6-1.2-.1-2.4-1.7Zm13.4.1q2.7 1.1 5.4-.1-1.1 1.6-2.4 1.7-1.9.2-3-1.6Z"/>
+      </g>
+    </symbol>
+    <symbol id="pal-cat-meh" viewBox="0 0 36 36">
+      <use href="#pal-cat-base" transform="rotate(-5 18 20)"/>
+      <path fill="#6B3D2A" d="M8.2 16.4l7.8 1.3q-1.8 4.3-4.4 3.3-2.6-.9-3.4-4.6Zm12.1 1.5 7.6-2.4q-.4 4.9-3 5.6-2.3.7-4.6-3.2Z"/>
+      <path fill="#879857" d="M10.1 18.7l3.5.7q-1.4 1.9-3.5-.7Zm12.5.8 3.5-1q-1.3 2.7-3.5 1Z"/>
+      <path stroke="#82452C" stroke-width="1.5" stroke-linecap="round" fill="none" d="m8 15.6 7.5 1.7m5 .1 7.4-2.3m-13 12.3q2-2.5 5.8-.7"/>
+    </symbol>
+  </svg>
 
   <!-- Toast Notification -->
-  <div id="storageWriteWarning" class="hidden-view" role="alert" style="padding:8px 12px;background:#FFF7ED;color:#9A3412;text-align:center;font-size:12px;"></div>
+  <div id="storageWriteWarning" class="hidden-view" role="alert" style="padding:8px 12px;background:var(--accent-soft);color:var(--accent-strong);text-align:center;font-size:12px;"></div>
   <div id="toastEl" class="toast-box hidden-view">已保存</div>
 
   <div class="app-shell">
-    <!-- Top App Header (Compact Single-Line Mobile Layout) -->
-    <header class="app-header" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:9px;min-width:0;flex:1;">
-        <img
-          id="headerMascotImg"
-          src="./icon-192.png"
-          alt="喵喵粮仓图标"
-          style="width:36px;height:36px;border-radius:11px;object-fit:cover;flex-shrink:0;border:1px solid #FED7AA;background:#FFF7ED;"
-        >
-        <div style="min-width:0;flex:1;">
-          <h1 style="margin:0;font-size:var(--font-page-title);font-weight:var(--weight-heading);color:var(--text-main);white-space:nowrap;line-height:1.2;">喵喵粮仓</h1>
-          <p id="headerSubtitle" style="margin:2px 0 0 0;font-size:11px;color:#6B5A4C;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">口粮 0款 · 0个品牌</p>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-        <label for="globalEditModeToggle" class="mode-switch-pill" title="勾选后开启增删改操作，平时关闭防误触">
-          <input id="globalEditModeToggle" type="checkbox" class="mode-switch-input">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-            <path d="m15 5 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/>
-          </svg>
-          <span id="globalEditModeText">编辑</span>
-        </label>
-        <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          <span>记囤货</span>
-        </button>
-      </div>
+    <header class="app-header">
+      <img id="headerMascotImg" src="./icon-192.png" alt="">
+      <h1 id="headerProfileName">喵喵粮仓</h1>
     </header>
 
-    <!-- Unbacked Changes Reminder Banner (Pops up at >=5 changes, dismissible) -->
-    <div id="unbackedBanner" class="ios-card hidden-view" style="padding:10px 13px;margin-bottom:12px;background:#FFF7ED;border:1px solid #FDBA74;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#9A3412;flex:1;min-width:180px;">
-          <span style="font-size:14px;">💾</span>
-          <span id="unbackedBannerText"><strong>备份提醒：</strong>已有 5 项数据变动未导出备份</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <button id="quickBackupNowBtn" type="button" style="border:none;padding:5px 10px;border-radius:8px;background:var(--accent);color:#FFFFFF;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
-            导出备份
-          </button>
-          <button id="dismissBackupBannerBtn" type="button" aria-label="稍后提醒" style="border:1px solid #FDBA74;padding:5px 8px;border-radius:8px;background:#FFFFFF;color:#9A3412;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">
-            稍后
-          </button>
-        </div>
-      </div>
+    <section id="dailyMedReminders" class="hidden-view" aria-label="用药提醒"></section>
+    <div id="unbackedBanner" class="ios-card hidden-view">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14a8 3 0 0 0 16 0V5M4 12a8 3 0 0 0 16 0"/></svg>
+      <span id="unbackedBannerText"></span>
+      <button id="quickBackupNowBtn" type="button">导出备份</button>
+      <button id="dismissBackupBannerBtn" type="button" aria-label="稍后提醒"><span>稍后</span></button>
     </div>
 
     <!-- Sample Data Notice Banner (Fixed duplicate class attribute) -->
-    <div id="sampleBanner" class="ios-card hidden-view" style="padding:12px 14px;margin-bottom:14px;background:#FFFBEB;border-color:#FDE68A;">
+    <div id="sampleBanner" class="ios-card hidden-view" style="padding:12px 14px;margin-bottom:14px;background:var(--warn-soft);border-color:var(--alert-border);">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-        <div style="font-size:12px;color:#78350F;flex:1;min-width:190px;">
+        <div style="font-size:12px;color:var(--status-warning-text);flex:1;min-width:190px;">
           <strong>示例体验中：</strong>已预置 4 条猫粮/湿粮/冻干示例，可直接点「记喂食」或录入你的囤货。
         </div>
-        <button id="clearSamplesBtn" type="button" class="edit-only" style="border:none;padding:5px 10px;border-radius:8px;background:#FDE68A;color:#92400E;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        <button id="clearSamplesBtn" type="button" class="edit-only" style="border:none;padding:5px 10px;border-radius:8px;background:var(--alert-border);color:var(--status-warning-text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
           一键清空示例
         </button>
       </div>
@@ -82,25 +129,43 @@
 
     <!-- ==================== TAB 1: 粮仓库存 (PANTRY LIST) ==================== -->
     <main id="viewPantry">
+      <header class="page-heading">
+        <div class="pantry-page-heading-copy">
+          <h2 class="page-title">粮仓库存</h2>
+          <p id="pantryStockSummary" class="daily-support"></p>
+        </div>
+        <div class="pantry-heading-actions">
+          <label class="ios-btn pantry-edit-toggle">
+            <input id="globalEditModeToggle" type="checkbox" aria-label="库存与记录编辑模式">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg>
+            <span id="globalEditModeText" aria-hidden="true">编辑</span>
+          </label>
+          <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <span>记囤货</span>
+          </button>
+        </div>
+      </header>
+      <button type="button" id="pantryOverdueMedReminder" class="ios-btn-text hidden-view"></button>
       <!-- 4 Primary Status Filter Cards -->
       <section class="status-card-grid">
         <button type="button" data-status-filter="in_stock" class="metric-card status-card selected" id="statCardStock">
-          <div style="font-size:11px;color:#6B5A4C;font-weight:600;">在库</div>
+          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v12H3zM3 8l3-4h12l3 4M12 4v8"/></svg><span>在库</span></span>
           <div id="countInStock" class="status-card-count is-zero">0</div>
           <div id="countStockPieces" class="stock-piece-count">共 0件</div>
         </button>
         <button type="button" data-status-filter="expiring" class="metric-card status-card" id="statCardExpiring">
-          <div class="status-card-label">临期预警</div>
+          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>临期</span></span>
           <div id="countExpiring" class="status-card-count is-zero">0</div>
           <div id="countExpiringPieces" class="stock-piece-count">共 0件</div>
         </button>
         <button type="button" data-status-filter="expired" class="metric-card status-card is-zero" id="statCardExpired">
-          <div class="status-card-label">已过期</div>
+          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5m0 4h.01"/></svg><span>已过期</span></span>
           <div id="countExpired" class="status-card-count is-zero">0</div>
           <div id="countExpiredPieces" class="stock-piece-count">共 0件</div>
         </button>
         <button type="button" data-status-filter="empty" class="metric-card status-card" id="statCardEmpty">
-          <div style="font-size:11px;color:#6B5A4C;font-weight:600;">已核销</div>
+          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg><span>已核销</span></span>
           <div id="countEmpty" class="status-card-count is-zero">0</div>
           <div id="countEmptyPieces" class="stock-piece-count">共 0件</div>
         </button>
@@ -109,12 +174,12 @@
       <!-- Category Horizontal Pills -->
       <section id="categoryBar" class="filter-chips no-scrollbar">
         <button type="button" data-cat="all" class="pill-chip active">全部</button>
-        <button type="button" data-cat="dry" class="pill-chip">🥣 猫粮</button>
-        <button type="button" data-cat="can" class="pill-chip">🥫 湿粮</button>
-        <button type="button" data-cat="freeze" class="pill-chip">🍗 冻干</button>
-        <button type="button" data-cat="treat" class="pill-chip">🍮 零食</button>
-        <button type="button" data-cat="supp" class="pill-chip">💊 营养品</button>
-        <button type="button" data-cat="med" class="pill-chip">🩺 药品</button>
+        <button type="button" data-cat="dry" class="pill-chip"><span data-category-icon="dry"></span> 猫粮</button>
+        <button type="button" data-cat="can" class="pill-chip"><span data-category-icon="can"></span> 湿粮</button>
+        <button type="button" data-cat="freeze" class="pill-chip"><span data-category-icon="freeze"></span> 冻干</button>
+        <button type="button" data-cat="treat" class="pill-chip"><span data-category-icon="treat"></span> 零食</button>
+        <button type="button" data-cat="supp" class="pill-chip"><span data-category-icon="supp"></span> 营养品</button>
+        <button type="button" data-cat="med" class="pill-chip"><span data-category-icon="med"></span> 药品</button>
       </section>
 
       <section class="ios-card pantry-filters">
@@ -151,14 +216,11 @@
           </div>
         </div>
         <p id="pantryStatusHint" class="pantry-status-hint">再点一次选中的状态卡，可取消筛选，显示全部状态。</p>
-        <div id="activeFilterSummaryBar" class="hidden-view" style="margin-top:8px;padding-top:7px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;">
-          <span id="filterResultCountText" role="status" style="color:#6B5A4C;font-weight:600;">显示 0 批</span>
-          <button id="clearPantryFiltersBtn" type="button" style="border:none;background:#FFF7ED;color:var(--accent-strong);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">✕ 清除筛选</button>
+        <div id="activeFilterSummaryBar" class="hidden-view" style="margin-top:8px;padding-top:7px;border-top:1px solid var(--status-neutral-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;">
+          <span id="filterResultCountText" role="status" style="color:var(--text-muted);font-weight:600;">显示 0 批</span>
+          <button id="clearPantryFiltersBtn" type="button" style="border:none;background:var(--accent-soft);color:var(--accent-strong);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">✕ 清除筛选</button>
         </div>
       </section>
-
-      <!-- Indoor Cat Deworming / Medicine Reminder Banner -->
-      <div id="medReminderBanner" class="ios-card hidden-view" style="padding:10px 12px;margin-bottom:12px;background:#F0FDF4;border-color:#BBF7D0;"></div>
 
       <!-- Items List Container -->
       <section id="pantryList" style="display:flex;flex-direction:column;gap:12px;"></section>
@@ -166,13 +228,13 @@
       <!-- Pantry Pagination Controls -->
       <div id="pantryPaginationBar" class="ios-card hidden-view" style="padding:10px 12px;margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:6px;">
-          <button id="prevPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;">◀ 上一页</button>
-          <span id="pageInfoText" style="font-size:12px;font-weight:700;color:#44403C;padding:0 4px;white-space:nowrap;">第 1 / 1 页</span>
-          <button id="nextPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;">下一页 ▶</button>
+          <button id="prevPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>上一页</button>
+          <span id="pageInfoText" style="font-size:12px;font-weight:700;color:var(--text-main);padding:0 4px;white-space:nowrap;">第 1 / 1 页</span>
+          <button id="nextPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:34px;padding:0 11px;font-size:12px;">下一页<svg class="ui-icon ui-icon--trailing" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
         </div>
         <div style="display:flex;align-items:center;gap:5px;">
-          <span style="font-size:11px;color:#6B5A4C;white-space:nowrap;">每页</span>
-          <select id="pageSizeSelect" aria-label="每页显示条数" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:#FFFFFF;">
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">每页</span>
+          <select id="pageSizeSelect" aria-label="每页显示条数" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:var(--card-bg);">
             <option value="6">6 条</option>
             <option value="10">10 条</option>
             <option value="20">20 条</option>
@@ -186,55 +248,57 @@
         <p id="emptyStateDesc" class="empty-state">当前筛选下暂无记录</p>
         <div style="display:flex;justify-content:center;gap:8px;">
           <button id="resetFiltersBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:0 16px;">重置筛选</button>
-          <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-primary" style="padding:0 16px;">+ 立即录入</button>
+          <button id="emptyAddBtn" type="button" class="ios-btn ios-btn-secondary" style="padding:0 16px;">+ 立即录入</button>
         </div>
       </div>
     </main>
 
     <!-- ==================== TAB 2: 饮食记录 (DAILY FEEDING LOG) ==================== -->
     <section id="viewDaily" class="hidden-view">
-      <div id="dailyHome" class="daily-stack">
-        <header class="daily-heading">
-          <div>
-            <h2 class="daily-page-title">饮食记录</h2>
+      <div id="dailyHome">
+        <header class="page-heading">
+          <div class="daily-page-heading-copy">
+            <h2 class="page-title">饮食记录</h2>
             <p id="dailyDateLabel" class="daily-support"></p>
           </div>
           <div class="daily-actions">
             <button id="copyPrevDayLogsBtn" type="button" class="ios-btn ios-btn-secondary">复制前一天</button>
-            <button id="openQuickFeedBtn" type="button" class="ios-btn ios-btn-primary">记喂食</button>
+            <button id="openQuickFeedBtn" type="button" class="btn-feed"><svg class="btn-feed__icon" width="16" height="16" aria-hidden="true"><use href="#feed-paw"></use></svg><span>记喂食</span></button>
           </div>
         </header>
 
-        <section class="daily-week" aria-label="选择记录日期">
-          <div class="daily-week-heading">
-            <button id="dailyPrevWeek" type="button" class="daily-icon-btn" aria-label="上一周">‹</button>
-            <button id="dailyWeekTitle" type="button" class="daily-week-title" aria-label="查看全部历史记录">
-              <span id="dailyWeekTitleText"></span>
-              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>
-            </button>
-            <button id="dailyNextWeek" type="button" class="daily-icon-btn" aria-label="下一周">›</button>
-          </div>
-          <div id="dailyWeekDays" class="daily-week-days"></div>
-          <div id="dailyPastWeek" class="daily-heading hidden-view">
-            <button id="goTodayBtn" type="button" class="ios-btn-text">↶ 回到今天</button>
-            <span id="dailyPastDate" class="daily-support"></span>
-          </div>
-        </section>
+        <div class="daily-stack">
+          <section class="daily-week" aria-label="选择记录日期">
+            <div class="daily-week-heading">
+              <button id="dailyPrevWeek" type="button" class="daily-icon-btn" aria-label="上一周">‹</button>
+              <button id="dailyWeekTitle" type="button" class="daily-week-title" aria-label="查看全部历史记录">
+                <span id="dailyWeekTitleText"></span>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>
+              </button>
+              <button id="dailyNextWeek" type="button" class="daily-icon-btn" aria-label="下一周">›</button>
+            </div>
+            <div id="dailyWeekDays" class="daily-week-days"></div>
+            <div id="dailyPastWeek" class="daily-heading hidden-view">
+              <button id="goTodayBtn" type="button" class="ios-btn-text">↶ 回到今天</button>
+              <span id="dailyPastDate" class="daily-support"></span>
+            </div>
+          </section>
 
-        <div id="dailyQuickFeedBox"></div>
-        <section id="dailyTotals" class="ios-card daily-card" aria-label="喂食合计"></section>
+          <div id="dailyQuickFeedBox"></div>
+          <section id="dailyTotals" class="ios-card daily-card" aria-label="喂食合计"></section>
 
-        <section aria-labelledby="dailyDetailTitle">
-          <div class="daily-heading daily-detail-heading">
-            <h3 id="dailyDetailTitle" class="daily-section-title">当日明细</h3>
-            <span id="dailyTotalCountBadge" class="daily-support"></span>
+          <section aria-labelledby="dailyDetailTitle">
+            <div class="daily-heading daily-detail-heading">
+              <h3 id="dailyDetailTitle" class="daily-section-title">当日明细</h3>
+              <span id="dailyTotalCountBadge" class="daily-support"></span>
+            </div>
+            <div id="dailyFeedTimeline"></div>
+          </section>
+
+          <div class="daily-heading">
+            <span class="daily-support">更早的记录</span>
+            <button id="jumpToAllDatesBtn" type="button" class="ios-btn-text">查看全部历史 ›</button>
           </div>
-          <div id="dailyFeedTimeline"></div>
-        </section>
-
-        <div class="daily-heading">
-          <span class="daily-support">更早的记录</span>
-          <button id="jumpToAllDatesBtn" type="button" class="ios-btn-text">查看全部历史 ›</button>
         </div>
       </div>
 
@@ -259,22 +323,18 @@
 
     <!-- ==================== TAB 3: 喂养分析 (FEEDING ANALYTICS) ==================== -->
     <section id="viewStats" class="hidden-view">
-      <!-- Top 3-Segment Switcher -->
+      <header class="page-heading"><h2 class="page-title">喂养分析</h2></header>
       <div class="feeding-tabs">
-        <div id="statsSubTabSwitch">
-          <button type="button" data-stats-subtab="stock" class="active">库存与到期</button>
+        <div id="statsSubTabSwitch" role="group" aria-label="喂养分析视图">
+          <button type="button" data-stats-subtab="stock" class="active">消耗与到期</button>
           <button type="button" data-stats-subtab="pal">适口性档案</button>
           <button type="button" data-stats-subtab="brand">品牌与偏好</button>
         </div>
       </div>
 
-      <!-- SUB-VIEW 1: 📊 库存与效期 (Separated Food / Supp / Med) -->
+      <!-- SUB-VIEW 1: 库存与效期 (Separated Food / Supp / Med) -->
       <div id="statsSubViewStock">
         <div class="ios-card stats-panel feeding-overview">
-          <div class="feeding-overview-heading">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="12" width="5" height="9" rx="1"/><rect x="9.5" y="4" width="5" height="17" rx="1"/><rect x="16" y="8" width="5" height="13" rx="1"/></svg>
-            <div><h2 class="stats-panel-title">分类统计与消耗分析</h2><p class="stats-panel-description">点卡片可跳转库存筛选</p></div>
-          </div>
           <div id="forecastValues" class="forecast-grid"></div>
           <details id="feedingTasks" class="feeding-alerts hidden-view">
             <summary>
@@ -312,41 +372,40 @@
           </summary>
           <div id="expiryMonthTimelineList"></div>
         </details>
-        <aside id="medStockWatchBox" class="ios-card feeding-extra hidden-view"></aside>
       </div>
 
-      <!-- SUB-VIEW 2: 🐾 适口与耐受 -->
+      <!-- SUB-VIEW 2: 适口与耐受 -->
       <div id="statsSubViewPal" class="hidden-view">
         <div class="ios-card stats-panel">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
             <div>
-              <h2 class="stats-panel-title">🐾 适口性与耐受度档案</h2>
+              <h2 class="stats-panel-title"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>适口性与耐受度档案</h2>
               <p class="stats-panel-description">普通食品适口性、营养品接受度与药品反应独立建档</p>
             </div>
-            <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
+            <span id="tierTotalEvaluatedBadge" style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--status-neutral-bg);padding:3px 9px;border-radius:999px;white-space:nowrap;">已评 0 款</span>
           </div>
 
           <div id="palTierDistribution" class="pal-tier-distribution hidden-view" role="img"></div>
           <div id="palTierTabBar" class="pal-tier-grid">
-            <button type="button" data-tier-tab="love" class="pill-chip pal-tier-button active"><span aria-hidden="true">😍</span><span>超爱吃</span><strong data-tier-count>0</strong></button>
-            <button type="button" data-tier-tab="ok" class="pill-chip pal-tier-button"><span aria-hidden="true">😋</span><span>正常吃</span><strong data-tier-count>0</strong></button>
-            <button type="button" data-tier-tab="coax" class="pill-chip pal-tier-button"><span aria-hidden="true">🥺</span><span>需哄吃</span><strong data-tier-count>0</strong></button>
-            <button type="button" data-tier-tab="meh" class="pill-chip pal-tier-button"><span aria-hidden="true">😒</span><span>不爱吃</span><strong data-tier-count>0</strong></button>
-            <button type="button" data-tier-tab="supp" class="pill-chip" style="padding:6px 11px;font-size:12px;">💊 营养品接受度</button>
-            <button type="button" data-tier-tab="med" class="pill-chip" style="padding:6px 11px;font-size:12px;">🩺 药品耐受反应</button>
+            <button type="button" data-tier-tab="love" class="pill-chip pal-tier-button active"><svg class="pal-cat-face" width="28" height="28" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-love"></use></svg><span>超爱吃</span><strong data-tier-count>0</strong></button>
+            <button type="button" data-tier-tab="ok" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="28" height="28" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-ok"></use></svg><span>正常吃</span><strong data-tier-count>0</strong></button>
+            <button type="button" data-tier-tab="coax" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="28" height="28" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-coax"></use></svg><span>需哄吃</span><strong data-tier-count>0</strong></button>
+            <button type="button" data-tier-tab="meh" class="pill-chip pal-tier-button"><svg class="pal-cat-face" width="28" height="28" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-meh"></use></svg><span>不爱吃</span><strong data-tier-count>0</strong></button>
+            <button type="button" data-tier-tab="supp" class="pill-chip" style="padding:6px 11px;font-size:12px;"><span data-category-icon="supp"></span> 营养品接受度</button>
+            <button type="button" data-tier-tab="med" class="pill-chip" style="padding:6px 11px;font-size:12px;"><span data-category-icon="med"></span> 药品耐受反应</button>
           </div>
 
           <div id="palTierCardsList" class="pal-record-list"></div>
 
-          <div id="tierPaginationBar" class="hidden-view" style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <button id="prevTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
-            <span id="tierPageInfoText" style="font-size:11.5px;font-weight:700;color:#57534E;">第 1 / 1 页</span>
-            <button id="nextTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+          <div id="tierPaginationBar" class="hidden-view" style="margin-top:11px;padding-top:10px;border-top:1px solid var(--status-neutral-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <button id="prevTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>上一页</button>
+            <span id="tierPageInfoText" style="font-size:11.5px;font-weight:700;color:var(--text-muted);">第 1 / 1 页</span>
+            <button id="nextTierPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页<svg class="ui-icon ui-icon--trailing" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
           </div>
         </div>
       </div>
 
-      <!-- SUB-VIEW 3: 🏷️ 品牌与偏好 -->
+      <!-- SUB-VIEW 3: 品牌与偏好 -->
       <div id="statsSubViewBrand" class="hidden-view">
         <!-- 30-Day Feeding Preferences & Separate Care Stats -->
         <div class="ios-card stats-panel" style="margin-bottom:14px;">
@@ -354,7 +413,7 @@
             <div>
               <h2 class="stats-panel-title">近30天喂食统计</h2>
             </div>
-            <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:3px 9px;border-radius:999px;white-space:nowrap;">0 顿</span>
+            <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:var(--accent-strong);background:var(--accent-soft);padding:3px 9px;border-radius:999px;white-space:nowrap;">0 顿</span>
           </div>
           <div id="recent30PrefBox"></div>
         </div>
@@ -363,30 +422,30 @@
         <div class="ios-card stats-panel">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
             <div>
-              <h2 class="stats-panel-title">🏷️ 品牌囤货档案</h2>
+              <h2 class="stats-panel-title"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#ui-tag"></use></svg>品牌囤货档案</h2>
               <p class="stats-panel-description">点击任意品牌卡片可一键回粮仓筛选</p>
             </div>
-            <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
+            <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--status-neutral-bg);padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
           </div>
 
           <div id="brandScopeBar" class="filter-chips no-scrollbar">
             <button type="button" data-brand-scope="all" class="subfilter-chip active">全部品牌</button>
             <button type="button" data-brand-scope="food" class="subfilter-chip">普通食品品牌</button>
             <button type="button" data-brand-scope="supp" class="subfilter-chip">营养品品牌</button>
-            <button type="button" data-brand-scope="med" class="subfilter-chip">🩺 药品品牌</button>
+            <button type="button" data-brand-scope="med" class="subfilter-chip"><span data-category-icon="med"></span> 药品品牌</button>
           </div>
 
           <div id="brandStatsList" class="brand-list"></div>
 
-          <div id="brandPaginationBar" class="hidden-view" style="margin-top:12px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div id="brandPaginationBar" class="hidden-view" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--status-neutral-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
             <div style="display:flex;align-items:center;gap:6px;">
-              <button id="prevBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
-              <span id="brandPageInfoText" style="font-size:11.5px;font-weight:700;color:#44403C;white-space:nowrap;">第 1 / 1 页</span>
-              <button id="nextBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+              <button id="prevBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>上一页</button>
+              <span id="brandPageInfoText" style="font-size:11.5px;font-weight:700;color:var(--text-main);white-space:nowrap;">第 1 / 1 页</span>
+              <button id="nextBrandPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页<svg class="ui-icon ui-icon--trailing" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
             </div>
             <div style="display:flex;align-items:center;gap:5px;">
-              <span style="font-size:11px;color:#6B5A4C;white-space:nowrap;">每页</span>
-              <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background-color:#FFFFFF;">
+              <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">每页</span>
+              <select id="brandPageSizeSelect" aria-label="品牌每页显示数量" class="ios-input" style="width:auto;height:32px;min-height:32px;padding:2px 22px 2px 8px;font-size:11.5px;background-color:var(--card-bg);">
                 <option value="5">5 个品牌</option>
                 <option value="10">10 个品牌</option>
                 <option value="9999">全部</option>
@@ -399,47 +458,48 @@
 
     <!-- ==================== TAB 4: 备份设置 (SETTINGS & BACKUP) ==================== -->
     <section id="viewSettings" class="hidden-view">
-      <div class="ios-card settings-panel">
-        <section class="settings-section" aria-labelledby="settingsBackupTitle">
+      <header class="page-heading"><h2 class="page-title">备份设置</h2></header>
+      <div class="settings-panel">
+        <section class="ios-card settings-section" aria-labelledby="settingsBackupTitle">
           <div class="settings-heading">
-            <h2 id="settingsBackupTitle" class="settings-card-title"><svg class="settings-icon " data-lucide="database-backup" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6m18-6v4M3 11c0 1.7 4 3 9 3m-9-3v6c0 1.7 4 3 9 3m3-4a3.5 3.5 0 1 1 .7 4m-.7-7v3h3"/></svg><span>备份与恢复</span></h2>
+            <h2 id="settingsBackupTitle" class="settings-card-title"><svg class="settings-icon " data-lucide="database" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5M3 12a9 3 0 0 0 18 0"/></svg><span>备份与恢复</span></h2>
             <p id="storageStatusText" class="settings-storage-status">本地存储已就绪</p>
           </div>
           <section id="backupStatusCard" class="backup-status-card" aria-label="备份状态">
             <div class="backup-status-copy" role="status">
-              <svg class="settings-icon settings-backup-warning" data-lucide="shield-alert" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-3.5 7-9V5l-7-3-7 3v8c0 5.5 7 9 7 9z"/><path d="M12 8v4m0 4h.01"/></svg><svg class="settings-icon settings-backup-ready" data-lucide="shield-check" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-3.5 7-9V5l-7-3-7 3v8c0 5.5 7 9 7 9z"/><path d="m9 12 2 2 4-4"/></svg>
+              <svg class="settings-icon settings-backup-warning" data-lucide="circle-alert" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0zM12 8v4m0 4h.01"/></svg><svg class="settings-icon settings-backup-ready" data-lucide="check" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg>
               <p id="backupStatusTitle"></p>
               <p id="backupStatusTime"></p>
             </div>
             <div class="settings-backup-actions">
               <button id="settingsBackupNowBtn" type="button" class="ios-btn ios-btn-primary"><svg class="settings-icon " data-lucide="download" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span>立即备份</span></button>
-              <button id="openBackupRestoreBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="rotate-ccw" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7"/></svg><span>恢复</span></button>
+              <button id="openBackupRestoreBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon" data-lucide="history" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7m2-5v5l3 2"/></svg><span>恢复</span></button>
               <input id="importJsonInput" type="file" accept=".json,application/json" class="hidden-view">
             </div>
             <div id="undoOverwriteWrap" class="settings-snapshot hidden-view">
               <div>
-                <strong><svg class="settings-icon " data-lucide="shield-check" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-3.5 7-9V5l-7-3-7 3v8c0 5.5 7 9 7 9z"/><path d="m9 12 2 2 4-4"/></svg><span>本地快照保护</span></strong>
+                <strong><svg class="settings-icon" data-lucide="save" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2zM7 3v6h9V3M7 21v-8h10v8"/></svg><span>本地快照保护</span></strong>
                 <p id="undoSnapshotTimeText" class="settings-card-description">可撤回最近一次覆盖或清空操作</p>
               </div>
-              <button id="undoOverwriteBtn" type="button" class="ios-btn-text"><svg class="settings-icon " data-lucide="rotate-ccw" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7"/></svg><span>撤回恢复</span></button>
+              <button id="undoOverwriteBtn" type="button" class="ios-btn-text"><svg class="settings-icon" data-lucide="undo-2" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-2"/></svg><span>撤回恢复</span></button>
             </div>
           </section>
         </section>
 
-        <section class="settings-section" aria-labelledby="settingsExportTitle">
-          <h2 id="settingsExportTitle" class="settings-card-title">导出与记录</h2>
+        <section class="ios-card settings-section" aria-labelledby="settingsExportTitle">
+          <h2 id="settingsExportTitle" class="settings-card-title"><svg class="settings-icon" data-lucide="file-down" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6m-8 3v7m-3-3 3 3 3-3"/></svg><span>导出与记录</span></h2>
           <div class="settings-action-list settings-export-grid">
             <button id="exportJsonBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="file-json" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M10 12c-1 0-1 1-1 2s-1 1-1 1 1 0 1 1 0 2 1 2m4-6c1 0 1 1 1 2s1 1 1 1-1 0-1 1 0 2-1 2"/></svg><span>JSON 完整备份</span></button>
             <button id="exportCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="file-spreadsheet" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><rect x="8" y="12" width="8" height="6" rx="1"/><path d="M8 15h8m-4-3v6"/></svg><span>库存盘点 .csv</span></button>
-            <button id="exportLogsCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="file-spreadsheet" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><rect x="8" y="12" width="8" height="6" rx="1"/><path d="M8 15h8m-4-3v6"/></svg><span>饮食记录 .csv</span></button>
+            <button id="exportLogsCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon" data-lucide="file-utensils" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 11v3a2 2 0 0 0 4 0v-3m-2 0v8m6-8c-1 1-2 3-2 5h2m0-5v8"/></svg><span>饮食记录 .csv</span></button>
             <button id="copySummaryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="clipboard-copy" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v3M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4m2-7h8m-3-3 3 3-3 3"/></svg><span>复制在库清单</span></button>
             <button id="settingsOpenHistoryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="history" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7m2-5v5l3 2"/></svg><span>查看库存操作历史流水</span><svg class="settings-icon settings-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
             <button id="clearAllDataBtn" type="button" class="edit-only ios-btn-text settings-danger-action">清空全部数据</button>
           </div>
         </section>
 
-        <section class="settings-section" aria-labelledby="settingsPreferencesTitle">
-          <h2 id="settingsPreferencesTitle" class="settings-card-title">偏好设置</h2>
+        <section class="ios-card settings-section" aria-labelledby="settingsPreferencesTitle">
+          <h2 id="settingsPreferencesTitle" class="settings-card-title"><svg class="settings-icon" data-lucide="sliders-horizontal" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h7m4 0h7M3 12h3m4 0h11M3 18h11m4 0h3M10 4v4m-4 2v4m8 2v4"/></svg><span>偏好设置</span></h2>
           <div class="settings-preferences-card">
           <section id="dailyFeedSettings" class="settings-preference daily-feed-settings">
             <div class="daily-feed-heading"><h3 class="settings-card-title">每日喂食量</h3></div>
@@ -491,7 +551,7 @@
           <div class="settings-preference settings-preference-row">
             <h3 class="settings-card-title"><svg class="settings-icon " data-lucide="coins" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="6"/><path d="M16 9a6 6 0 1 1-7 7"/></svg><span>默认币种</span></h3>
             <div id="defaultCurrencyGroup" class="settings-options" role="group" aria-label="默认币种">
-              <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-primary">人民币（元）</button>
+              <button type="button" data-def-currency="CNY" class="ios-btn ios-btn-secondary">人民币（元）</button>
               <button type="button" data-def-currency="JPY" class="ios-btn ios-btn-secondary">日元（円）</button>
             </div>
           </div>
@@ -505,20 +565,23 @@
   <nav class="bottom-nav" aria-label="主导航">
     <div class="bottom-nav-inner">
       <button type="button" data-nav="pantry" id="navBtnPantry" class="nav-tab active">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"/><path d="M12 3v6"/></svg>
+        <svg class="nav-icon" data-lucide="warehouse" aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13M3 21h18M7 21V11h10v10M7 15h10M7 18h10"/></svg>
         <span>粮仓库存</span>
       </button>
       <button type="button" data-nav="daily" id="navBtnDaily" class="nav-tab">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+        <span class="daily-nav-icon">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+          <span id="dailyMedReminderDot" class="hidden-view" aria-hidden="true"></span>
+        </span>
         <span>饮食记录</span>
       </button>
       <button type="button" data-nav="stats" id="navBtnStats" class="nav-tab">
-        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg>
+        <svg class="nav-icon" data-lucide="chart-line" aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 15l4-4 4 3 5-6"/></svg>
         <span>喂养分析</span>
       </button>
       <button type="button" data-nav="settings" id="navBtnSettings" class="nav-tab" style="position:relative;">
         <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;">
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" stroke-linecap="round" stroke-linejoin="round" data-lucide="database-backup"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6m18-6v4M3 11c0 1.7 4 3 9 3m-9-3v6c0 1.7 4 3 9 3m3-4a3.5 3.5 0 1 1 .7 4m-.7-7v3h3"/></svg>
           <span id="backupNoticeDot" class="backup-notice-dot hidden-view"></span>
         </div>
         <span>备份设置</span>
@@ -530,8 +593,8 @@
   <div id="itemModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-sheet stock-form-sheet">
       <div class="stock-form-header">
-        <h2 id="modalTitle" style="margin:0;font-size:18px;font-weight:800;color:#2B2320;">录入粮仓商品</h2>
-        <button id="closeItemModalBtn" type="button" aria-label="关闭弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
+        <h2 id="modalTitle" style="margin:0;font-size:18px;font-weight:800;color:var(--text-main);">录入商品</h2>
+        <button id="closeItemModalBtn" type="button" aria-label="关闭弹窗"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       </div>
 
       <form id="itemForm" novalidate>
@@ -543,12 +606,12 @@
         <div>
           <label>分类</label>
           <div id="modalCatSelector" class="stock-form-chips no-scrollbar">
-            <button type="button" data-form-cat="dry" class="pill-chip active" style="padding:8px 4px;font-size:12px;text-align:center;">🥣 猫粮</button>
-            <button type="button" data-form-cat="can" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🥫 湿粮</button>
-            <button type="button" data-form-cat="freeze" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🍗 冻干</button>
-            <button type="button" data-form-cat="treat" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🍮 零食</button>
-            <button type="button" data-form-cat="supp" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">💊 营养品</button>
-            <button type="button" data-form-cat="med" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;">🩺 药品</button>
+            <button type="button" data-form-cat="dry" class="pill-chip active" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="dry"></span> 猫粮</button>
+            <button type="button" data-form-cat="can" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="can"></span> 湿粮</button>
+            <button type="button" data-form-cat="freeze" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="freeze"></span> 冻干</button>
+            <button type="button" data-form-cat="treat" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="treat"></span> 零食</button>
+            <button type="button" data-form-cat="supp" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="supp"></span> 营养品</button>
+            <button type="button" data-form-cat="med" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="med"></span> 药品</button>
           </div>
         </div>
 
@@ -577,7 +640,7 @@
             <input id="fieldName" type="text" required placeholder="如：鸡肉无谷配方 / 鹿肉主食罐" class="ios-input">
           </div>
           <div>
-            <label for="fieldSpec">单件规格</label>
+            <label id="fieldSpecLabel" for="fieldSpec">单件规格</label>
             <input id="fieldSpec" type="text" placeholder="170g" class="ios-input" style="padding:8px 9px;font-size:13px;">
           </div>
         </div>
@@ -588,7 +651,7 @@
             <select id="fieldSubtype" class="ios-input"></select>
           </div>
           <div id="netWeightField" class="hidden-view">
-            <label for="fieldNetWeight">单件净含量 <span id="netWeightRequired" class="stock-form-required">*</span></label>
+            <label for="fieldNetWeight"><span id="fieldNetWeightLabel">单件净含量</span> <span id="netWeightRequired" class="stock-form-required">*</span></label>
             <div class="stock-form-suffix">
               <input id="fieldNetWeight" aria-describedby="netWeightUnit" class="ios-input" type="number" min="0" step="any" inputmode="decimal">
               <span id="netWeightUnit">克</span>
@@ -625,37 +688,17 @@
             </div>
             <div style="position:relative;min-width:0;">
               <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input" aria-describedby="priceCurrencyUnit" style="padding-right:26px;">
-              <span id="priceCurrencyUnit" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:#6B5A4C;pointer-events:none;">元</span>
+              <span id="priceCurrencyUnit" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:var(--text-muted);pointer-events:none;">元</span>
             </div>
           </div>
         </div>
 
+        <p id="unitChangeHint" class="stock-form-unit-change hidden-view" role="status"></p>
         <p id="modalUnitPriceHint" class="stock-form-note" role="status"></p>
-        <p id="unitCorrectionHint" class="purchase-packaging-note hidden-view" style="font-size:11px;color:#57534E;">如需修改，请使用下方「库存单位更正」。</p>
-        <section id="unitCorrectionFields" class="purchase-packaging stock-form-card hidden-view">
-          <strong>库存单位更正</strong>
-          <p class="purchase-packaging-note">仅更正计数单位，库存数量保持不变。确认后立即保存，无需点击底部「保存商品」。</p>
-          <div class="unit-correction-grid">
-            <label for="currentStockUnit">当前单位
-              <input id="currentStockUnit" class="ios-input" type="text" readonly>
-            </label>
-            <label for="correctedUnit">更正为
-              <select id="correctedUnit" class="ios-input">
-                <option value="">请选择</option>
-                <option>袋</option><option>罐</option><option>包</option><option>盒</option>
-                <option>支</option><option>粒</option><option>瓶</option><option>杯</option>
-              </select>
-            </label>
-          </div>
-          <div class="unit-correction-actions">
-            <button type="button" id="correctUnitBtn" class="ios-btn" disabled>确认更正</button>
-          </div>
-        </section>
-
         <div class="purchase-packaging stock-form-card stock-form-tinted">
           <label class="purchase-packaging-toggle">
             <input id="fieldPackagingEnabled" type="checkbox">
-            组合包装
+            组合包装 <small>选填</small>
           </label>
           <div id="purchasePackagingFields" class="hidden-view">
             <div class="grid-safe purchase-packaging-grid">
@@ -674,32 +717,36 @@
                 <input id="fieldPackSize" type="number" min="1" step="1" inputmode="numeric" value="8" class="ios-input">
               </label>
             </div>
-            <label class="stock-form-seal flavor-control">密封方式
-              <select id="fieldPackSeal" class="ios-input">
-                <option value="independent">各件独立密封</option>
-                <option value="shared">共用一个密封包装</option>
-              </select>
-            </label>
-            <label class="purchase-packaging-toggle stock-form-flavor-toggle">
-              <input id="fieldMixedFlavors" type="checkbox">混合口味
-            </label>
-            <div id="flavorFields" class="hidden-view">
-              <div id="flavorRows"></div>
-              <div class="stock-form-flavor-footer">
-                <button id="addFlavorBtn" type="button" class="stock-form-link">＋ 添加口味</button>
-                <p id="flavorSummary" role="status" tabindex="-1"></p>
+            <div class="stock-form-seal">
+              <label id="packSealLabel">密封方式</label>
+              <input id="fieldPackSeal" type="hidden" value="independent">
+              <div id="packSealOptions" role="group" aria-labelledby="packSealLabel">
+                <button type="button" data-seal="independent">各件独立密封</button>
+                <button type="button" data-seal="shared">共用一个密封包装</button>
               </div>
-              <section id="flavorAdjustmentFields" class="hidden-view">
-                <strong>调整口味库存</strong>
-                <label>口味<select id="adjustFlavorSelect" class="ios-input"></select></label>
-                <label>未开封完整件数<input id="adjustFlavorWhole" class="ios-input" type="number" min="0" step="1" inputmode="numeric"></label>
-                <label>已开封单件余量（%，填0表示移除该件）<input id="adjustFlavorPercent" class="ios-input" type="number" min="0" max="100" step="0.01" inputmode="decimal"></label>
-                <label>调整原因（可选）<input id="adjustFlavorReason" class="ios-input" maxlength="100"></label>
-                <button type="button" id="adjustFlavorBtn" class="ios-btn ios-btn-secondary">保存库存调整</button>
-              </section>
+            </div>
+            <div class="stock-form-flavor-heading">
+              <label class="purchase-packaging-toggle">
+                <input id="fieldMixedFlavors" type="checkbox">混合口味 <small>选填</small>
+              </label>
+              <p id="flavorSummary" role="status" tabindex="-1"></p>
+            </div>
+            <div id="flavorFields" class="hidden-view">
+              <div id="flavorProgress" aria-hidden="true"></div>
+              <div id="flavorRows"></div>
+              <div id="flavorQuickActions">
+                <div id="flavorSuggestions"></div>
+                <div class="stock-form-flavor-shortcuts">
+                  <button type="button" class="stock-form-link" data-flavor-distribute="last">余量补给最后一个</button>
+                  <button type="button" class="stock-form-link" data-flavor-distribute="even">平均分配</button>
+                </div>
+              </div>
+              <label id="flavorReasonWrap" class="hidden-view">调整原因（选填）
+                <input id="adjustFlavorReason" class="ios-input" maxlength="100" placeholder="盘点少了 / 送人了 / 过期">
+              </label>
             </div>
             <p id="purchasePackagingPreview" class="purchase-packaging-preview" role="status"></p>
-            <p class="purchase-packaging-note">独立包装分别计时，共用密封包装按整批计时。</p>
+            <p id="packSealHelp" class="purchase-packaging-note"></p>
           </div>
         </div>
 
@@ -718,8 +765,8 @@
             <div>
               <label for="fieldShelfValue">保质期</label>
               <div class="grid-safe" style="display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1.25fr);gap:5px;">
-                <input id="fieldShelfValue" type="number" min="1" max="3650" placeholder="18" class="ios-input" style="background:#FFFFFF;padding:8px 6px;text-align:center;">
-                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input" style="background-color:#FFFFFF;padding:8px 22px 8px 8px;font-size:13px;">
+                <input id="fieldShelfValue" type="number" min="1" max="3650" placeholder="18" class="ios-input" style="background:var(--card-bg);padding:8px 6px;text-align:center;">
+                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input" style="background-color:var(--card-bg);padding:8px 22px 8px 8px;font-size:13px;">
                   <option value="months">个月</option>
                   <option value="days">天</option>
                 </select>
@@ -728,12 +775,13 @@
           </div>
 
           <div id="shelfPresetsBar" style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;overflow-x:auto;margin-bottom:8px;" class="no-scrollbar">
-            <span style="font-size:11px;color:#6B5A4C;white-space:nowrap;">常用：</span>
-            <button type="button" data-preset-months="6" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">6个月</button>
-            <button type="button" data-preset-months="12" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">12个月</button>
-            <button type="button" data-preset-months="18" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">18个月</button>
-            <button type="button" data-preset-months="24" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">24个月</button>
-            <button type="button" data-preset-months="36" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:#FFF;border:1px solid #FED7AA;color:#9A3412;cursor:pointer;">36个月</button>
+            <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">常用：</span>
+            <button type="button" data-preset-months="6" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">6个月</button>
+            <button type="button" data-preset-months="12" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">12个月</button>
+            <button type="button" data-preset-months="18" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">18个月</button>
+            <button type="button" data-preset-months="21" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">21个月</button>
+            <button type="button" data-preset-months="24" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">24个月</button>
+            <button type="button" data-preset-months="36" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">36个月</button>
           </div>
 
           <div class="stock-form-grid stock-form-two">
@@ -743,7 +791,10 @@
             </div>
             <div id="openLimitColWrap">
               <label for="fieldOpenLimit">开封保鲜期（天）</label>
-              <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input">
+              <div class="stock-form-open-limit-suffix">
+                <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input">
+                <span aria-hidden="true">天</span>
+              </div>
             </div>
           </div>
           <button id="calcProdFromExpBtn" type="button" class="stock-form-link">根据过期日期反推生产日期</button>
@@ -754,7 +805,7 @@
           <div class="stock-form-opening-header">
             <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>
             <div>
-              <div id="openedCheckboxTitle">已拆封 0 件</div>
+              <div id="openedCheckboxTitle">已拆封 0</div>
               <div id="openingSubtitle" class="stock-form-note">单独计算开封保鲜期</div>
             </div>
             <input id="fieldIsOpened" type="checkbox" role="switch" aria-label="已拆封" aria-checked="false" aria-controls="openedExtraFields">
@@ -778,13 +829,13 @@
 
         <!-- Palatability / Acceptance / Medicine Tolerance -->
         <div>
-          <label id="palatabilityFieldTitle">🐾 猫咪适口性记录</label>
+          <label id="palatabilityFieldTitle"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>猫咪适口性记录</label>
           <div id="palatabilityGroup" class="grid-safe" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;">
             <button type="button" data-pal="" class="pill-chip active" style="padding:7px 2px;font-size:11.5px;text-align:center;">未测</button>
-            <button type="button" data-pal="love" id="palBtnLove" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">😍 超爱</button>
-            <button type="button" data-pal="ok" id="palBtnOk" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">😋 正常</button>
-            <button type="button" data-pal="coax" id="palBtnCoax" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">🥺 需哄</button>
-            <button type="button" data-pal="meh" id="palBtnMeh" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">😒 不吃</button>
+            <button type="button" data-pal="love" id="palBtnLove" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">超爱</button>
+            <button type="button" data-pal="ok" id="palBtnOk" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">正常</button>
+            <button type="button" data-pal="coax" id="palBtnCoax" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">需哄</button>
+            <button type="button" data-pal="meh" id="palBtnMeh" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">不吃</button>
           </div>
         </div>
 
@@ -832,8 +883,8 @@
   <div id="feedModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="feedModalTitle">
     <div class="modal-sheet" style="padding:20px;max-width:480px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <h3 id="feedModalTitle" style="margin:0;font-size:17px;font-weight:800;color:#2B2320;">🐾 记录饮食 / 营养 / 用药</h3>
-        <button id="closeFeedModalBtn" type="button" aria-label="关闭记喂食弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
+        <h3 id="feedModalTitle" style="margin:0;font-size:17px;font-weight:800;color:var(--text-main);"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>记录饮食 / 营养 / 用药</h3>
+        <button id="closeFeedModalBtn" type="button" aria-label="关闭记喂食弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:var(--status-neutral-bg);cursor:pointer;font-weight:700;">✕</button>
       </div>
 
       <form id="feedForm" style="display:flex;flex-direction:column;gap:12px;">
@@ -842,90 +893,93 @@
 
         <div class="grid-safe" style="display:grid;grid-template-columns:1.15fr 1fr;gap:8px;">
           <div>
-            <label for="feedDateInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">日期</label>
+            <label for="feedDateInput" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">日期</label>
             <div class="ios-date-wrap"><span id="feedDateInputText" class="ios-date-display">选择日期</span><input id="feedDateInput" type="date" required></div>
           </div>
           <div>
-            <label for="feedMealSlot" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">餐次时段</label>
-            <select id="feedMealSlot" class="ios-input" style="background-color:#FFFFFF;"></select>
+            <label for="feedMealSlot" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;"><span id="feedMealSlotIcon" aria-hidden="true"></span>餐次时段</label>
+            <select id="feedMealSlot" class="ios-input" style="background-color:var(--card-bg);"></select>
           </div>
         </div>
 
         <div>
-          <label for="feedStockSelect" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">选择商品批次（含已核销批次，或手动输入）</label>
-          <select id="feedStockSelect" class="ios-input" style="background-color:#FFFFFF;"></select>
+          <label for="feedStockSelect" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">选择商品批次（含已核销批次，或手动输入）</label>
+          <select id="feedStockSelect" class="ios-input" style="background-color:var(--card-bg);"></select>
           <div id="feedFlavorFields" class="hidden-view flavor-control">
             <label for="feedFlavorSelect">实际喂食口味</label>
             <select id="feedFlavorSelect" class="ios-input"></select>
-            <label for="feedFlavorPal">适口性</label>
-            <select id="feedFlavorPal" class="ios-input">
-              <option value="">未评价</option><option value="love">超爱吃</option><option value="ok">一般</option>
-              <option value="coax">需哄喂</option><option value="meh">不爱吃</option>
-            </select>
             <button id="openFlavorBtn" type="button" class="ios-btn ios-btn-secondary">记录开封</button>
             <button id="discardFlavorBtn" type="button" class="ios-btn ios-btn-secondary edit-only">核销1件</button>
             <small id="feedFlavorHint"></small>
           </div>
         </div>
 
+        <div>
+            <label for="feedFlavorPal" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">适口性</label>
+            <select id="feedFlavorPal" class="ios-input">
+              <option value="">未评价</option><option value="love">超爱吃</option><option value="ok">一般</option>
+              <option value="coax">需哄喂</option><option value="meh">不爱吃</option>
+            </select>
+        </div>
+
         <div class="grid-safe" style="display:grid;grid-template-columns:0.9fr 1.1fr;gap:8px;">
           <div>
-            <label for="feedCategorySelect" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">分类</label>
-            <select id="feedCategorySelect" class="ios-input" style="background-color:#FFFFFF;">
-              <option value="dry">🥣 猫粮</option>
-              <option value="can">🥫 湿粮</option>
-              <option value="freeze">🍗 冻干</option>
-              <option value="treat">🍮 零食</option>
-              <option value="supp">💊 营养品</option>
-              <option value="med">🩺 药品</option>
+            <label for="feedCategorySelect" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">分类</label>
+            <select id="feedCategorySelect" class="ios-input" style="background-color:var(--card-bg);">
+              <option value="dry">猫粮</option>
+              <option value="can">湿粮</option>
+              <option value="freeze">冻干</option>
+              <option value="treat">零食</option>
+              <option value="supp">营养品</option>
+              <option value="med">药品</option>
             </select>
           </div>
           <div>
-            <label for="feedBrandInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品牌</label>
+            <label for="feedBrandInput" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">品牌</label>
             <input id="feedBrandInput" type="text" required placeholder="如：渴望 / 巅峰" class="ios-input">
           </div>
         </div>
 
         <div>
-          <label for="feedNameInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">品名 / 口味 <span style="color:var(--accent-strong);">*</span></label>
+          <label for="feedNameInput" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">品名 / 口味 <span style="color:var(--accent-strong);">*</span></label>
           <input id="feedNameInput" type="text" required placeholder="如：无谷鸡肉猫粮 / 马鲛鱼罐头" class="ios-input">
         </div>
 
         <!-- Portion Amount + Smart Last-Portion & Split-Can Chips -->
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:6px;flex-wrap:wrap;">
-            <label for="feedAmountInput" style="font-size:12px;font-weight:700;color:#44403C;">投喂份量 <span style="color:var(--accent-strong);">*</span></label>
+            <label for="feedAmountInput" style="font-size:12px;font-weight:700;color:var(--text-main);">投喂份量 <span style="color:var(--accent-strong);">*</span></label>
             <span id="feedSplitHintTag" style="font-size:11px;font-weight:700;color:var(--accent-strong);"></span>
           </div>
-          <input id="feedAmountInput" type="text" required placeholder="如：半罐 (85g) / 1/3罐 / 40g / 1支" class="ios-input">
+          <input id="feedAmountInput" type="text" required placeholder="如：1/2、1/3、40g" class="ios-input">
           <div id="feedPortionChips" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
-            <button type="button" data-portion="吃完本罐剩余" data-frac="rest" id="chipFinishRestCan" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #16A34A;background:#DCFCE7;color:#15803D;font-size:11.5px;font-weight:800;cursor:pointer;">✨ 吃完本罐剩余</button>
-            <button type="button" data-portion="" data-frac="0" id="chipLastPortion" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid #C5DDBC;background:#EAF2DC;color:#3D5A24;font-size:11px;font-weight:800;cursor:pointer;">⚡ 上次份量</button>
-            <button type="button" data-portion="半罐 (1/2)" data-package-portion data-frac="0.5" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 半罐 (1/2)</button>
-            <button type="button" data-portion="1/3罐" data-package-portion data-frac="0.34" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 1/3罐</button>
-            <button type="button" data-portion="1/4罐" data-package-portion data-frac="0.25" style="padding:4px 9px;border-radius:999px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11px;font-weight:700;cursor:pointer;">🥫 1/4罐</button>
-            <button type="button" data-package-portion data-portion="1罐" data-frac="1" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1罐</button>
-            <button type="button" data-portion="30g" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">30g</button>
-            <button type="button" data-portion="50g" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">50g</button>
-            <button type="button" data-portion="15g冻干" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">15g冻干</button>
-            <button type="button" data-portion="1支" data-frac="1" style="padding:4px 9px;border-radius:999px;border:1px solid #E7E5E4;background:#FAFAF9;color:#57534E;font-size:11px;cursor:pointer;">1支</button>
+            <button type="button" data-portion="吃完当前剩余" data-frac="rest" id="chipFinishRestCan" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid var(--positive-border);background:var(--ok-soft);color:var(--ok);font-size:11.5px;font-weight:800;cursor:pointer;"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-sparkles"></use></svg>吃完当前剩余</button>
+            <button type="button" data-portion="" data-frac="0" id="chipLastPortion" class="hidden-view" style="padding:4px 10px;border-radius:999px;border:1px solid var(--positive-border);background:var(--ok-soft);color:var(--ok);font-size:11px;font-weight:800;cursor:pointer;"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-zap"></use></svg>上次份量</button>
+            <button type="button" data-package-portion data-frac="0.5" style="padding:4px 9px;border-radius:999px;border:1px solid var(--accent-edge);background:var(--accent-soft);color:var(--accent-strong);font-size:11px;font-weight:700;cursor:pointer;">1/2</button>
+            <button type="button" data-package-portion data-frac="0.34" style="padding:4px 9px;border-radius:999px;border:1px solid var(--accent-edge);background:var(--accent-soft);color:var(--accent-strong);font-size:11px;font-weight:700;cursor:pointer;">1/3</button>
+            <button type="button" data-package-portion data-frac="0.25" style="padding:4px 9px;border-radius:999px;border:1px solid var(--accent-edge);background:var(--accent-soft);color:var(--accent-strong);font-size:11px;font-weight:700;cursor:pointer;">1/4</button>
+            <button type="button" data-package-portion data-frac="1" style="padding:4px 9px;border-radius:999px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-muted);font-size:11px;cursor:pointer;">1</button>
+            <button type="button" data-portion="30g" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-muted);font-size:11px;cursor:pointer;">30g</button>
+            <button type="button" data-portion="50g" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-muted);font-size:11px;cursor:pointer;">50g</button>
+            <button type="button" data-portion="15g冻干" data-frac="0" style="padding:4px 9px;border-radius:999px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-muted);font-size:11px;cursor:pointer;">15g冻干</button>
+            <button type="button" data-portion="1支" data-frac="1" style="padding:4px 9px;border-radius:999px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-muted);font-size:11px;cursor:pointer;">1支</button>
           </div>
         </div>
 
         <!-- Smart Split-Can / Stock Deduction Status Box -->
-        <div id="feedDeductBox" style="padding:10px 12px;border-radius:12px;background:#FFF7ED;border:1px solid #FED7AA;">
-          <div id="feedSplitAutoInfo" class="hidden-view" style="font-size:12px;font-weight:700;color:#9A3412;line-height:1.45;"></div>
+        <div id="feedDeductBox" style="padding:10px 12px;border-radius:12px;background:var(--accent-soft);border:1px solid var(--accent-edge);">
+          <div id="feedSplitAutoInfo" class="hidden-view" style="font-size:12px;font-weight:700;color:var(--accent-strong);line-height:1.45;"></div>
           <label id="feedManualDeductLabelWrap" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;">
-            <span id="feedDeductLabel" style="font-size:12px;font-weight:700;color:#7C2D12;">📦 同步扣减库存</span>
-            <input id="feedDeductStock" type="checkbox" style="width:18px;height:18px;accent-color:#E8590C;flex-shrink:0;">
+            <span id="feedDeductLabel" style="font-size:12px;font-weight:700;color:var(--accent-strong);"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-package"></use></svg>同步扣减库存</span>
+            <input id="feedDeductStock" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
           </label>
         </div>
 
         <!-- Indoor Cat Low-Frequency Deworming / Medicine Reminder -->
-        <div id="medNextReminderBox" class="hidden-view" style="padding:10px 12px;border-radius:12px;background:#F0FDF4;border:1px solid #BBF7D0;">
+        <div id="medNextReminderBox" class="hidden-view" style="padding:10px 12px;border-radius:12px;background:var(--ok-soft);border:1px solid var(--positive-border);">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <label for="feedNextReminderDays" style="font-size:12px;font-weight:700;color:#14532D;">🩺 下次用药/驱虫提醒（低频可选）</label>
-            <select id="feedNextReminderDays" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:#FFFFFF;">
+            <label for="feedNextReminderDays" style="font-size:12px;font-weight:700;color:var(--ok);"><span data-category-icon="med"></span> 下次用药/驱虫提醒（低频可选）</label>
+            <select id="feedNextReminderDays" class="ios-input" style="width:auto;height:34px;min-height:34px;padding:4px 24px 4px 8px;font-size:12px;background-color:var(--card-bg);">
               <option value="0">不设提醒</option>
               <option value="30">1个月后 (30天)</option>
               <option value="60">2个月后 (60天)</option>
@@ -937,7 +991,7 @@
         </div>
 
         <div>
-          <label for="feedNoteInput" style="display:block;font-size:12px;font-weight:700;color:#44403C;margin-bottom:4px;">光盘情况 / 反应备注 (选填)</label>
+          <label for="feedNoteInput" style="display:block;font-size:12px;font-weight:700;color:var(--text-main);margin-bottom:4px;">光盘情况 / 反应备注 (选填)</label>
           <input id="feedNoteInput" type="text" placeholder="如：秒光盘、兑了40ml温水、便便正常" class="ios-input">
         </div>
 
@@ -954,31 +1008,31 @@
     <div class="modal-sheet" style="padding:18px;max-width:540px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
         <div style="min-width:0;">
-          <h3 id="historyModalTitle" style="margin:0;font-size:16.5px;font-weight:800;color:#2B2320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📜 库存操作历史流水</h3>
-          <span id="historyCountBadge" style="font-size:11px;color:#6B5A4C;">共 0 条记录</span>
+          <h3 id="historyModalTitle" style="margin:0;font-size:16.5px;font-weight:800;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#ui-scroll-text"></use></svg>库存操作历史流水</h3>
+          <span id="historyCountBadge" style="font-size:11px;color:var(--text-muted);">共 0 条记录</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <button id="clearHistoryItemFilterBtn" type="button" class="hidden-view" style="border:1px solid #FED7AA;background:#FFF7ED;color:var(--accent-strong);padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">查看全部商品</button>
-          <button id="exportStockHistoryCsvBtn" type="button" style="border:1px solid #E7E5E4;background:#FAFAF9;color:#44403C;padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">导出CSV</button>
-          <button id="closeHistoryModalBtn" type="button" aria-label="关闭库存流水" style="width:30px;height:30px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
+          <button id="clearHistoryItemFilterBtn" type="button" class="hidden-view" style="border:1px solid var(--accent-edge);background:var(--accent-soft);color:var(--accent-strong);padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">查看全部商品</button>
+          <button id="exportStockHistoryCsvBtn" type="button" style="border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-main);padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">导出CSV</button>
+          <button id="closeHistoryModalBtn" type="button" aria-label="关闭库存流水" style="width:30px;height:30px;border-radius:999px;border:none;background:var(--status-neutral-bg);cursor:pointer;font-weight:700;">✕</button>
         </div>
       </div>
 
       <div id="historyTypeFilterBar" class="filter-chips no-scrollbar">
         <button type="button" data-hist-type="all" class="subfilter-chip active">全部变动</button>
-        <button type="button" data-hist-type="in" class="subfilter-chip">📥 入库与复购</button>
-        <button type="button" data-hist-type="consume" class="subfilter-chip">🥫 拆封与消耗</button>
-        <button type="button" data-hist-type="adjust" class="subfilter-chip">🔄 调整与退库</button>
+        <button type="button" data-hist-type="in" class="subfilter-chip"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-package-plus"></use></svg>入库与复购</button>
+        <button type="button" data-hist-type="consume" class="subfilter-chip"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-package-open"></use></svg>拆封与消耗</button>
+        <button type="button" data-hist-type="adjust" class="subfilter-chip"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-refresh-cw"></use></svg>调整与退库</button>
       </div>
 
-      <input id="historySearchInput" type="search" placeholder="搜索品牌、品名或变动备注..." class="ios-input" style="height:36px;min-height:36px;font-size:12.5px;margin-bottom:10px;background:#FFFFFF;">
+      <input id="historySearchInput" type="search" placeholder="搜索品牌、品名或变动备注..." class="ios-input" style="height:36px;min-height:36px;font-size:12.5px;margin-bottom:10px;background:var(--card-bg);">
 
       <div id="stockHistoryList" style="display:flex;flex-direction:column;gap:8px;max-height:54vh;overflow-y:auto;padding-right:2px;"></div>
 
-      <div id="historyPaginationBar" class="hidden-view" style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <button id="prevHistoryPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">◀ 上一页</button>
-        <span id="historyPageInfo" style="font-size:11.5px;font-weight:700;color:#57534E;">第 1 / 1 页</span>
-        <button id="nextHistoryPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页 ▶</button>
+      <div id="historyPaginationBar" class="hidden-view" style="margin-top:11px;padding-top:10px;border-top:1px solid var(--status-neutral-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <button id="prevHistoryPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg>上一页</button>
+        <span id="historyPageInfo" style="font-size:11.5px;font-weight:700;color:var(--text-muted);">第 1 / 1 页</span>
+        <button id="nextHistoryPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页<svg class="ui-icon ui-icon--trailing" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
       </div>
     </div>
   </div>
@@ -986,54 +1040,66 @@
   <!-- ==================== CUSTOM CONFIRMATION MODAL ==================== -->
   <div id="confirmModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
     <div class="modal-sheet" style="padding:20px;max-width:400px;">
-      <h3 id="confirmTitle" style="margin:0 0 6px 0;font-size:17px;font-weight:800;color:#2B2320;">确认操作</h3>
-      <p id="confirmMessage" style="margin:0 0 14px 0;font-size:13.5px;color:#57534E;line-height:1.5;"></p>
+      <div class="delete-log-handle" aria-hidden="true"></div>
+      <div class="confirm-heading">
+        <span class="delete-log-icon" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg></span>
+        <div>
+          <h3 id="confirmTitle" style="margin:0 0 6px 0;font-size:17px;font-weight:800;color:var(--text-main);">确认操作</h3>
+          <p class="delete-log-subtitle">删除后无法恢复</p>
+        </div>
+      </div>
+      <div class="delete-log-record">
+        <span id="deleteLogCategoryIcon"></span>
+        <div><strong id="deleteLogName"></strong><p id="deleteLogMeta"></p></div>
+        <span id="deleteLogAmount"></span>
+      </div>
+      <p id="confirmMessage" style="margin:0 0 14px 0;font-size:13.5px;color:var(--text-muted);line-height:1.5;"></p>
       <label id="confirmStockQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
         核销数量
         <select id="confirmStockQuantity" class="ios-input" style="margin-top:4px;"></select>
       </label>
-      <label id="confirmExtraOptionWrap" class="hidden-view" style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:14px;border-radius:11px;background:#FFF7ED;border:1px solid #FED7AA;cursor:pointer;">
-        <input id="confirmExtraCheckbox" type="checkbox" style="width:18px;height:18px;accent-color:#E8590C;flex-shrink:0;">
-        <span id="confirmExtraLabel" style="font-size:12px;font-weight:700;color:#7C2D12;line-height:1.35;">同时记入今日饮食记录</span>
+      <label id="confirmExtraOptionWrap" class="hidden-view" style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:14px;border-radius:11px;background:var(--accent-soft);border:1px solid var(--accent-edge);cursor:pointer;">
+        <input id="confirmExtraCheckbox" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
+        <span class="confirm-extra-copy"><span id="confirmExtraLabel" style="font-size:12px;font-weight:700;color:var(--accent-strong);line-height:1.35;">同时记入今日饮食记录</span><span class="delete-log-revert-hint"><span id="deleteLogRestoreAmount"></span><span>只删记录，库存和余量保持不变</span></span></span>
       </label>
       <label id="confirmMealQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
         实际补记份量（件数，含已开封余量）
         <input id="confirmMealQuantity" type="number" min="1" step="1" inputmode="numeric" class="ios-input" style="margin-top:4px;">
       </label>
-      <div style="display:flex;gap:10px;">
+      <div class="confirm-actions" style="display:flex;gap:10px;">
         <button id="confirmCancelBtn" type="button" class="ios-btn ios-btn-secondary" style="width:50%;">取消</button>
-        <button id="confirmOkBtn" type="button" class="ios-btn ios-btn-primary" style="width:50%;background:#DC2626;box-shadow:none;">确定</button>
+        <button id="confirmOkBtn" type="button" class="ios-btn ios-btn-primary" style="width:50%;background:var(--danger-fill);box-shadow:none;">确定</button>
       </div>
     </div>
   </div>
 
   <!-- ==================== PHOTO LIGHTBOX MODAL ==================== -->
   <div id="photoPreviewBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle" style="align-items:center;padding:20px;">
-    <div class="ios-card" style="width:100%;max-width:420px;padding:16px;background:#FFFFFF;border-radius:24px;">
+    <div class="ios-card" style="width:100%;max-width:420px;padding:16px;background:var(--card-bg);border-radius:24px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <h3 id="lightboxTitle" style="margin:0;font-size:15px;font-weight:800;color:#2B2320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">查看商品图片</h3>
-        <button id="closeLightboxBtn" type="button" aria-label="关闭大图" style="width:30px;height:30px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
+        <h3 id="lightboxTitle" style="margin:0;font-size:15px;font-weight:800;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">查看商品图片</h3>
+        <button id="closeLightboxBtn" type="button" aria-label="关闭大图" style="width:30px;height:30px;border-radius:999px;border:none;background:var(--status-neutral-bg);cursor:pointer;font-weight:700;">✕</button>
       </div>
-      <div style="background:#FAFAF9;border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;max-height:62vh;">
+      <div style="background:var(--control-bg);border-radius:16px;overflow:hidden;display:flex;align-items:center;justify-content:center;max-height:62vh;">
         <img id="lightboxImg" src="./icon-192.png" alt="商品大图预览" style="max-width:100%;max-height:60vh;object-fit:contain;display:block;">
       </div>
-      <div id="lightboxMeta" style="margin-top:10px;font-size:12px;color:#57534E;text-align:center;"></div>
+      <div id="lightboxMeta" style="margin-top:10px;font-size:12px;color:var(--text-muted);text-align:center;"></div>
     </div>
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=123"></script>
-  <script src="./js/constants.js?v=123"></script>
-  <script src="./js/utils.js?v=123"></script>
-  <script src="./js/forecast.js?v=123"></script>
-  <script src="./js/domain.js?v=123"></script>
-  <script src="./js/storage.js?v=123"></script>
-  <script src="./js/stats.js?v=123"></script>
-  <script src="./js/modal.js?v=123"></script>
-  <script src="./js/ui.js?v=123"></script>
-  <script src="./js/ui-pantry.js?v=123"></script>
-  <script src="./js/ui-daily.js?v=123"></script>
-  <script src="./js/ui-settings.js?v=123"></script>
-  <script src="./js/app.js?v=123"></script>
+  <script src="./js/covers.js?v=160"></script>
+  <script src="./js/constants.js?v=160"></script>
+  <script src="./js/utils.js?v=160"></script>
+  <script src="./js/forecast.js?v=160"></script>
+  <script src="./js/domain.js?v=160"></script>
+  <script src="./js/storage.js?v=160"></script>
+  <script src="./js/stats.js?v=160"></script>
+  <script src="./js/modal.js?v=160"></script>
+  <script src="./js/ui.js?v=160"></script>
+  <script src="./js/ui-pantry.js?v=160"></script>
+  <script src="./js/ui-daily.js?v=160"></script>
+  <script src="./js/ui-settings.js?v=160"></script>
+  <script src="./js/app.js?v=160"></script>
 </body>
 </html>

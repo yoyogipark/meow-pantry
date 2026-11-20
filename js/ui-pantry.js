@@ -6,37 +6,6 @@
   var Domain = MP.Domain;
   var UI = MP.UI = MP.UI || {};
 
-  UI.renderMedReminderBanner = function () {
-    var box = document.getElementById('medReminderBanner');
-    if (!box) return;
-    var activeRems = MP.state.logs.filter(function (lg) {
-      return lg.nextDueDate && !lg.reminderDone;
-    });
-    if (activeRems.length === 0) {
-      box.classList.add('hidden-view');
-      return;
-    }
-    activeRems.sort(function (a, b) {
-      return String(a.nextDueDate).localeCompare(String(b.nextDueDate));
-    });
-    var topRem = activeRems[0];
-    var daysLeft = Utils.diffDaysFromToday(topRem.nextDueDate);
-    var statusTxt = daysLeft < 0
-      ? ('已超期 ' + Utils.formatDays(daysLeft).text + '（计划 ' + Utils.formatSentenceDate(topRem.nextDueDate) + '）')
-      : (daysLeft === 0 ? '今天到期！' : ('还有 ' + Utils.formatDays(daysLeft).text + '（计划 ' + Utils.formatSentenceDate(topRem.nextDueDate) + '）'));
-    var toneColor = daysLeft <= 7 ? '#B45309' : '#15803D';
-
-    box.classList.remove('hidden-view');
-    box.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">' +
-        '<div style="font-size:12px;color:#14532D;">' +
-          '<strong>🩺 用药/驱虫备忘：</strong>[' + Utils.escapeHtml(topRem.brand) + '] ' + Utils.escapeHtml(topRem.name) +
-          ' · 上次 ' + Utils.escapeHtml(Utils.formatSentenceDate(topRem.date)) + ' · <span style="font-weight:800;color:' + toneColor + ';">下次 ' + statusTxt + '</span>' +
-        '</div>' +
-        '<button type="button" data-dismiss-rem="' + Utils.escapeHtml(topRem.id) + '" style="border:none;padding:4px 9px;border-radius:7px;background:#DCFCE7;color:#15803D;font-size:11px;font-weight:700;cursor:pointer;">✓ 已完成</button>' +
-      '</div>';
-  };
-
   function formatPieceCount(pieces) {
     return pieces === null ? '件数未明' : '共 ' + Utils.formatQuantity(pieces, '件');
   }
@@ -102,8 +71,14 @@
     document.getElementById('statCardExpiring').title =
       '包装剩 ' + Utils.formatQuantity(warningDays, '天') + '以内，或开封保鲜期剩余 ' + Utils.formatQuantity(Math.min(10, warningDays), '天') + '以内';
     var emptyItems = [];
+    var foodBatches = 0;
+    var brands = new Set();
 
     st.items.forEach(function (it) {
+      if (Number(it.quantity) > 0) {
+        if (MP.isFoodCategory(it.category)) foodBatches += 1;
+        if (it.brand && it.brand.trim()) brands.add(it.brand.trim());
+      }
       var ev = Domain.evaluateItem(it);
       if (ev.status === 'empty') {
         emptyItems.push(it);
@@ -115,6 +90,8 @@
       }
     });
     var cEmpty = Domain.groupEmptyItemsByProduct(emptyItems).length;
+    document.getElementById('pantryStockSummary').textContent =
+      '口粮 ' + Utils.formatQuantity(foodBatches, '款') + ' · ' + Utils.formatQuantity(brands.size, '个品牌');
 
     [
       ['countInStock', cStock],
@@ -194,8 +171,9 @@
     var btns = document.querySelectorAll('#categoryBar [data-cat]');
     for (var i = 0; i < btns.length; i++) {
       var cat = btns[i].getAttribute('data-cat');
-      var baseLabel = cat === 'all' ? '全部' : (MP.CATEGORIES[cat].icon + ' ' + MP.CATEGORIES[cat].label);
-      btns[i].textContent = baseLabel + ' ' + Utils.formatNumber(counts[cat] || 0);
+      var baseLabel = cat === 'all' ? '全部' : (MP.CATEGORIES[cat]?.label || '其他');
+      var icon = cat === 'all' ? '' : Utils.getCategoryIcon(cat, 20) + ' ';
+      btns[i].innerHTML = icon + Utils.escapeHtml(baseLabel) + ' ' + Utils.formatNumber(counts[cat] || 0);
       btns[i].classList.toggle('active', cat === st.catFilter);
     }
   };
@@ -227,8 +205,8 @@
     var lastLog = Domain.getLastFedInfoForItem(it);
     if (!lastLog || !lastLog.date) return '';
     var dAgo = Utils.diffDaysBetween(lastLog.date, Utils.getTodayStr());
-    var txt = dAgo === 0 ? '今日已喂' : (dAgo === 1 ? '昨天喂过' : (dAgo > 1 && dAgo <= 60 ? (Utils.formatQuantity(dAgo, '天') + '前喂过') : ('上次 ' + Utils.formatSentenceDate(lastLog.date))));
-    return '<span style="background:#F1E6D6;color:#4A3A2E;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;">🍽️ ' + Utils.escapeHtml(txt) + '</span>';
+    var txt = dAgo === 0 ? '今日已喂' : (dAgo === 1 ? '昨天喂过' : (dAgo > 1 && dAgo <= 60 ? (Utils.formatQuantity(dAgo, '天') + '前喂过') : ('上次 ' + Utils.formatRelativeYearDate(lastLog.date))));
+    return '<span style="background:var(--secondary-bg);color:var(--secondary-text);padding:2px 7px;border-radius:999px;font-size:11px;font-weight:700;">' + Utils.iconLabel('utensils', txt) + '</span>';
   }
 
   function formatExpiryCountdown(ev) {
@@ -309,7 +287,12 @@
       '<div class="progress-track" aria-hidden="true"><div class="progress-bar" style="width:' + percent + '%;"></div></div></div>';
   }
 
+  function stockActionIcon(path) {
+    return '<svg class="stock-action-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg> ';
+  }
+
   UI.renderPantryList = function () {
+    var historyIcon = document.querySelector('#openStockHistoryBtn svg').outerHTML;
     var st = MP.state;
     var q = st.searchQuery.trim().toLowerCase();
     var filtered = st.items.filter(function (it) {
@@ -398,20 +381,22 @@
     }
     function renderCompactArchive(grp) {
       var rep = grp.latestItem;
-      var catInfo = MP.CATEGORIES[rep.category] || MP.CATEGORIES.dry;
-      var palIcon = rep.palatability === 'love' ? '😍' : (rep.palatability === 'meh' ? '😒' : '');
+      var palKey = MP.getItemPalatability(rep);
+      var palIcon = palKey === 'mixed' ? '口味分化'
+        : (['love', 'meh'].includes(palKey) && MP.getCategoryGroup(rep.category) !== 'med'
+          ? Utils.getPalatabilityIcon(palKey) : '');
       return (
         '<div class="ios-card archive-card" style="padding:10px 12px;border-radius:14px;">' +
           '<div data-action="edit" data-id="' + Utils.escapeHtml(rep.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
             '<div class="archive-row" style="display:flex;align-items:center;gap:5px;min-width:0;">' +
-              '<span style="font-size:14px;flex-shrink:0;">' + catInfo.icon + '</span>' +
-              '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;flex-shrink:0;">' + Utils.escapeHtml(rep.brand) + '</span>' +
-              '<strong style="font-size:13.5px;color:#2B2320;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(rep.name) + '</strong>' +
+              Utils.getCategoryIcon(rep.category) +
+              '<span style="font-size:11px;font-weight:700;color:var(--accent-strong);background:var(--accent-soft);padding:1px 6px;border-radius:6px;flex-shrink:0;">' + Utils.escapeHtml(rep.brand) + '</span>' +
+              '<strong style="font-size:13.5px;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(rep.name) + '</strong>' +
               (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
               archiveBadge(grp) +
             '</div>' +
-            '<div style="font-size:11px;color:#6B5A4C;margin-top:3px;">' +
-              '共 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + (rep.spec ? (' · 规格 ' + Utils.escapeHtml(rep.spec)) : '') +
+            '<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">' +
+              '共 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + (Utils.formatItemSpec(rep) ? (' · 规格 ' + Utils.escapeHtml(Utils.formatItemSpec(rep))) : '') +
             '</div>' +
           '</div>' +
           archiveFooter(grp) +
@@ -426,14 +411,14 @@
       var unitStr = Utils.escapeHtml(rep.unit || '件');
       var palInfoRep = MP.getPalatabilityBadgeInfo(rep);
       var palHtml = palInfoRep
-        ? '<span style="background:' + palInfoRep.bg + ';color:' + palInfoRep.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + palInfoRep.label + '</span>'
+        ? '<span style="background:' + palInfoRep.bg + ';color:' + palInfoRep.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + Utils.formatPalatabilityBadge(rep, palInfoRep) + '</span>'
         : '';
       var coverSrc = MP.getItemCoverSrc(rep);
       var realTag = rep.imageData
-        ? '<span style="position:absolute;bottom:3px;right:3px;background:rgba(28,25,23,0.75);color:#FFF;font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;">实拍</span>'
+        ? '<span style="position:absolute;bottom:3px;right:3px;background:var(--photo-badge-bg);color:var(--text-on-accent);font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;">实拍</span>'
         : '';
       var thumbHtml =
-        '<button type="button" data-action="preview-img" data-id="' + Utils.escapeHtml(rep.id) + '" aria-label="查看口粮图片" style="position:relative;width:64px;height:64px;padding:0;border:1px solid #E7E5E4;border-radius:14px;overflow:hidden;background:#FAFAF9;flex-shrink:0;cursor:pointer;">' +
+        '<button type="button" data-action="preview-img" data-id="' + Utils.escapeHtml(rep.id) + '" aria-label="查看口粮图片" style="position:relative;width:64px;height:64px;padding:0;border:1px solid var(--border-warm);border-radius:14px;overflow:hidden;background:var(--control-bg);flex-shrink:0;cursor:pointer;">' +
           '<img src="' + coverSrc + '" alt="' + Utils.escapeHtml(rep.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
           realTag +
         '</button>';
@@ -453,44 +438,44 @@
           totalUnitsWithDays += bUsed;
         }
         var durationBadgeHtml = cDays !== null
-          ? '<span style="font-size:11px;font-weight:800;color:#9A3412;background:#FFEDD5;padding:1px 7px;border-radius:6px;">⏱️ 共 ' + Utils.formatQuantity(cDays, '天') + '</span>'
+          ? '<span style="font-size:11px;font-weight:800;color:var(--accent-strong);background:var(--accent-soft);padding:1px 7px;border-radius:6px;">' + Utils.uiIcon('timer') + '共 ' + Utils.formatQuantity(cDays, '天') + '</span>'
           : '';
 
         var openFinishLine = '';
         if (bOpen && bFin) {
-          openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:#44403C;font-weight:600;">🔓 开封日期 ' + Utils.escapeHtml(bOpen) + ' → ✓ 用完日期 ' + Utils.escapeHtml(bFin) + '</div>';
+          openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:var(--text-main);font-weight:600;">' + Utils.uiIcon('lock-open') + '开封日期 ' + Utils.escapeHtml(bOpen) + ' → ' + Utils.uiIcon('circle-check') + '用完日期 ' + Utils.escapeHtml(bFin) + '</div>';
         } else if (bFin) {
-          openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:#57534E;">✓ 用完日期 ' + Utils.escapeHtml(bFin) + '</div>';
+          openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:var(--text-muted);">✓ 用完日期 ' + Utils.escapeHtml(bFin) + '</div>';
         } else if (bOpen) {
-          openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:#57534E;">🔓 开封日期 ' + Utils.escapeHtml(bOpen) + '</div>';
+          openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:var(--text-muted);">' + Utils.uiIcon('lock-open') + '开封日期 ' + Utils.escapeHtml(bOpen) + '</div>';
         }
 
         return (
-          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:#FFFFFF;border:1px solid #E7E5E4;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:var(--card-bg);border:1px solid var(--border-warm);">' +
             '<div style="min-width:0;flex:1;">' +
               '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-                '<span style="font-size:11px;font-weight:700;color:#57534E;background:#F5F5F4;padding:1px 6px;border-radius:5px;">批次 #' + (grp.batches.length - bIdx) + '</span>' +
-                '<strong style="font-size:12.5px;color:#15803D;">核销 ' + Utils.escapeHtml(Utils.formatQuantity(bUsed, rep.unit || '件')) + '</strong>' +
+                '<span style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--status-neutral-bg);padding:1px 6px;border-radius:5px;">批次 #' + (grp.batches.length - bIdx) + '</span>' +
+                '<strong style="font-size:12.5px;color:var(--ok);">核销 ' + Utils.escapeHtml(Utils.formatQuantity(bUsed, rep.unit || '件')) + '</strong>' +
                 durationBadgeHtml +
-                (packTxt ? '<span style="font-size:11px;color:#6B5A4C;">' + packTxt + '</span>' : '') +
-                (priceTxt ? '<span style="font-size:11px;color:#6B5A4C;">' + Utils.escapeHtml(priceTxt) + '</span>' : '') +
+                (packTxt ? '<span style="font-size:11px;color:var(--text-muted);">' + packTxt + '</span>' : '') +
+                (priceTxt ? '<span style="font-size:11px;color:var(--text-muted);">' + Utils.escapeHtml(priceTxt) + '</span>' : '') +
               '</div>' +
               openFinishLine +
-              '<div style="margin-top:2px;font-size:11px;color:#6B5A4C;">' +
+              '<div style="margin-top:2px;font-size:11px;color:var(--text-muted);">' +
                 '生产日期 ' + Utils.escapeHtml(Utils.formatListDate(bItem.prodDate, '未填写')) + ' · 过期日期 ' + Utils.escapeHtml(Utils.formatListDate(bItem.expDate, '—')) +
                 (bItem.batchCode ? (' · ' + Utils.escapeHtml(bItem.batchCode)) : '') +
               '</div>' +
             '</div>' +
             '<div class="edit-only" style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
-              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid #E7E5E4;background:#FAFAF9;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
-              '<button type="button" data-action="delete" data-id="' + Utils.escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
+              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-main);font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
+              '<button type="button" data-action="delete" data-id="' + Utils.escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid var(--danger-soft);background:var(--danger-soft);color:var(--status-danger-text);font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
             '</div>' +
           '</div>'
         );
       }).join('');
 
       var avgTxt = totalUnitsWithDays > 0
-        ? (' · ⚡ 均每' + unitStr + ' ' + Utils.formatDays(Math.max(1, Math.round(totalDaysSum / totalUnitsWithDays))).text)
+        ? (' · ' + Utils.uiIcon('zap') + '均每' + unitStr + ' ' + Utils.formatDays(Math.max(1, Math.round(totalDaysSum / totalUnitsWithDays))).text)
         : '';
 
       return (
@@ -500,20 +485,20 @@
             '<div style="min-width:0;flex:1;">' +
               '<div class="archive-row" style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">' +
                 '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:4px;">' +
-                  '<span style="background:#F5F5F4;color:#44403C;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;">' + catInfo.icon + ' ' + catInfo.label + '</span>' +
-                  '<span style="background:#FFE3CC;color:#7A3410;padding:2px 9px;border-radius:8px;font-size:12px;font-weight:700;">' + Utils.escapeHtml(rep.brand) + '</span>' +
+                  '<span style="background:var(--status-neutral-bg);color:var(--text-main);padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700;">' + Utils.getCategoryIcon(rep.category, 20) + ' ' + catInfo.label + '</span>' +
+                  '<span style="background:var(--brand-surface);color:var(--brand-ink);padding:2px 9px;border-radius:8px;font-size:12px;font-weight:700;">' + Utils.escapeHtml(rep.brand) + '</span>' +
                   palHtml +
                 '</div>' +
                 archiveBadge(grp) +
               '</div>' +
-              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#2B2320;line-height:1.35;">' + Utils.escapeHtml(rep.name) + '</h3>' +
-              '<div style="margin-top:4px;font-size:12px;color:#6B5A4C;">' +
-                (rep.spec ? ('规格 ' + Utils.escapeHtml(rep.spec) + ' · ') : '') + '共归档 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + avgTxt +
+              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:var(--text-main);line-height:1.35;">' + Utils.escapeHtml(rep.name) + '</h3>' +
+              '<div style="margin-top:4px;font-size:12px;color:var(--text-muted);">' +
+                (Utils.formatItemSpec(rep) ? ('规格 ' + Utils.escapeHtml(Utils.formatItemSpec(rep)) + ' · ') : '') + '共归档 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + avgTxt +
               '</div>' +
             '</div>' +
           '</div>' +
-          '<div style="margin-top:11px;padding:10px;border-radius:12px;background:#FAFAF9;border:1px solid #F5F5F4;">' +
-            '<div style="font-size:11px;font-weight:700;color:#6B5A4C;margin-bottom:7px;">📦 历史批次明细（总计 ' + grp.totalConsumed + ' ' + unitStr + '）</div>' +
+          '<div style="margin-top:11px;padding:10px;border-radius:12px;background:var(--control-bg);border:1px solid var(--status-neutral-bg);">' +
+            '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:7px;">' + Utils.uiIcon('package') + '历史批次明细（总计 ' + grp.totalConsumed + ' ' + unitStr + '）</div>' +
             '<div style="display:flex;flex-direction:column;gap:6px;">' + batchRowsHtml + '</div>' +
           '</div>' +
           archiveFooter(grp) +
@@ -561,7 +546,8 @@
           : expiryDays === 0 ? '今天到期' : '剩 ' + Utils.formatDays(expiryDays).text;
 
         var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit || '罐', true) : '';
-        var palIcon = it.palatability === 'love' ? (it.category === 'med' ? '✅' : '😍') : (it.palatability === 'coax' ? (it.category === 'med' ? '💦' : '🥺') : (it.palatability === 'meh' ? (it.category === 'med' ? '⚠️' : '😒') : ''));
+        var palInfo = MP.getPalatabilityBadgeInfo(it);
+        var palIcon = palInfo ? Utils.formatPalatabilityBadge(it, palInfo) : '';
 
         var freshnessBadge = '';
         if (Domain.isStockOpened(it)) {
@@ -573,14 +559,15 @@
             '<svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>' +
             '<span>' + Utils.escapeHtml(freshness) + '</span></span>';
         }
-        var identity = Utils.escapeHtml([it.name, it.spec, fracTxtCompact].filter(Boolean).join(' · '));
+        var displaySpec = Utils.formatItemSpec(it);
+        var identity = Utils.escapeHtml([it.name, displaySpec, fracTxtCompact].filter(Boolean).join(' · '));
         var id = Utils.escapeHtml(it.id);
 
         return (
           '<div class="ios-card compact-stock-card" data-action="edit" data-id="' + id + '">' +
             '<div class="compact-card-header">' +
               '<div class="compact-card-tags compact-card-identity">' +
-                '<span class="compact-category-icon">' + catInfo.icon + '</span>' +
+                '<span class="compact-category-icon">' + Utils.getCategoryIcon(it.category, 20) + '</span>' +
                 '<span class="compact-brand" title="' + Utils.escapeHtml(it.brand) + '">' + Utils.escapeHtml(it.brand) + '</span>' +
                 (palIcon ? '<span class="compact-palatability">' + palIcon + '</span>' : '') +
               '</div>' +
@@ -590,18 +577,18 @@
             '<div class="compact-card-main">' +
               '<div class="compact-title" title="' + identity + '">' +
                 '<span class="compact-product-name">' + Utils.escapeHtml(it.name) + '</span>' +
-                (it.spec ? '<span class="product-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') +
+                (displaySpec ? '<span class="product-title-spec">' + Utils.escapeHtml(displaySpec) + '</span>' : '') +
                 (fracTxtCompact ? '<span class="compact-product-extra">' + Utils.escapeHtml(fracTxtCompact) + '</span>' : '') +
               '</div>' +
               '<div class="compact-card-controls">' +
-                '<button type="button" data-action="log-feed" data-id="' + id + '" title="记喂食" class="compact-feed-btn">🐾 喂</button>' +
+                '<button type="button" data-action="log-feed" data-id="' + id + '" class="btn-feed">' + UI.feedButtonContent(catInfo.group === 'med' ? '记用药' : '') + '</button>' +
                 '<button type="button" data-action="edit" data-id="' + id + '" class="edit-only compact-edit-btn">编辑</button>' +
               '</div>' +
             '</div>' +
             '<div class="compact-stock-row' + (freshnessBadge ? ' has-freshness' : '') + '">' +
               stockQuantityPill(it) +
               '<span class="compact-location"' + (it.location ? ' title="' + Utils.escapeHtml(it.location) + '"' : '') + '>' +
-                (it.location ? '📍' + Utils.escapeHtml(it.location) : '') + '</span>' +
+                (it.location ? Utils.iconLabel('map-pin', it.location) : '') + '</span>' +
               freshnessBadge +
             '</div>' +
           '</div>'
@@ -623,7 +610,7 @@
 
       var palInfo = MP.getPalatabilityBadgeInfo(it);
       var palHtml = palInfo
-        ? '<span style="background:' + palInfo.bg + ';color:' + palInfo.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + palInfo.label + '</span>'
+        ? '<span style="background:' + palInfo.bg + ';color:' + palInfo.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + Utils.formatPalatabilityBadge(it, palInfo) + '</span>'
         : '';
       var lastFedHtml = buildLastFedTagHtml(it);
 
@@ -640,14 +627,15 @@
           '</div>' + openedProgress + '</div>'
         : '';
 
+      var displaySpec = Utils.formatItemSpec(it);
       var priceLine = packagedPriceText(it, unit);
       var price = Utils.formatMoney(it.price, it.currency, unit);
       if (!priceLine && price) {
-        var per100 = catInfo.group === 'food' && !it.flavors ? Utils.formatPer100gPrice(it.price, it.currency, it.spec) : '';
+        var per100 = catInfo.group === 'food' && !it.flavors ? Utils.formatPer100gPrice(it.price, it.currency, it.unit_net_weight_g) : '';
         priceLine = Utils.escapeHtml(price) + (per100 ? '（' + per100 + '）' : '');
       }
       var locationParts = [];
-      if (it.location) locationParts.push('📍' + Utils.escapeHtml(it.location));
+      if (it.location) locationParts.push(Utils.iconLabel('map-pin', it.location));
       if (it.batchCode) locationParts.push(Utils.escapeHtml(it.batchCode));
       if (it.purchasePackaging) locationParts.push(purchasePackagingText(it));
 
@@ -669,32 +657,32 @@
 
       var coverSrc = MP.getItemCoverSrc(it);
       var realTag = it.imageData
-        ? '<span style="position:absolute;bottom:3px;right:3px;background:rgba(28,25,23,0.75);color:#FFF;font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;">实拍</span>'
+        ? '<span style="position:absolute;bottom:3px;right:3px;background:var(--photo-badge-bg);color:var(--text-on-accent);font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;">实拍</span>'
         : '';
       var thumbHtml =
-        '<button type="button" data-action="preview-img" data-id="' + Utils.escapeHtml(it.id) + '" aria-label="查看口粮图片" style="position:relative;width:64px;height:64px;padding:0;border:1px solid #E7E5E4;border-radius:14px;overflow:hidden;background:#FAFAF9;flex-shrink:0;cursor:pointer;">' +
+        '<button type="button" data-action="preview-img" data-id="' + Utils.escapeHtml(it.id) + '" aria-label="查看口粮图片" style="position:relative;width:64px;height:64px;padding:0;border:1px solid var(--border-warm);border-radius:14px;overflow:hidden;background:var(--control-bg);flex-shrink:0;cursor:pointer;">' +
           '<img src="' + coverSrc + '" alt="' + Utils.escapeHtml(it.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
           realTag +
         '</button>';
 
-      var feedBtnLabel = catInfo.group === 'med' ? '🩺 记用药' : (catInfo.group === 'supp' ? '💊 记喂食' : '🐾 记喂食');
+      var feedBtnLabel = catInfo.group === 'med' ? '记用药' : '记喂食';
 
       return (
-        '<article class="ios-card p-4 detail-card" style="padding:14px;">' +
+        '<article class="ios-card p-4 detail-card">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
             thumbHtml +
             '<div style="min-width:0;flex:1;">' +
               '<div class="detail-card-heading">' +
                 '<div class="detail-card-tags">' +
-                  '<span class="detail-card-category">' + catInfo.icon + ' ' + catInfo.label + (it.subtype ? ' · ' + Utils.escapeHtml(it.subtype) : '') + '</span>' +
+                  '<span class="detail-card-category">' + Utils.getCategoryIcon(it.category, 20) + ' ' + catInfo.label + (it.subtype ? ' · ' + Utils.escapeHtml(it.subtype) : '') + '</span>' +
                   '<span class="detail-card-brand">' + Utils.escapeHtml(it.brand) + '</span>' +
                 '</div>' +
                 (stock.opened ? detailedOpenedBadge(ev.openRemaining, stock.openCount)
                   : '<span class="detail-card-reminder detail-card-status detail-card-status--' + Utils.formatDays(ev.expDays).tone +
                   '">' + Utils.escapeHtml(badgeLabel) + '</span>') +
               '</div>' +
-              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#2B2320;line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) +
-                (it.spec ? ' <span class="product-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') + '</h3>' +
+              '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:var(--text-main);line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) +
+                (displaySpec ? ' <span class="product-title-spec">' + Utils.escapeHtml(displaySpec) + '</span>' : '') + '</h3>' +
               ((palHtml || lastFedHtml) ? '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' + palHtml + lastFedHtml + '</div>' : '') +
               (priceLine ? '<div class="detail-card-line">' + priceLine + '</div>' : '') +
               (locationParts.length ? '<div class="detail-card-line">' + locationParts.join(' · ') + '</div>' : '') +
@@ -706,25 +694,27 @@
 
           openedBannerHtml +
           (it.flavors ? '<div class="flavor-stock"><strong>剩余：</strong>' + UI.flavorStockText(it, false, true) + '</div>' : '') +
-          (it.notes ? '<div style="margin-top:8px;font-size:12px;color:#57534E;background:#F5F5F4;padding:6px 10px;border-radius:8px;">💬 ' + Utils.escapeHtml(it.notes) + '</div>' : '') +
+          (it.notes ? '<div style="margin-top:8px;font-size:12px;color:var(--text-muted);background:var(--status-neutral-bg);padding:6px 10px;border-radius:8px;">' + Utils.iconLabel('message-circle', it.notes) + '</div>' : '') +
 
-          '<div style="margin-top:11px;padding-top:10px;border-top:1px solid #F5F5F4;">' +
+          '<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--status-neutral-bg);">' +
             '<div class="detail-card-actions">' +
               stockQuantityPill(it) +
               '<div class="detail-card-action-buttons">' +
-                '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" style="padding:6px 8px;border-radius:10px;border:1px solid transparent;background:#F1E6D6;color:#3A2A20;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📜 此商品记录</button>' +
-                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid transparent;background:var(--accent);color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +
+                '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" class="detail-card-history-btn">' + historyIcon + '<span>历史记录</span></button>' +
+                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" class="btn-feed">' + UI.feedButtonContent(feedBtnLabel) + '</button>' +
               '</div>' +
             '</div>' +
             '<div class="edit-only grid-safe" style="margin-top:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
-              '<button type="button" data-action="toggle-open" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FAFAF9') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">' +
-                (it.isOpened ? ('🔓 已拆1' + unitStr) : (qtyNum > 1 ? ('🔒 拆1' + unitStr) : '🔒 记开封')) +
+              '<button type="button" data-action="toggle-open" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid var(--border-warm);background:' + (it.isOpened ? 'var(--accent-soft)' : 'var(--control-bg)') + ';color:' + (it.isOpened ? 'var(--accent-strong)' : 'var(--text-muted)') + ';font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">' +
+                stockActionIcon('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="' +
+                  (it.isOpened ? 'M8 11V7a4 4 0 0 1 7.5-2' : 'M8 11V7a4 4 0 1 1 8 0v4') + '"/>') +
+                (it.isOpened ? '已拆1' + unitStr : qtyNum > 1 ? '拆1' + unitStr : '记开封') +
               '</button>' +
-              '<button type="button" data-action="consume-one" data-id="' + Utils.escapeHtml(it.id) + '" style="min-height:34px;padding:0 4px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:11.5px;font-weight:700;cursor:pointer;overflow-wrap:anywhere;">' +
-                '✓ ' + (catInfo.group === 'food' ? '吃完' : '用完') + Math.min(1, qtyNum) + unitStr +
+              '<button type="button" data-action="consume-one" data-id="' + Utils.escapeHtml(it.id) + '" style="min-height:34px;padding:0 4px;border-radius:9px;border:1px solid var(--ok-soft);background:var(--ok-soft);color:var(--ok);font-size:11.5px;font-weight:700;cursor:pointer;overflow-wrap:anywhere;">' +
+                stockActionIcon('<path d="m5 12 4 4L19 6"/>') + (catInfo.group === 'food' ? '吃完' : '用完') + Math.min(1, qtyNum) + unitStr +
               '</button>' +
-              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">✏️ 编辑</button>' +
-              '<button type="button" data-action="delete" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">🗑️ 删除</button>' +
+              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid var(--accent-edge);background:var(--accent-soft);color:var(--accent-strong);font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">' + stockActionIcon('<path d="m15 5 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/>') + '编辑</button>' +
+              '<button type="button" data-action="delete" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid var(--danger-soft);background:var(--danger-soft);color:var(--status-danger-text);font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">' + stockActionIcon('<path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/>') + '删除</button>' +
             '</div>' +
           '</div>' +
         '</article>'

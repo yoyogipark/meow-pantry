@@ -67,6 +67,11 @@
   Storage.applyLoadedSettings = function (pSet, target) {
     if (!pSet || typeof pSet !== 'object') return;
     var st = target || MP.state;
+    if (typeof pSet.profileName === 'string') st.settings.profileName = pSet.profileName.trim().slice(0, 24);
+    if (typeof pSet.profileAvatar === 'string' && (pSet.profileAvatar === '' ||
+        /^data:image\/jpeg;base64,[a-z0-9+/=]+$/i.test(pSet.profileAvatar))) {
+      st.settings.profileAvatar = pSet.profileAvatar;
+    }
     if (typeof pSet.warnDays === 'number' && pSet.warnDays > 0) st.settings.warnDays = pSet.warnDays;
     if (pSet.defaultCurrency === 'JPY' || pSet.defaultCurrency === 'CNY') {
       st.settings.defaultCurrency = pSet.defaultCurrency;
@@ -304,6 +309,12 @@
         var exportedAt = chosenSettings && chosenSettings.lastJsonExportAt;
         st.settings.lastJsonExportAt = typeof exportedAt === 'string' && Number.isFinite(Date.parse(exportedAt))
           ? exportedAt : '';
+        var migratedWeight = chosenItems.some(function (item) {
+          return item && (item.category === 'dry' || item.category === 'freeze') &&
+            !(Number(item.unit_net_weight_g) > 0) &&
+            Utils.legacyUnitWeight(item.spec, item.unit || MP.CATEGORIES[item.category].defaultUnit) > 0;
+        });
+        if (migratedWeight) Storage.saveToStorage(true);
       } else {
         // Brand-new user first visit: initialize sample items & logs without touching any existing records
         st.items = Domain.buildSampleItems();

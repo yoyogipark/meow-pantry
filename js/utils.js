@@ -14,6 +14,57 @@
       .replace(/'/g, '&#39;');
   };
 
+  var categoryIconPaths = {
+    dry: '<path d="M3 11h18"/><path d="M4 11c0 5 3.5 8 8 8s8-3 8-8"/><path d="M8 21h8"/>' +
+      '<g stroke-width="1.6"><circle cx="6.9" cy="9" r="0.8"/><circle cx="10.3" cy="9" r="0.8"/>' +
+      '<circle cx="13.7" cy="9" r="0.8"/><circle cx="17.1" cy="9" r="0.8"/><circle cx="8.6" cy="6.1" r="0.8"/>' +
+      '<circle cx="12" cy="6.1" r="0.8"/><circle cx="15.4" cy="6.1" r="0.8"/></g>',
+    can: '<ellipse cx="12" cy="5.5" rx="7" ry="2.5"/><path d="M5 5.5v13c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5v-13"/>' +
+      '<path class="category-icon-chicken" stroke-width="1.5" d="M8.5 12.5C8.5 11.2 9.3 10.5 10.3 10.5S12 11.2 12 12.2C12 13 12.7 13.5 13.5 13.5C14.5 13.5 15.3 13 16 12C16.3 14 16 16 15 17C14 18.3 12 18.7 10.8 18C9.3 17.2 8.8 15.5 8.8 14.2C8.8 13.5 8.5 13.2 8.5 12.5Z"/><path class="category-icon-beak" stroke-width="1.5" d="m8.5 11.8-1.6.8 1.6.7"/>',
+    freeze: '<path d="M10.5 7l6 3.5v7l-6 3.5-6-3.5v-7z"/><path d="M4.5 10.5l6 3.5 6-3.5"/>' +
+      '<path d="M10.5 14v7"/><path d="M19.5 2v5M17 4.5h5"/><path d="M3.5 3.5v3M2 5h3"/>',
+    treat: '<rect x="2.5" y="7.5" width="19" height="9" rx="1.5"/><path d="M5.5 7.5v9"/>' +
+      '<path d="M8.5 12c2-2.6 5.4-2.8 7.8 0-2.4 2.8-5.8 2.6-7.8 0z"/><path d="M16.3 12l2.5-2v4z"/>',
+    supp: '<rect x="9" y="3" width="6" height="3" rx="1"/><path d="M8 8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/>' +
+      '<path d="M12 12v4"/><path d="M10 14h4"/>',
+    med: '<path d="M4.5 12.5l8-8a4.94 4.94 0 0 1 7 7l-8 8a4.94 4.94 0 0 1-7-7"/><path d="M8.5 8.5l7 7"/>',
+    other: '<path d="M12 12.5c-2.5 0-5 2.2-5 4.6 0 1.6 1.3 2.4 2.7 2.4 1 0 1.5-.4 2.3-.4s1.3.4 2.3.4c1.4 0 2.7-.8 2.7-2.4 0-2.4-2.5-4.6-5-4.6z"/>' +
+      '<circle cx="5.5" cy="11" r="1.5"/><circle cx="9" cy="7" r="1.5"/><circle cx="15" cy="7" r="1.5"/><circle cx="18.5" cy="11" r="1.5"/>'
+  };
+
+  Utils.getCategoryIcon = function (category, size) {
+    var key = Object.hasOwn(categoryIconPaths, category) ? category : 'other';
+    var pixels = size === 20 || size === 40 ? size : 28;
+    return '<svg class="record-category-icon record-category-icon--' + key + '" width="' + pixels + '" height="' + pixels + '" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      categoryIconPaths[key] + '</svg>';
+  };
+
+  Utils.uiIcon = function (name, size) {
+    if (!name) return '';
+    var pixels = [20, 24].includes(size) ? size : 16;
+    var id = name === 'paw-print' ? 'feed-paw' : 'ui-' + name;
+    return '<svg class="ui-icon" width="' + pixels + '" height="' + pixels +
+      '" aria-hidden="true"><use href="#' + Utils.escapeHtml(id) + '"></use></svg>';
+  };
+
+  Utils.iconLabel = function (name, label, size) {
+    return Utils.uiIcon(name, size) + Utils.escapeHtml(label);
+  };
+
+  Utils.getPalatabilityIcon = function (key, size) {
+    if (!['love', 'ok', 'coax', 'meh'].includes(key)) return '';
+    var pixels = size === 32 ? 32 : 16;
+    return '<svg class="pal-cat-face-inline" width="' + pixels + '" height="' + pixels +
+      '" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-' + key + '"></use></svg>';
+  };
+
+  Utils.formatPalatabilityBadge = function (item, badge) {
+    if (badge.key === 'mixed') return Utils.escapeHtml(badge.label);
+    if (MP.getCategoryGroup(item.category) === 'med') return Utils.iconLabel(badge.icon, badge.label);
+    return Utils.getPalatabilityIcon(badge.key) + ' ' + Utils.escapeHtml(badge.label);
+  };
+
   Utils.round2 = function (num) {
     var n = Number(num);
     if (!isFinite(n)) return 0;
@@ -154,12 +205,12 @@
   };
 
   var mealSlots = [
-    { id: 'breakfast', label: '早饭', icon: '🌅', legacy: ['早饭', '🌅 早饭'] },
-    { id: 'lunch', label: '午饭', icon: '☀️', legacy: ['午饭', '☀️ 午饭'] },
-    { id: 'dinner', label: '晚饭', icon: '🌙', legacy: ['晚饭', '🌙 晚饭'] },
-    { id: 'snack', label: '加餐/零食', icon: '🍪', legacy: ['加餐/零食', '🍪 加餐/零食'] },
-    { id: 'care', label: '用药/护理', icon: '🩺', legacy: ['用药/护理', '🩺 用药/护理'] },
-    { id: 'other', label: '其他', icon: '', legacy: ['其他', '投喂', '🍽️ 投喂'] }
+    { id: 'breakfast', label: '早饭', display: 'Morning', icon: 'sunrise', legacy: ['早饭', '🌅 早饭'] },
+    { id: 'lunch', label: '午饭', display: 'Noon', icon: 'sun', legacy: ['午饭', '☀️ 午饭'] },
+    { id: 'dinner', label: '晚饭', display: 'Evening', icon: 'moon', legacy: ['晚饭', '🌙 晚饭'] },
+    { id: 'snack', label: '加餐/零食', display: 'Snack', icon: 'cookie', legacy: ['加餐/零食', '🍪 加餐/零食'] },
+    { id: 'care', label: '用药/护理', display: 'Medication / Care', icon: 'stethoscope', legacy: ['用药/护理', '🩺 用药/护理'] },
+    { id: 'other', label: '其他', display: 'Other', icon: '', legacy: ['其他', '投喂', '🍽️ 投喂'] }
   ];
 
   Utils.normalizeMealSlot = function (value) {
@@ -179,9 +230,15 @@
     return slot ? slot.label : id;
   };
 
+  Utils.formatMealSlotDisplay = function (value) {
+    var id = Utils.normalizeMealSlot(value);
+    var slot = mealSlots.find(function (entry) { return entry.id === id; });
+    return slot ? slot.display : id;
+  };
+
   Utils.mealSlotOptions = function () {
     return mealSlots.map(function (slot) {
-      return { id: slot.id, label: [slot.icon, slot.label].filter(Boolean).join(' ') };
+      return { id: slot.id, label: slot.display, icon: slot.icon };
     });
   };
 
@@ -218,6 +275,14 @@
     return Utils.normalizeDateStr(value) || (fallback || '—');
   };
 
+  Utils.formatRelativeYearDate = function (value, today) {
+    var date = Utils.parseLocalDate(value);
+    if (!date) return '';
+    var current = Utils.parseLocalDate(today) || new Date();
+    return (date.getFullYear() === current.getFullYear() ? '' : date.getFullYear() + '年') +
+      (date.getMonth() + 1) + '月' + date.getDate() + '日';
+  };
+
   Utils.formatSentenceDate = function (value) {
     var date = Utils.parseLocalDate(value);
     return date ? (date.getMonth() + 1) + '月' + date.getDate() + '日' : '—';
@@ -237,36 +302,41 @@
     return amount + (yen ? '円' : '元') + (perUnit ? '/' + perUnit : '');
   };
 
-  Utils.parseSpecToGrams = function (specStr) {
-    if (!specStr || typeof specStr !== 'string') return 0;
-    var s = specStr.trim().toLowerCase();
-    var mComp = s.match(/(\d+(?:\.\d+)?)\s*(kg|千克|g|克|ml|毫升)\s*[x×\*]\s*(\d+)/i);
-    if (mComp) {
-      var baseVal = parseFloat(mComp[1]);
-      var unit = mComp[2];
-      var mult = parseInt(mComp[3], 10) || 1;
-      var g = (unit === 'kg' || unit === '千克') ? baseVal * 1000 : baseVal;
-      return g * mult;
-    }
-    var mSingle = s.match(/(\d+(?:\.\d+)?)\s*(kg|千克|g|克|ml|毫升)/i);
-    if (mSingle) {
-      var val = parseFloat(mSingle[1]);
-      var u = mSingle[2];
-      return (u === 'kg' || u === '千克') ? val * 1000 : val;
-    }
-    return 0;
-  };
-
   Utils.parsePortionSpec = function (specStr) {
     return /^(\d+(?:\.\d+)?)\s*(g|克|kg|千克|ml|毫升)(?:\s*\/\s*(.+))?$/i.exec(
       String(specStr || '').trim()
     );
   };
 
-  Utils.formatPer100gPrice = function (price, currency, specStr) {
+  Utils.requiresUnitWeight = function (category) {
+    return category === 'dry' || category === 'can' || category === 'freeze';
+  };
+
+  Utils.legacyUnitWeight = function (spec, unit) {
+    var match = Utils.parsePortionSpec(spec);
+    if (!match || (match[3] && match[3] !== unit) || /^(ml|毫升)$/i.test(match[2])) return 0;
+    return Number(match[1]) * (/^(kg|千克)$/i.test(match[2]) ? 1000 : 1);
+  };
+
+  Utils.itemPortionSpec = function (item) {
+    var weight = Number(item.unit_net_weight_g);
+    return Number.isFinite(weight) && weight > 0 ? weight.toFixed(10).replace(/\.?0+$/, '') + 'g' : '';
+  };
+
+  Utils.formatItemSpec = function (item) {
+    var weight = Number(item.unit_net_weight_g);
+    var note = String(item.spec || '').trim();
+    if (!(weight > 0)) return note;
+    var spec = weight >= 1000
+      ? Utils.formatQuantity(weight / 1000, 'kg')
+      : Utils.formatNumber(weight) + 'g';
+    return note && Utils.legacyUnitWeight(note, item.unit) !== weight ? spec + ' · ' + note : spec;
+  };
+
+  Utils.formatPer100gPrice = function (price, currency, unitWeightGrams) {
     var p = Number(price);
     if (!isFinite(p) || p <= 0) return '';
-    var totalGrams = Utils.parseSpecToGrams(specStr);
+    var totalGrams = Number(unitWeightGrams);
     if (!totalGrams || totalGrams <= 0) return '';
     var per100g = (p / totalGrams) * 100;
     return '≈' + Utils.formatMoney(per100g, currency, '100g');

@@ -59,6 +59,33 @@ assert.equal(mealBackup.ok, true);
 assert.deepEqual(Array.from(mealBackup.logs, log => log.mealSlot),
   ['dinner', 'dinner', 'dinner', 'lunch', '自定义餐次']);
 assert.equal(Utils.formatMealSlot('dinner'), '晚饭');
+assert.deepEqual(Array.from(Utils.mealSlotOptions(), slot => slot.label),
+  ['Morning', 'Noon', 'Evening', 'Snack', 'Medication / Care', 'Other']);
+assert.equal(Utils.formatMealSlotDisplay('🌙 晚饭'), 'Evening');
+assert.equal(Utils.formatMealSlotDisplay('自定义餐次'), '自定义餐次');
 assert.equal(Utils.formatMealSlot('自定义餐次'), '自定义餐次');
+
+const weightBackup = Storage.validateAndParseBackup(JSON.stringify({
+  version: 3,
+  items: [
+    { id: 'dry-weight', category: 'dry', unit: '袋', spec: '1.8kg' },
+    { id: 'freeze-weight', category: 'freeze', unit: '袋', spec: '100g/袋' },
+    { id: 'wet-weight', category: 'can', unit: '罐', spec: '85g' },
+    { id: 'treat-weight', category: 'treat', unit: '支', spec: '独立包装', unit_net_weight_g: 15 }
+  ]
+}));
+assert.equal(weightBackup.ok, true);
+assert.deepEqual(Array.from(weightBackup.items, item => item.unit_net_weight_g), [1800, 100, null, 15]);
+assert.equal(Utils.formatItemSpec(weightBackup.items[0]), '1.8kg');
+assert.equal(Utils.formatItemSpec(weightBackup.items[3]), '15g · 独立包装');
+assert.equal(Utils.formatPer100gPrice(36, 'CNY', 1800), '≈2.00元/100g');
+
+const categoryIcons = ['dry', 'can', 'freeze', 'treat', 'supp', 'med', 'other'];
+assert.equal(new Set(categoryIcons.map(key => Utils.getCategoryIcon(key))).size, categoryIcons.length);
+for (const unknown of [undefined, '', 'wet-food', '罐头', 'constructor']) {
+  assert.equal(Utils.getCategoryIcon(unknown), Utils.getCategoryIcon('other'));
+}
+assert.match(Utils.getCategoryIcon('dry', 20), /width="20" height="20".*stroke-width="2"/);
+assert.match(Utils.getCategoryIcon('can'), /width="28" height="28"/);
 
 console.log('Utility date, escaping, and backup validation pass');

@@ -9,13 +9,7 @@
   Forecast.RESTOCK_DAYS = 7;
 
   Forecast.unitGrams = function (item) {
-    if (item.category === 'can') return positive(item.unit_net_weight_g);
-    if (item.category !== 'dry' && item.category !== 'freeze') return 0;
-    var spec = Utils.parsePortionSpec(item.spec);
-    if (!spec || (spec[3] && spec[3] !== item.unit)) return 0;
-    var unit = spec[2].toLowerCase();
-    if (unit === 'kg' || unit === '千克') return positive(spec[1]) * 1000;
-    return unit === 'g' || unit === '克' ? positive(spec[1]) : 0;
+    return positive(item.unit_net_weight_g);
   };
 
   function positive(value) {
