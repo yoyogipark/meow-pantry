@@ -25,10 +25,11 @@
   function careInfo(log, product) {
     var subtype = String(log.subtype || product.subtype || '').trim();
     var group = MP.getCategoryGroup(log.category);
+    if (Domain.getCareType(log) === 'nursing') return { type: '护理', verb: '护理', icon: 'clipboard-copy' };
     if (group === 'supp') return { type: '营养品', verb: '补充', subtype: subtype };
     if (group === 'med' || log.mealSlot === 'care') {
       var type = /驱虫|外驱|内驱/.test(subtype) ? '驱虫' : '用药';
-      return { type: type, verb: type, subtype: subtype };
+      return { type: type, verb: type, subtype: subtype, icon: 'stethoscope' };
     }
     return null;
   }
@@ -66,7 +67,8 @@
       var product = Domain.resolveLogProduct(log);
       var care = careInfo(log, product);
       if (!care) return;
-      var key = JSON.stringify([product.brand, product.name, log.category, care.type].map(function (value) {
+      var identity = care.type === '护理' ? (log.careProjects || []).slice().sort() : [product.brand, product.name, log.category];
+      var key = JSON.stringify([care.type].concat(identity).map(function (value) {
         return String(value || '').trim().toLowerCase();
       }));
       var previous = latest.get(key);
@@ -82,13 +84,15 @@
     }).sort(function (a, b) { return a.days - b.days; });
 
     var overdue = due.filter(function (entry) { return entry.days < 0; }).length;
+    var dueNursing = due.filter(function (entry) { return Domain.getCareType(entry.log) === 'nursing'; });
+    var overdueMedication = overdue - dueNursing.filter(function (entry) { return entry.days < 0; }).length;
     var box = el('dailyMedReminders');
     var wasExpanded = Boolean(box.querySelector('details[open]'));
     var pantry = el('pantryOverdueMedReminder');
-    pantry.classList.toggle('hidden-view', !overdue);
-    pantry.textContent = overdue ? '有 ' + overdue + ' 项用药已过期 ›' : '';
+    pantry.classList.toggle('hidden-view', !overdueMedication);
+    pantry.textContent = overdueMedication ? '有 ' + overdueMedication + ' 项用药已过期 ›' : '';
     el('dailyMedReminderDot').classList.toggle('hidden-view', !due.length);
-    el('navBtnDaily').setAttribute('aria-label', due.length ? '饮食记录，有用药提醒' : '饮食记录');
+    el('navBtnDaily').setAttribute('aria-label', due.length ? '饮食记录，有' + (dueNursing.length ? '待办提醒' : '用药提醒') : '饮食记录');
     box.classList.toggle('hidden-view', !due.length);
     if (!due.length) { box.replaceChildren(); return; }
 
@@ -96,7 +100,7 @@
       var log = entry.log;
       var product = entry.product;
       return '<div class="med-reminder-card" data-reminder-tone="' + reminderTone(entry.days) + '">' +
-        '<span class="med-reminder-icon">' + stethoscope + '</span><div class="med-reminder-copy">' +
+        '<span class="med-reminder-icon">' + (Domain.getCareType(log) === 'nursing' ? Utils.uiIcon('clipboard-copy', 20) : stethoscope) + '</span><div class="med-reminder-copy">' +
         '<div class="med-reminder-title"><span class="med-reminder-name"><span>' + esc(knownBrand(product)) +
         '</span> <strong>' + esc(product.name) + '</strong></span><span class="med-reminder-status">' +
         esc(reminderStatus(entry.days)) + '</span></div><p>上次 ' +
@@ -115,7 +119,7 @@
       ' · ' + reminderStatus(first.days) + (more.length ? '，' + more.join('，') : '');
     box.innerHTML = '<details class="med-reminder-group" data-reminder-tone="' + reminderTone(first.days) +
       '"' + (wasExpanded ? ' open' : '') + '><summary class="med-reminder-card"><span class="med-reminder-icon">' +
-      stethoscope + '</span><div class="med-reminder-copy"><strong>' + due.length + ' 项用药提醒</strong><p title="' +
+      stethoscope + '</span><div class="med-reminder-copy"><strong>' + due.length + ' 项' + (dueNursing.length === due.length ? '护理' : dueNursing.length ? '待办' : '用药') + '提醒</strong><p title="' +
       esc(summary) + '">' + esc(summary) + '</p></div><span class="med-reminder-action"><span>查看</span></span></summary>' +
       '<div class="med-reminder-list">' + due.map(renderEntry).join('') + '</div></details>';
   };
@@ -126,7 +130,7 @@
     return Utils.formatSentenceDate(date) + ' ' + Utils.getWeekdayName(date);
   }
 
-  function isFood(log) { return MP.getCategoryGroup(log.category) === 'food'; }
+  function isFood(log) { return MP.getCategoryGroup(log.category) === 'food' && !Domain.getCareType(log); }
 
   function weekTitle(start, end) {
     var from = start.slice(0, 7);
@@ -326,10 +330,10 @@
       var name = brand ? brand + ' ' + product.name : product.name;
       var category = MP.CATEGORIES[log.category] || MP.CATEGORIES.dry;
       var care = careInfo(log, product);
-      var heading = care ? care.type + (care.subtype && care.subtype !== care.type ? ' · ' + care.subtype : '')
+      var heading = care ? (care.type === '驱虫' ? '用药 · ' : '') + care.type + (care.subtype && care.subtype !== care.type ? ' · ' + care.subtype : '')
         : mealName(log) + ' · ' + category.label;
       var id = esc(log.id);
-      return '<li class="daily-record' + (care ? ' daily-record--care' : '') + '">' + Utils.getCategoryIcon(log.category) +
+      return '<li class="daily-record' + (care ? ' daily-record--care' : '') + '">' + (care?.icon ? '<span class="daily-care-icon">' + Utils.uiIcon(care.icon, 20) + '</span>' : Utils.getCategoryIcon(log.category)) +
         '<div class="daily-record-copy"><p class="daily-support">' + esc(heading) + '</p><p class="daily-card-title daily-record-name" title="' + esc(name) + '">' +
         (brand ? '<span>' + esc(brand) + '</span> ' : '') + '<strong>' + esc(product.name) + '</strong></p>' +
         (log.note ? '<p class="daily-support">' + esc(log.note) + '</p>' : '') +
@@ -396,7 +400,8 @@
           var ordered = orderedLogs(day.logs);
           var summary = ordered.slice(0, 3).map(function (log) {
             var amount = displayAmount(log);
-            return displayedProductName(log) + ' ' + amount.primary + (amount.secondary ? ' · ' + amount.secondary : '');
+            return (Domain.getCareType(log) === 'nursing' ? '护理 · ' : '') + displayedProductName(log) +
+              (amount.primary ? ' ' + amount.primary : '') + (amount.secondary ? ' · ' + amount.secondary : '');
           }).join(' · ') + (ordered.length > 3 ? ' …' : '');
           return '<button type="button" class="ios-card daily-history-day" data-daily-history-date="' + esc(day.date) + '">' +
             '<span class="daily-history-date"><strong>' + Number(day.date.slice(-2)) + '</strong><span>' + Utils.getWeekdayName(day.date) + '</span></span>' +

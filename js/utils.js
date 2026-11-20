@@ -205,12 +205,12 @@
   };
 
   var mealSlots = [
-    { id: 'breakfast', label: '早饭', display: 'Morning', icon: 'sunrise', legacy: ['早饭', '🌅 早饭'] },
-    { id: 'lunch', label: '午饭', display: 'Noon', icon: 'sun', legacy: ['午饭', '☀️ 午饭'] },
-    { id: 'dinner', label: '晚饭', display: 'Evening', icon: 'moon', legacy: ['晚饭', '🌙 晚饭'] },
-    { id: 'snack', label: '加餐/零食', display: 'Snack', icon: 'cookie', legacy: ['加餐/零食', '🍪 加餐/零食'] },
-    { id: 'care', label: '用药/护理', display: 'Medication / Care', icon: 'stethoscope', legacy: ['用药/护理', '🩺 用药/护理'] },
-    { id: 'other', label: '其他', display: 'Other', icon: '', legacy: ['其他', '投喂', '🍽️ 投喂'] }
+    { id: 'breakfast', label: '早饭', display: '早上', icon: 'sunrise', legacy: ['早饭', '🌅 早饭'] },
+    { id: 'lunch', label: '午饭', display: '中午', icon: 'sun', legacy: ['午饭', '☀️ 午饭'] },
+    { id: 'dinner', label: '晚饭', display: '晚上', icon: 'moon', legacy: ['晚饭', '🌙 晚饭'] },
+    { id: 'snack', label: '加餐/零食', display: '零食加餐', icon: 'cookie', legacy: ['加餐/零食', '🍪 加餐/零食'] },
+    { id: 'care', label: '用药/护理', display: '用药／护理', icon: 'stethoscope', legacy: ['用药/护理', '🩺 用药/护理'] },
+    { id: 'other', label: '其他', display: '其他', icon: '', legacy: ['其他', '投喂', '🍽️ 投喂'] }
   ];
 
   Utils.normalizeMealSlot = function (value) {
@@ -237,7 +237,7 @@
   };
 
   Utils.mealSlotOptions = function () {
-    return mealSlots.map(function (slot) {
+    return mealSlots.filter(function (slot) { return slot.id !== 'other'; }).map(function (slot) {
       return { id: slot.id, label: slot.display, icon: slot.icon };
     });
   };

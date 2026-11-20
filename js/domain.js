@@ -243,6 +243,9 @@
   };
 
   Domain.resolveLogProduct = function (log, forRanking) {
+    if (Domain.getCareType(log) === 'nursing') {
+      return { brand: '', category: log.category, name: Domain.nursingLabel(log) };
+    }
     var item;
     if (log.itemId) {
       item = state.items.find(function (entry) { return entry.id === log.itemId; });
@@ -340,6 +343,18 @@
     return clean;
   };
 
+  Domain.getCareType = function (log) {
+    if (log.careType === 'nursing' || log.careType === 'medication') return log.careType;
+    if (Utils.normalizeMealSlot(log.mealSlot) !== 'care') return log.category === 'med' ? 'medication' : '';
+    var name = String(log.name || '').trim();
+    var amount = String(log.amount || '').trim();
+    return log.itemId || (name && name !== '未命名') || amount ? 'medication' : 'nursing';
+  };
+
+  Domain.nursingLabel = function (log) {
+    return log.careProjects?.join('、') || '护理';
+  };
+
   Domain.sanitizeLog = function (raw, fallbackIdx) {
     if (!raw || typeof raw !== 'object') return null;
     var cat = (raw.category && MP.CATEGORIES[raw.category]) ? raw.category : 'dry';
@@ -349,6 +364,14 @@
       : ('log_migrated_' + Date.now() + '_' + (fallbackIdx || 0));
     clean.date = Utils.normalizeDateStr(raw.date) || Utils.getTodayStr();
     clean.mealSlot = Utils.normalizeMealSlot(raw.mealSlot);
+    var careType = Domain.getCareType(raw);
+    if (clean.mealSlot === 'care') clean.careType = careType;
+    if (careType === 'nursing') {
+      clean.careProjects = Array.isArray(raw.careProjects) ? Array.from(new Set(raw.careProjects
+        .filter(function (name) { return typeof name === 'string'; })
+        .map(function (name) { return name.trim(); }).filter(Boolean))) : [];
+      clean.careOther = typeof raw.careOther === 'string' ? raw.careOther.trim() : '';
+    }
     clean.itemId = typeof raw.itemId === 'string' ? raw.itemId : '';
     clean.category = cat;
     if (!(clean.productUnitWeightGrams > 0) && (cat === 'dry' || cat === 'freeze')) {
@@ -356,8 +379,9 @@
     }
     clean.brand = String(raw.brand || '').trim() || '未命名';
     clean.name = String(raw.name || '').trim() || '未命名';
-    clean.amount = String(raw.amount || '1份').trim();
+    clean.amount = String(raw.amount || (careType === 'nursing' ? '' : '1份')).trim();
     clean.note = String(raw.note || '').trim();
+    clean.medicationOutcome = Domain.normalizeMedicationOutcome(raw.medicationOutcome);
     clean.reminderDays = Math.max(0, parseInt(raw.reminderDays, 10) || 0);
     clean.nextDueDate = Utils.normalizeDateStr(raw.nextDueDate);
     clean.reminderDone = Boolean(raw.reminderDone);
@@ -769,11 +793,13 @@
     return true;
   };
 
+  Domain.canDeductDoseUnit = function (unit) { return /^(片|ml|毫升)$/i.test(unit); };
+
   Domain.planFeedingPortion = function (item, flavor, portion) {
     if (item.flavors && !flavor) return { error: '请先选择实际喂食的口味。' };
     if (item.quantity < 1 || (flavor && flavor.quantity < 1)) return { error: '当前库存不足，无法扣减。' };
     var unit = item.unit || '件';
-    if (!Domain.isPackageUnit(unit) && unit !== '粒') {
+    if (!Domain.isPackageUnit(unit) && unit !== '粒' && !(item.category === 'med' && Domain.canDeductDoseUnit(unit))) {
       return { error: '无法确认该商品的单件单位，请仅记录喂食或单独调整库存。' };
     }
     var remaining = (flavor || item).openRemainFraction || 1;
@@ -1051,7 +1077,10 @@
       productSpec: entry.productSpec || product.spec || undefined,
       productUnitWeightGrams: entry.productUnitWeightGrams || product.unit_net_weight_g || undefined,
       productUnit: product.unit || undefined,
-      amount: entry.amount || '1份',
+      amount: entry.amount,
+      careType: entry.careType,
+      careProjects: entry.careProjects,
+      careOther: entry.careOther,
       note: entry.note || '',
       nextDueDate: entry.nextDueDate || '',
       reminderDays: entry.reminderDays || 0,
@@ -1061,6 +1090,7 @@
       flavorId: entry.flavorId || undefined,
       flavorName: entry.flavorName || undefined,
       flavorPalatability: entry.flavorPalatability || undefined,
+      medicationOutcome: Domain.normalizeMedicationOutcome(entry.medicationOutcome),
       flavorChange: entry.flavorChange || undefined,
       portionChange: entry.portionChange || undefined,
       consumeHistoryId: entry.consumeHistoryId || undefined,
@@ -1071,13 +1101,18 @@
   };
 
   // Smart Quick-Feed helper: find the user's last fed portion & date for an item
-  Domain.getLastFedInfoForItem = function (item) {
+  Domain.normalizeMedicationOutcome = function (value) {
+    return ['smooth', 'coaxed', 'resisted', 'vomited'].includes(value) ? value : undefined;
+  };
+
+  Domain.getLastFedInfoForItem = function (item, acceptsLog) {
     if (!item || !state.logs.length) return null;
     var bNorm = String(item.brand || '').trim().toLowerCase();
     var nNorm = String(item.name || '').trim().toLowerCase();
     var best = null;
     for (var i = 0; i < state.logs.length; i++) {
       var lg = state.logs[i];
+      if (acceptsLog && !acceptsLog(lg)) continue;
       var matchById = (lg.itemId && lg.itemId === item.id);
       var matchByName = (!lg.itemId && String(lg.brand || '').trim().toLowerCase() === bNorm && String(lg.name || '').trim().toLowerCase() === nNorm);
       if (matchById || matchByName) {

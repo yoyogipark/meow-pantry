@@ -448,7 +448,7 @@
       var targetDate = st.selectedLogDate || Utils.getTodayStr();
       var prevDateStr = Utils.shiftDaysFromDate(targetDate, -1);
       // Copy routine food & supplements by default (do NOT accidentally duplicate quarterly deworming med reminders!)
-      var prevLogs = st.logs.filter(function (lg) { return lg.date === prevDateStr && lg.category !== 'med'; });
+      var prevLogs = st.logs.filter(function (lg) { return lg.date === prevDateStr && lg.category !== 'med' && Domain.getCareType(lg) === ''; });
       if (prevLogs.length === 0) {
         UI.showToast('前一天 (' + prevDateStr + ') 没有可复制的日常饮食记录');
         return;
@@ -474,6 +474,7 @@
               flavorId: srcLog.flavorId,
               flavorName: srcLog.flavorName,
               flavorPalatability: srcLog.flavorPalatability,
+              medicationOutcome: srcLog.medicationOutcome,
               amount: srcLog.amount,
               note: srcLog.note
             });
@@ -537,13 +538,66 @@
         });
       }, { label: '同时记入今日饮食记录（' + amount + '）', defaultChecked: false });
     });
-    document.getElementById('feedStockSelect').addEventListener('change', function () {
-      UI.applyFeedStockSelection(this.value);
-      UI.syncMedReminderVisibility();
+    var stockSelect = document.getElementById('feedStockSelect');
+    stockSelect.addEventListener('change', function () { UI.applyFeedBatchChange(this.value); });
+    var stockPicker = document.getElementById('feedStockPicker');
+    var stockTrigger = document.getElementById('feedStockPickerTrigger');
+    stockPicker.addEventListener('click', function (ev) {
+      if (stockSelect.disabled) { ev.preventDefault(); return; }
+      var option = ev.target.closest('[data-feed-stock-id]');
+      if (!option) return;
+      stockSelect.value = option.dataset.feedStockId;
+      stockSelect.dispatchEvent(new Event('change'));
+      stockPicker.open = false;
+      stockTrigger.focus();
+    });
+    stockPicker.addEventListener('keydown', function (ev) {
+      if (!stockPicker.open || ev.key !== 'Escape') return;
+      ev.stopPropagation();
+      stockPicker.open = false;
+      stockTrigger.focus();
     });
     document.getElementById('feedCategorySelect').addEventListener('change', UI.syncMedReminderVisibility);
     document.getElementById('feedMealSlot').addEventListener('change', UI.syncMedReminderVisibility);
+    var mealPicker = document.getElementById('feedMealPicker');
+    mealPicker.addEventListener('click', function (ev) {
+      var button = ev.target.closest('[data-meal-slot]');
+      if (!button) return;
+      var field = document.getElementById('feedMealSlot');
+      var nextSlot = button.dataset.mealSlot;
+      var typeChanged = (field.value === 'care') !== (nextSlot === 'care');
+      if (typeChanged && stockSelect.disabled) {
+        UI.showToast('这条记录已关联库存，无法切换记录类型');
+        return;
+      }
+      field.value = nextSlot;
+      var category = document.getElementById('feedCategorySelect');
+      if (typeChanged && !selectedFeedItem()) {
+        category.value = nextSlot === 'care' ? 'med' : 'dry';
+      }
+      field.dispatchEvent(new Event('change'));
+      mealPicker.open = false;
+      mealPicker.querySelector('summary').focus();
+    });
+    mealPicker.addEventListener('keydown', function (ev) {
+      if (ev.key !== 'Escape' || !mealPicker.open) return;
+      ev.stopPropagation();
+      mealPicker.open = false;
+      mealPicker.querySelector('summary').focus();
+    });
+    document.getElementById('feedForm').addEventListener('click', function (ev) {
+      if (!mealPicker.contains(ev.target)) mealPicker.open = false;
+      if (!stockPicker.contains(ev.target)) stockPicker.open = false;
+    });
 
+
+    document.getElementById('feedCareTypeGroup').addEventListener('click', function (ev) {
+      var button = ev.target.closest('[data-feed-care-type]');
+      if (button) UI.changeFeedCareType(button.dataset.feedCareType);
+    });
+    document.getElementById('feedNursingProjects').addEventListener('change', UI.syncNursingOther);
+
+    document.getElementById('feedNextReminderDays').addEventListener('change', UI.syncFeedReminderInterval);
     var feedAmount = document.getElementById('feedAmountInput');
     var deductionSwitch = document.getElementById('feedDeductStock');
     function refreshFeedPortion() {
@@ -551,7 +605,10 @@
     }
 
     deductionSwitch.addEventListener('change', refreshFeedPortion);
-    feedAmount.addEventListener('input', refreshFeedPortion);
+    feedAmount.addEventListener('input', function () {
+      delete feedAmount.dataset.doseChoice;
+      refreshFeedPortion();
+    });
     document.getElementById('feedDateInput').addEventListener('change', function () {
       if (this.value !== Utils.getTodayStr()) deductionSwitch.checked = false;
       refreshFeedPortion();
@@ -560,6 +617,9 @@
     document.getElementById('feedPortionChips').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-portion]');
       if (!btn) return;
+      if (document.getElementById('feedForm').classList.contains('feed-care-mode')) {
+        feedAmount.dataset.doseChoice = btn.id || btn.dataset.frac;
+      }
       var item = selectedFeedItem();
       var flavor = UI.getFeedFlavor(item);
       if (btn.dataset.frac === 'rest' && item) {
@@ -586,7 +646,17 @@
       var fName = document.getElementById('feedNameInput').value.trim();
       var fAmount = document.getElementById('feedAmountInput').value.trim();
       var fNote = document.getElementById('feedNoteInput').value.trim();
-      var remDays = parseInt(document.getElementById('feedNextReminderDays').value, 10) || 0;
+      var isNursing = fSlot === 'care' && document.getElementById('feedForm').dataset.careType === 'nursing';
+      var isMedication = fSlot === 'care' && !isNursing;
+      var medicationOutcome = isMedication ? document.getElementById('feedMedicationOutcome').value : undefined;
+      var reminderValue = document.getElementById('feedNextReminderDays').value;
+      var remDays = reminderValue === 'custom'
+        ? Number(document.getElementById('feedCustomReminderDays').value)
+        : parseInt(reminderValue, 10) || 0;
+      if (reminderValue === 'custom' && (!Number.isInteger(remDays) || remDays < 1 || remDays > 3650)) {
+        UI.showToast('请输入 1 到 3650 天的提醒间隔');
+        return;
+      }
       var sourceId = document.getElementById('feedForm').dataset.reminderSourceId;
       var reminderSource = sourceId && st.logs.find(function (log) {
         return log.id === sourceId && log.category === fCat &&
@@ -604,8 +674,35 @@
         return;
       }
 
-      if (!fBrand || !fName || !fAmount) {
-        UI.showToast('请填写品牌、品名和投喂份量');
+      if (isNursing) {
+        var other = document.getElementById('feedNursingOther').value.trim();
+        var projects = Array.from(document.querySelectorAll('[data-nursing-project]:checked'), function (choice) {
+          return choice.value === '其他' ? other : choice.value;
+        }).filter(Boolean);
+        var previous = editLogId && st.logs.find(function (log) { return log.id === editLogId; });
+        if (!projects.length && !(previous && Domain.getCareType(previous) === 'nursing' && !previous.careProjects?.length)) {
+          UI.showToast('请选择至少一个护理项目');
+          return;
+        }
+        if (previous?.deductedUnit || previous?.deductedFrac || previous?.portionChange || previous?.flavorChange) return;
+        var nursingLog = { date: fDate, mealSlot: 'care', careType: 'nursing', category: 'med',
+          careProjects: projects, careOther: document.querySelector('[data-nursing-project][value="其他"]').checked ? other : '',
+          itemId: '', brand: '', name: '', amount: '', note: fNote, reminderDays: remDays, nextDueDate: nextDue };
+        if (previous) {
+          Object.assign(previous, nursingLog, { medicationOutcome: undefined, subtype: undefined, flavorPalatability: undefined,
+            productSpec: undefined, productUnit: undefined, productUnitWeightGrams: undefined });
+        } else {
+          Domain.appendFeedingLog(nursingLog);
+        }
+        selectLogDate(fDate);
+        Storage.saveToStorage(false, function (ok) { if (ok) UI.showToast('护理记录已保存'); });
+        UI.closeFeedModal();
+        UI.renderAll();
+        return;
+      }
+
+      if ((!isMedication && !fBrand) || !fName || !fAmount) {
+        UI.showToast(isMedication ? '请填写药品名称和用量' : '请填写品牌、品名和投喂份量');
         return;
       }
 
@@ -618,6 +715,9 @@
               previousLog.flavorChange || previousLog.deductedUnit || previousLog.deductedFrac);
             st.logs[k].date = fDate;
             st.logs[k].mealSlot = fSlot;
+            st.logs[k].careType = isMedication ? 'medication' : undefined;
+            delete st.logs[k].careProjects;
+            delete st.logs[k].careOther;
             if (!previousLog.flavorId && !previousLog.deductedUnit && !previousLog.deductedFrac && previousLog.itemId !== fItemId) {
               previousLog.itemId = fItemId;
               delete previousLog.productSpec;
@@ -634,7 +734,8 @@
             st.logs[k].name = fName;
             st.logs[k].amount = fAmount;
             st.logs[k].note = fNote;
-            st.logs[k].flavorPalatability = feedPalatabilityField.value || undefined;
+            st.logs[k].flavorPalatability = isMedication ? undefined : feedPalatabilityField.value || undefined;
+            st.logs[k].medicationOutcome = Domain.normalizeMedicationOutcome(medicationOutcome);
             st.logs[k].reminderDays = remDays;
             st.logs[k].nextDueDate = nextDue;
             break;
@@ -655,7 +756,7 @@
       var flavor = null;
       var flavorChange = null;
       var portionChange = null;
-      var flavorPalatability = feedPalatabilityField.value;
+      var flavorPalatability = isMedication ? '' : feedPalatabilityField.value;
 
       if (fItemId) {
         var stItem = st.items.find(function (x) { return x.id === fItemId; });
@@ -676,9 +777,18 @@
           return;
         }
         if (deduct) {
-          var plan = Domain.planFeedingPortion(stItem, flavor, portion);
+          var plan = isMedication && MP.isFoodCategory(stItem.category)
+            ? { error: '所选批次是食品。' }
+            : Domain.planFeedingPortion(stItem, flavor, portion);
           if (plan.error) {
-            UI.showToast(plan.error);
+            if (isMedication) {
+              UI.openConfirm('本次无法扣减库存', plan.error + ' 可以继续保存用药记录。', '仅记录用药', function () {
+                deductionSwitch.checked = false;
+                document.getElementById('feedForm').requestSubmit();
+              });
+            } else {
+              UI.showToast(plan.error);
+            }
             return;
           }
           if (flavor) {
@@ -713,6 +823,8 @@
         flavorId: flavor && flavor.id,
         flavorName: flavor && flavor.name,
         flavorPalatability: flavorPalatability,
+        medicationOutcome: medicationOutcome,
+        careType: isMedication ? 'medication' : undefined,
         flavorChange: flavorChange,
         portionChange: portionChange,
         consumeHistoryId: actualDeductedUnit > 0 ? st.stockHistory[0].id : undefined
