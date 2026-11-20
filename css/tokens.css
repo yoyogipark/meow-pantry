@@ -62,4 +62,97 @@
   --filter-control-height: 36px;
   --action-height: 40px;
   --status-progress-height: 6px;
+  --icon-button-size: 32px;
+  --daily-date-marker: 5px;
+  --daily-week-gap: 4px;
+  --daily-date-gap: 2px;
+  --daily-amount-max: 100px;
+  --daily-history-date-width: 44px;
+  --font-date-number: 18px;
+  --inline-icon-size: 14px;
+  --menu-icon-size: 20px;
+  --scroll-fade-width: 24px;
+  --badge-size: 16px;
+  --badge-offset-block: 5px;
+}
+
+/* Theme overrides are active only on the backup settings tab. */
+html:has(#viewSettings:not(.hidden-view)) {
+  --bg-cream: #F6F3EE;
+  --text-main: #2B2622;
+  --text-muted: #8B8279;
+  --border-warm: #ECE6DE;
+  --danger: #C8391F;
+  --warn-soft: #FBF1CF;
+  --ok: #206D3E;
+  --ok-soft: #E8F5EC;
+
+  --text-weak: #A39A90;
+  --feeding-ink: #3B2F22;
+  --feeding-muted: #75664F;
+
+  --status-warning-text: #8A5A00;
+  --status-normal-progress: #2F9E5A;
+  --status-neutral-bg: #F1EDE6;
+
+  --font-page-title: 18px;
+  --font-section-title: 16px;
+  --font-number: 22px;
+  --weight-heading: 600;
+
+  --radius-card: 14px;
+  --radius-pill: 99px;
+  --radius-input: 12px;
+  --icon-button-size: 40px;
+  --inline-icon-size: 20px;
+  --accent-fill: var(--accent);
+  --alert-border: #E8D08A;
+  --text-support: #716960;
+  --nav-height: 60px;
+  --nav-bg: #FFFFFF;
+  --focus-ring: #A34416;
+
+  --settings-font-title: 17px;
+  --settings-radius-button: 11px;
+  --settings-number-width: 48px;
+  --settings-badge: #C8391F;
+}
+@media (prefers-color-scheme: dark) {
+  html:has(#viewSettings:not(.hidden-view)) {
+    color-scheme: dark;
+    --bg-cream: #1E1B18;
+    --card-bg: #292420;
+    --text-main: #F6F0E9;
+    --text-muted: #C6BBB0;
+    --text-weak: #BCADA0;
+    --text-support: #CBBCAD;
+    --accent: #F69A66;
+    --accent-strong: #FFB084;
+    --accent-fill: #AB4217;
+    --selection-bg: #4A3227;
+    --accent-soft: #493126;
+    --border-warm: #51463E;
+    --danger: #FF856F;
+    --danger-soft: #4F2A27;
+    --warn: #F3CC79;
+    --warn-soft: #42361E;
+    --ok: #8CDDAB;
+    --ok-soft: #23392C;
+    --feeding-ink: var(--text-main);
+    --feeding-muted: var(--text-support);
+    --control-bg: #332C26;
+    --control-border: #6A5D51;
+    --secondary-bg: #39312B;
+    --secondary-text: var(--text-main);
+    --status-danger-text: #FFA995;
+    --status-warning-text: #F8D383;
+    --status-warning-progress: #E3A94D;
+    --status-normal-progress: #68C58A;
+    --status-neutral-bg: #39312B;
+    --status-neutral-progress: #9F9286;
+    --progress-track-bg: #4B4038;
+    --alert-border: #735D30;
+    --nav-bg: #292420;
+    --focus-ring: #FFB084;
+  }
 }

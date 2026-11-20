@@ -78,7 +78,6 @@ async function run() {
   }
   function undo(log) {
     state.selectedLogDate = log.date;
-    state.dailyViewMode = 'day';
     ui.renderDailyView();
     w.document.querySelector('[data-del-log="' + log.id + '"]').click();
     el('confirmOkBtn').click();
@@ -988,6 +987,122 @@ async function run() {
   ui.renderAll();
   assert.equal(statusRow('freeze'), null);
   console.log('Analysis package status counts and drill-down pass');
+
+  const dailyWet = make('daily-wet', 2, '罐', { name: '鸡肉湿粮', unit_net_weight_g: 85 });
+  reset(dailyWet);
+  state.settings.dailyFeedGrams = { dry: 30, freeze: null, can: 20 };
+  const log = (id, properties) => domain.sanitizeLog({ id, date: today, ...properties });
+  state.logs = [
+    log('daily-med', { category: 'med', brand: '大宠爱', name: '外驱', amount: '1 支', nextDueDate: '2027-05-19' }),
+    log('daily-food-late', { category: 'dry', name: '午后猫粮', amount: '22g', time: '14:00' }),
+    log('daily-food-early', { category: 'dry', name: '上午猫粮', amount: '19g', time: '09:00' }),
+    log('daily-fraction', { itemId: dailyWet.id, category: 'can', mealSlot: '🍪 加餐/零食', amount: '1/4罐' }),
+    log('daily-treat', { category: 'treat', name: '零食', mealSlot: '🌙 晚饭', amount: '100g' }),
+    log('daily-care-yesterday', { date: yesterday, category: 'supp', name: '营养品', amount: '1支' }),
+    log('daily-old', { date: '2025-01-02', category: 'dry', amount: '15克' }),
+    ...Array.from({ length: 23 }, (_, index) => log('daily-history-' + index, {
+      date: utils.shiftDaysFromDate(today, -index - 2), category: 'dry', amount: '10克'
+    }))
+  ];
+  ui.switchTab('daily');
+  ui.renderAll();
+  assert.equal(el('dailyWeekDays').children.length, 7);
+  assert.equal(el('dailyWeekDays').lastElementChild.dataset.dailyDate, today);
+  assert.equal(el('dailyWeekDays').lastElementChild.getAttribute('aria-current'), 'date');
+  assert.ok(el('dailyWeekDays').lastElementChild.querySelector('.has-record'));
+  assert.ok(el('dailyNextWeek').disabled);
+  assert.match(el('dailyDateLabel').textContent, /月.*日 周. · 今天/);
+  assert.equal(el('recentSevenDaysList'), null);
+  assert.equal(el('dailyModeSwitch'), null);
+  assert.deepEqual(Array.from(el('dailyTotals').querySelectorAll('[data-consumed-grams]'), node => node.textContent), ['41', '0克', '21']);
+  assert.equal(el('dailyTotals').querySelector('.daily-total-values').textContent, '41/30克 · 超11克');
+  assert.equal(el('dailyTotals').querySelector('.daily-total-track .is-over').style.width, '100%');
+  assert.ok(el('openAddModalBtn').classList.contains('ios-btn-secondary'));
+  assert.equal(el('dailyWeekTitle').getAttribute('aria-label'), '查看全部历史记录');
+  assert.ok(el('dailyWeekTitle').querySelector('svg'));
+  assert.match(el('dailyFeedTimeline').textContent, /1\/4罐· 约21克/);
+  assert.deepEqual(Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-card-title'), node => node.textContent),
+    ['上午猫粮', '午后猫粮', '零食', '测试牌 鸡肉湿粮', '大宠爱 外驱']);
+  assert.match(el('dailyFeedTimeline').querySelector('.daily-reminder').textContent, /2027-05-19/);
+  el('dailyPrevWeek').click();
+  assert.ok(!el('dailyPastWeek').classList.contains('hidden-view'));
+  assert.ok(!el('dailyNextWeek').disabled);
+  el('goTodayBtn').click();
+  assert.equal(state.selectedLogDate, today);
+  el('dailyWeekTitle').click();
+  assert.ok(!el('dailyHistory').classList.contains('hidden-view'));
+  assert.equal(el('dailyHistoryList').querySelectorAll('[data-daily-history-date]').length, 20);
+  el('dailyHistoryMore').click();
+  assert.equal(el('dailyHistoryList').querySelectorAll('[data-daily-history-date]').length, 26);
+  assert.ok(el('dailyHistoryMore').classList.contains('hidden-view'));
+  Object.defineProperty(w, 'scrollY', { value: 240, configurable: true });
+  const scrolled = [];
+  w.scrollTo = (...args) => scrolled.push(args);
+  el('dailyHistoryList').querySelector('[data-daily-history-date="2025-01-02"]').click();
+  assert.equal(state.selectedLogDate, '2025-01-02');
+  assert.match(el('dailyWeekTitle').textContent, /2024年12月–2025年1月/);
+  el('jumpToAllDatesBtn').click();
+  assert.equal(el('dailyHistoryList').querySelectorAll('[data-daily-history-date]').length, 26);
+  assert.deepEqual(scrolled.at(-1), [0, 240]);
+  el('dailyHistoryFilters').querySelector('[data-daily-history-filter="care"]').click();
+  assert.equal(el('dailyHistoryList').querySelectorAll('[data-daily-history-date]').length, 2);
+  assert.match(el('dailyHistoryList').textContent, /大宠爱 外驱/);
+  el('dailyHistoryList').querySelector('[data-daily-history-date="' + yesterday + '"]').click();
+  assert.match(el('dailyFeedTimeline').textContent, /这天没有喂食记录/);
+  el('dailyFeedTimeline').querySelector('[data-daily-add]').click();
+  assert.equal(el('feedDateInput').value, yesterday);
+  ui.closeFeedModal();
+  state.settings.dailyFeedGrams = { dry: null, freeze: null, can: null };
+  ui.renderDailyView();
+  assert.match(el('dailyTotals').textContent, /设置每日喂食量，查看每日对比/);
+  console.log('Daily week, portions, care and history navigation pass');
+
+  ui.switchTab('pantry');
+  assert.ok(el('openAddModalBtn').classList.contains('ios-btn-primary'));
+  for (const tab of ['daily', 'stats', 'settings']) {
+    ui.switchTab(tab);
+    assert.ok(el('openAddModalBtn').classList.contains('ios-btn-secondary'));
+    assert.ok(!el('openAddModalBtn').classList.contains('ios-btn-primary'));
+  }
+  state.settings.unsavedChangesCount = 0;
+  state.settings.lastBackupDate = '';
+  state.settings.lastJsonExportAt = '';
+  ui.renderSettingsView();
+  assert.ok(el('backupNoticeDot').classList.contains('hidden-view'));
+  assert.equal(el('backupStatusTitle').textContent, '已是最新备份');
+  assert.equal(el('backupStatusTime').textContent, '尚未备份过');
+  state.settings.unsavedChangesCount = 101;
+  ui.renderSettingsView();
+  assert.equal(el('backupNoticeDot').textContent, '99+');
+  assert.equal(el('backupStatusTitle').textContent, '101 项未备份');
+  const originalDownload = storage.triggerFileDownload;
+  storage.triggerFileDownload = () => false;
+  el('settingsBackupNowBtn').click();
+  assert.equal(state.settings.unsavedChangesCount, 101);
+  assert.match(el('toastEl').textContent, /未能发起 JSON 导出/);
+  storage.triggerFileDownload = () => true;
+  el('settingsBackupNowBtn').click();
+  assert.equal(state.settings.unsavedChangesCount, 0);
+  assert.ok(el('backupNoticeDot').classList.contains('hidden-view'));
+  assert.equal(el('backupStatusTitle').textContent, '已是最新备份');
+  assert.match(el('backupStatusTime').textContent, /上次 \d+月\d+日 \d{2}:\d{2}/);
+  storage.triggerFileDownload = originalDownload;
+  console.log('Header button variants and backup status pass');
+  const dryInput = el('dailyFeedDry');
+  state.settings.dailyFeedGrams.dry = 50;
+  ui.renderSettingsView();
+  function changeDryGrams(value) {
+    dryInput.value = value;
+    dryInput.dispatchEvent(new w.Event('change', { bubbles: true }));
+  }
+  for (const invalid of ['', '-1', '1.5', '2e3']) {
+    changeDryGrams(invalid);
+    assert.equal(dryInput.value, '50');
+    assert.equal(state.settings.dailyFeedGrams.dry, 50);
+  }
+  changeDryGrams('0');
+  await persisted(s => assert.equal(s.settings.dailyFeedGrams.dry, 0));
+
 
   reset(make('older-snapshot', 1));
   assert.ok(await new Promise(resolve => storage.savePreRestoreSnapshot(resolve)));

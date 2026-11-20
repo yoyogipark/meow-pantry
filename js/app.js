@@ -367,26 +367,36 @@
       if (ev.target === document.getElementById('feedModalBackdrop')) UI.closeFeedModal();
     });
 
-    document.getElementById('prevDayBtn').addEventListener('click', function () {
-      selectLogDate(Utils.shiftDaysFromDate(st.selectedLogDate || Utils.getTodayStr(), -1));
-      UI.renderDailyView();
-    });
-    document.getElementById('nextDayBtn').addEventListener('click', function () {
-      selectLogDate(Utils.shiftDaysFromDate(st.selectedLogDate || Utils.getTodayStr(), 1));
-      UI.renderDailyView();
+    ['dailyPrevWeek', 'dailyNextWeek'].forEach(function (id, index) {
+      document.getElementById(id).addEventListener('click', function () {
+        selectLogDate(UI.shiftDailyWeek(index ? 7 : -7));
+        UI.renderDailyView();
+      });
     });
     document.getElementById('goTodayBtn').addEventListener('click', function () {
-      selectLogDate(Utils.getTodayStr());
+      var today = Utils.getTodayStr();
+      selectLogDate(today);
+      UI.syncDailyWeek(today, true);
       UI.renderDailyView();
+      document.querySelector('#dailyWeekDays [aria-current="date"]').focus();
     });
-    document.getElementById('dailyDatePicker').addEventListener('change', function () {
-      if (this.value) {
-        selectLogDate(this.value);
-        UI.renderDailyView();
-      }
+    document.getElementById('dailyWeekDays').addEventListener('click', function (ev) {
+      var day = ev.target.closest('[data-daily-date]');
+      if (!day) return;
+      selectLogDate(day.dataset.dailyDate);
+      UI.renderDailyView();
+      document.querySelector('#dailyWeekDays [aria-current="date"]').focus();
     });
 
     document.getElementById('dailyFeedTimeline').addEventListener('click', function (ev) {
+      var addBtn = ev.target.closest('[data-daily-add]');
+      if (addBtn) { UI.openFeedModal('', st.selectedLogDate); return; }
+      var action = ev.target.closest('[data-edit-log], [data-del-log]');
+      if (action) {
+        var menu = action.closest('details');
+        menu.open = false;
+        menu.querySelector('summary').focus();
+      }
       var editBtn = ev.target.closest('[data-edit-log]');
       if (editBtn) {
         UI.openEditFeedModal(editBtn.getAttribute('data-edit-log'));
@@ -396,26 +406,27 @@
       if (delBtn) handleDeleteFeedingLog(delBtn.getAttribute('data-del-log'));
     });
 
-    document.getElementById('recentSevenDaysList').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-jump-date]');
-      if (!btn) return;
-      selectLogDate(btn.getAttribute('data-jump-date'));
-      st.dailyViewMode = 'day';
-      UI.renderDailyView();
-      window.scrollTo(0, 0);
+    window.addEventListener('resize', UI.syncDailyQuickFeedFade);
+    document.getElementById('dailyWeekTitle').addEventListener('click', UI.openDailyHistory);
+    document.getElementById('jumpToAllDatesBtn').addEventListener('click', UI.openDailyHistory);
+    document.getElementById('dailyHistoryBack').addEventListener('click', UI.closeDailyHistory);
+    document.getElementById('dailyHistoryMore').addEventListener('click', UI.loadMoreDailyHistory);
+    document.getElementById('dailyHistoryFilters').addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-daily-history-filter]');
+      if (btn) UI.filterDailyHistory(btn.dataset.dailyHistoryFilter);
     });
-
-    document.getElementById('dailyModeSwitch').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-daily-mode]');
+    document.getElementById('dailyHistoryList').addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-daily-history-date]');
       if (!btn) return;
-      st.dailyViewMode = btn.getAttribute('data-daily-mode');
-      UI.renderDailyView();
+      selectLogDate(btn.dataset.dailyHistoryDate);
+      UI.syncDailyWeek(st.selectedLogDate);
+      UI.closeDailyHistory();
+      document.querySelector('#dailyWeekDays [aria-current="date"]').focus();
     });
-
-    document.getElementById('jumpToAllDatesBtn').addEventListener('click', function () {
-      st.dailyViewMode = 'all';
-      UI.renderDailyView();
-      window.scrollTo(0, 0);
+    document.addEventListener('click', function (ev) {
+      document.querySelectorAll('.daily-record-menu[open]').forEach(function (menu) {
+        if (!menu.contains(ev.target)) menu.open = false;
+      });
     });
 
     document.getElementById('copyPrevDayLogsBtn').addEventListener('click', function () {
@@ -456,59 +467,6 @@
           UI.showToast('已复制 ' + Utils.formatQuantity(prevLogs.length, '条') + '记录到 ' + targetDate);
         }
       );
-    });
-
-    document.getElementById('logHistoryMonthSelect').addEventListener('change', function () {
-      st.logMonthFilter = this.value || 'all';
-      st.logPage = 1;
-      UI.renderAllDatesArchive();
-    });
-    document.getElementById('logHistorySearchInput').addEventListener('input', function () {
-      st.logSearchQuery = this.value || '';
-      st.logPage = 1;
-      UI.renderAllDatesArchive();
-    });
-    document.getElementById('logHistoryCatSelect').addEventListener('change', function () {
-      st.logCatFilter = this.value || 'all';
-      st.logPage = 1;
-      UI.renderAllDatesArchive();
-    });
-    document.getElementById('prevLogPageBtn').addEventListener('click', function () {
-      if (st.logPage > 1) {
-        st.logPage -= 1;
-        UI.renderAllDatesArchive();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    });
-    document.getElementById('nextLogPageBtn').addEventListener('click', function () {
-      st.logPage += 1;
-      UI.renderAllDatesArchive();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    document.getElementById('logPageSizeSelect').addEventListener('change', function () {
-      st.logPageSize = parseInt(this.value, 10) || 7;
-      st.logPage = 1;
-      UI.renderAllDatesArchive();
-    });
-
-    document.getElementById('allDatesArchiveList').addEventListener('click', function (ev) {
-      var editBtn = ev.target.closest('[data-edit-log]');
-      if (editBtn) {
-        UI.openEditFeedModal(editBtn.getAttribute('data-edit-log'));
-        return;
-      }
-      var delBtn = ev.target.closest('[data-del-log]');
-      if (delBtn) {
-        handleDeleteFeedingLog(delBtn.getAttribute('data-del-log'));
-        return;
-      }
-      var jumpBtn = ev.target.closest('[data-jump-date]');
-      if (jumpBtn) {
-        selectLogDate(jumpBtn.getAttribute('data-jump-date'));
-        st.dailyViewMode = 'day';
-        UI.renderDailyView();
-        window.scrollTo(0, 0);
-      }
     });
 
     // 6. Feed Form Interactions & Split-Can Stock Deduction
@@ -782,9 +740,15 @@
     document.getElementById('dailyFeedSettings').addEventListener('change', function (ev) {
       var input = ev.target.closest('[data-daily-feed]');
       if (!input) return;
-      if (!input.validity.valid) { input.reportValidity(); return; }
+      var category = input.dataset.dailyFeed;
       var grams = Number(input.value);
-      st.settings.dailyFeedGrams[input.dataset.dailyFeed] = grams > 0 ? grams : null;
+      if (!/^[0-9]+$/.test(input.value) || !Number.isSafeInteger(grams)) {
+        input.value = st.settings.dailyFeedGrams[category] ?? 0;
+        return;
+      }
+      input.value = grams;
+      if (grams === st.settings.dailyFeedGrams[category]) return;
+      st.settings.dailyFeedGrams[category] = grams;
       Storage.saveToStorage();
       UI.renderAll();
     });
@@ -1464,6 +1428,7 @@
 
     document.getElementById('exportJsonBtn').addEventListener('click', exportJsonBackup);
     document.getElementById('quickBackupNowBtn').addEventListener('click', exportJsonBackup);
+    document.getElementById('settingsBackupNowBtn').addEventListener('click', exportJsonBackup);
     document.getElementById('dismissBackupBannerBtn').addEventListener('click', function () {
       st.backupBannerDismissedCount = Number(st.settings.unsavedChangesCount) || 0;
       document.getElementById('unbackedBanner').classList.add('hidden-view');
@@ -1479,6 +1444,9 @@
     });
     document.getElementById('copySummaryBtn').addEventListener('click', copyTextSummary);
 
+    document.getElementById('openBackupRestoreBtn').addEventListener('click', function () {
+      document.getElementById('importJsonInput').click();
+    });
     document.getElementById('importJsonInput').addEventListener('change', function (ev) {
       var file = ev.target.files && ev.target.files[0];
       if (!file) return;
@@ -1588,7 +1556,10 @@
     var today = Utils.getTodayStr();
     if (today === lastActiveDayStr) return false;
     lastActiveDayStr = today;
-    if (followToday) selectLogDate(today);
+    if (followToday) {
+      selectLogDate(today);
+      UI.syncDailyWeek(today, true);
+    }
     UI.renderAll();
     return true;
   }

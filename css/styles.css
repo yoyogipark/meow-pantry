@@ -354,7 +354,11 @@ body:not(.is-edit-mode) .edit-only {
 
 .app-header #openAddModalBtn {
   width: 65px;
-  background: var(--accent);
+  min-height: var(--action-height);
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+.app-header #openAddModalBtn.ios-btn-secondary {
+  border: var(--border-default-width) solid var(--border-warm);
 }
 
 .app-header .mode-switch-pill > svg,
@@ -544,47 +548,48 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border-color: #FDBA74 !important;
 }
 
+.compact-stock-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3px;
+  padding: var(--card-gap) 10px;
+  border-radius: 14px;
+  cursor: pointer;
+}
 .compact-card-header,
-.compact-card-tags {
+.compact-card-main,
+.compact-card-tags,
+.compact-card-controls {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 6px;
+  gap: 4px;
   min-width: 0;
 }
-
-.compact-card-header {
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  margin-bottom: 4px;
+.compact-card-header, .compact-card-main { justify-content: space-between; }
+.compact-card-controls, .compact-category-icon, .compact-palatability, .compact-expiry-badge { flex: none; }
+.compact-category-icon { font-size: 13.5px; }
+.compact-palatability { font-size: var(--font-support); }
+.compact-brand {
+  max-width: 110px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: #9A3412;
+  font-size: var(--font-caption);
+  font-weight: var(--weight-heading);
 }
-
-.compact-card-identity,
-.compact-card-controls {
-  flex-wrap: nowrap;
-}
-
-.compact-card-controls {
-  flex-shrink: 0;
-}
-
-.compact-expiry-badge {
-  white-space: nowrap;
-}
-
-.compact-expiry-badge.detail-card-status--unknown {
-  background: var(--secondary-bg);
-  color: #4A3A2E;
-}
-
+.compact-expiry-badge { white-space: nowrap; }
+.compact-expiry-badge.detail-card-status--unknown { background: var(--secondary-bg); color: #4A3A2E; }
 .compact-title {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
   font-size: 13.5px;
-  font-weight: 800;
+  font-weight: var(--weight-semibold);
   color: var(--text-main);
   line-height: 1.35;
-  overflow-wrap: anywhere;
 }
-
 .product-title-spec {
   margin-inline-start: 6px;
   color: var(--text-muted);
@@ -592,20 +597,56 @@ input[type="checkbox"] { accent-color: var(--accent); }
   font-weight: 500;
   overflow-wrap: anywhere;
 }
-
-.compact-meta-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  font-size: 11px;
+.compact-title .product-title-spec { flex: 0 1 auto; max-width: 38%; margin-inline-start: 0; }
+.compact-title .product-title-spec, .compact-product-extra {
   color: var(--text-muted);
-  margin-top: 4px;
+  font-size: var(--font-caption);
+  font-weight: var(--weight-medium);
 }
-
-.compact-meta-row > span {
-  overflow-wrap: anywhere;
+.compact-product-name { flex: 0 1 auto; }
+.compact-product-extra { flex: 0 5 auto; }
+.compact-brand, .compact-product-name, .compact-title .product-title-spec,
+.compact-product-extra, .compact-location, .compact-freshness > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.compact-feed-btn, .compact-edit-btn {
+  padding: 3px 7px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: var(--font-caption);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.compact-feed-btn { background: #FFF7ED; border-color: #FED7AA; color: var(--accent-strong); font-weight: var(--weight-heading); }
+.compact-edit-btn { background: var(--card-bg); border-color: #E7E5E4; color: #44403C; font-weight: var(--weight-semibold); }
+.compact-stock-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+}
+.compact-stock-row.has-freshness { grid-template-columns: minmax(0, max-content) minmax(0, 1fr) minmax(0, max-content); }
+.compact-location { color: var(--text-muted); font-size: var(--font-caption); }
+.compact-stock-row .stock-quantity-pill {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
+  gap: 3px;
+  padding-inline: 6px;
+}
+.compact-stock-row .stock-quantity-used { padding-inline: 5px; }
+.compact-stock-row .compact-freshness {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 2px;
+  min-width: 0;
+  padding-inline: 5px;
+}
+.compact-freshness svg { flex: none; }
 
 @media (max-width: 359px) {
   .status-card {
@@ -992,16 +1033,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #statCardExpired .status-card-label, #countExpired { color: #B91C1C; }
 #statCardExpired.is-zero .status-card-label, #countExpired.is-zero { color: #75695F; }
 
-#dailyModeSwitch button {
-  min-height: 34px; border: 0; border-radius: 9px; background: transparent;
-  color: var(--text-muted); font-size: 12px; font-weight: 700; cursor: pointer;
-}
-#dailyModeSwitch button.active {
-  background: var(--selection-bg);
-  color: var(--accent-strong);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
 #viewPantry .status-card > :first-child { white-space: nowrap; }
 #viewPantry .status-card { padding-inline: 8px; }
 .pantry-filters { padding: 9px 10px; margin-bottom: 9px; }
@@ -1202,22 +1233,21 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 .forecast-missing { margin-top: 6px; }
 [data-forecast-action] { font-size: inherit; font-weight: var(--weight-heading); }
-.daily-feed-settings { padding: 12px 14px; margin-bottom: 14px; }
-.daily-feed-heading { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
-.settings-card-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-main); }
-.settings-card-description { margin: 4px 0 12px; font-size: 12px; line-height: 1.45; color: var(--text-muted); }
+.daily-feed-heading { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.settings-card-title { margin: 0; font-size: var(--font-section-title); font-weight: var(--weight-heading); color: var(--text-main); }
+.settings-card-description { margin: 0; font-size: var(--font-support); line-height: 1.35; color: var(--text-muted); }
 .daily-feed-heading .settings-card-title { white-space: nowrap; }
-.daily-feed-heading span, .daily-feed-settings p { font-size: 11px; color: var(--text-muted); }
-.daily-feed-settings p { margin: 8px 0 0; }
-.daily-feed-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.daily-feed-field label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; white-space: nowrap; }
+.daily-feed-heading span, .daily-feed-settings p { font-size: var(--font-caption); color: var(--text-muted); }
+.daily-feed-settings p { margin: 4px 0 0; }
+.daily-feed-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.daily-feed-field label { display: block; margin-bottom: 2px; font-size: var(--font-support); font-weight: var(--weight-medium); white-space: nowrap; }
 .daily-feed-input { position: relative; }
 .daily-feed-input .ios-input {
   width: 100%;
   min-width: 0;
-  height: 36px;
-  min-height: 36px;
-  padding: 0 34px 0 6px;
+  height: var(--filter-control-height);
+  min-height: var(--filter-control-height);
+  padding: 0 22px 0 6px;
   text-align: right;
   line-height: normal;
   appearance: textfield;
@@ -1227,11 +1257,11 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .daily-feed-input input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .daily-feed-input span {
   position: absolute;
-  inset-inline-end: 6px;
+  inset-inline-end: 7px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: var(--font-caption);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -1262,19 +1292,35 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #statsSubTabSwitch button.active {
   background: var(--selection-bg); border-color: var(--accent); color: var(--accent-strong); font-weight: 700;
 }
-.feeding-overview { margin-bottom: var(--card-gap); }
-.feeding-overview-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.feeding-overview-heading svg { color: var(--feeding-orange); flex: none; }
-.feeding-overview-heading h2 { color: var(--text-main); font-size: var(--font-section-title); font-weight: var(--weight-heading); margin: 0; }
-.feeding-overview-heading p { color: var(--text-muted); font-size: 11px; margin: 2px 0 0; }
-#forecastValues {
-  gap: 0; margin-bottom: 8px; padding: 8px 0; border: 0.5px solid var(--feeding-border);
-  border-radius: 14px; background: var(--feeding-card); color: var(--feeding-muted); font-size: 11px;
+/* Panel styling shared by the three feeding analysis tabs. */
+.stats-panel { padding: 15px; }
+.stats-panel-title { margin: 0; color: var(--text-main); font-size: 16px; font-weight: var(--weight-semibold); }
+.stats-panel-description { margin: 2px 0 0; color: var(--text-muted); font-size: 11.5px; }
+#viewStats .feeding-overview {
+  --overview-inset-bg: #F8F5EF;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--card-gap);
+  min-width: 0;
+  margin-bottom: var(--card-gap);
+  background: var(--card-bg);
 }
-#forecastValues > div { min-width: 0; padding: 0 9px; }
-#forecastValues > div + div { border-inline-start: 0.5px solid var(--feeding-border); }
-#forecastValues p { margin: 3px 0 0; font-size: 12px; overflow-wrap: anywhere; }
-#forecastValues strong { color: var(--feeding-ink); font-size: 19px; font-weight: 500; }
+.feeding-overview-heading { display: flex; align-items: center; gap: var(--card-gap); }
+.feeding-overview-heading svg { color: var(--feeding-orange); flex: none; }
+.feeding-overview #forecastValues {
+  gap: 0;
+  margin: 0;
+  padding: var(--card-gap) 0;
+  border: var(--border-default-width) solid var(--feeding-border);
+  border-radius: var(--radius-card);
+  background: var(--overview-inset-bg);
+  color: var(--text-muted);
+  font-size: var(--font-support);
+}
+#forecastValues > div { min-width: 0; padding: 0 var(--card-gap); }
+#forecastValues > div + div { border-inline-start: var(--border-default-width) solid var(--feeding-border); }
+#forecastValues p { margin: 2px 0 0; overflow-wrap: anywhere; }
+#forecastValues strong { color: var(--text-main); font-size: var(--font-number); font-weight: var(--weight-medium); }
 .feeding-alerts { border-radius: 10px; background: #fdefc6; color: #8a5a0a; }
 .feeding-alerts summary, .feeding-timeline > summary {
   display: flex; align-items: center; gap: 6px; list-style: none; cursor: pointer;
@@ -1292,38 +1338,40 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .feeding-alerts .forecast-alert { padding: 4px 8px; margin: 0; min-height: 26px; overflow-wrap: anywhere; }
 #forecastAlert, #stockHealthBox { background: transparent; color: inherit; border-top: 0.5px solid #eadfca; }
 #stockHealthBox button { font: inherit; font-weight: var(--weight-semibold); }
-#statsScopeBar { margin-top: var(--card-gap); }
+.feeding-overview #statsScopeBar { margin: 0; }
 #categoryStatsGrid { gap: var(--card-gap); }
 #viewStats #categoryStatsGrid .metric-card {
+  padding: var(--card-gap);
   border-radius: var(--radius-card);
-  border-color: var(--border-warm);
-  background: var(--card-bg);
+  border-color: var(--feeding-border);
+  background: var(--overview-inset-bg);
 }
 #viewStats #categoryStatsGrid .forecast-tile--urgent {
   border-width: var(--border-selected-width);
   border-color: var(--status-danger-progress);
 }
-.feeding-overview .forecast-category { align-items: center; color: var(--text-main); font-size: 13px; }
+.feeding-overview .forecast-category { align-items: center; color: var(--text-main); font-size: var(--font-card-title); }
+.feeding-overview .forecast-category strong { font-weight: var(--weight-semibold); }
 .feeding-overview .forecast-category::after { content: ""; position: absolute; inset: 0; border-radius: var(--radius-card); }
 .feeding-overview .forecast-category:focus-visible::after { outline: 2px solid var(--feeding-orange); }
 .batch-count { color: var(--text-muted); font-size: var(--font-caption); font-weight: var(--weight-regular); white-space: nowrap; }
 .forecast-tile [data-forecast-action] { position: relative; z-index: 1; }
 .forecast-balance { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 8px; flex-wrap: wrap; margin-top: 3px; }
 .forecast-quantity { color: var(--text-main); font-size: var(--font-number); font-weight: var(--weight-medium); overflow-wrap: anywhere; }
-.forecast-quantity small { font-size: 13px; }
-.forecast-units { margin-inline-start: 5px; font-size: 11px; }
+.forecast-quantity small { font-size: var(--font-body); }
+.forecast-units { margin-inline-start: 5px; color: var(--text-muted); font-size: var(--font-support); }
 .forecast-remaining { margin-inline-start: auto; text-align: end; }
 .forecast-days { white-space: nowrap; }
 .forecast-tile--can > .forecast-days { position: absolute; top: 8px; right: 10px; pointer-events: none; }
 .forecast-tile--can .forecast-category { justify-content: flex-start; }
 .forecast-tile--can .forecast-balance { align-items: baseline; }
-.forecast-days small, .forecast-rate { font-size: 11px; }
+.forecast-days small, .forecast-rate { font-size: var(--font-support); }
 .forecast-rate { color: var(--text-muted); }
 .forecast-tile--can .forecast-rate { display: block; }
 .forecast-estimate { position: relative; z-index: 1; font-size: var(--font-caption); }
 .forecast-estimate summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .forecast-estimate p { margin: 2px 0 0; }
-.feeding-overview .forecast-history { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-size: 11px; }
+.feeding-overview .forecast-history { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-size: var(--font-support); }
 .forecast-tile--treat { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; }
 .forecast-tile--treat .forecast-category { width: auto; }
 .forecast-tile--treat .forecast-balance { margin: 0 0 0 auto; }
@@ -1340,8 +1388,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .priority-row + .priority-row, .feeding-month + .feeding-month { border-top: 0.5px solid var(--feeding-divider); }
 .priority-index { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: #f3ecdd; color: var(--feeding-muted); font-size: 11px; font-weight: 500; }
 .priority-row--opened .priority-index { background: #f7ead3; color: #8a5a1a; }
-.priority-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--feeding-muted); font-size: 12px; }
-.priority-name strong { color: var(--feeding-ink); font-size: 14px; font-weight: 500; }
+.priority-name, .daily-record-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--feeding-muted); font-size: 12px; }
+.priority-name strong, .daily-record-name strong { color: var(--feeding-ink); font-size: 14px; font-weight: 500; }
 .priority-reason, .priority-empty { color: var(--feeding-muted); font-size: 11px; }
 .priority-row--opened .priority-reason { color: #8a5a1a; }
 .priority-row .forecast-result--urgent { color: var(--state-text); }
@@ -1373,7 +1421,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .feeding-month summary { cursor: pointer; }
 .feeding-month summary::-webkit-details-marker { display: none; }
 .feeding-month .forecast-days { justify-self: end; }
-.feeding-month .priority-name { grid-column: 1 / -1; display: block; }
+.feeding-month .priority-name, .daily-record-name { grid-column: 1 / -1; display: block; }
 .feeding-month summary .feeding-month-chevron {
   width: 5px; height: 5px; border: solid currentColor; border-width: 0 1px 1px 0; transform: rotate(45deg);
 }
@@ -1384,7 +1432,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .feeding-timeline-nearest { padding: 6px 8px; border-radius: 9px; background: #fdefc6; }
 .feeding-timeline-nearest > div { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 6px; }
 .feeding-timeline-nearest .forecast-days { margin-inline-start: auto; }
-.feeding-timeline-nearest .priority-name { display: block; margin-top: 2px; }
+.feeding-timeline-nearest .priority-name, .daily-record-name { display: block; margin-top: 2px; }
 .feeding-month-name { color: var(--feeding-ink); }
 .forecast-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--state-progress, #75664f); }
 .med-watch-title { margin-bottom: 4px; font-size: 12px; font-weight: 600; }
@@ -1789,4 +1837,723 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .forecast-package-status [data-package-status="expiring"] {
   color: var(--status-warning-text);
   font-weight: var(--weight-medium);
+}
+
+/* Daily feeding and history */
+.daily-stack, .daily-history-days { display: grid; gap: var(--card-gap); min-width: 0; }
+.daily-stack { grid-template-columns: minmax(0, 1fr); }
+.daily-heading, .daily-actions, .daily-history-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--card-gap);
+}
+.daily-heading { justify-content: space-between; }
+.daily-heading > * { min-width: 0; }
+.daily-actions { flex: none; }
+.daily-actions .ios-btn {
+  padding-inline: var(--card-gap);
+  min-height: var(--action-height);
+  font-size: var(--font-support);
+  white-space: nowrap;
+  box-shadow: none;
+}
+.daily-page-title, .daily-section-title, .daily-card-title, .daily-support { margin: 0; }
+.daily-page-title { font-size: var(--font-page-title); font-weight: var(--weight-heading); }
+.daily-section-title { font-size: var(--font-section-title); font-weight: var(--weight-medium); }
+.daily-card-title { font-size: var(--font-card-title); font-weight: var(--weight-medium); }
+.daily-support { color: var(--text-muted); font-size: var(--font-support); }
+.daily-card { padding: var(--card-padding); }
+.daily-week { display: grid; gap: var(--card-gap); min-width: 0; }
+.daily-week-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--card-gap);
+}
+.daily-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  padding: 0;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-input);
+  background: var(--card-bg);
+  color: var(--text-main);
+  font-size: var(--font-number);
+  line-height: 1;
+  cursor: pointer;
+}
+.daily-icon-btn:disabled { color: var(--status-neutral-progress); cursor: default; }
+.daily-week-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--daily-week-gap);
+  min-width: 0;
+  min-height: var(--action-height);
+  border: 0;
+  border-radius: var(--radius-input);
+  background: none;
+  color: var(--text-main);
+  font-size: var(--font-body);
+  cursor: pointer;
+}
+.daily-week-title span {
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.daily-week-title svg {
+  flex: none;
+  width: var(--inline-icon-size);
+  height: var(--inline-icon-size);
+  color: var(--text-muted);
+}
+.daily-week-title:active, .daily-record-more:active { background: var(--status-neutral-bg); }
+.daily-week-title:focus-visible, .daily-record-more:focus-visible {
+  outline: var(--border-selected-width) solid var(--accent);
+  outline-offset: calc(-1 * var(--border-selected-width));
+}
+.daily-week-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--daily-week-gap);
+}
+.daily-week-days button {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--daily-date-gap);
+  min-width: 0;
+  padding: var(--card-gap) 0;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-card);
+  background: var(--card-bg);
+  color: var(--text-muted);
+  font-size: var(--font-caption);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.daily-week-days button strong {
+  color: var(--text-main);
+  font-size: var(--font-section-title);
+  font-weight: var(--weight-medium);
+}
+.daily-week-days button i {
+  width: var(--daily-date-marker);
+  height: var(--daily-date-marker);
+  border-radius: var(--radius-pill);
+}
+.daily-week-days .has-record { background: var(--accent); }
+.daily-week-days [aria-current="date"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+.daily-week-days [aria-current="date"] strong { color: inherit; }
+.daily-week-days [aria-current="date"] .has-record { background: var(--text-on-accent); }
+#dailyQuickFeedBox .filter-chips, #dailyHistoryFilters { margin: 0; }
+#dailyQuickFeedBox > p { margin-bottom: var(--daily-week-gap); }
+.daily-total-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--card-gap);
+  margin-top: var(--card-gap);
+}
+.daily-total-cell, .daily-total-unset { display: grid; align-content: start; gap: var(--daily-date-gap); min-width: 0; }
+.daily-total-cell strong, .daily-total-unset strong, .daily-record-amount strong {
+  font-size: var(--font-card-title);
+  font-weight: var(--weight-medium);
+}
+.daily-target { color: var(--text-muted); font-size: var(--font-caption); }
+.daily-total-values {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.daily-total-values > :not(.daily-over) { flex: none; }
+.daily-total-values > .daily-over {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+  color: var(--status-warning-text);
+}
+.daily-total-unset { padding: 0; border: 0; background: transparent; color: var(--text-main); text-align: start; cursor: pointer; }
+.daily-total-unset .daily-target { color: var(--accent-strong); }
+.daily-total-track {
+  height: var(--daily-date-marker);
+  border-radius: var(--radius-pill);
+  background: var(--progress-track-bg);
+  overflow: hidden;
+}
+.daily-total-track span { display: block; height: 100%; background: var(--status-normal-progress); }
+.daily-total-track .is-over { background: var(--status-warning-progress); }
+#dailyTotals > .daily-support { margin-top: var(--card-gap); }
+.daily-detail-heading { margin-bottom: var(--card-gap); }
+.daily-empty { display: flex; align-items: center; justify-content: space-between; gap: var(--card-gap); }
+.daily-empty button { flex: none; }
+.daily-records { margin: 0; padding: 0; list-style: none; }
+.daily-empty + .daily-records { margin-top: var(--card-gap); }
+.daily-record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content) auto;
+  gap: var(--card-gap);
+  align-items: center;
+  padding: var(--card-gap) var(--card-padding);
+}
+.daily-record + .daily-record { border-top: var(--border-default-width) solid var(--border-warm); }
+.daily-record-copy, .daily-record-amount { display: grid; gap: var(--daily-date-gap); min-width: 0; overflow-wrap: anywhere; }
+.daily-record-amount { text-align: end; max-width: var(--daily-amount-max); }
+.daily-reminder { display: flex; align-items: center; gap: var(--daily-date-gap); }
+.daily-reminder svg { flex: none; }
+.daily-record-menu { position: relative; }
+.daily-record-name.daily-card-title { color: var(--feeding-muted); font-size: var(--font-support); font-weight: var(--weight-regular); }
+.daily-record-more {
+  display: grid;
+  place-items: center;
+  width: var(--action-height);
+  height: var(--action-height);
+  border: 0;
+  border-radius: var(--radius-pill);
+  list-style: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.daily-record-more svg {
+  width: var(--menu-icon-size);
+  height: var(--menu-icon-size);
+}
+.daily-record-menu summary::-webkit-details-marker { display: none; }
+.daily-record-menu-items {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 100%;
+  z-index: 2;
+  display: grid;
+  min-width: max-content;
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--radius-input);
+  background: var(--card-bg);
+}
+.daily-record-menu-items button {
+  padding: var(--card-gap) var(--card-padding);
+  border: 0;
+  background: transparent;
+  color: var(--text-main);
+  font-size: var(--font-body);
+  cursor: pointer;
+}
+.daily-record-menu-items [data-del-log] { color: var(--status-danger-text); }
+.daily-history-day {
+  display: grid;
+  grid-template-columns: var(--daily-history-date-width) minmax(0, 1fr) auto;
+  gap: var(--card-gap);
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: var(--card-gap) var(--card-padding);
+  color: var(--text-main);
+  font-size: var(--font-body);
+  text-align: start;
+  cursor: pointer;
+}
+.daily-history-date, .daily-history-copy { display: grid; gap: var(--daily-date-gap); min-width: 0; }
+.daily-history-date { justify-items: center; font-size: var(--font-caption); color: var(--text-muted); }
+.daily-history-date strong { font-size: var(--font-date-number); font-weight: var(--weight-medium); color: var(--text-main); }
+.daily-history-copy > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.daily-history-day > :last-child { white-space: nowrap; }
+.daily-history-end { text-align: center; }
+.daily-history-heading { margin-bottom: var(--daily-week-gap); }
+
+.daily-quick-feed-strip { position: relative; min-width: 0; }
+.daily-quick-feed-strip.has-more::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--scroll-fade-width);
+  background: linear-gradient(to right, transparent, var(--bg-cream));
+  pointer-events: none;
+}
+#dailyQuickFeedTrack .pill-chip { min-height: var(--action-height); }
+
+.settings-panel { padding: var(--card-padding); }
+.settings-section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding-block: var(--card-gap); }
+.settings-section:first-child { padding-top: 0; }
+.settings-section + .settings-section, .settings-storage-status {
+  border-top: var(--border-default-width) solid var(--border-warm);
+}
+.settings-heading { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.backup-status-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 6px var(--card-gap);
+  border-radius: var(--radius-card);
+  background: var(--status-neutral-bg);
+  color: var(--status-neutral-text);
+  font-size: var(--font-body);
+}
+.backup-status-card.needs-backup {
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+}
+/* The status card already provides the backup action on this tab. */
+.app-shell:has(#viewSettings:not(.hidden-view)) #unbackedBanner { display: none; }
+
+.settings-icon {
+  flex: none;
+  width: var(--inline-icon-size);
+  height: var(--inline-icon-size);
+  color: var(--text-muted);
+}
+.settings-card-title:has(.settings-icon), .settings-snapshot strong,
+#undoOverwriteBtn { display: inline-flex; align-items: center; gap: 4px; }
+.settings-panel .ios-btn-primary .settings-icon { color: currentColor; }
+#undoOverwriteBtn .settings-icon { color: var(--accent-strong); }
+.backup-status-copy {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--font-support);
+}
+.backup-status-copy p { margin: 0; white-space: nowrap; }
+.backup-status-copy .settings-backup-warning,
+.needs-backup .settings-backup-ready { display: none; }
+.needs-backup .settings-backup-warning { display: block; color: var(--accent-strong); }
+#backupStatusTitle { font-weight: var(--weight-semibold); }
+#backupStatusTime {
+  text-align: end;
+  color: var(--text-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 359px) {
+  .backup-status-copy { gap: 3px; font-size: var(--font-caption); }
+}
+.settings-backup-actions, .settings-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.settings-backup-actions { grid-column: 1 / -1; }
+.settings-panel .ios-btn {
+  min-width: 0;
+  width: 100%;
+  min-height: var(--filter-control-height);
+  padding: 4px 6px;
+  font-size: var(--font-support);
+  box-shadow: none;
+}
+.settings-action-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.settings-action-list .ios-btn { justify-content: flex-start; text-align: start; padding-inline: var(--card-gap); }
+.settings-preference { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.settings-preference + .settings-preference { padding-top: 6px; border-top: var(--border-default-width) solid var(--border-warm); }
+.settings-preference .settings-card-title { font-size: var(--font-card-title); }
+#dailyFeedSettings { gap: 0; }
+#warnDaysGroup { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.settings-snapshot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  padding: 4px var(--card-gap);
+  border-radius: var(--radius-card);
+  background: var(--selection-bg);
+  font-size: var(--font-support);
+}
+.settings-panel .settings-danger-action { justify-self: start; color: var(--status-danger-text); font-size: var(--font-support); }
+.settings-storage-status {
+  margin: 0;
+  padding-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-weak);
+  font-size: var(--font-caption);
+}
+.backup-notice-dot {
+  position: absolute;
+  top: calc(-1 * var(--badge-offset-block));
+  left: calc(100% - var(--border-default-width));
+  min-width: var(--badge-size);
+  height: var(--badge-size);
+  padding-inline: var(--daily-week-gap);
+  border-radius: var(--radius-pill);
+  background: var(--danger);
+  color: var(--text-on-accent);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-heading);
+  line-height: var(--badge-size);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Keep the feeding action primary when the global backup reminder is visible. */
+.app-shell:has(#viewDaily:not(.hidden-view)) #quickBackupNowBtn {
+  min-height: var(--action-height);
+  background: transparent !important;
+  color: var(--accent-strong) !important;
+}
+
+/* Keep the feeding action primary when the global backup reminder is visible. */
+.app-shell:has(#viewDaily:not(.hidden-view)) #quickBackupNowBtn {
+  min-height: var(--action-height);
+  background: transparent !important;
+  color: var(--accent-strong) !important;
+}
+
+
+.settings-panel { padding: var(--card-gap) var(--card-padding); }
+.settings-heading .settings-storage-status {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  color: var(--text-support);
+}
+.settings-storage-status::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-inline-end: 4px;
+  border-radius: 50%;
+  background: var(--status-neutral-progress);
+}
+.settings-storage-status.is-healthy::before { background: var(--status-normal-progress); }
+.settings-backup-actions { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.settings-panel .ios-btn { min-height: var(--action-height); }
+.settings-export-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.settings-export-grid #settingsOpenHistoryBtn,
+.settings-export-grid #clearAllDataBtn { grid-column: 1 / -1; min-height: var(--action-height); }
+#settingsOpenHistoryBtn::after { content: "›"; margin-inline-start: auto; }
+.settings-snapshot {
+  padding: 2px 0 0;
+  border-top: var(--border-default-width) solid var(--alert-border);
+  border-radius: 0;
+  background: transparent;
+}
+.settings-snapshot > div { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; }
+.settings-snapshot > div p { font-size: var(--font-caption); }
+#undoOverwriteBtn { min-height: var(--action-height); }
+.settings-preference-row {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--card-gap);
+}
+.settings-preference-row > .settings-card-description { grid-column: 1 / -1; grid-row: 2; }
+.settings-preference-row > .settings-options {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 12px;
+  background: var(--secondary-bg);
+}
+.settings-preference-row .settings-icon { display: none; }
+.settings-preference-row .ios-btn-secondary { background: transparent; }
+.settings-preference-row .ios-btn-primary::before { content: "✓"; }
+.daily-feed-field { padding: 4px 6px; background: var(--secondary-bg); border-radius: 12px; }
+.settings-panel .daily-feed-input .ios-input {
+  min-height: var(--action-height);
+  background: var(--card-bg);
+}
+.settings-icon { stroke-width: 1.75; }
+
+@media (max-height: 760px) {
+  .settings-panel .settings-section { padding-block: 4px; gap: 4px; }
+  .settings-panel .settings-preference-row > .settings-card-description,
+  .settings-panel .daily-feed-settings > p { display: none; }
+  .settings-panel .settings-preference + .settings-preference { padding-top: 4px; }
+}
+
+/* The settings tab owns its viewport and keeps the shared header and navigation. */
+.app-shell:has(#viewSettings:not(.hidden-view)) {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--nav-height));
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) .app-header {
+  flex: none;
+  margin-bottom: var(--card-gap) !important;
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) #headerMascotImg {
+  width: var(--control-height) !important;
+  height: var(--control-height) !important;
+  border: var(--border-default-width) solid var(--border-warm) !important;
+  background: var(--secondary-bg) !important;
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) .app-header h1 {
+  font-size: var(--settings-font-title) !important;
+  font-weight: var(--weight-medium) !important;
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) #headerSubtitle { color: var(--text-support) !important; }
+.app-shell:has(#viewSettings:not(.hidden-view)) .mode-switch-pill {
+  width: var(--action-height);
+  padding: 0;
+  background: var(--secondary-bg);
+  color: var(--secondary-text);
+  border: var(--border-default-width) solid var(--border-warm);
+  border-radius: var(--settings-radius-button);
+  box-shadow: none;
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) .mode-switch-pill:has(:checked) {
+  color: var(--accent-strong);
+  border-color: var(--accent);
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) #globalEditModeText {
+  position: absolute;
+  clip-path: inset(50%);
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) #openAddModalBtn {
+  background: var(--accent-fill);
+  color: var(--text-on-accent);
+  border: 0;
+  border-radius: var(--settings-radius-button);
+  font-size: var(--font-body);
+  font-weight: var(--weight-medium);
+  box-shadow: none;
+}
+body:has(#viewSettings:not(.hidden-view)) .app-header svg,
+body:has(#viewSettings:not(.hidden-view)) .bottom-nav svg {
+  width: var(--inline-icon-size);
+  height: var(--inline-icon-size);
+  stroke-width: 1.75;
+}
+body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+body:has(#viewSettings:not(.hidden-view)) .nav-tab {
+  color: var(--text-support);
+  font-weight: var(--weight-regular);
+}
+body:has(#viewSettings:not(.hidden-view)) .nav-tab.active {
+  color: var(--accent-strong);
+  font-weight: var(--weight-medium);
+}
+body:has(#viewSettings:not(.hidden-view)) .backup-notice-dot { background: var(--settings-badge); }
+
+#viewSettings {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-block-end: var(--card-gap);
+}
+#viewSettings .settings-panel {
+  display: grid;
+  gap: var(--card-padding);
+  padding: var(--card-padding);
+}
+#viewSettings .settings-section { padding: 0; border: 0; gap: var(--card-gap); }
+#viewSettings .settings-card-title {
+  font-size: var(--font-card-title);
+  font-weight: var(--weight-medium);
+}
+#viewSettings h3.settings-card-title { font-size: var(--font-body); }
+#viewSettings .settings-icon { color: currentColor; }
+#viewSettings .backup-status-card {
+  padding: var(--card-gap);
+  gap: var(--card-gap);
+  border: var(--border-default-width) solid var(--border-warm);
+  color: var(--text-main);
+}
+#viewSettings .backup-status-card.needs-backup {
+  border-color: var(--alert-border);
+  color: var(--status-warning-text);
+}
+#viewSettings #backupStatusTime { color: inherit; }
+#viewSettings #backupStatusTitle { font-weight: var(--weight-medium); }
+#viewSettings .ios-btn {
+  font-size: var(--font-body);
+  font-weight: var(--weight-regular);
+  border-radius: var(--settings-radius-button);
+}
+#viewSettings .ios-btn-primary {
+  background: var(--accent-fill);
+  color: var(--text-on-accent);
+  font-weight: var(--weight-medium);
+}
+#viewSettings .settings-snapshot { flex-wrap: nowrap; }
+#viewSettings .settings-snapshot > div { align-items: center; min-width: 0; }
+#viewSettings .settings-snapshot strong { font-weight: var(--weight-medium); }
+#viewSettings #undoSnapshotTimeText { color: inherit; font-size: var(--font-support); white-space: nowrap; }
+#viewSettings #undoSnapshotTimeText::before { content: "· "; }
+#viewSettings #undoOverwriteBtn { flex: none; white-space: nowrap; font-weight: var(--weight-medium); }
+#viewSettings .settings-export-grid { gap: var(--card-gap); }
+#viewSettings .settings-export-grid .ios-btn {
+  background: var(--secondary-bg);
+  border: 0;
+  border-radius: var(--radius-input);
+}
+#viewSettings .settings-export-grid button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#viewSettings #settingsOpenHistoryBtn::after { content: none; }
+#viewSettings .settings-chevron { margin-inline-start: auto; }
+#viewSettings #settingsWeightAlert,
+#viewSettings #settingsWeightAlert .forecast-missing {
+  background: var(--warn-soft);
+  color: var(--status-warning-text);
+}
+#viewSettings #settingsWeightAlert button { min-height: var(--action-height); }
+#viewSettings :is(button, input):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+@media (max-height: 760px) {
+  #viewSettings .settings-panel { gap: 6px; padding: 6px; }
+  #viewSettings .settings-section, #viewSettings .settings-export-grid { gap: 4px; }
+  #viewSettings .daily-feed-heading > span { display: none; }
+  #viewSettings .backup-status-card { gap: 4px; padding: 5px 8px; }
+  #viewSettings .settings-snapshot { padding-top: 0; }
+}
+
+html:has(#viewSettings:not(.hidden-view)) { background: var(--bg-cream); }
+body:has(#viewSettings:not(.hidden-view)) {
+  font-family: -apple-system, "PingFang SC", system-ui, sans-serif;
+}
+body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
+  background: var(--nav-bg);
+  border-top: var(--border-default-width) solid var(--border-warm);
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) {
+  padding-top: calc(env(safe-area-inset-top, 0px) + var(--card-gap));
+}
+.app-shell:has(#viewSettings:not(.hidden-view)) .app-header :is(.mode-switch-pill, #openAddModalBtn) {
+  min-height: var(--action-height);
+}
+#viewSettings .settings-panel { box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(#viewSettings:not(.hidden-view)) *, body:has(#viewSettings:not(.hidden-view)) *::before {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+#viewSettings .settings-section[aria-labelledby="settingsPreferencesTitle"] { gap: 8px; }
+#viewSettings #settingsPreferencesTitle,
+#viewSettings .settings-preferences-card h3.settings-card-title {
+  font-size: var(--font-card-title);
+  font-weight: var(--weight-medium);
+}
+#viewSettings .settings-preferences-card {
+  --pref-card: #FBF8F4;
+  --pref-border: #EADFCF;
+  --pref-divider: #EFE4D5;
+  --pref-title: #3B2A20;
+  --pref-label: #8A7466;
+  --pref-underline: #E3D3BF;
+  --pref-control: #F3E9DC;
+  --pref-option: #6B5648;
+  --pref-accent: #E8590C;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  padding-inline: 14px;
+  background: var(--pref-card);
+  border: 1px solid var(--pref-border);
+  border-radius: 16px;
+}
+#viewSettings .settings-preferences-card > .settings-preference {
+  padding-block: 14px;
+  border: 0;
+}
+#viewSettings .settings-preferences-card > .settings-preference + .settings-preference {
+  border-top: 1px solid var(--pref-divider);
+}
+#viewSettings .settings-preferences-card h3.settings-card-title { color: var(--pref-title); }
+#viewSettings #dailyFeedSettings .daily-feed-heading { margin-bottom: 11px; }
+#viewSettings #dailyFeedSettings .daily-feed-grid { gap: 14px; }
+#viewSettings #dailyFeedSettings .daily-feed-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  background: transparent;
+  text-align: center;
+}
+#viewSettings #dailyFeedSettings :is(label, .daily-feed-input span) {
+  margin: 0;
+  font-size: var(--font-body);
+  color: var(--pref-label);
+}
+#viewSettings #dailyFeedSettings label { cursor: pointer; }
+#viewSettings #dailyFeedSettings .daily-feed-input {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 4px;
+  border-bottom: 2px solid var(--pref-underline);
+}
+#viewSettings #dailyFeedSettings .daily-feed-input:focus-within { border-color: var(--pref-accent); }
+#viewSettings #dailyFeedSettings .daily-feed-input span { position: static; transform: none; }
+#viewSettings #dailyFeedSettings input {
+  field-sizing: content;
+  width: 3ch;
+  max-width: calc(100% - 16px);
+  height: auto;
+  min-height: var(--filter-control-height);
+  padding: 0 0 6px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  outline: none;
+  text-align: center;
+  font-size: 19px;
+  font-weight: var(--weight-medium);
+  color: var(--pref-title);
+}
+@supports (field-sizing: content) {
+  #viewSettings #dailyFeedSettings input { width: auto; }
+}
+#viewSettings .settings-preferences-card .settings-preference-row {
+  grid-template-columns: 66px minmax(0, 1fr);
+  column-gap: 12px;
+}
+#viewSettings .settings-preferences-card .settings-options {
+  background: var(--pref-control);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 2px;
+}
+#viewSettings .settings-preferences-card .settings-options .ios-btn {
+  min-height: 40px;
+  padding-inline: 0;
+  border-radius: 10px;
+  font-size: var(--font-body);
+  white-space: nowrap;
+  color: var(--pref-option);
+}
+#viewSettings .settings-preferences-card .settings-options .ios-btn-primary {
+  background: var(--pref-accent);
+  color: var(--text-on-accent);
+}
+#viewSettings .settings-preferences-card .settings-options .ios-btn-primary::before { content: none; }
+
+@media (prefers-color-scheme: dark) {
+  #viewSettings .settings-preferences-card {
+    --pref-card: #332B25;
+    --pref-border: #68564A;
+    --pref-divider: #68564A;
+    --pref-title: #F6F0E9;
+    --pref-label: #CBB8A9;
+    --pref-underline: #A88E78;
+    --pref-control: #463B32;
+    --pref-option: #E4D2C4;
+    --pref-accent: var(--accent-fill);
+  }
 }

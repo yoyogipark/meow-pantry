@@ -563,40 +563,46 @@
         var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit || '罐', true) : '';
         var palIcon = it.palatability === 'love' ? (it.category === 'med' ? '✅' : '😍') : (it.palatability === 'coax' ? (it.category === 'med' ? '💦' : '🥺') : (it.palatability === 'meh' ? (it.category === 'med' ? '⚠️' : '😒') : ''));
 
-        var compactMeta = [];
+        var freshnessBadge = '';
         if (Domain.isStockOpened(it)) {
           var openDays = ev.openRemaining;
           var freshness = openDays === null ? '未填写开封保鲜期'
             : openDays < 0 ? '开封超期 ' + Utils.formatDays(openDays).text : '开封剩 ' + Utils.formatDays(openDays).text;
-          compactMeta.push('<span class="detail-card-open-badge detail-card-open-badge--' +
-            Utils.formatDays(openDays).tone + '">🔓 ' + freshness + '</span>');
-          if (fracTxtCompact) compactMeta.push('<span>' + Utils.escapeHtml(fracTxtCompact) + '</span>');
+          freshnessBadge = '<span class="detail-card-open-badge compact-freshness detail-card-open-badge--' +
+            Utils.formatDays(openDays).tone + '">' +
+            '<svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>' +
+            '<span>' + Utils.escapeHtml(freshness) + '</span></span>';
         }
-        if (it.flavors) compactMeta.push('<span>剩余：' + UI.flavorStockText(it, false, true) + '</span>');
-        if (it.purchasePackaging) compactMeta.push('<span>' + purchasePackagingText(it) + '</span>');
-        if (it.location) compactMeta.push('<span>📍' + Utils.escapeHtml(it.location) + '</span>');
+        var identity = Utils.escapeHtml([it.name, it.spec, fracTxtCompact].filter(Boolean).join(' · '));
+        var id = Utils.escapeHtml(it.id);
 
         return (
-          '<div class="ios-card" style="padding:10px 12px;border-radius:14px;">' +
+          '<div class="ios-card compact-stock-card" data-action="edit" data-id="' + id + '">' +
             '<div class="compact-card-header">' +
               '<div class="compact-card-tags compact-card-identity">' +
-                '<span style="font-size:13.5px;flex-shrink:0;">' + catInfo.icon + '</span>' +
-                '<span style="font-size:11px;font-weight:700;color:#9A3412;background:#FFEDD5;padding:1px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;">' + Utils.escapeHtml(it.brand) + '</span>' +
-                (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
+                '<span class="compact-category-icon">' + catInfo.icon + '</span>' +
+                '<span class="compact-brand" title="' + Utils.escapeHtml(it.brand) + '">' + Utils.escapeHtml(it.brand) + '</span>' +
+                (palIcon ? '<span class="compact-palatability">' + palIcon + '</span>' : '') +
               '</div>' +
-              '<div class="compact-card-tags compact-card-controls">' +
-                '<span class="detail-card-status compact-expiry-badge detail-card-status--' +
-                  Utils.formatDays(ev.expDays).tone + '">' + Utils.escapeHtml(expiryLabel) + '</span>' +
-                '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" title="记喂食" style="padding:3px 7px;border-radius:8px;border:1px solid #FED7AA;background:#FFF7ED;color:var(--accent-strong);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">🐾喂</button>' +
-                '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" class="edit-only" style="padding:3px 7px;border-radius:8px;border:1px solid #E7E5E4;background:#FFFFFF;color:#44403C;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;">编辑</button>' +
+              '<span class="detail-card-status compact-expiry-badge detail-card-status--' +
+                Utils.formatDays(expiryDays).tone + '">' + Utils.escapeHtml(expiryLabel) + '</span>' +
+            '</div>' +
+            '<div class="compact-card-main">' +
+              '<div class="compact-title" title="' + identity + '">' +
+                '<span class="compact-product-name">' + Utils.escapeHtml(it.name) + '</span>' +
+                (it.spec ? '<span class="product-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') +
+                (fracTxtCompact ? '<span class="compact-product-extra">' + Utils.escapeHtml(fracTxtCompact) + '</span>' : '') +
+              '</div>' +
+              '<div class="compact-card-controls">' +
+                '<button type="button" data-action="log-feed" data-id="' + id + '" title="记喂食" class="compact-feed-btn">🐾 喂</button>' +
+                '<button type="button" data-action="edit" data-id="' + id + '" class="edit-only compact-edit-btn">编辑</button>' +
               '</div>' +
             '</div>' +
-            '<div data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="cursor:pointer;">' +
-              '<div class="compact-title">' + Utils.escapeHtml(it.name) +
-                (it.spec ? ' <span class="product-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') +
-              '</div>' +
-              (compactMeta.length ? '<div class="compact-meta-row">' + compactMeta.join('') + '</div>' : '') +
+            '<div class="compact-stock-row' + (freshnessBadge ? ' has-freshness' : '') + '">' +
               stockQuantityPill(it) +
+              '<span class="compact-location"' + (it.location ? ' title="' + Utils.escapeHtml(it.location) + '"' : '') + '>' +
+                (it.location ? '📍' + Utils.escapeHtml(it.location) : '') + '</span>' +
+              freshnessBadge +
             '</div>' +
           '</div>'
         );

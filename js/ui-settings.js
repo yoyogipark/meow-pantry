@@ -8,7 +8,7 @@
   UI.renderSettingsView = function () {
     var forecastSettings = MP.state.settings.dailyFeedGrams;
     document.querySelectorAll('[data-daily-feed]').forEach(function (input) {
-      if (input !== document.activeElement) input.value = forecastSettings[input.dataset.dailyFeed] || '';
+      if (input !== document.activeElement) input.value = forecastSettings[input.dataset.dailyFeed] ?? 0;
     });
     var missing = MP.Forecast.compute(MP.state.items, [], {}, Utils.getTodayStr()).can.missing;
     var weightAlert = document.getElementById('settingsWeightAlert');
@@ -18,12 +18,15 @@
     var btns = document.querySelectorAll('#warnDaysGroup [data-warn-days]');
     for (var i = 0; i < btns.length; i++) {
       var d = parseInt(btns[i].getAttribute('data-warn-days'), 10);
+      btns[i].setAttribute('aria-pressed', d === st.settings.warnDays);
       btns[i].className = (d === st.settings.warnDays) ? 'ios-btn ios-btn-primary' : 'ios-btn ios-btn-secondary';
     }
     var curBtns = document.querySelectorAll('#defaultCurrencyGroup [data-def-currency]');
     for (var j = 0; j < curBtns.length; j++) {
       var ck = curBtns[j].getAttribute('data-def-currency');
-      curBtns[j].className = (ck === (st.settings.defaultCurrency || 'CNY'))
+      var isCurrencySelected = ck === (st.settings.defaultCurrency || 'CNY');
+      curBtns[j].setAttribute('aria-pressed', isCurrencySelected);
+      curBtns[j].className = isCurrencySelected
         ? 'ios-btn ios-btn-primary'
         : 'ios-btn ios-btn-secondary';
     }
@@ -33,32 +36,41 @@
     if (undoWrap) {
       undoWrap.classList.toggle('hidden-view', !st.storageHealth.hasPreRestoreSnapshot);
       if (undoTimeTxt && st.storageHealth.preRestoreSnapshotTime) {
-        undoTimeTxt.textContent = '自动保护快照时间：' + st.storageHealth.preRestoreSnapshotTime;
+        undoTimeTxt.textContent = st.storageHealth.preRestoreSnapshotTime;
       }
     }
 
-    var activeItemsCount = st.items.filter(function (it) { return !(it.sourceBatchId && (Number(it.quantity) || 0) <= 0); }).length;
-    var customPhotos = st.items.filter(function (it) { return Boolean(it.imageData) && !it.sourceBatchId; }).length;
-    var hasCustomItems = st.items.some(function (it) { return !it.isSample; }) || st.logs.some(function (lg) { return !lg.isSample; });
     var unsaved = Number(st.settings.unsavedChangesCount) || 0;
     var lastBk = st.settings.lastBackupDate || '';
-    var lastExport = new Date(st.settings.lastJsonExportAt);
+    var lastExport = new Date(st.settings.lastJsonExportAt || NaN);
     var exportTime = '';
     if (Number.isFinite(lastExport.getTime())) {
       exportTime = Utils.getNowDateTimeStr(lastExport);
       if (lastExport.getFullYear() === new Date().getFullYear()) exportTime = exportTime.slice(5);
     }
-    var needBackup = (unsaved > 0) || (hasCustomItems && !lastBk);
-    var badgeCount = unsaved > 0 ? unsaved : (needBackup ? 1 : 0);
+    var badgeCount = Math.max(0, Math.floor(unsaved));
+    var needBackup = badgeCount > 0;
+    var backupDate = Number.isFinite(lastExport.getTime()) ? Utils.formatDateObj(lastExport) : lastBk;
+    var backupTime = Number.isFinite(lastExport.getTime()) ? Utils.getNowDateTimeStr(lastExport).slice(11, 16) : '';
+    var statusCard = document.getElementById('backupStatusCard');
+    if (statusCard) {
+      statusCard.classList.toggle('needs-backup', needBackup);
+      document.getElementById('backupStatusTitle').textContent = needBackup
+        ? Utils.formatNumber(badgeCount) + ' 项未备份' : '已是最新备份';
+      var timeLabel = document.getElementById('backupStatusTime');
+      timeLabel.textContent = backupDate
+        ? '上次 ' + Utils.formatSentenceDate(backupDate) + (backupTime ? ' ' + backupTime : '') : '尚未备份过';
+      timeLabel.title = backupDate ? '上次备份：' + backupDate + (backupTime ? ' ' + backupTime : '（时间未记录）') : '';
+    }
 
     var dotEl = document.getElementById('backupNoticeDot');
     var topBanner = document.getElementById('unbackedBanner');
     var topBannerTxt = document.getElementById('unbackedBannerText');
-    var setBadge = document.getElementById('settingsBackupBadge');
 
     if (needBackup) {
       if (dotEl) {
         dotEl.textContent = badgeCount > 99 ? '99+' : Utils.formatNumber(badgeCount);
+        dotEl.setAttribute('aria-label', Utils.formatQuantity(badgeCount, '项') + '更改尚未备份');
         dotEl.classList.remove('hidden-view');
       }
       if (topBanner) {
@@ -78,17 +90,13 @@
       if (topBanner) topBanner.classList.add('hidden-view');
     }
 
-    if (setBadge) {
-      setBadge.style.background = needBackup ? '#FEF3C7' : exportTime ? '#EAF2DC' : '#F5F5F4';
-      setBadge.style.color = needBackup ? '#854D0E' : exportTime ? '#3D5A24' : '#6B5A4C';
-      setBadge.textContent = needBackup ? Utils.formatQuantity(badgeCount, '项待备份') : (exportTime ? '✓ 已备份 ' + exportTime : '未备份');
-    }
-
-    var engineLabel = (st.storageHealth.idbAvailable && st.storageHealth.lsAvailable)
-      ? '双引擎同步正常 (IndexedDB + LocalStorage)'
-      : (st.storageHealth.lsAvailable ? 'LocalStorage 本地存储正常' : '内存会话模式');
-
-    document.getElementById('storageStatusText').textContent =
-      engineLabel + ' · 已存 ' + Utils.formatQuantity(activeItemsCount, '批商品') + '、' + Utils.formatQuantity(st.logs.length, '条') + '饮食记录、' + Utils.formatQuantity(st.stockHistory.length, '条') + '库存流水（含 ' + Utils.formatQuantity(customPhotos, '张实拍图') + '）';
+    var health = st.storageHealth;
+    var storageStatus = document.getElementById('storageStatusText');
+    var dualEngineHealthy = health.idbAvailable && health.lsAvailable;
+    storageStatus.classList.toggle('is-healthy', dualEngineHealthy);
+    storageStatus.textContent = dualEngineHealthy
+      ? '本地存储 · 双引擎正常'
+      : health.lsAvailable ? '本地存储 · LocalStorage'
+        : health.idbAvailable ? '本地存储 · IndexedDB' : '本地存储 · 仅当前会话';
   };
 })(typeof window !== 'undefined' ? window : globalThis);

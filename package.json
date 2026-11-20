@@ -4,7 +4,7 @@
   "private": true,
   "description": "Pure local-first pantry and feeding tracker for cats",
   "scripts": {
-    "check:syntax": "node --check js/covers.js && node --check js/constants.js && node --check js/utils.js && node --check js/domain.js && node --check js/storage.js && node --check js/stats.js && node --check js/modal.js && node --check js/ui.js && node --check js/ui-pantry.js && node --check js/ui-settings.js && node --check js/app.js && node --check sw.js",
+    "check:syntax": "node --check js/covers.js && node --check js/constants.js && node --check js/utils.js && node --check js/domain.js && node --check js/storage.js && node --check js/stats.js && node --check js/modal.js && node --check js/ui.js && node --check js/ui-pantry.js && node --check js/ui-daily.js && node --check js/ui-settings.js && node --check js/app.js && node --check sw.js",
     "version:pwa": "node scripts/bump-pwa-version.cjs",
     "test:pwa": "node tests/pwa-consistency.cjs",
     "test:ui": "node tests/modal-accessibility.cjs",
