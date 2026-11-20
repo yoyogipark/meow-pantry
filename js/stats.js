@@ -31,7 +31,7 @@
           group: MP.getCategoryGroup(it.category),
           brand: (it.brand || '未命名品牌').trim(),
           name: (it.name || '未命名').trim(),
-          spec: it.spec || '',
+          spec: Utils.formatItemSpec(it),
           unit: it.unit || '件',
           palatability: it.palatability || '',
           inStockQty: 0,
@@ -570,7 +570,7 @@
           if (product === log && log.itemId) key = JSON.stringify([key, log.itemId]);
           var row = foods.get(key);
           if (!row) {
-            row = { brand: product.brand, name: product.name, spec: product.spec, category: product.category, count: 0 };
+            row = { brand: product.brand, name: product.name, spec: Utils.formatItemSpec(product), category: product.category, count: 0 };
             foods.set(key, row);
           }
           row.count += 1;

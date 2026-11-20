@@ -216,7 +216,7 @@
     if (forRanking) {
       if (item) return item;
       if (log.productUnit) {
-        return { brand: log.brand, name: log.name, category: log.category, spec: log.productSpec, unit: log.productUnit };
+        return { brand: log.brand, name: log.name, category: log.category, spec: log.productSpec, unit: log.productUnit, unit_net_weight_g: log.productUnitWeightGrams };
       }
       return log;
     }
@@ -244,13 +244,16 @@
       ? raw.id.trim()
       : ('item_migrated_' + Date.now() + '_' + (fallbackIdx || 0));
     clean.category = cat;
-    var netWeight = Number(raw.unit_net_weight_g);
-    clean.unit_net_weight_g = (cat === 'can' || cat === 'dry' || cat === 'freeze') && Number.isFinite(netWeight) && netWeight > 0 ? netWeight : null;
     clean.brand = String(raw.brand === undefined || raw.brand === null ? '' : raw.brand).trim() || '未命名品牌';
     clean.name = String(raw.name === undefined || raw.name === null ? '' : raw.name).trim() || '未命名单品';
     clean.spec = String(raw.spec || '').trim();
     clean.quantity = qty;
     clean.unit = String(raw.unit || defCat.defaultUnit).trim() || defCat.defaultUnit;
+    var netWeight = Number(raw.unit_net_weight_g);
+    if (!(netWeight > 0) && (cat === 'dry' || cat === 'freeze')) {
+      netWeight = Utils.legacyUnitWeight(clean.spec, clean.unit);
+    }
+    clean.unit_net_weight_g = Number.isFinite(netWeight) && netWeight > 0 ? netWeight : null;
     if (MP.FOOD_SUBTYPES[clean.category] && typeof raw.subtype === 'string' && raw.subtype.trim()) {
       clean.subtype = raw.subtype.trim();
     } else delete clean.subtype;
@@ -299,6 +302,9 @@
     clean.mealSlot = Utils.normalizeMealSlot(raw.mealSlot);
     clean.itemId = typeof raw.itemId === 'string' ? raw.itemId : '';
     clean.category = cat;
+    if (!(clean.productUnitWeightGrams > 0) && (cat === 'dry' || cat === 'freeze')) {
+      clean.productUnitWeightGrams = Utils.legacyUnitWeight(clean.productSpec, clean.productUnit) || undefined;
+    }
     clean.brand = String(raw.brand || '').trim() || '未命名';
     clean.name = String(raw.name || '').trim() || '未命名';
     clean.amount = String(raw.amount || '1份').trim();
@@ -945,7 +951,8 @@
     var c = String(it.category || 'dry').trim().toLowerCase();
     var b = String(it.brand || '').trim().toLowerCase();
     var n = String(it.name || '').trim().toLowerCase();
-    var s = String(it.spec || '').trim().toLowerCase();
+    var weight = Number(it.unit_net_weight_g);
+    var s = weight > 0 ? weight + 'g' : String(it.spec || '').trim().toLowerCase();
     var u = String(it.unit || '件').trim().toLowerCase();
     return c + '||' + b + '||' + n + '||' + s + '||' + u;
   };
@@ -991,7 +998,8 @@
       subtype: entry.subtype || undefined,
       brand: entry.brand || '',
       name: entry.name || '',
-      productSpec: product.spec || undefined,
+      productSpec: entry.productSpec || product.spec || undefined,
+      productUnitWeightGrams: entry.productUnitWeightGrams || product.unit_net_weight_g || undefined,
       productUnit: product.unit || undefined,
       amount: entry.amount || '1份',
       note: entry.note || '',
@@ -1071,7 +1079,7 @@
         category: 'can',
         brand: '巅峰 ZiwiPeak',
         name: '新西兰马鲛鱼羊肉主食罐',
-        spec: '170g',
+        unit_net_weight_g: 170,
         quantity: 6,
         unit: '罐',
         price: 26.5,

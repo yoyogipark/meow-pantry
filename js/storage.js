@@ -304,6 +304,12 @@
         var exportedAt = chosenSettings && chosenSettings.lastJsonExportAt;
         st.settings.lastJsonExportAt = typeof exportedAt === 'string' && Number.isFinite(Date.parse(exportedAt))
           ? exportedAt : '';
+        var migratedWeight = chosenItems.some(function (item) {
+          return item && (item.category === 'dry' || item.category === 'freeze') &&
+            !(Number(item.unit_net_weight_g) > 0) &&
+            Utils.legacyUnitWeight(item.spec, item.unit || MP.CATEGORIES[item.category].defaultUnit) > 0;
+        });
+        if (migratedWeight) Storage.saveToStorage(true);
       } else {
         // Brand-new user first visit: initialize sample items & logs without touching any existing records
         st.items = Domain.buildSampleItems();

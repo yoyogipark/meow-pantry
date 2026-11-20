@@ -118,7 +118,6 @@
     if (!categories.includes(log.category)) return { primary: amount, grams: null };
 
     var product = Domain.resolveLogProduct(log, true);
-    var flavor = Domain.findFlavor(product, log.flavorId);
     var hint = /\s*[（(]([^（）()]+)[）)]$/.exec(amount);
     var portion = hint ? amount.slice(0, hint.index).trim() : amount;
     var packageItem = { unit: log.productUnit || product.unit };
@@ -126,14 +125,7 @@
     if (!packageItem.unit && specifiedUnit) packageItem.unit = specifiedUnit[1];
     var parsed = UI.parseFeedPortion(portion, packageItem);
     var fraction = parsed.valid ? parsed.fraction : parsed.finish ? (log.deductedFrac || log.deductedUnit) : 0;
-    var unitWeight = log.category === 'can' ? Number(product.unit_net_weight_g) : 0;
-    if (!(unitWeight > 0) && log.category !== 'can') {
-      var spec = Utils.parsePortionSpec((flavor && flavor.spec) || log.productSpec || product.spec);
-      if (spec && (!spec[3] || spec[3] === packageItem.unit)) {
-        var specWeight = parseWeight(spec[1] + spec[2]);
-        unitWeight = specWeight ? specWeight.grams : 0;
-      }
-    }
+    var unitWeight = Number(log.productUnitWeightGrams || product.unit_net_weight_g);
     var grams = fraction > 0 && unitWeight > 0 ? fraction * unitWeight : null;
     if (grams === null && hint) {
       var recordedEstimate = parseWeight(hint[1]);

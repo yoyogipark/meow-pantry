@@ -98,7 +98,7 @@
     var unit = item.unit || '件';
     if (fraction >= 1 || quantity < 1) return quantity + unit;
     var remainder = Utils.formatRemainFractionText(fraction, unit).replace(/^余/, '剩余');
-    var portion = Utils.computePortionGramLabel(remainder, fraction, item.spec);
+    var portion = Utils.computePortionGramLabel(remainder, fraction, Utils.itemPortionSpec(item));
     return quantity > 1 ? (quantity - 1) + unit + ' + ' + portion : portion;
   }
 
@@ -455,6 +455,7 @@
               name: srcLog.name,
               productSpec: srcLog.productSpec,
               productUnit: srcLog.productUnit,
+              productUnitWeightGrams: srcLog.productUnitWeightGrams,
               flavorId: srcLog.flavorId,
               flavorName: srcLog.flavorName,
               flavorPalatability: srcLog.flavorPalatability,
@@ -493,7 +494,7 @@
       var item = selectedFeedItem();
       var flavor = UI.getFeedFlavor(item);
       if (!st.editMode || !flavor) return;
-      var amount = redemptionMealAmount(Object.assign({}, item, { spec: flavor.spec || item.spec }), 1, flavor.openRemainFraction || 1);
+      var amount = redemptionMealAmount(item, 1, flavor.openRemainFraction || 1);
       UI.openConfirm('确认库存核销？', '将扣减 1' + item.unit + '「' + flavor.name + '」，并记入库存流水。', '确认核销', function (alsoLogMeal) {
         if (!st.items.includes(item) || !item.flavors.includes(flavor)) return;
         var today = Utils.getTodayStr();
@@ -594,9 +595,11 @@
               previousLog.itemId = fItemId;
               delete previousLog.productSpec;
               delete previousLog.productUnit;
+              delete previousLog.productUnitWeightGrams;
               var product = Domain.resolveLogProduct(previousLog, true);
               previousLog.productSpec = product.spec;
               previousLog.productUnit = product.unit;
+              previousLog.productUnitWeightGrams = product.unit_net_weight_g;
             }
             if (st.logs[k].category !== fCat) delete st.logs[k].subtype;
             st.logs[k].category = fCat;
@@ -979,7 +982,10 @@
       document.getElementById(id).addEventListener('input', UI.syncModalUnitPriceHint);
     });
     document.getElementById('fieldPrice').addEventListener('input', UI.syncModalUnitPriceHint);
-    document.getElementById('fieldSpec').addEventListener('input', UI.syncModalUnitPriceHint);
+    document.getElementById('fieldSpec').addEventListener('input', function () {
+      if (document.getElementById('fieldId').value) UI.syncNetWeight();
+      UI.syncModalUnitPriceHint();
+    });
     document.getElementById('fieldNetWeight').addEventListener('input', function (ev) {
       ev.target.dataset.manualWeight = '1';
       UI.syncModalUnitPriceHint();
@@ -1083,6 +1089,7 @@
           if (editingItem() !== item || item.unit !== oldUnit || !Domain.correctStockUnit(item, unit)) return;
           var unitField = document.getElementById('fieldUnit');
           unitField.value = unit;
+          UI.syncNetWeight();
           document.querySelectorAll('#flavorRows .flavor-row').forEach(function (row) {
             var flavor = Domain.findFlavor(item, row.dataset.flavorId);
             if (flavor) row.lastElementChild.textContent = '余 ' + flavor.quantity + unit;

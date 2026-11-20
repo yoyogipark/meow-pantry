@@ -237,36 +237,41 @@
     return amount + (yen ? '円' : '元') + (perUnit ? '/' + perUnit : '');
   };
 
-  Utils.parseSpecToGrams = function (specStr) {
-    if (!specStr || typeof specStr !== 'string') return 0;
-    var s = specStr.trim().toLowerCase();
-    var mComp = s.match(/(\d+(?:\.\d+)?)\s*(kg|千克|g|克|ml|毫升)\s*[x×\*]\s*(\d+)/i);
-    if (mComp) {
-      var baseVal = parseFloat(mComp[1]);
-      var unit = mComp[2];
-      var mult = parseInt(mComp[3], 10) || 1;
-      var g = (unit === 'kg' || unit === '千克') ? baseVal * 1000 : baseVal;
-      return g * mult;
-    }
-    var mSingle = s.match(/(\d+(?:\.\d+)?)\s*(kg|千克|g|克|ml|毫升)/i);
-    if (mSingle) {
-      var val = parseFloat(mSingle[1]);
-      var u = mSingle[2];
-      return (u === 'kg' || u === '千克') ? val * 1000 : val;
-    }
-    return 0;
-  };
-
   Utils.parsePortionSpec = function (specStr) {
     return /^(\d+(?:\.\d+)?)\s*(g|克|kg|千克|ml|毫升)(?:\s*\/\s*(.+))?$/i.exec(
       String(specStr || '').trim()
     );
   };
 
-  Utils.formatPer100gPrice = function (price, currency, specStr) {
+  Utils.requiresUnitWeight = function (category) {
+    return category === 'dry' || category === 'can' || category === 'freeze';
+  };
+
+  Utils.legacyUnitWeight = function (spec, unit) {
+    var match = Utils.parsePortionSpec(spec);
+    if (!match || (match[3] && match[3] !== unit) || /^(ml|毫升)$/i.test(match[2])) return 0;
+    return Number(match[1]) * (/^(kg|千克)$/i.test(match[2]) ? 1000 : 1);
+  };
+
+  Utils.itemPortionSpec = function (item) {
+    var weight = Number(item.unit_net_weight_g);
+    return Number.isFinite(weight) && weight > 0 ? weight.toFixed(10).replace(/\.?0+$/, '') + 'g' : '';
+  };
+
+  Utils.formatItemSpec = function (item) {
+    var weight = Number(item.unit_net_weight_g);
+    var note = String(item.spec || '').trim();
+    if (!(weight > 0)) return note;
+    var spec = weight >= 1000
+      ? Utils.formatQuantity(weight / 1000, 'kg')
+      : Utils.formatNumber(weight) + 'g';
+    return note && Utils.legacyUnitWeight(note, item.unit) !== weight ? spec + ' · ' + note : spec;
+  };
+
+  Utils.formatPer100gPrice = function (price, currency, unitWeightGrams) {
     var p = Number(price);
     if (!isFinite(p) || p <= 0) return '';
-    var totalGrams = Utils.parseSpecToGrams(specStr);
+    var totalGrams = Number(unitWeightGrams);
     if (!totalGrams || totalGrams <= 0) return '';
     var per100g = (p / totalGrams) * 100;
     return '≈' + Utils.formatMoney(per100g, currency, '100g');

@@ -309,7 +309,12 @@
       '<div class="progress-track" aria-hidden="true"><div class="progress-bar" style="width:' + percent + '%;"></div></div></div>';
   }
 
+  function stockActionIcon(path) {
+    return '<svg class="stock-action-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg> ';
+  }
+
   UI.renderPantryList = function () {
+    var historyIcon = document.querySelector('#openStockHistoryBtn svg').outerHTML;
     var st = MP.state;
     var q = st.searchQuery.trim().toLowerCase();
     var filtered = st.items.filter(function (it) {
@@ -411,7 +416,7 @@
               archiveBadge(grp) +
             '</div>' +
             '<div style="font-size:11px;color:#6B5A4C;margin-top:3px;">' +
-              '共 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + (rep.spec ? (' · 规格 ' + Utils.escapeHtml(rep.spec)) : '') +
+              '共 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + (Utils.formatItemSpec(rep) ? (' · 规格 ' + Utils.escapeHtml(Utils.formatItemSpec(rep))) : '') +
             '</div>' +
           '</div>' +
           archiveFooter(grp) +
@@ -508,7 +513,7 @@
               '</div>' +
               '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#2B2320;line-height:1.35;">' + Utils.escapeHtml(rep.name) + '</h3>' +
               '<div style="margin-top:4px;font-size:12px;color:#6B5A4C;">' +
-                (rep.spec ? ('规格 ' + Utils.escapeHtml(rep.spec) + ' · ') : '') + '共归档 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + avgTxt +
+                (Utils.formatItemSpec(rep) ? ('规格 ' + Utils.escapeHtml(Utils.formatItemSpec(rep)) + ' · ') : '') + '共归档 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + avgTxt +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -573,7 +578,8 @@
             '<svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>' +
             '<span>' + Utils.escapeHtml(freshness) + '</span></span>';
         }
-        var identity = Utils.escapeHtml([it.name, it.spec, fracTxtCompact].filter(Boolean).join(' · '));
+        var displaySpec = Utils.formatItemSpec(it);
+        var identity = Utils.escapeHtml([it.name, displaySpec, fracTxtCompact].filter(Boolean).join(' · '));
         var id = Utils.escapeHtml(it.id);
 
         return (
@@ -590,7 +596,7 @@
             '<div class="compact-card-main">' +
               '<div class="compact-title" title="' + identity + '">' +
                 '<span class="compact-product-name">' + Utils.escapeHtml(it.name) + '</span>' +
-                (it.spec ? '<span class="product-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') +
+                (displaySpec ? '<span class="product-title-spec">' + Utils.escapeHtml(displaySpec) + '</span>' : '') +
                 (fracTxtCompact ? '<span class="compact-product-extra">' + Utils.escapeHtml(fracTxtCompact) + '</span>' : '') +
               '</div>' +
               '<div class="compact-card-controls">' +
@@ -640,10 +646,11 @@
           '</div>' + openedProgress + '</div>'
         : '';
 
+      var displaySpec = Utils.formatItemSpec(it);
       var priceLine = packagedPriceText(it, unit);
       var price = Utils.formatMoney(it.price, it.currency, unit);
       if (!priceLine && price) {
-        var per100 = catInfo.group === 'food' && !it.flavors ? Utils.formatPer100gPrice(it.price, it.currency, it.spec) : '';
+        var per100 = catInfo.group === 'food' && !it.flavors ? Utils.formatPer100gPrice(it.price, it.currency, it.unit_net_weight_g) : '';
         priceLine = Utils.escapeHtml(price) + (per100 ? '（' + per100 + '）' : '');
       }
       var locationParts = [];
@@ -680,7 +687,7 @@
       var feedBtnLabel = catInfo.group === 'med' ? '🩺 记用药' : (catInfo.group === 'supp' ? '💊 记喂食' : '🐾 记喂食');
 
       return (
-        '<article class="ios-card p-4 detail-card" style="padding:14px;">' +
+        '<article class="ios-card p-4 detail-card">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">' +
             thumbHtml +
             '<div style="min-width:0;flex:1;">' +
@@ -694,7 +701,7 @@
                   '">' + Utils.escapeHtml(badgeLabel) + '</span>') +
               '</div>' +
               '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:#2B2320;line-height:1.35;word-break:break-word;">' + Utils.escapeHtml(it.name) +
-                (it.spec ? ' <span class="product-title-spec">' + Utils.escapeHtml(it.spec) + '</span>' : '') + '</h3>' +
+                (displaySpec ? ' <span class="product-title-spec">' + Utils.escapeHtml(displaySpec) + '</span>' : '') + '</h3>' +
               ((palHtml || lastFedHtml) ? '<div style="margin-top:4px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;">' + palHtml + lastFedHtml + '</div>' : '') +
               (priceLine ? '<div class="detail-card-line">' + priceLine + '</div>' : '') +
               (locationParts.length ? '<div class="detail-card-line">' + locationParts.join(' · ') + '</div>' : '') +
@@ -712,19 +719,21 @@
             '<div class="detail-card-actions">' +
               stockQuantityPill(it) +
               '<div class="detail-card-action-buttons">' +
-                '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" style="padding:6px 8px;border-radius:10px;border:1px solid transparent;background:#F1E6D6;color:#3A2A20;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">📜 此商品记录</button>' +
+                '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" title="查看该批次库存操作流水" class="detail-card-history-btn">' + historyIcon + '<span>历史记录</span></button>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" style="padding:6px 11px;border-radius:10px;border:1px solid transparent;background:var(--accent);color:#FFFFFF;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">' + feedBtnLabel + '</button>' +
               '</div>' +
             '</div>' +
             '<div class="edit-only grid-safe" style="margin-top:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">' +
               '<button type="button" data-action="toggle-open" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #E7E5E4;background:' + (it.isOpened ? '#FFEDD5' : '#FAFAF9') + ';color:' + (it.isOpened ? '#9A3412' : '#57534E') + ';font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">' +
-                (it.isOpened ? ('🔓 已拆1' + unitStr) : (qtyNum > 1 ? ('🔒 拆1' + unitStr) : '🔒 记开封')) +
+                stockActionIcon('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="' +
+                  (it.isOpened ? 'M8 11V7a4 4 0 0 1 7.5-2' : 'M8 11V7a4 4 0 1 1 8 0v4') + '"/>') +
+                (it.isOpened ? '已拆1' + unitStr : qtyNum > 1 ? '拆1' + unitStr : '记开封') +
               '</button>' +
               '<button type="button" data-action="consume-one" data-id="' + Utils.escapeHtml(it.id) + '" style="min-height:34px;padding:0 4px;border-radius:9px;border:1px solid #DCFCE7;background:#F0FDF4;color:#15803D;font-size:11.5px;font-weight:700;cursor:pointer;overflow-wrap:anywhere;">' +
-                '✓ ' + (catInfo.group === 'food' ? '吃完' : '用完') + Math.min(1, qtyNum) + unitStr +
+                stockActionIcon('<path d="m5 12 4 4L19 6"/>') + (catInfo.group === 'food' ? '吃完' : '用完') + Math.min(1, qtyNum) + unitStr +
               '</button>' +
-              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">✏️ 编辑</button>' +
-              '<button type="button" data-action="delete" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">🗑️ 删除</button>' +
+              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FED7AA;background:#FFF7ED;color:#9A3412;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">' + stockActionIcon('<path d="m15 5 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/>') + '编辑</button>' +
+              '<button type="button" data-action="delete" data-id="' + Utils.escapeHtml(it.id) + '" style="height:34px;padding:0 4px;border-radius:9px;border:1px solid #FEE2E2;background:#FEF2F2;color:#DC2626;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;">' + stockActionIcon('<path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/>') + '删除</button>' +
             '</div>' +
           '</div>' +
         '</article>'

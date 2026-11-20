@@ -11,8 +11,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=123">
-  <link rel="stylesheet" href="./css/styles.css?v=123">
+  <link rel="stylesheet" href="./css/tokens.css?v=127">
+  <link rel="stylesheet" href="./css/styles.css?v=127">
 </head>
 <body>
 
@@ -531,7 +531,7 @@
     <div class="modal-sheet stock-form-sheet">
       <div class="stock-form-header">
         <h2 id="modalTitle" style="margin:0;font-size:18px;font-weight:800;color:#2B2320;">录入粮仓商品</h2>
-        <button id="closeItemModalBtn" type="button" aria-label="关闭弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;">✕</button>
+        <button id="closeItemModalBtn" type="button" aria-label="关闭弹窗" style="width:32px;height:32px;border-radius:999px;border:none;background:#F5F5F4;cursor:pointer;font-weight:700;"><span class="stock-close-text" aria-hidden="true">✕</span><svg class="stock-close-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       </div>
 
       <form id="itemForm" novalidate>
@@ -577,7 +577,7 @@
             <input id="fieldName" type="text" required placeholder="如：鸡肉无谷配方 / 鹿肉主食罐" class="ios-input">
           </div>
           <div>
-            <label for="fieldSpec">单件规格</label>
+            <label id="fieldSpecLabel" for="fieldSpec">单件规格</label>
             <input id="fieldSpec" type="text" placeholder="170g" class="ios-input" style="padding:8px 9px;font-size:13px;">
           </div>
         </div>
@@ -588,7 +588,7 @@
             <select id="fieldSubtype" class="ios-input"></select>
           </div>
           <div id="netWeightField" class="hidden-view">
-            <label for="fieldNetWeight">单件净含量 <span id="netWeightRequired" class="stock-form-required">*</span></label>
+            <label for="fieldNetWeight"><span id="fieldNetWeightLabel">单件净含量</span> <span id="netWeightRequired" class="stock-form-required">*</span></label>
             <div class="stock-form-suffix">
               <input id="fieldNetWeight" aria-describedby="netWeightUnit" class="ios-input" type="number" min="0" step="any" inputmode="decimal">
               <span id="netWeightUnit">克</span>
@@ -631,10 +631,10 @@
         </div>
 
         <p id="modalUnitPriceHint" class="stock-form-note" role="status"></p>
-        <p id="unitCorrectionHint" class="purchase-packaging-note hidden-view" style="font-size:11px;color:#57534E;">如需修改，请使用下方「库存单位更正」。</p>
+        <p id="unitCorrectionHint" class="purchase-packaging-note hidden-view" style="font-size:11px;color:#57534E;">内包装不能直接改，需要调整请用下方「库存单位更正」。</p>
         <section id="unitCorrectionFields" class="purchase-packaging stock-form-card hidden-view">
           <strong>库存单位更正</strong>
-          <p class="purchase-packaging-note">仅更正计数单位，库存数量保持不变。确认后立即保存，无需点击底部「保存商品」。</p>
+          <p class="purchase-packaging-note">仅更正计数单位，库存数量保持不变。确认后立即保存，无需点击底部「保存」。</p>
           <div class="unit-correction-grid">
             <label for="currentStockUnit">当前单位
               <input id="currentStockUnit" class="ios-input" type="text" readonly>
@@ -648,7 +648,7 @@
             </label>
           </div>
           <div class="unit-correction-actions">
-            <button type="button" id="correctUnitBtn" class="ios-btn" disabled>确认更正</button>
+            <button type="button" id="correctUnitBtn" class="ios-btn" disabled>仅确认更正</button>
           </div>
         </section>
 
@@ -674,6 +674,7 @@
                 <input id="fieldPackSize" type="number" min="1" step="1" inputmode="numeric" value="8" class="ios-input">
               </label>
             </div>
+            <p class="stock-form-edit-hint stock-form-note">已有库存，不能直接改，请用下方「调整口味库存」。</p>
             <label class="stock-form-seal flavor-control">密封方式
               <select id="fieldPackSeal" class="ios-input">
                 <option value="independent">各件独立密封</option>
@@ -685,6 +686,7 @@
             </label>
             <div id="flavorFields" class="hidden-view">
               <div id="flavorRows"></div>
+              <p class="stock-form-edit-hint stock-form-note">已有库存，不能直接改，请用下方「调整口味库存」。</p>
               <div class="stock-form-flavor-footer">
                 <button id="addFlavorBtn" type="button" class="stock-form-link">＋ 添加口味</button>
                 <p id="flavorSummary" role="status" tabindex="-1"></p>
@@ -695,7 +697,7 @@
                 <label>未开封完整件数<input id="adjustFlavorWhole" class="ios-input" type="number" min="0" step="1" inputmode="numeric"></label>
                 <label>已开封单件余量（%，填0表示移除该件）<input id="adjustFlavorPercent" class="ios-input" type="number" min="0" max="100" step="0.01" inputmode="decimal"></label>
                 <label>调整原因（可选）<input id="adjustFlavorReason" class="ios-input" maxlength="100"></label>
-                <button type="button" id="adjustFlavorBtn" class="ios-btn ios-btn-secondary">保存库存调整</button>
+                <button type="button" id="adjustFlavorBtn" class="ios-btn ios-btn-secondary">仅保存库存调整</button>
               </section>
             </div>
             <p id="purchasePackagingPreview" class="purchase-packaging-preview" role="status"></p>
@@ -743,7 +745,10 @@
             </div>
             <div id="openLimitColWrap">
               <label for="fieldOpenLimit">开封保鲜期（天）</label>
-              <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input">
+              <div class="stock-form-open-limit-suffix">
+                <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input">
+                <span aria-hidden="true">天</span>
+              </div>
             </div>
           </div>
           <button id="calcProdFromExpBtn" type="button" class="stock-form-link">根据过期日期反推生产日期</button>
@@ -1022,18 +1027,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=123"></script>
-  <script src="./js/constants.js?v=123"></script>
-  <script src="./js/utils.js?v=123"></script>
-  <script src="./js/forecast.js?v=123"></script>
-  <script src="./js/domain.js?v=123"></script>
-  <script src="./js/storage.js?v=123"></script>
-  <script src="./js/stats.js?v=123"></script>
-  <script src="./js/modal.js?v=123"></script>
-  <script src="./js/ui.js?v=123"></script>
-  <script src="./js/ui-pantry.js?v=123"></script>
-  <script src="./js/ui-daily.js?v=123"></script>
-  <script src="./js/ui-settings.js?v=123"></script>
-  <script src="./js/app.js?v=123"></script>
+  <script src="./js/covers.js?v=127"></script>
+  <script src="./js/constants.js?v=127"></script>
+  <script src="./js/utils.js?v=127"></script>
+  <script src="./js/forecast.js?v=127"></script>
+  <script src="./js/domain.js?v=127"></script>
+  <script src="./js/storage.js?v=127"></script>
+  <script src="./js/stats.js?v=127"></script>
+  <script src="./js/modal.js?v=127"></script>
+  <script src="./js/ui.js?v=127"></script>
+  <script src="./js/ui-pantry.js?v=127"></script>
+  <script src="./js/ui-daily.js?v=127"></script>
+  <script src="./js/ui-settings.js?v=127"></script>
+  <script src="./js/app.js?v=127"></script>
 </body>
 </html>

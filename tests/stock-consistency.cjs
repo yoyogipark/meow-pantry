@@ -39,6 +39,7 @@ async function run() {
     id, quantity, unit, category: 'can', brand: '测试牌', name: id, expDate: '2099-01-01', ...extra
   });
   const mixed = () => make('mix', 2, '杯', {
+    unit_net_weight_g: 50,
     purchasePackaging: { count: 1, outerUnit: '盒', size: 2 },
     flavors: [
       { id: 'chicken', name: '鸡', perPack: 1, quantity: 1, spec: '50g' },
@@ -152,7 +153,7 @@ async function run() {
   assert.equal(item.openRemainFraction, 0.75);
   pass(9);
 
-  item = make('wet', 1, '杯', { spec: '50g/杯' });
+  item = make('wet', 1, '杯', { spec: '规格备注', unit_net_weight_g: 50 });
   reset(item);
   feed(item, '46g');
   assert.equal(item.quantity, 1);
@@ -239,7 +240,7 @@ async function run() {
   await persisted(s => { assert.equal(s.items[0].unit, '杯'); assert.equal(s.items[0].quantity, 2); });
   pass(22);
 
-  item = make('backup', 1, '杯', { spec: '50g/杯' });
+  item = make('backup', 1, '杯', { spec: '规格备注', unit_net_weight_g: 50 });
   reset(item);
   feed(item, '46g');
   await settle();
@@ -890,12 +891,25 @@ async function run() {
   console.log('Pantry header filters, archived results and persisted hints pass');
 
   const currentBatch = make('edit-opening', 2, '袋', {
-    category: 'dry', prodDate: utils.shiftDaysFromToday(-6), isOpened: true,
+    category: 'dry', spec: '1.8kg', prodDate: utils.shiftDaysFromToday(-6), isOpened: true,
     openedDate: yesterday, openDaysLimit: 3, palatability: 'love', location: '柜子'
   });
   reset(currentBatch, make('saved-location', 1, '袋', { location: '蓝色铁皮柜' }));
   ui.openEditModal(currentBatch.id);
   await settle();
+  assert.equal(el('modalTitle').textContent, '编辑商品');
+  assert.equal(el('fieldSpecLabel').textContent, '规格备注 · 选填');
+  assert.equal(el('fieldNetWeightLabel').textContent, '每袋净含量');
+  assert.equal(el('fieldNetWeight').required, true);
+  assert.equal(el('fieldNetWeight').value, '1800');
+  el('fieldNetWeight').value = '';
+  el('saveItemBtn').click();
+  assert.equal(w.document.activeElement, el('fieldNetWeight'));
+  el('fieldNetWeight').value = '1700';
+  el('fieldNetWeight').dispatchEvent(new w.Event('input', { bubbles: true }));
+  el('fieldSpec').value = '2kg';
+  el('fieldSpec').dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert.equal(el('fieldNetWeight').value, '1700');
   assert.equal(el('fieldIsOpened').getAttribute('role'), 'switch');
   assert.equal(el('fieldIsOpened').getAttribute('aria-checked'), 'true');
   assert.equal(el('openedCheckboxTitle').textContent, '已拆封 1件');
@@ -927,6 +941,7 @@ async function run() {
   el('confirmCancelBtn').click();
   await settle();
   assert.equal(byId(currentBatch.id).location, '蓝色铁皮柜上');
+  assert.equal(w.MeowPantry.Forecast.unitGrams(byId(currentBatch.id)), 1700);
   assert.equal(byId(currentBatch.id).openedDate, '');
   assert.equal(byId(currentBatch.id).archivedOpenedDate, '');
   assert.equal(byId(currentBatch.id).openDaysLimit, null);

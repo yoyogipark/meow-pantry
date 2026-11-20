@@ -4,8 +4,8 @@ require('../js/forecast.js');
 
 const { Forecast } = globalThis.MeowPantry;
 const today = '2026-11-19';
-const dry = { id: 'dry', category: 'dry', unit: '袋', quantity: 1, spec: '1.8kg' };
-const freeze = { id: 'freeze', category: 'freeze', unit: '袋', quantity: 2, spec: '100g' };
+const dry = { id: 'dry', category: 'dry', unit: '袋', quantity: 1, spec: '旧规格', unit_net_weight_g: 1800 };
+const freeze = { id: 'freeze', category: 'freeze', unit: '袋', quantity: 2, spec: '旧规格', unit_net_weight_g: 100 };
 const wet = { id: 'wet', category: 'can', unit: '杯', quantity: 2, unit_net_weight_g: 50 };
 const defaults = { dry: 60, freeze: 20, can: 25 };
 
@@ -58,5 +58,5 @@ assert.equal(incomplete.grams, 100);
 assert.deepEqual(incomplete.missing, ['missing']);
 assert.equal(Forecast.compute([missing], [], defaults, today).can.days, null);
 assert.equal(Forecast.compute([wet], [], { can: 0 }, today).can.days, null);
-assert.equal(Forecast.unitGrams({ ...dry, spec: '100ml' }), 0);
+assert.equal(Forecast.unitGrams({ ...dry, unit_net_weight_g: null, spec: '1.8kg' }), 0);
 console.log('Feeding forecast calculations pass');

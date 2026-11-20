@@ -31,7 +31,7 @@
       var text = flavor.name + ' ' + Utils.formatQuantity(flavor.quantity, remainingView ? '' : item.unit);
       if (Number(flavor.quantity) > 0 && flavor.openedDate) {
         var rest = flavor.openRemainFraction;
-        var spec = Utils.parsePortionSpec(flavor.spec || item.spec);
+        var spec = Utils.parsePortionSpec(Utils.itemPortionSpec(item));
         var left = '';
         if (rest) {
           left = spec && Number(spec[1]) > 0 && (!spec[3] || spec[3] === item.unit)
@@ -200,7 +200,7 @@
   };
 
   UI.portionLabel = function (base, fraction, item, flavor) {
-    var spec = item && Utils.parsePortionSpec(flavor && flavor.spec || item.spec);
+    var spec = item && Utils.parsePortionSpec(Utils.itemPortionSpec(item));
     if (!spec || Number(spec[1]) <= 0 || (spec[3] && spec[3] !== item.unit)) return base;
     return base + ' (约' + Utils.round2(Number(spec[1]) * fraction) + spec[2] + ')';
   };
@@ -210,7 +210,7 @@
     if (/^(吃完|用完)$/.test(text)) return { finish: true };
     var mass = /^(\d+(?:\.\d+)?)\s*(g|克|kg|千克|ml|毫升)$/i.exec(text);
     if (mass && Number(mass[1]) > 0) {
-      var spec = item && Utils.parsePortionSpec(flavor && flavor.spec || item.spec);
+      var spec = item && Utils.parsePortionSpec(Utils.itemPortionSpec(item));
       var ratio = 0;
       if (spec && (!spec[3] || spec[3] === item.unit)) {
         var actualUnit = mass[2].toLowerCase();
@@ -283,7 +283,7 @@
     open.textContent = item && Domain.hasSharedSeal(item) ? '记录共用包装开封' : '记录该口味开封';
     open.disabled = !MP.state.editMode || !flavor || flavor.quantity <= 0 || Boolean(Domain.hasSharedSeal(item) ? item.isOpened : flavor.openedDate);
     document.getElementById('feedFlavorHint').textContent = flavor
-      ? '支持克数、分数或件数。当前' + UI.flavorStockText({ flavors: [flavor], spec: item.spec, unit: item.unit }, true)
+      ? '支持克数、分数或件数。当前' + UI.flavorStockText({ flavors: [flavor], unit_net_weight_g: item.unit_net_weight_g, unit: item.unit }, true)
       : '请先选择实际喂食的口味';
   };
 
@@ -630,15 +630,18 @@
 
   UI.markItemUnitManual = function () { manualItemUnit = true; };
 
-  function findFormProduct(predicate) {
+  function findFormProduct(predicate, useEnteredWeight) {
     var product = { category: MP.state.formCat };
     [['brand', 'fieldBrand'], ['name', 'fieldName'], ['spec', 'fieldSpec'], ['unit', 'fieldUnit']].forEach(function (pair) {
       product[pair[0]] = document.getElementById(pair[1]).value.trim();
     });
     if (!product.brand || !product.name) return null;
+    var weight = useEnteredWeight ? Number(document.getElementById('fieldNetWeight').value) : 0;
+    if (weight > 0) product.unit_net_weight_g = weight;
     var key = Domain.getProductGroupKey(product);
     return MP.state.items.find(function (item) {
-      return predicate(item) && Domain.getProductGroupKey(item) === key;
+      var match = weight > 0 ? item : Object.assign({}, item, { unit_net_weight_g: null });
+      return predicate(item) && Domain.getProductGroupKey(match) === key;
     });
   }
 
@@ -646,23 +649,24 @@
     var input = document.getElementById('fieldNetWeight');
     var category = MP.state.formCat;
     var wet = category === 'can';
-    var enabled = wet || category === 'dry' || category === 'freeze';
+    var required = Utils.requiresUnitWeight(category);
     var id = document.getElementById('fieldId').value;
-    var original = id && MP.state.items.find(function (item) { return item.id === id; });
-    var legacyWithoutWeight = original && original.category === 'can' && !original.unit_net_weight_g;
+    var unit = document.getElementById('fieldUnit').value;
+    document.getElementById('itemModalBackdrop').classList.toggle('is-editing-item', Boolean(id));
+    document.getElementById('fieldSpecLabel').textContent = '规格备注 · 选填';
+    document.getElementById('fieldNetWeightLabel').textContent = unit ? '每' + unit + '净含量' : '单件净含量';
+    document.getElementById('saveItemBtn').textContent = id ? '保存' : '保存记录';
     var subtype = document.getElementById('fieldSubtype').value;
-    input.disabled = !enabled;
-    input.required = wet && !legacyWithoutWeight;
-    document.getElementById('netWeightRequired').classList.toggle('hidden-view', !input.required);
-    document.getElementById('netWeightField').classList.toggle('hidden-view', !enabled);
-    document.getElementById('itemPackageWeight').classList.toggle('hidden-view',
-      !enabled && !MP.FOOD_SUBTYPES[category]);
+    input.required = required;
+    document.getElementById('netWeightRequired').classList.toggle('hidden-view', !required);
+    document.getElementById('netWeightField').classList.remove('hidden-view');
+    document.getElementById('itemPackageWeight').classList.remove('hidden-view');
     input.placeholder = wet && subtype === '罐头' ? '85 / 170' : wet && subtype === '餐包' ? '40 / 50' : '';
-    if (resetValue || !enabled) {
+    if (resetValue) {
       input.value = '';
       delete input.dataset.manualWeight;
     }
-    if (!enabled || id || input.dataset.manualWeight) return;
+    if (id || input.dataset.manualWeight) return;
     var match = findFormProduct(function (item) { return item.unit_net_weight_g > 0; });
     input.value = match ? match.unit_net_weight_g : '';
   };
@@ -683,7 +687,7 @@
     var expiry = document.getElementById('fieldExpDate');
     if (document.getElementById('fieldId').value || input.dataset.confirmed ||
         (expiry.value && expiry.value !== expiry.dataset.computed)) return;
-    var match = findFormProduct(function (item) { return Boolean(item.prodDate); });
+    var match = findFormProduct(function (item) { return Boolean(item.prodDate); }, true);
     input.value = match ? match.prodDate : '';
     UI.setProductionDatePending(Boolean(input.value));
     if (input.value) UI.autoComputeExpDate();
@@ -1138,7 +1142,7 @@
     var item = MP.state.items.find(function (x) { return x.id === id; });
     if (!item) return;
 
-    document.getElementById('modalTitle').textContent = '编辑商品与批次信息';
+    document.getElementById('modalTitle').textContent = '编辑商品';
     document.getElementById('fieldId').value = item.id;
     document.getElementById('fieldIsRestockMode').value = '';
     document.getElementById('cloneBatchFromEditWrap').classList.remove('hidden-view');
@@ -1163,9 +1167,12 @@
     document.getElementById('fieldPhotoInput').value = '';
     resetSubtypeForm(item, Boolean(document.getElementById('fieldId').value));
     UI.syncModalCategoryUI(item.category || 'dry', false);
-    UI.syncNetWeight(true);
-    document.getElementById('fieldNetWeight').value = item.unit_net_weight_g || '';
     setPurchasePackagingForm(item);
+    UI.syncNetWeight(true);
+    var netWeightInput = document.getElementById('fieldNetWeight');
+    if (item.unit_net_weight_g > 0) {
+      netWeightInput.value = item.unit_net_weight_g;
+    }
     UI.syncModalCurrencyUI(item.currency || 'CNY');
     UI.syncModalPalatabilityUI(item.palatability || '');
     UI.syncOpenedFieldsVisibility();

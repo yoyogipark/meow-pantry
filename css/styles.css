@@ -1035,6 +1035,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 
 #viewPantry .status-card > :first-child { white-space: nowrap; }
 #viewPantry .status-card { padding-inline: 8px; }
+#viewPantry #categoryBar { margin-bottom: 14px; }
 .pantry-filters { padding: 9px 10px; margin-bottom: 9px; }
 .pantry-search-row,
 .pantry-controls-row {
@@ -1161,6 +1162,26 @@ input[type="checkbox"] { accent-color: var(--accent); }
   min-width: 44px;
   min-height: 44px;
 }
+
+#viewPantry .detail-card { padding: 14px; }
+
+.detail-card-history-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 92px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #F1E6D6;
+  color: #3A2A20;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.detail-card-history-btn svg { width: 14px; height: 14px; flex: none; }
 
 /* Footer row: keep one line, no wrapping */
 .detail-card-actions {
@@ -1678,9 +1699,12 @@ input[type="checkbox"] { accent-color: var(--accent); }
   white-space: nowrap;
 }
 #currencyToggleGroup button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-strong); }
-.stock-form-suffix { position: relative; }
-.stock-form-suffix input { padding-right: 26px !important; }
-.stock-form-suffix span {
+.stock-form-suffix,
+.is-editing-item .stock-form-open-limit-suffix { position: relative; }
+.stock-form-suffix input,
+.is-editing-item .stock-form-open-limit-suffix input { padding-right: 26px !important; }
+.stock-form-suffix span,
+.is-editing-item .stock-form-open-limit-suffix span {
   position: absolute;
   inset-inline-end: 9px;
   top: 50%;
@@ -2574,4 +2598,37 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
     --pref-option: #E4D2C4;
     --pref-accent: var(--accent-fill);
   }
+}
+
+.stock-close-icon,
+.is-editing-item .stock-close-text { display: none; }
+#itemModalBackdrop.is-editing-item #closeItemModalBtn {
+  display: grid;
+  place-items: center;
+  width: 36px !important;
+  height: 36px !important;
+  color: var(--secondary-text);
+  background: var(--secondary-bg) !important;
+}
+.is-editing-item .stock-close-icon { display: block; }
+#itemModalBackdrop.is-editing-item #fieldQty { background: #FFFCF7; }
+#itemModalBackdrop.is-editing-item #currencyToggleGroup button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+#viewPantry .stock-action-icon { vertical-align: middle; }
+
+
+#itemModalBackdrop:not(.is-editing-item) :is(.stock-form-edit-hint, .stock-form-open-limit-suffix span) {
+  display: none;
+}
+#itemModalBackdrop.is-editing-item .stock-form-edit-hint { margin: 4px 0 6px; }
+#itemModalBackdrop.is-editing-item :is(#correctUnitBtn, #adjustFlavorBtn) {
+  display: flex;
+  width: fit-content;
+  margin-inline-start: auto;
+  padding: 0 12px;
+  background: var(--secondary-bg);
+  color: var(--secondary-text);
 }
