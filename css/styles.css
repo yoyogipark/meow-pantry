@@ -2501,8 +2501,8 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
 #viewSettings #dailyFeedSettings .daily-feed-input:focus-within { border-color: var(--pref-accent); }
 #viewSettings #dailyFeedSettings .daily-feed-input span { position: static; transform: none; }
 #viewSettings #dailyFeedSettings input {
-  field-sizing: content;
-  width: 3ch;
+  flex: 0 1 4ch;
+  width: 4ch;
   max-width: calc(100% - 16px);
   height: auto;
   min-height: var(--filter-control-height);
@@ -2516,9 +2516,6 @@ body:has(#viewSettings:not(.hidden-view)) .bottom-nav {
   font-size: 19px;
   font-weight: var(--weight-medium);
   color: var(--pref-title);
-}
-@supports (field-sizing: content) {
-  #viewSettings #dailyFeedSettings input { width: auto; }
 }
 #viewSettings .settings-preferences-card .settings-preference-row {
   grid-template-columns: 66px minmax(0, 1fr);

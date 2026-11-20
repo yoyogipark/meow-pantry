@@ -737,8 +737,7 @@
       }
     });
 
-    document.getElementById('dailyFeedSettings').addEventListener('change', function (ev) {
-      var input = ev.target.closest('[data-daily-feed]');
+    function saveDailyFeedInput(input) {
       if (!input) return;
       var category = input.dataset.dailyFeed;
       var grams = Number(input.value);
@@ -751,6 +750,10 @@
       st.settings.dailyFeedGrams[category] = grams;
       Storage.saveToStorage();
       UI.renderAll();
+    }
+
+    document.getElementById('dailyFeedSettings').addEventListener('change', function (ev) {
+      saveDailyFeedInput(ev.target.closest('[data-daily-feed]'));
     });
 
     document.getElementById('categoryStatsGrid').addEventListener('click', function (ev) {
@@ -1420,8 +1423,9 @@
     });
 
     function exportJsonBackup() {
+      saveDailyFeedInput(document.activeElement.closest('[data-daily-feed]'));
       Storage.exportJsonBackup(function (handedOff) {
-        if (handedOff) UI.renderAll();
+        if (handedOff) UI.renderSettingsView();
         UI.showToast(handedOff ? '已发起 JSON 导出，请在浏览器中确认文件已保存' : '未能发起 JSON 导出，请重试');
       });
     }
