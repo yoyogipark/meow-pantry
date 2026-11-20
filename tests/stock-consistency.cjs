@@ -669,7 +669,7 @@ async function run() {
   state.items.pop();
   el('stockHealthBox').querySelector('[data-jump-health="expiring_or_opened"]').click();
   assert.equal(state.activeTab, 'pantry');
-  assert.equal(state.attrFilter, 'expiring_or_opened');
+  assert.equal(state.pantryHealthFilter, 'expiring_or_opened');
   assert.ok(el('pantryList').querySelector('[data-id="weighted"]'));
   assert.ok(el('pantryList').querySelector('[data-id="legacy-wet"]'));
   el('settingsWeightAlert').querySelector('button').click();
@@ -758,6 +758,208 @@ async function run() {
   assert.deepEqual(Array.from(el('recent30PrefBox').querySelectorAll('.feeding-rank-name'), node => node.textContent),
     ['同名湿粮 (50g)', '同名湿粮 (85g)']);
   assert.match(el('recent30PrefBox').querySelector('.feeding-rank-name').closest('li').textContent, /2 顿/);
+
+  const oldBundle = make('old-bundle', 3, '罐', {
+    subtype: '罐头', prodDate: '2026-01-10', unit_net_weight_g: 85.5,
+    price: 3.333, location: '蓝色铁皮柜', batchCode: '历史渠道与批号', palatability: 'ok',
+    purchasePackaging: { count: 1, size: 4, outerUnit: '组' },
+    flavors: [
+      { id: 'chicken', name: '鸡', perPack: 2, quantity: 1, spec: '旧规格' },
+      { id: 'fish', name: '鱼', perPack: 2, quantity: 2 }
+    ]
+  });
+  reset(oldBundle);
+  state.catFilter = 'all';
+  ui.openAddModal();
+  await settle();
+  assert.equal(el('fieldProdDate').value, '');
+  assert.equal(el('fieldExpDate').value, '');
+  assert.equal(el('palatabilityGroup').querySelector('.active').dataset.pal, '');
+  el('saveItemBtn').click();
+  assert.equal(w.document.activeElement, el('fieldBrand'));
+  el('modalCatSelector').querySelector('[data-form-cat="can"]').click();
+  for (const [subtype, unit] of [['餐盒', '杯'], ['罐头', '罐'], ['餐包', '包']]) {
+    set('fieldSubtype', subtype);
+    assert.equal(el('fieldUnit').value, unit);
+  }
+  assert.equal(el('fieldNetWeight').placeholder, '40 / 50');
+  set('fieldUnit', '罐');
+  set('fieldSubtype', '餐盒');
+  assert.equal(el('fieldUnit').value, '罐');
+  set('fieldSubtype', '罐头');
+  set('fieldBrand', oldBundle.brand);
+  set('fieldName', oldBundle.name);
+  assert.equal(el('fieldNetWeight').value, '85.5');
+  assert.equal(el('fieldProdDate').value, '2026-01-10');
+  assert.equal(el('productionDatePending').classList.contains('hidden-view'), false);
+  el('fieldProdDate').click();
+  assert.equal(el('productionDatePending').classList.contains('hidden-view'), true);
+  el('fieldLocation').value = '蓝色铁皮柜上';
+  el('fieldLocation').dispatchEvent(new w.Event('input', { bubbles: true }));
+  el('locationSuggestion').querySelector('button').click();
+  assert.equal(el('fieldLocation').value, '蓝色铁皮柜');
+  el('fieldPackagingEnabled').click();
+  set('fieldPackCount', '2');
+  set('fieldPackSize', '4');
+  assert.equal(el('fieldQty').value, '8');
+  assert.equal(el('fieldQty').readOnly, true);
+  el('fieldPackagingEnabled').click();
+  assert.equal(el('fieldQty').value, '1');
+  assert.equal(el('fieldQty').readOnly, false);
+  el('fieldPackagingEnabled').click();
+  el('fieldMixedFlavors').click();
+  const flavorRows = el('flavorRows').querySelectorAll('.flavor-row');
+  for (const [index, name] of ['鸡', '鱼'].entries()) {
+    flavorRows[index].querySelector('[data-flavor-name]').value = name;
+    flavorRows[index].querySelector('[data-flavor-count]').value = '1';
+  }
+  ui.syncFlavorForm();
+  assert.match(el('flavorSummary').textContent, /还差 2 件/);
+  el('saveItemBtn').click();
+  assert.equal(state.items.length, 1);
+  assert.equal(w.document.activeElement, el('flavorSummary'));
+  flavorRows[1].querySelector('[data-flavor-count]').value = '3';
+  ui.syncFlavorForm();
+  assert.equal(el('flavorSummary').dataset.allocation, 'complete');
+  assert.equal(el('flavorSummary').textContent, '已分配 4/4 件');
+  el('fieldPrice').value = '40';
+  el('fieldPrice').dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert.match(el('modalUnitPriceHint').textContent, /5元\/罐.*元\/100g/);
+  el('saveItemBtn').click();
+  await settle();
+  assert.equal(state.items[0].quantity, 8);
+  assert.equal(state.items[0].price, 5);
+  assert.equal(state.items[0].unit_net_weight_g, 85.5);
+  ui.openEditModal(oldBundle.id);
+  await settle();
+  assert.equal(el('fieldQty').value, '3');
+  assert.equal(el('fieldBatch').value, '历史渠道与批号');
+  assert.equal(el('fieldPackOuterUnit').value, '组');
+  assert.equal(el('flavorRows').querySelector('[data-flavor-spec]'), null);
+  el('saveItemBtn').click();
+  await settle();
+  assert.equal(byId(oldBundle.id).flavors[0].spec, '旧规格');
+  assert.equal(byId(oldBundle.id).price, 3.333);
+  assert.equal(byId(oldBundle.id).quantity, 3);
+  ui.openRestockModal(byId(oldBundle.id));
+  await settle();
+  assert.equal(el('palatabilityGroup').querySelector('.active').dataset.pal, '');
+  assert.equal(el('productionDatePending').classList.contains('hidden-view'), false);
+  ui.closeItemModal();
+
+  reset(make('filter-fresh', 5, '袋', { category: 'dry', brand: '测试长品牌', name: '鸡肉甲' }),
+    make('filter-near', 2, '罐', { brand: '测试长品牌', name: '鸡肉乙', expDate: nearDate }),
+    make('filter-expired', 1, '罐', { brand: '另一个品牌', name: '鸡肉丙', expDate: yesterday }),
+    make('filter-archive', 0, '罐', { brand: '测试长品牌', name: '鸡肉丁', lastQuantity: 3 }));
+  state.catFilter = 'all';
+  state.pantryHealthFilter = '';
+  state.settings.pantryStatusHintSeen = false;
+  ui.renderAll();
+  assert.equal(el('pantryStatusHint').classList.contains('hidden-view'), false);
+  assert.equal(el('statCardStock').getAttribute('aria-pressed'), 'true');
+  assert.equal(el('pantryList').querySelectorAll('.archive-card').length, 0);
+  assert.equal(el('brandFilterSelect').options[0].textContent, '全部品牌');
+  el('statCardStock').click();
+  assert.equal(state.statusFilter, 'all');
+  assert.equal(w.document.querySelectorAll('.status-card.selected').length, 0);
+  assert.equal(el('pantryList').querySelectorAll('.archive-card').length, 1);
+  assert.equal(el('pantryStatusHint').classList.contains('hidden-view'), true);
+  assert.equal(el('categoryBar').querySelector('[data-cat="can"]').textContent, '🥫 湿粮 3');
+  el('statCardExpiring').click();
+  assert.equal(el('categoryBar').querySelector('[data-cat="can"]').textContent, '🥫 湿粮 1');
+  assert.equal(el('categoryBar').querySelector('[data-cat="dry"]').textContent, '🥣 猫粮 0');
+  el('statCardExpired').click();
+  assert.match(el('pantryList').textContent, /鸡肉丙/);
+  assert.doesNotMatch(el('pantryList').textContent, /鸡肉甲|鸡肉乙/);
+  el('statCardEmpty').click();
+  assert.equal(el('pantryList').querySelectorAll('.archive-card').length, 1);
+  el('statCardEmpty').click();
+  el('categoryBar').querySelector('[data-cat="can"]').click();
+  set('brandFilterSelect', '测试长品牌');
+  set('sortSelect', 'qty_desc');
+  assert.match(el('pantryList').firstElementChild.textContent, /鸡肉乙/);
+  el('searchInput').value = '鸡肉乙';
+  el('searchInput').dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert.match(el('pantryList').textContent, /鸡肉乙/);
+  assert.doesNotMatch(el('pantryList').textContent, /鸡肉甲|鸡肉丙|鸡肉丁/);
+  el('openStockHistoryBtn').click();
+  assert.equal(el('historyModalBackdrop').classList.contains('hidden-view'), false);
+  ui.closeStockHistoryModal();
+  el('pantryDisplayToggle').querySelector('[data-display-mode="compact"]').click();
+  assert.equal(el('pantryDisplayToggle').querySelector('[data-display-mode="compact"]').getAttribute('aria-pressed'), 'true');
+  assert.ok(await save());
+  const localSettings = json(state.settings);
+  assert.equal(localSettings.pantryHistoryHintSeen, true);
+  assert.equal(localSettings.pantryStatusHintSeen, true);
+  const reopenedPantry = boot();
+  await settle();
+  assert.equal(reopenedPantry.MeowPantry.state.statusFilter, 'in_stock');
+  assert.equal(reopenedPantry.MeowPantry.state.pantryDisplayMode, 'compact');
+  assert.equal(reopenedPantry.document.getElementById('pantryHistoryHint').classList.contains('is-visible'), false);
+  assert.equal(reopenedPantry.document.getElementById('pantryStatusHint').classList.contains('hidden-view'), true);
+  reopenedPantry.close();
+  console.log('Pantry header filters, archived results and persisted hints pass');
+
+  const currentBatch = make('edit-opening', 2, '袋', {
+    category: 'dry', prodDate: utils.shiftDaysFromToday(-6), isOpened: true,
+    openedDate: yesterday, openDaysLimit: 3, palatability: 'love', location: '柜子'
+  });
+  reset(currentBatch, make('saved-location', 1, '袋', { location: '蓝色铁皮柜' }));
+  ui.openEditModal(currentBatch.id);
+  await settle();
+  assert.equal(el('fieldIsOpened').getAttribute('role'), 'switch');
+  assert.equal(el('fieldIsOpened').getAttribute('aria-checked'), 'true');
+  assert.equal(el('openedCheckboxTitle').textContent, '已拆封 1 件');
+  assert.equal(el('openingDaysLeft').textContent, '剩 ' + domain.evaluateItem(currentBatch).openRemaining + ' 天');
+  assert.equal(el('fieldFreshUntil').value, utils.formatCnDateText(utils.openShelfEndDate(yesterday, 3)));
+  assert.ok(el('openingDaysLeft').classList.contains('is-urgent'));
+  assert.equal(el('palatabilityGroup').querySelector('.active').dataset.pal, 'love');
+  assert.equal(el('quickLocationChips').querySelector('[data-pick-location="柜子"]'), null);
+  set('fieldOpenedDate', utils.shiftDaysFromToday(1));
+  assert.match(el('openedDateError').textContent, /晚于今天/);
+  el('saveItemBtn').click();
+  assert.equal(w.document.activeElement, el('fieldOpenedDate'));
+  set('fieldOpenedDate', utils.shiftDaysFromToday(-7));
+  assert.match(el('openedDateError').textContent, /早于生产日期/);
+  el('saveItemBtn').click();
+  assert.equal(byId(currentBatch.id).openedDate, yesterday);
+  set('fieldOpenedDate', yesterday);
+  el('fieldOpenLimit').value = '';
+  el('fieldOpenLimit').dispatchEvent(new w.Event('input', { bubbles: true }));
+  assert.equal(el('fieldFreshUntil').value, '—');
+  assert.equal(el('openingDaysLeft').textContent, '');
+  el('fieldIsOpened').click();
+  assert.equal(el('fieldIsOpened').getAttribute('aria-checked'), 'false');
+  assert.ok(el('openedExtraFields').classList.contains('hidden-view'));
+  set('fieldLocation', '蓝色铁皮柜上');
+  el('saveItemBtn').click();
+  assert.match(el('confirmMessage').textContent, /已有相似位置：蓝色铁皮柜/);
+  assert.equal(byId(currentBatch.id).location, '柜子');
+  el('confirmCancelBtn').click();
+  await settle();
+  assert.equal(byId(currentBatch.id).location, '蓝色铁皮柜上');
+  assert.equal(byId(currentBatch.id).openedDate, '');
+  assert.equal(byId(currentBatch.id).archivedOpenedDate, '');
+  assert.equal(byId(currentBatch.id).openDaysLimit, null);
+  ui.openEditModal(currentBatch.id);
+  await settle();
+  assert.equal(el('fieldOpenLimit').value, '');
+  set('fieldLocation', '蓝色铁皮柜里');
+  el('saveItemBtn').click();
+  el('confirmOkBtn').click();
+  await settle();
+  assert.equal(byId(currentBatch.id).location, '蓝色铁皮柜');
+  ui.openEditModal(currentBatch.id);
+  await settle();
+  el('cloneBatchFromEditBtn').click();
+  await settle();
+  assert.equal(el('fieldId').value, '');
+  assert.equal(el('fieldIsRestockMode').value, '1');
+  assert.ok(el('batchOpeningCard').classList.contains('hidden-view'));
+  assert.ok(el('cloneBatchFromEditWrap').classList.contains('hidden-view'));
+  assert.ok(byId(currentBatch.id));
+  ui.closeItemModal();
+  console.log('Edit batch opening state, freshness and location decisions pass');
 
   reset(make('older-snapshot', 1));
   assert.ok(await new Promise(resolve => storage.savePreRestoreSnapshot(resolve)));

@@ -6,6 +6,7 @@
   var modalReturnFocus = new WeakMap();
   var modalAccessibilityReady = false;
   var pendingConfirmFn = null;
+  var pendingAlternativeFn = null;
 
   function getVisibleModals() {
     return Array.prototype.filter.call(document.querySelectorAll('.modal-backdrop[role="dialog"]'), function (modal) {
@@ -117,12 +118,21 @@
     document.getElementById('confirmStockQuantityWrap').classList.toggle('hidden-view', !redemption || stock.options.length < 2);
     UI.syncRedemptionPortion();
     pendingConfirmFn = onConfirm;
+    pendingAlternativeFn = extraOpt && extraOpt.onAlternative;
+    document.getElementById('confirmCancelBtn').textContent = (extraOpt && extraOpt.alternativeLabel) || '取消';
     UI.showModal('confirmModalBackdrop', 'confirmOkBtn');
   };
 
   UI.closeConfirm = function () {
     pendingConfirmFn = null;
+    pendingAlternativeFn = null;
     UI.hideModal('confirmModalBackdrop');
+  };
+
+  UI.chooseConfirmAlternative = function () {
+    var alternative = pendingAlternativeFn;
+    UI.closeConfirm();
+    if (alternative) alternative();
   };
 
   UI.consumePendingConfirm = function () {

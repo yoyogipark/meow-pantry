@@ -183,7 +183,8 @@
     Array.prototype.forEach.call(scopeBtns, function (button) {
       var key = button.dataset.statsScope;
       var count = key === 'all' ? gt.food.batches + gt.supp.batches + gt.med.batches : gt[key].batches;
-      button.textContent = scopeLabels[key] + ' ' + count;
+      button.innerHTML = '<span>' + scopeLabels[key] + '</span> <span>' + count + '</span>';
+      button.setAttribute('aria-pressed', String(key === scope));
     });
     var forecasts = MP.Forecast.compute(st.items, st.stockHistory, st.settings.dailyFeedGrams, Utils.getTodayStr());
     var showFood = scope === 'all' || scope === 'food';
@@ -237,7 +238,7 @@
         if (data.estimated) prediction += '<div class="forecast-result">有开封余量未填写，按整件估算</div>';
       } else if (key === 'treat') remaining = '<span class="forecast-rate">不做预测</span>';
 
-      return '<article class="forecast-tile' + (fullWidth ? ' forecast-wide' : '') + ' forecast-tile--' + key +
+      return '<article class="ios-card forecast-tile' + (fullWidth ? ' forecast-wide' : '') + ' forecast-tile--' + key +
         (tone === 'urgent' ? ' forecast-tile--urgent' : '') + '">' +
         '<button type="button" class="forecast-category" data-jump-cat="' + key + '"><strong>' +
           category.label + '</strong><span>' + stock.skus + ' 批</span></button>' +
@@ -257,7 +258,6 @@
       catGridHtml = '<div class="forecast-empty forecast-wide">当前分类暂无库存</div>';
     }
     document.getElementById('categoryStatsGrid').innerHTML = catGridHtml;
-    document.getElementById('forecastScale').classList.toggle('hidden-view', !showFood);
 
     var scopedItems = st.items.filter(function (item) {
       return item.quantity > 0 && (scope === 'all' || MP.getCategoryGroup(item.category) === scope);

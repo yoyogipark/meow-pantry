@@ -13,6 +13,8 @@
       dailyFeedGrams: { dry: null, freeze: null, can: null },
       pantryPageSize: 6,
       pantryDisplayMode: 'card',
+      pantryStatusHintSeen: false,
+      pantryHistoryHintSeen: false,
       lastBackupDate: '',
       lastJsonExportAt: '',
       unsavedChangesCount: 0,
@@ -33,8 +35,8 @@
       preRestoreSnapshotTime: ''
     },
     activeTab: 'pantry',
-    statusFilter: 'in_stock', // 'in_stock' | 'expiring' | 'expired' | 'empty'
-    attrFilter: 'all',        // 'all' | 'opened' | 'fresh' | 'pal_love' | 'group_food' | 'group_care'
+    statusFilter: 'in_stock', // 'all' | 'in_stock' | 'expiring' | 'expired' | 'empty'
+    pantryHealthFilter: '',   // Temporary constraint from the analysis page.
     catFilter: 'all',
     brandFilter: 'all',
     sortBy: 'exp_asc',
@@ -249,7 +251,7 @@
       : ('item_migrated_' + Date.now() + '_' + (fallbackIdx || 0));
     clean.category = cat;
     var netWeight = Number(raw.unit_net_weight_g);
-    clean.unit_net_weight_g = cat === 'can' && Number.isFinite(netWeight) && netWeight > 0 ? netWeight : null;
+    clean.unit_net_weight_g = (cat === 'can' || cat === 'dry' || cat === 'freeze') && Number.isFinite(netWeight) && netWeight > 0 ? netWeight : null;
     clean.brand = String(raw.brand === undefined || raw.brand === null ? '' : raw.brand).trim() || '未命名品牌';
     clean.name = String(raw.name === undefined || raw.name === null ? '' : raw.name).trim() || '未命名单品';
     clean.spec = String(raw.spec || '').trim();
@@ -276,7 +278,7 @@
     clean.openedDate = Utils.normalizeDateStr(raw.openedDate);
     clean.archivedOpenedDate = Utils.normalizeDateStr(raw.archivedOpenedDate) || (qty <= 0 ? clean.openedDate : '');
     clean.finishedDate = qty <= 0 ? Utils.normalizeDateStr(raw.finishedDate) : '';
-    clean.openDaysLimit = Math.max(1, parseInt(raw.openDaysLimit, 10) || defCat.defaultOpenDays || 45);
+    clean.openDaysLimit = raw.openDaysLimit === null ? null : Math.max(1, parseInt(raw.openDaysLimit, 10) || defCat.defaultOpenDays || 45);
     clean.openRemainFraction = remFrac;
     clean.palatability = (raw.palatability && MP.PALATABILITY[raw.palatability]) ? raw.palatability : '';
     clean.location = String(raw.location || '').trim();

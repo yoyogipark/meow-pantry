@@ -113,9 +113,12 @@
     return Utils.diffDaysBetween(refTodayStr || Utils.getTodayStr(), targetDateStr);
   };
 
+  Utils.openShelfEndDate = function (openedDate, limit) {
+    return openedDate && limit > 0 ? Utils.addShelfLife(openedDate, limit, 'days') : '';
+  };
+
   Utils.openShelfDaysRemaining = function (openedDate, limit, today) {
-    if (!openedDate || !(limit > 0)) return null;
-    return Utils.diffDaysFromToday(Utils.addShelfLife(openedDate, limit, 'days'), today);
+    return Utils.diffDaysFromToday(Utils.openShelfEndDate(openedDate, limit), today);
   };
 
   Utils.shiftDaysFromDate = function (baseDateStr, offsetDays) {

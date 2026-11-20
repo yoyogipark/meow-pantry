@@ -86,6 +86,9 @@
       st.pantryDisplayMode = pSet.pantryDisplayMode;
       st.settings.pantryDisplayMode = pSet.pantryDisplayMode;
     }
+    ['pantryStatusHintSeen', 'pantryHistoryHintSeen'].forEach(function (key) {
+      if (pSet[key] === true) st.settings[key] = true;
+    });
     if (typeof pSet.lastBackupDate === 'string') {
       st.settings.lastBackupDate = pSet.lastBackupDate;
     }
