@@ -48,4 +48,17 @@ const bomBackup = Storage.validateAndParseBackup('\uFEFF  {"version":3,"items":[
 assert.equal(bomBackup.ok, true);
 assert.equal(bomBackup.version, 3);
 
+const mealBackup = Storage.validateAndParseBackup(JSON.stringify({
+  version: 3,
+  items: [],
+  logs: ['🌙 晚饭', '晚饭', 'dinner', '☀ 午饭', '自定义餐次'].map((mealSlot, i) => ({
+    id: 'meal-' + i, date: '2026-11-20', mealSlot
+  }))
+}));
+assert.equal(mealBackup.ok, true);
+assert.deepEqual(Array.from(mealBackup.logs, log => log.mealSlot),
+  ['dinner', 'dinner', 'dinner', 'lunch', '自定义餐次']);
+assert.equal(Utils.formatMealSlot('dinner'), '晚饭');
+assert.equal(Utils.formatMealSlot('自定义餐次'), '自定义餐次');
+
 console.log('Utility date, escaping, and backup validation pass');

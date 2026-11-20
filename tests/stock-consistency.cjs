@@ -1105,6 +1105,7 @@ async function run() {
   ui.switchTab('settings');
   dryInput.focus();
   dryInput.value = '57';
+  Object.defineProperty(w.navigator, 'standalone', { value: true, configurable: true });
   let downloadedSettings;
   storage.triggerFileDownload = (_name, content) => {
     downloadedSettings = JSON.parse(content).settings;
@@ -1114,6 +1115,9 @@ async function run() {
   storage.triggerFileDownload = originalDownload;
   assert.equal(downloadedSettings.dailyFeedGrams.dry, 57);
   assert.equal(dryInput.value, '57');
+  assert.notEqual(w.document.activeElement, dryInput);
+  delete w.navigator.standalone;
+  assert.equal(dryInput.nextElementSibling.textContent, '57');
   await persisted(s => assert.equal(s.settings.dailyFeedGrams.dry, 57));
 
 

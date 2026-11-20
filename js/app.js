@@ -305,7 +305,7 @@
             var amount = redemptionMealAmount(target, confirmed, fraction);
             Domain.appendFeedingLog({
               date: today,
-              mealSlot: target.category === 'med' ? '🩺 用药/护理' : Utils.getCurrentMealSlot(),
+              mealSlot: target.category === 'med' ? 'care' : Utils.getCurrentMealSlot(),
               itemId: target.id, category: target.category, subtype: target.subtype,
               brand: target.brand, name: target.name, amount: amount,
               note: '库存核销 ' + usedCount + unit + '，仅补记确认喂食的份量',
@@ -503,7 +503,7 @@
           Domain.appendFeedingLog({
             date: today, itemId: item.id, category: item.category, subtype: item.subtype,
             brand: item.brand, name: item.name, amount: amount,
-            mealSlot: item.category === 'med' ? '🩺 用药/护理' : Utils.getCurrentMealSlot(),
+            mealSlot: item.category === 'med' ? 'care' : Utils.getCurrentMealSlot(),
             note: '库存核销时补记', deductedUnit: change.units, deductedFrac: change.fraction,
             flavorId: flavor.id, flavorName: flavor.name,
             flavorPalatability: flavor.palatability, flavorChange: change,
@@ -559,7 +559,7 @@
       if (document.getElementById('feedModalBackdrop').classList.contains('hidden-view')) return;
       var editLogId = document.getElementById('feedLogEditId').value;
       var fDate = document.getElementById('feedDateInput').value || Utils.getTodayStr();
-      var fSlot = document.getElementById('feedMealSlot').value;
+      var fSlot = Utils.normalizeMealSlot(document.getElementById('feedMealSlot').value);
       var fItemId = document.getElementById('feedItemId').value;
       var fCat = document.getElementById('feedCategorySelect').value;
       var fBrand = document.getElementById('feedBrandInput').value.trim();
@@ -567,7 +567,7 @@
       var fAmount = document.getElementById('feedAmountInput').value.trim();
       var fNote = document.getElementById('feedNoteInput').value.trim();
       var remDays = parseInt(document.getElementById('feedNextReminderDays').value, 10) || 0;
-      var nextDue = (remDays > 0 && (fCat === 'med' || fSlot === '🩺 用药/护理'))
+      var nextDue = (remDays > 0 && (fCat === 'med' || fSlot === 'care'))
         ? Utils.addShelfLife(fDate, remDays, 'days')
         : '';
       var deduct = deductionSwitch.checked;
@@ -1423,7 +1423,13 @@
     });
 
     function exportJsonBackup() {
-      saveDailyFeedInput(document.activeElement.closest('[data-daily-feed]'));
+      var activeFeedInput = document.activeElement.closest('[data-daily-feed]');
+      if (activeFeedInput) {
+        saveDailyFeedInput(activeFeedInput);
+        if (global.navigator.standalone || global.matchMedia?.('(display-mode: standalone)').matches) {
+          activeFeedInput.blur();
+        }
+      }
       Storage.exportJsonBackup(function (handedOff) {
         if (handedOff) UI.renderSettingsView();
         UI.showToast(handedOff ? '已发起 JSON 导出，请在浏览器中确认文件已保存' : '未能发起 JSON 导出，请重试');

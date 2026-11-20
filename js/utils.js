@@ -153,12 +153,44 @@
     return names[dt.getDay()];
   };
 
+  var mealSlots = [
+    { id: 'breakfast', label: '早饭', icon: '🌅', legacy: ['早饭', '🌅 早饭'] },
+    { id: 'lunch', label: '午饭', icon: '☀️', legacy: ['午饭', '☀️ 午饭'] },
+    { id: 'dinner', label: '晚饭', icon: '🌙', legacy: ['晚饭', '🌙 晚饭'] },
+    { id: 'snack', label: '加餐/零食', icon: '🍪', legacy: ['加餐/零食', '🍪 加餐/零食'] },
+    { id: 'care', label: '用药/护理', icon: '🩺', legacy: ['用药/护理', '🩺 用药/护理'] },
+    { id: 'other', label: '其他', icon: '', legacy: ['其他', '投喂', '🍽️ 投喂'] }
+  ];
+
+  Utils.normalizeMealSlot = function (value) {
+    var text = String(value || '').trim();
+    var legacy = text.replace(/\uFE0F/g, '').replace(/\s/g, '');
+    var slot = mealSlots.find(function (entry) {
+      return entry.id === text || entry.legacy.some(function (alias) {
+        return alias.replace(/\uFE0F/g, '').replace(/\s/g, '') === legacy;
+      });
+    });
+    return slot ? slot.id : (text || 'other');
+  };
+
+  Utils.formatMealSlot = function (value) {
+    var id = Utils.normalizeMealSlot(value);
+    var slot = mealSlots.find(function (entry) { return entry.id === id; });
+    return slot ? slot.label : id;
+  };
+
+  Utils.mealSlotOptions = function () {
+    return mealSlots.map(function (slot) {
+      return { id: slot.id, label: [slot.icon, slot.label].filter(Boolean).join(' ') };
+    });
+  };
+
   Utils.getCurrentMealSlot = function () {
     var hr = new Date().getHours();
-    if (hr < 10) return '🌅 早饭';
-    if (hr < 15) return '☀️ 午饭';
-    if (hr < 21) return '🌙 晚饭';
-    return '🍪 加餐/零食';
+    if (hr < 10) return 'breakfast';
+    if (hr < 15) return 'lunch';
+    if (hr < 21) return 'dinner';
+    return 'snack';
   };
 
   Utils.formatNumber = function (value, digits) {
