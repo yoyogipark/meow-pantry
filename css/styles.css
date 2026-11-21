@@ -3648,7 +3648,12 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 .feed-batch-thumb {
   display: grid; place-items: center; width: 44px; height: 44px; flex: none;
-  border-radius: 8px; background: var(--secondary-bg); object-fit: cover;
+  overflow: hidden; border-radius: 10px;
+}
+.feed-stock-choices .feed-batch-thumb { width: 36px; height: 36px; border-radius: 8px; }
+.feed-batch-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.feed-batch-thumb > span:not([hidden]) {
+  display: grid; place-items: center; width: 100%; height: 100%; background: var(--secondary-bg);
 }
 .feed-batch-copy { min-width: 0; }
 .feed-batch-copy :is(strong, small) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

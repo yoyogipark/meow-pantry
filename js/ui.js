@@ -192,6 +192,12 @@
     var safe = Utils.escapeHtml;
     var options = '<option value="">手动输入商品…</option>';
     var choices = { active: '', archived: '' };
+    function thumbnail(item) {
+      var cover = MP.getItemCoverSrc(item);
+      return '<span class="feed-batch-thumb" aria-hidden="true">' +
+        (cover ? '<img src="' + safe(cover) + '" alt="">' : '') +
+        '<span' + (cover ? ' hidden' : '') + '>' + Utils.getCategoryIcon(item.category, 20) + '</span></span>';
+    }
     function displayName(item) { return [item.brand, item.name].filter(Boolean).join(' '); }
     function balanceLabel(item) {
       return item.quantity > 0 ? '余' + Utils.formatQuantity(item.quantity, item.unit) : '已核销';
@@ -212,7 +218,7 @@
           var text = safe(label(item));
           optionRows += '<option value="' + id + '">' + text + '</option>';
           choices[sectionKey] += '<button type="button" data-feed-stock-id="' + id + '"' + (archived ? ' class="feed-stock-archived"' : '') +
-            ' title="' + text + '"><span class="feed-stock-option-text">' + safe(displayName(item)) +
+            ' title="' + text + '">' + thumbnail(item) + '<span class="feed-stock-option-text">' + safe(displayName(item)) +
             '</span><span class="feed-stock-balance"> · ' + safe(balanceLabel(item)) +
             '</span><span class="feed-stock-check" aria-hidden="true">✓</span></button>';
         });
@@ -234,10 +240,7 @@
     var selection = document.getElementById('feedStockSelection');
     trigger.classList.toggle('has-stock-selection', Boolean(current));
     if (current) {
-      var thumbnail = typeof current.imageData === 'string' && current.imageData.length > 20
-        ? '<img class="feed-batch-thumb" src="' + safe(current.imageData) + '" alt="">'
-        : '<span class="feed-batch-thumb">' + Utils.getCategoryIcon(current.category, 20) + '</span>';
-      selection.innerHTML = thumbnail + '<span class="feed-batch-copy"><strong>' + safe(displayName(current)) +
+      selection.innerHTML = thumbnail(current) + '<span class="feed-batch-copy"><strong>' + safe(displayName(current)) +
         '</strong><small>' + safe((MP.CATEGORIES[current.category]?.label || '') + ' · ' + balanceLabel(current)) +
         '</small></span>';
     } else {
@@ -252,6 +255,14 @@
       '<button type="button" class="feed-stock-manual-option" data-feed-stock-id=""><span aria-hidden="true">＋</span>手动输入商品…</button>';
     list.querySelectorAll('button').forEach(function (button) {
       button.setAttribute('aria-pressed', String(button.dataset.feedStockId === select.value));
+    });
+    picker.querySelectorAll('.feed-batch-thumb img').forEach(function (image) {
+      function showFallback() {
+        image.nextElementSibling.hidden = false;
+        image.remove();
+      }
+      image.addEventListener('error', showFallback, { once: true });
+      if (image.complete && !image.naturalWidth) showFallback();
     });
   };
 
