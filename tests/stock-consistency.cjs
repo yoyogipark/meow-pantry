@@ -343,7 +343,7 @@ async function run() {
   reset(grainItem);
   ui.openFeedModal(grainItem.id, today);
   assert.deepEqual(Array.from(w.document.querySelectorAll('#feedPortionChips [data-package-portion]'), button => button.textContent),
-    ['半粒', '1/3粒', '1/4粒', '1粒']);
+    ['1/4粒', '1/3粒', '半粒', '1粒']);
   ui.closeFeedModal();
   const legacyPortionItem = make('legacy-portion-unit', 2, '听');
   reset(legacyPortionItem);
@@ -671,9 +671,9 @@ async function run() {
     state.pantryDisplayMode = mode;
     ui.renderPantryList();
     const archive = w.document.querySelector('.archive-card');
-    assert.equal(archive.querySelector('.archive-total').textContent, '累计 2杯');
-    assert.equal(archive.querySelector('.archive-footer .stock-quantity-pill').textContent, '在库 2杯 已用 2杯');
-    assert.deepEqual(Array.from(archive.querySelectorAll('.archive-footer button'), button => button.textContent), ['流水', '复购入库']);
+    assert.match(archive.querySelector(mode === 'card' ? '.redeemed-summary' : 'summary .redeemed-muted').textContent, /核销 2杯/);
+    assert.equal(archive.querySelector('.archive-footer .stock-quantity-pill').textContent, '在库 2杯');
+    assert.deepEqual(Array.from(archive.querySelectorAll('.archive-footer button'), button => button.getAttribute('aria-label') || button.textContent), ['流水', '复购入库']);
   }
 
   const keys = w.MeowPantry.STORAGE_KEYS;
@@ -1251,8 +1251,8 @@ async function run() {
   const nextReminderYear = Number(today.slice(0, 4)) + 1;
   state.logs = [
     log('daily-med', { category: 'med', brand: '大宠爱', name: '外驱', amount: '1 支', nextDueDate: nextReminderYear + '-05-19' }),
-    log('daily-food-late', { category: 'dry', name: '午后猫粮', amount: '22g', time: '14:00' }),
-    log('daily-food-early', { category: 'dry', name: '上午猫粮', amount: '19g', time: '09:00' }),
+    log('daily-food-late', { category: 'dry', name: '午后猫粮', amount: '22g', mealSlot: 'lunch', time: '14:00' }),
+    log('daily-food-early', { category: 'dry', name: '上午猫粮', amount: '19g', mealSlot: 'lunch', time: '09:00' }),
     log('daily-fraction', { itemId: dailyWet.id, category: 'can', mealSlot: '🍪 加餐/零食', amount: '1/4罐' }),
     log('daily-treat', { category: 'treat', name: '零食', mealSlot: '🌙 晚饭', amount: '100g' }),
     log('daily-care-yesterday', { date: yesterday, category: 'supp', name: '营养品', amount: '1支' }),
@@ -1272,14 +1272,14 @@ async function run() {
   assert.equal(el('recentSevenDaysList'), null);
   assert.equal(el('dailyModeSwitch'), null);
   assert.deepEqual(Array.from(el('dailyTotals').querySelectorAll('[data-consumed-grams]'), node => node.textContent), ['41', '0克', '21']);
-  assert.equal(el('dailyTotals').querySelector('.daily-total-values').textContent, '41/30克 · 超11克');
+  assert.equal(el('dailyTotals').querySelector('.daily-total-values').textContent, '41/30克· 超11克');
   assert.equal(el('dailyTotals').querySelector('.daily-total-track .is-over').style.width, '100%');
   assert.ok(el('openAddModalBtn').closest('.hidden-view'));
   assert.equal(el('dailyWeekTitle').getAttribute('aria-label'), '查看全部历史记录');
   assert.ok(el('dailyWeekTitle').querySelector('svg'));
-  assert.match(el('dailyFeedTimeline').textContent, /1\/4罐· 约21克/);
+  assert.match(el('dailyFeedTimeline').textContent, /1\/4罐约21克/);
   assert.deepEqual(Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-card-title'), node => node.textContent),
-    ['上午猫粮', '午后猫粮', '零食', '测试牌 鸡肉湿粮', '大宠爱 外驱']);
+    ['上午猫粮', '午后猫粮', '零食', '鸡肉湿粮', '外驱']);
   assert.equal(el('dailyFeedTimeline').querySelector('.daily-reminder').textContent, '下次用药 ' + nextReminderYear + '年5月19日');
   el('dailyPrevWeek').click();
   assert.ok(!el('dailyPastWeek').classList.contains('hidden-view'));
@@ -1301,12 +1301,17 @@ async function run() {
   el('jumpToAllDatesBtn').click();
   assert.equal(el('dailyHistoryList').querySelectorAll('[data-daily-history-date]').length, 26);
   assert.deepEqual(scrolled.at(-1), [0, 240]);
-  el('dailyHistoryFilters').querySelector('[data-daily-history-filter="care"]').click();
-  assert.equal(el('dailyHistoryList').querySelectorAll('[data-daily-history-date]').length, 2);
-  assert.match(el('dailyHistoryList').textContent, /大宠爱 外驱/);
+  el('dailyHistoryFilters').querySelector('[data-daily-history-filter="medication"]').click();
+  assert.equal(el('dailyHistoryList').querySelectorAll('[data-daily-history-date]').length, 1);
+  assert.match(el('dailyHistoryList').textContent, /大宠爱 外驱 1支/);
+  assert.equal(el('dailyHistoryList').querySelector('.daily-history-counts > :last-child').textContent, '用药 1次');
+  el('dailyHistoryFilters').querySelector('[data-daily-history-filter="nursing"]').click();
+  assert.equal(el('dailyHistoryList').textContent, '没有护理记录');
+  el('dailyHistoryFilters').querySelector('[data-daily-history-filter="all"]').click();
   el('dailyHistoryList').querySelector('[data-daily-history-date="' + yesterday + '"]').click();
-  assert.match(el('dailyFeedTimeline').textContent, /这天没有喂食记录/);
-  el('dailyFeedTimeline').querySelector('[data-daily-add]').click();
+  assert.match(el('dailyFeedTimeline').textContent, /营养品/);
+  el('openQuickFeedBtn').click();
+  assert.equal(el('feedModalTitle').textContent, '新增记录');
   assert.equal(el('feedDateInput').value, yesterday);
   ui.closeFeedModal();
   state.settings.dailyFeedGrams = { dry: null, freeze: null, can: null };
@@ -1352,7 +1357,7 @@ async function run() {
   assert.equal(state.logs[0].subtype, '外驱');
   assert.equal(state.logs[0].nextDueDate, utils.shiftDaysFromToday(30));
   assert.ok(!el('dailyMedReminders').querySelector('[data-record-reminder="upcoming-reminder"]'));
-  assert.match(el('dailyFeedTimeline').textContent, /驱虫 · 外驱/);
+  assert.match(el('dailyFeedTimeline').textContent, /药品 · 大宠爱外驱/);
   assert.match(el('dailyFeedTimeline').textContent, /下次补充.*已过期 1 天/);
   el('dailyMedReminders').querySelector('[data-record-reminder="other-reminder"]').click();
   assert.equal(el('feedItemId').value, '');

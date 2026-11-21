@@ -577,7 +577,7 @@
     var prefBox = document.getElementById('recent30PrefBox');
     var foodHtml;
     if (r30.all.length === 0) {
-      foodHtml = '<div style="font-size:12.5px;color:var(--text-muted);padding:8px 0;">近期暂无饮食记录，去底部「饮食记录」记几笔就能看到主子的饮食分析啦</div>';
+      foodHtml = '<div style="font-size:12.5px;color:var(--text-muted);padding:8px 0;">近期暂无喂食记录，去底部「每日记录」记几笔就能看到主子的饮食分析啦</div>';
     } else {
       if (r30.food.length === 0) {
         foodHtml = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">近 30 天暂无普通食品记录</div>';

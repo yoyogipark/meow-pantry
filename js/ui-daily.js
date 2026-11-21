@@ -8,6 +8,7 @@
   var PAGE_SIZE = 20;
   var categories = ['dry', 'freeze', 'can'];
   var slots = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
+  var recordTypes = { food: ['喂食', '顿'], medication: ['用药', '次'], nursing: ['护理', '次'] };
   var weekEnd = Utils.getTodayStr();
   var showingHistory = false;
   var historyFilter = 'all';
@@ -92,7 +93,7 @@
     pantry.classList.toggle('hidden-view', !overdueMedication);
     pantry.textContent = overdueMedication ? '有 ' + overdueMedication + ' 项用药已过期 ›' : '';
     el('dailyMedReminderDot').classList.toggle('hidden-view', !due.length);
-    el('navBtnDaily').setAttribute('aria-label', due.length ? '饮食记录，有' + (dueNursing.length ? '待办提醒' : '用药提醒') : '饮食记录');
+    el('navBtnDaily').setAttribute('aria-label', due.length ? '每日记录，有' + (dueNursing.length ? '待办提醒' : '用药提醒') : '每日记录');
     box.classList.toggle('hidden-view', !due.length);
     if (!due.length) { box.replaceChildren(); return; }
 
@@ -170,7 +171,7 @@
       var count = (logsByDate.get(date) || []).length;
       var label = dateLabel(date) + '，' + quantity(count, '条记录');
       return '<button type="button" data-daily-date="' + date + '" aria-label="' + esc(label) + '"' +
-        (date === selected ? ' aria-current="date"' : '') + '><span>' + Utils.getWeekdayName(date) + '</span><strong>' +
+        (date === selected ? ' aria-current="date"' : '') + '><span>' + Utils.getWeekdayName(date).slice(-1) + '</span><strong>' +
         Number(date.slice(-2)) + '</strong><i class="' + (count ? 'has-record' : '') + '" aria-hidden="true"></i></button>';
     }).join('');
   }
@@ -193,7 +194,7 @@
     });
     var priorTrack = el('dailyQuickFeedTrack');
     var scrollLeft = priorTrack ? priorTrack.scrollLeft : 0;
-    el('dailyQuickFeedBox').innerHTML = candidates.length ? '<p class="daily-support">常喂</p>' +
+    el('dailyQuickFeedBox').innerHTML = candidates.length ? '<p class="daily-support">常用</p>' +
       '<div class="daily-quick-feed-strip"><div id="dailyQuickFeedTrack" class="filter-chips no-scrollbar">' +
       candidates.slice(0, 5).map(function (item) {
         return '<button type="button" class="pill-chip" data-quick-feed-item="' + esc(item.id) + '">' + esc(item.name) + '</button>';
@@ -245,11 +246,6 @@
       : { primary: estimated, grams: grams };
   }
 
-  function mealName(log) {
-    if (log.category === 'med') return '用药';
-    return Utils.formatMealSlotDisplay(log.mealSlot);
-  }
-
   function clock(log) {
     var raw = typeof log.time === 'string' ? log.time : '';
     if (!raw && typeof log.timestamp === 'string' && log.timestamp.slice(0, 10) === log.date) raw = log.timestamp.slice(11);
@@ -295,12 +291,14 @@
         var value = '<strong data-consumed-grams>' + (target > 0 ? Utils.formatNumber(eaten, 0) : quantity(eaten, '克')) + '</strong>';
         var label = '<span class="daily-support">' + MP.CATEGORIES[key].label + '</span>';
         if (!(target > 0)) return '<button type="button" class="daily-total-unset" data-forecast-action="settings" data-forecast-category="' + key + '">' +
-          label + value + '<span class="daily-target">未设目标</span></button>';
+          label + '<span class="daily-total-values">' + value + '<span class="daily-target">未设目标</span></span>' +
+          '<span class="daily-total-track" aria-hidden="true"></span></button>';
         var over = eaten > target;
-        return '<div class="daily-total-cell">' + label + '<div class="daily-total-values">' + value +
+        return '<div class="daily-total-cell"' + (over ? ' title="超' + quantity(eaten - target, '克') + '"' : '') +
+          '>' + label + '<div class="daily-total-values">' + value +
           '<span class="daily-target">/' + quantity(target, '克') + '</span>' +
-          (over ? '<span class="daily-target daily-over" title="超' + quantity(eaten - target, '克') +
-            '"> · 超' + quantity(eaten - target, '克') + '</span>' : '') + '</div>' +
+          (over ? '<span class="daily-total-over">· 超' + quantity(eaten - target, '克') + '</span>' : '') +
+          '</div>' +
           '<div class="daily-total-track" aria-hidden="true"><span class="' + (over ? 'is-over' : '') + '" style="width:' +
           Math.min(100, eaten / target * 100) + '%"></span></div></div>';
       }).join('') + '</div>' + (unknown ? '<p class="daily-support">' + quantity(unknown, '条') + '份量无法换算，未计入合计</p>' : '');
@@ -311,39 +309,85 @@
     return brand === '未命名' || brand === '未命名品牌' ? '' : brand;
   }
 
-  function displayedProductName(log) {
-    var product = Domain.resolveLogProduct(log);
-    var brand = knownBrand(product);
-    return !isFood(log) && brand ? brand + ' ' + product.name : product.name;
+  function recordType(log) {
+    var care = Domain.getCareType(log);
+    if (log.careProjects?.length || log.careOther || care === 'nursing') return 'nursing';
+    return care === 'medication' ? 'medication' : 'food';
+  }
+
+  function recordCounts(counts) {
+    return Object.keys(recordTypes).filter(function (type) { return counts[type]; }).map(function (type) {
+      var label = recordTypes[type];
+      return label[0] + ' ' + quantity(counts[type], label[1]);
+    }).join(' · ');
   }
 
   function renderDetails(rows, isToday) {
-    var food = rows.filter(function (row) { return isFood(row.log); }).length;
-    el('dailyTotalCountBadge').textContent = '喂食 ' + quantity(food, '顿') + ' · 护理 ' + quantity(rows.length - food, '次');
-    var empty = food ? '' : '<div class="empty-state daily-empty">' +
-      '<span>' + (isToday ? '今天还没有喂食记录' : '这天没有喂食记录') +
-      '</span><button type="button" class="ios-btn-text" data-daily-add>记一条</button></div>';
-    var records = rows.map(function (row) {
+    var groups = Utils.mealSlotOptions().filter(function (slot) { return slot.id !== 'care'; });
+    groups.push({ id: 'other', label: '其他喂食', icon: 'utensils' },
+      { id: 'medication', label: '用药', icon: 'stethoscope' },
+      { id: 'nursing', label: '护理', icon: 'clipboard-copy' });
+    var grouped = new Map(groups.map(function (group) { return [group.id, []]; }));
+    var counts = { food: 0, medication: 0, nursing: 0 };
+    rows.forEach(function (row) {
       var log = row.log;
-      var product = Domain.resolveLogProduct(log);
-      var brand = knownBrand(product);
-      var name = brand ? brand + ' ' + product.name : product.name;
-      var category = MP.CATEGORIES[log.category] || MP.CATEGORIES.dry;
-      var care = careInfo(log, product);
-      var heading = care ? (care.type === '驱虫' ? '用药 · ' : '') + care.type + (care.subtype && care.subtype !== care.type ? ' · ' + care.subtype : '')
-        : mealName(log) + ' · ' + category.label;
-      var id = esc(log.id);
-      return '<li class="daily-record' + (care ? ' daily-record--care' : '') + '">' + (care?.icon ? '<span class="daily-care-icon">' + Utils.uiIcon(care.icon, 20) + '</span>' : Utils.getCategoryIcon(log.category)) +
-        '<div class="daily-record-copy"><p class="daily-support">' + esc(heading) + '</p><p class="daily-card-title daily-record-name" title="' + esc(name) + '">' +
-        (brand ? '<span>' + esc(brand) + '</span> ' : '') + '<strong>' + esc(product.name) + '</strong></p>' +
-        (log.note ? '<p class="daily-support">' + esc(log.note) + '</p>' : '') +
-        detailReminder(log, care, Utils.getTodayStr()) +
-        '</div><div class="daily-record-amount"><strong>' + esc(row.amount.primary) + '</strong>' +
-        (row.amount.secondary ? '<span class="daily-support">· ' + esc(row.amount.secondary) + '</span>' : '') + '</div>' +
-        '<details class="daily-record-menu"><summary class="daily-record-more" aria-label="更多操作"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></summary><div class="daily-record-menu-items">' +
-        '<button type="button" data-edit-log="' + id + '">编辑</button><button type="button" data-del-log="' + id + '">删除</button></div></details></li>';
+      var type = recordType(log);
+      var slot = Utils.normalizeMealSlot(log.mealSlot);
+      var group = type === 'food' ? (slots.includes(slot) ? slot : 'other') : type;
+      counts[type]++;
+      grouped.get(group).push(row);
+    });
+    el('dailyTotalCountBadge').textContent = recordCounts(counts);
+    var empty = rows.length ? '' : '<div class="empty-state daily-empty">' +
+      '<span>' + (isToday ? '今天还没有记录' : '这天没有记录') +
+      '</span><button type="button" class="ios-btn-text" data-daily-add>记一条</button></div>';
+    var records = groups.map(function (group) {
+      var entries = grouped.get(group.id);
+      if (!entries.length) return '';
+      var unit = ['medication', 'nursing'].includes(group.id) ? '次' : '顿';
+      return '<section class="daily-record-group"><h4>' + Utils.uiIcon(group.icon) + esc(group.label) +
+        ' · ' + entries.length + ' ' + unit + '</h4><ul class="daily-records">' +
+        entries.sort(function (a, b) {
+          return (clock(a.log) ?? 86400) - (clock(b.log) ?? 86400);
+        }).map(renderDetailRow).join('') + '</ul></section>';
     }).join('');
-    el('dailyFeedTimeline').innerHTML = empty + (records ? '<ul class="daily-records">' + records + '</ul>' : '');
+    el('dailyFeedTimeline').innerHTML = empty + (records ? '<div class="daily-record-card">' + records + '</div>' : '');
+  }
+
+  function renderDetailRow(row) {
+    var log = row.log;
+    var product = Domain.resolveLogProduct(log);
+    var care = careInfo(log, product);
+    var nursing = recordType(log) === 'nursing';
+    var brand = knownBrand(product);
+    var category = MP.CATEGORIES[product.category || log.category] || MP.CATEGORIES.dry;
+    var singleProject = log.careProjects?.length === 1 ? log.careProjects[0] : '';
+    var icon = { 剪指甲: 'scissors', 洗澡: 'droplet' }[singleProject] || 'clipboard-copy';
+    var thumb = nursing ? '<span class="daily-record-thumb daily-nursing-thumb">' + Utils.uiIcon(icon, 20) + '</span>' :
+      '<img class="daily-record-thumb" src="' + esc(MP.getItemCoverSrc(Domain.resolveLogProduct(log, true))) + '" alt="" loading="lazy">';
+    var reminder = nursing && log.nextDueDate ? nursingDetailReminder(log) : detailReminder(log, care, Utils.getTodayStr());
+    var nameText = nursing ? Domain.nursingLabel(log) : product.name;
+    var name = '<p class="daily-card-title daily-record-name" title="' + esc([nameText, log.note].filter(Boolean).join(' · ')) + '">' +
+      esc(nameText) + '</p>';
+    var copy = nursing ? name + reminder :
+      '<p class="daily-support daily-record-meta">' + esc([category.label, brand].filter(Boolean).join(' · ')) + '</p>' + name + reminder;
+    var amount = nursing ? '' : '<div class="daily-record-amount"><strong>' + esc(row.amount.primary) + '</strong>' +
+      (row.amount.secondary ? '<span class="daily-support">' + esc(row.amount.secondary) + '</span>' : '') + '</div>';
+    var id = esc(log.id);
+    return '<li class="daily-record' + (nursing ? ' daily-record--nursing' : '') + '">' + thumb +
+      '<div class="daily-record-copy">' + copy + '</div>' + amount +
+      '<details class="daily-record-menu"><summary class="daily-record-more" aria-label="更多操作"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></summary><div class="daily-record-menu-items">' +
+      '<button type="button" data-edit-log="' + id + '">编辑</button><button type="button" data-del-log="' + id + '">删除</button></div></details></li>';
+  }
+
+  function nursingDetailReminder(log) {
+    var today = Utils.getTodayStr();
+    var due = Utils.formatRelativeYearDate(log.nextDueDate, today);
+    var days = Utils.diffDaysFromToday(log.nextDueDate, today);
+    if (!due || days === null) return '';
+    var relative = days === 0 ? '今天' : days > 0 ? days + '天后' : '已过期 ' + -days + ' 天';
+    return '<p class="daily-support daily-reminder" data-reminder-tone="' + reminderTone(days) + '">' + bell +
+      '<span>下次 ' + esc(due) + ' · ' + esc(relative) + '</span></p>';
   }
 
   function groupedLogs() {
@@ -356,30 +400,42 @@
   }
 
   function historySummary(logs) {
-    var counts = new Map();
-    var care = 0;
-    logs.forEach(function (log) {
-      if (!isFood(log)) { care++; return; }
-      var label = MP.CATEGORIES[log.category].label;
-      counts.set(label, (counts.get(label) || 0) + 1);
+    var entries = new Map();
+    orderedLogs(logs).forEach(function (log) {
+      var type = recordType(log);
+      var product = Domain.resolveLogProduct(log);
+      var amount = type === 'medication' ? displayAmount(log).primary : log.amount;
+      var name = type === 'nursing' ? Domain.nursingLabel(log) : product.name;
+      var text = type === 'medication' ? [knownBrand(product), name, amount].filter(Boolean).join(' ') : name;
+      var key = JSON.stringify([type, product.category, knownBrand(product), name, amount, log.note, log.medicationOutcome, log.nextDueDate]);
+      var entry = entries.get(key);
+      if (entry) entry.count++;
+      else entries.set(key, { text: text, count: 1 });
     });
-    var parts = Array.from(counts, function (row) { return row[0] + ' ' + quantity(row[1], '顿'); });
-    if (care) parts.push('护理 ' + quantity(care, '次'));
-    return parts.join(' · ');
+    return Array.from(entries.values(), function (entry) {
+      return entry.text + (entry.count > 1 ? ' ×' + entry.count : '');
+    }).join(' · ');
   }
 
   function renderHistory(logsByDate, today) {
     var days = [];
+    var availableTypes = new Set();
     Array.from(logsByDate.keys()).sort().reverse().forEach(function (date) {
+      var counts = { food: 0, medication: 0, nursing: 0 };
       var matches = logsByDate.get(date).filter(function (log) {
-        return historyFilter === 'all' || (historyFilter === 'food') === isFood(log);
+        var type = recordType(log);
+        availableTypes.add(type);
+        if (historyFilter !== 'all' && historyFilter !== type) return false;
+        counts[type]++;
+        return true;
       });
-      if (matches.length) days.push({ date: date, logs: matches });
+      if (matches.length) days.push({ date: date, logs: matches, counts: counts });
     });
     el('dailyHistoryCount').textContent = '共 ' + quantity(days.length, '天') + '有记录，空白日期不显示';
     el('dailyHistoryFilters').querySelectorAll('button').forEach(function (button) {
       var active = button.dataset.dailyHistoryFilter === historyFilter;
       button.classList.toggle('active', active);
+      button.classList.toggle('is-empty', button.dataset.dailyHistoryFilter !== 'all' && !availableTypes.has(button.dataset.dailyHistoryFilter));
       button.setAttribute('aria-pressed', String(active));
     });
     var monthCounts = new Map();
@@ -397,19 +453,14 @@
       return '<section><div class="daily-heading daily-detail-heading"><h3 class="daily-card-title">' +
         esc(Utils.formatMonthLabel(entry[0])) + '</h3><span class="daily-support">' + quantity(monthCounts.get(entry[0]), '天') +
         '</span></div><div class="daily-history-days">' + entry[1].map(function (day) {
-          var ordered = orderedLogs(day.logs);
-          var summary = ordered.slice(0, 3).map(function (log) {
-            var amount = displayAmount(log);
-            return (Domain.getCareType(log) === 'nursing' ? '护理 · ' : '') + displayedProductName(log) +
-              (amount.primary ? ' ' + amount.primary : '') + (amount.secondary ? ' · ' + amount.secondary : '');
-          }).join(' · ') + (ordered.length > 3 ? ' …' : '');
+          var summary = historySummary(day.logs);
           return '<button type="button" class="ios-card daily-history-day" data-daily-history-date="' + esc(day.date) + '">' +
             '<span class="daily-history-date"><strong>' + Number(day.date.slice(-2)) + '</strong><span>' + Utils.getWeekdayName(day.date) + '</span></span>' +
-            '<span class="daily-history-copy"><span title="' + esc(summary) + '">' + esc(summary) + '</span><span class="daily-support">' +
-            (day.date === today ? '今天 · ' : '') + esc(historySummary(day.logs)) + '</span></span>' +
+            '<span class="daily-history-copy"><span title="' + esc(summary) + '">' + esc(summary) + '</span><span class="daily-history-counts daily-support">' +
+            (day.date === today ? '<span class="daily-history-today">今天</span>' : '') + '<span>' + esc(recordCounts(day.counts)) + '</span></span></span>' +
             '<span class="daily-support">' + quantity(day.logs.length, '条') + ' ›</span></button>';
         }).join('') + '</div></section>';
-    }).join('') || '<p class="empty-state">暂无符合条件的饮食记录</p>';
+    }).join('') || '<p class="empty-state">没有' + (recordTypes[historyFilter]?.[0] || '每日') + '记录</p>';
     el('dailyHistoryMore').classList.toggle('hidden-view', days.length <= historyLimit);
     el('dailyHistoryEnd').classList.toggle('hidden-view', !days.length || days.length > historyLimit);
   }
@@ -452,7 +503,7 @@
     el('dailyDateLabel').textContent = dateLabel(selected) + (selected === today ? ' · 今天' : '');
     renderWeek(logs, selected, today);
     renderQuickFeed(MP.state.items);
-    var rows = orderedLogs(logs.get(selected) || []).map(function (log) { return { log: log, amount: displayAmount(log) }; });
+    var rows = (logs.get(selected) || []).slice().reverse().map(function (log) { return { log: log, amount: displayAmount(log) }; });
     renderTotals(rows, selected === today);
     renderDetails(rows, selected === today);
   };

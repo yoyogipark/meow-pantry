@@ -103,7 +103,7 @@
       }
       st.logs = st.logs.filter(function (lg) { return lg.id !== logId; });
       Storage.saveToStorage(false, function (ok) {
-        if (ok) UI.showToast(doRevert ? '已删除记录并退回对应库存余量' : '已删除该条饮食记录');
+        if (ok) UI.showToast(doRevert ? '已删除记录并退回对应库存余量' : '已删除该条每日记录');
       });
       UI.renderAll();
     }, options);
@@ -120,7 +120,7 @@
   App.bindEvents = function () {
     var st = MP.state;
 
-    // 1. Unified 4 Bottom Navigation Tabs: 粮仓库存 / 饮食记录 / 喂养分析 / 备份设置
+    // 1. Unified 4 Bottom Navigation Tabs: 粮仓库存 / 每日记录 / 喂养分析 / 备份设置
     document.getElementById('navBtnPantry').addEventListener('click', function () { UI.switchTab('pantry'); });
     document.getElementById('navBtnDaily').addEventListener('click', function () { UI.switchTab('daily'); });
     document.getElementById('navBtnStats').addEventListener('click', function () { UI.switchTab('stats'); });
@@ -130,7 +130,7 @@
     document.getElementById('globalEditModeToggle').addEventListener('change', function () {
       st.editMode = Boolean(this.checked);
       UI.syncEditModeUI();
-      UI.showToast(st.editMode ? '已进入编辑模式，可增删改库存与饮食记录' : '已锁定为只读浏览模式，防止误触', st.editMode ? 'pencil' : 'lock');
+      UI.showToast(st.editMode ? '已进入编辑模式，可增删改库存与每日记录' : '已锁定为只读浏览模式，防止误触', st.editMode ? 'pencil' : 'lock');
     });
 
     document.getElementById('openAddModalBtn').addEventListener('click', UI.openAddModal);
@@ -156,6 +156,7 @@
       statusCards[i].addEventListener('click', function () {
         var status = this.dataset.statusFilter;
         st.statusFilter = st.statusFilter === status ? 'all' : status;
+        if (st.statusFilter === 'empty') st.archiveSortBy = 'finished_desc';
         st.pantryHealthFilter = '';
         st.pantryPage = 1;
         if (!st.settings.pantryStatusHintSeen) {
@@ -191,7 +192,8 @@
       UI.renderPantryList();
     });
     document.getElementById('sortSelect').addEventListener('change', function () {
-      st.sortBy = this.value;
+      if (st.statusFilter === 'empty') st.archiveSortBy = this.value;
+      else st.sortBy = this.value;
       st.pantryPage = 1;
       UI.renderPantryList();
     });
@@ -267,13 +269,13 @@
       var btn = ev.target.closest('[data-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
-      var safeReadActions = { 'preview-img': true, 'log-feed': true, 'item-history': true, 'restock-new': true };
+      var safeReadActions = { 'preview-img': true, 'log-feed': true, 'item-history': true, 'archive-history': true, 'restock-new': true };
       if (!safeReadActions[action] && !st.editMode) {
         return;
       }
       var id = btn.getAttribute('data-id');
-      if (action === 'item-history') {
-        UI.openStockHistoryModal(id);
+      if (action === 'item-history' || action === 'archive-history') {
+        UI.openStockHistoryModal(id, action === 'archive-history');
         return;
       }
 
@@ -367,7 +369,7 @@
           });
           UI.renderAll();
         }, {
-          label: Domain.isSingleServingUnit(target) ? '同时记入今日饮食记录（核销一件时补记 ' + redemptionMealAmount(target, Math.min(1, curQ), fraction) + '）' : '',
+          label: Domain.isSingleServingUnit(target) ? '同时记入今天的每日记录（核销一件时补记 ' + redemptionMealAmount(target, Math.min(1, curQ), fraction) + '）' : '',
           defaultChecked: false,
           redemption: { quantity: curQ, unit: unit, all: action === 'mark-empty' }
         });
@@ -485,11 +487,11 @@
       // Copy routine food & supplements by default (do NOT accidentally duplicate quarterly deworming med reminders!)
       var prevLogs = st.logs.filter(function (lg) { return lg.date === prevDateStr && lg.category !== 'med' && Domain.getCareType(lg) === ''; });
       if (prevLogs.length === 0) {
-        UI.showToast('前一天 (' + prevDateStr + ') 没有可复制的日常饮食记录');
+        UI.showToast('前一天 (' + prevDateStr + ') 没有可复制的喂食记录');
         return;
       }
       UI.openConfirm(
-        '复制前一天饮食记录？',
+        '复制前一天喂食记录？',
         '将把 ' + prevDateStr + ' 的 ' + Utils.formatQuantity(prevLogs.length, '条') + '日常饮食/营养品记录复制到 ' + targetDate + '（自动跳过低频驱虫药记录，复制后可单条微调）。',
         '确认复制',
         function () {
@@ -575,7 +577,7 @@
         Storage.saveToStorage(false, function (ok) {
           if (ok) UI.showToast(alsoLogMeal ? '已核销该口味并补记喂食' : '已核销该口味');
         });
-      }, { label: '同时记入今日饮食记录（' + amount + '）', defaultChecked: false });
+      }, { label: '同时记入今天的每日记录（' + amount + '）', defaultChecked: false });
     });
     var stockSelect = document.getElementById('feedStockSelect');
     stockSelect.addEventListener('change', function () { UI.applyFeedBatchChange(this.value); });
@@ -635,9 +637,50 @@
       var button = ev.target.closest('[data-feed-care-type]');
       if (button) UI.changeFeedCareType(button.dataset.feedCareType);
     });
-    document.getElementById('feedNursingProjects').addEventListener('change', UI.syncNursingOther);
+    document.getElementById('feedNursingProjects').addEventListener('change', function (ev) {
+      UI.syncNursingOther();
+      UI.syncNursingProjects(ev.target.matches('[data-nursing-project]'));
+      UI.syncFeedReminderInterval();
+    });
+    document.getElementById('feedNursingOther').addEventListener('input', function () { UI.syncNursingProjects(); });
+    document.getElementById('feedAddNursingNote').addEventListener('click', function () {
+      document.getElementById('feedForm').dataset.nursingNoteOpen = 'true';
+      UI.syncNursingNote();
+      document.getElementById('feedNoteInput').focus();
+    });
 
-    document.getElementById('feedNextReminderDays').addEventListener('change', UI.syncFeedReminderInterval);
+    var outcome = document.getElementById('feedMedicationOutcome');
+    document.getElementById('feedMedicationOutcomeChoices').addEventListener('click', function (ev) {
+      var choice = ev.target.closest('[data-outcome]');
+      if (!choice) return;
+      outcome.value = outcome.value === choice.dataset.outcome ? '' : choice.dataset.outcome;
+      UI.syncMedicationOutcome();
+    });
+    outcome.addEventListener('change', UI.syncMedicationOutcome);
+    var customReminderDate = document.getElementById('feedCustomReminderDate');
+    function openCustomReminderDate() {
+      customReminderDate.focus();
+      try { customReminderDate.showPicker?.(); } catch { /* The date field remains available for direct entry. */ }
+    }
+    document.getElementById('feedNextReminderDays').addEventListener('change', function (ev) {
+      UI.syncFeedReminderInterval();
+      if (ev.isTrusted && this.value === 'custom' && !customReminderDate.disabled) openCustomReminderDate();
+    });
+    document.getElementById('feedNursingReminderChoices').addEventListener('click', function (ev) {
+      var choice = ev.target.closest('[data-nursing-reminder]');
+      if (!choice) return;
+      document.getElementById('feedForm').dataset.nursingReminderManual = 'true';
+      document.getElementById('feedNextReminderDays').value = choice.dataset.nursingReminder;
+      UI.syncFeedReminderInterval();
+      if (choice.dataset.nursingReminder === 'custom') openCustomReminderDate();
+    });
+    var customReminderDays = document.getElementById('feedCustomReminderDays');
+    customReminderDays.addEventListener('change', UI.syncFeedReminderInterval);
+    customReminderDate.addEventListener('change', function () {
+      var days = Utils.diffDaysBetween(document.getElementById('feedDateInput').value, this.value);
+      customReminderDays.value = days > 0 ? days : '';
+      UI.syncFeedReminderInterval();
+    });
     var feedAmount = document.getElementById('feedAmountInput');
     var deductionSwitch = document.getElementById('feedDeductStock');
     function refreshFeedPortion() {
@@ -653,6 +696,7 @@
     document.getElementById('feedDateInput').addEventListener('change', function () {
       if (this.value !== Utils.getTodayStr()) deductionSwitch.checked = false;
       UI.syncAllDateDisplays();
+      UI.syncFeedReminderInterval();
       refreshFeedPortion();
     });
 
@@ -779,7 +823,7 @@
         }
         selectLogDate(fDate);
         Storage.saveToStorage(false, function (ok) {
-          if (ok) UI.showToast(preservesDeduction ? '份量已修改，原库存扣减仍保留' : '饮食记录修改已保存');
+          if (ok) UI.showToast(preservesDeduction ? '份量已修改，原库存扣减仍保留' : '每日记录修改已保存');
         });
         UI.closeFeedModal();
         UI.renderAll();
@@ -887,7 +931,7 @@
 
       selectLogDate(fDate);
       Storage.saveToStorage(false, function (ok) {
-        if (ok) UI.showToast(nextDue ? ('已记录用药，将于 ' + nextDue + ' 提醒下次护理') : ('已记入 ' + fDate + ' 饮食记录' + splitToastSuffix));
+        if (ok) UI.showToast(nextDue ? ('已记录用药，将于 ' + nextDue + ' 提醒下次护理') : ('已记入 ' + fDate + ' 每日记录' + splitToastSuffix));
       });
       UI.closeFeedModal();
       UI.renderAll();
@@ -1073,6 +1117,7 @@
     });
     document.getElementById('clearHistoryItemFilterBtn').addEventListener('click', function () {
       st.historyItemFilter = '';
+      st.historyProductFilter = '';
       st.historyPage = 1;
       UI.renderStockHistoryModal();
     });
@@ -1753,7 +1798,7 @@
     });
     document.getElementById('exportLogsCsvBtn').addEventListener('click', function () {
       Storage.exportLogsCsv();
-      UI.showToast('已导出饮食记录 CSV');
+      UI.showToast('已导出每日记录 CSV');
     });
     document.getElementById('copySummaryBtn').addEventListener('click', copyTextSummary);
 
@@ -1773,7 +1818,7 @@
         }
         UI.openConfirm(
           '导入 JSON 备份恢复',
-          '校验通过：包含 ' + Utils.formatQuantity(check.items.length, '条') + '批次记录、' + Utils.formatQuantity(check.logs.length, '条') + '饮食记录与 ' + Utils.formatQuantity(check.stockHistory.length, '条') + '库存流水。' +
+          '校验通过：包含 ' + Utils.formatQuantity(check.items.length, '条') + '批次记录、' + Utils.formatQuantity(check.logs.length, '条') + '每日记录与 ' + Utils.formatQuantity(check.stockHistory.length, '条') + '库存流水。' +
           (check.missingDeductionTargets ? ' 有 ' + Utils.formatQuantity(check.missingDeductionTargets, '条') + '扣减记录在备份中缺少原批次，历史会保留，缺少原批次时无法自动退库。' : '') +
           (check.detachedArchives ? ' 有 ' + Utils.formatQuantity(check.detachedArchives, '条') + '归档在备份中缺少原批次。' : '') +
           '请选择导入方式（全量覆盖前会保存保护快照）：',
@@ -1819,7 +1864,7 @@
     });
 
     document.getElementById('clearAllDataBtn').addEventListener('click', function () {
-      UI.openConfirm('清空全部本地数据？', '此操作仅在你确认后清空库存、饮食记录与流水（清空前会自动保留一份本地恢复快照，也建议先导出 JSON 备份）。', '确认清空', function () {
+      UI.openConfirm('清空全部本地数据？', '此操作仅在你确认后清空库存、每日记录与流水（清空前会自动保留一份本地恢复快照，也建议先导出 JSON 备份）。', '确认清空', function () {
         Storage.savePreRestoreSnapshot(function (ok) {
           if (!ok) return;
           st.items = [];

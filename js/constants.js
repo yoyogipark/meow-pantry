@@ -50,6 +50,10 @@
     freeze: { label: '冻干类型', options: ['主食冻干', '零食冻干'] }
   };
 
+  MP.NURSING_REMINDER_DAYS = {
+    梳毛: 3, 剪指甲: 14, 洗耳朵: 14, 刷牙: 1, 洗澡: 30, 清理眼屎: 0, 其他: 0
+  };
+
   MP.FEED_PORTION_PRESETS = {
     dry: ['15g', '30g', '50g'],
     freeze: ['15g', '30g', '50g'],
