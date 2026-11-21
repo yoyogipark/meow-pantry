@@ -289,7 +289,7 @@
       if (action === 'preview-img') {
         UI.openLightbox(target);
       } else if (action === 'log-feed') {
-        UI.openFeedModal(target.id, Utils.getTodayStr());
+        UI.openFeedModal(target.id, Utils.getTodayStr(), false, true);
       } else if (action === 'restock-new' || action === 'restore-stock') {
         UI.openRestockModal(target);
       } else if (action === 'edit') {
@@ -404,12 +404,12 @@
 
     // 5. Daily Feeding Log Controls & Quick Feed
     document.getElementById('openQuickFeedBtn').addEventListener('click', function () {
-      UI.openFeedModal('', st.selectedLogDate, true);
+      UI.openFeedModal('', st.selectedLogDate, false, false, true);
     });
     document.getElementById('dailyQuickFeedBox').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-quick-feed-item]');
       if (!btn) return;
-      UI.openFeedModal(btn.getAttribute('data-quick-feed-item'), st.selectedLogDate);
+      UI.openFeedModal(btn.getAttribute('data-quick-feed-item'), st.selectedLogDate, false, false, true);
     });
     document.getElementById('closeFeedModalBtn').addEventListener('click', UI.closeFeedModal);
     document.getElementById('cancelFeedModalBtn').addEventListener('click', UI.closeFeedModal);
@@ -440,7 +440,7 @@
 
     document.getElementById('dailyFeedTimeline').addEventListener('click', function (ev) {
       var addBtn = ev.target.closest('[data-daily-add]');
-      if (addBtn) { UI.openFeedModal('', st.selectedLogDate); return; }
+      if (addBtn) { UI.openFeedModal('', st.selectedLogDate, false, false, true); return; }
       var action = ev.target.closest('[data-edit-log], [data-del-log]');
       if (action) {
         var menu = action.closest('details');
@@ -539,6 +539,10 @@
     document.getElementById('openFlavorBtn').addEventListener('click', function () {
       var item = selectedFeedItem();
       var flavor = UI.getFeedFlavor(item);
+      if (!flavor) {
+        UI.showToast('请先选择实际喂食的口味');
+        return;
+      }
       if (!item || !st.editMode || !Domain.openFlavor(item, flavor, Utils.getTodayStr())) return;
       Storage.saveToStorage();
       UI.updateFeedFlavor(item);
@@ -584,7 +588,7 @@
       stockSelect.value = option.dataset.feedStockId;
       stockSelect.dispatchEvent(new Event('change'));
       stockPicker.open = false;
-      stockTrigger.focus();
+      (stockSelect.value ? stockTrigger : document.getElementById('feedBrandInput')).focus();
     });
     stockPicker.addEventListener('keydown', function (ev) {
       if (!stockPicker.open || ev.key !== 'Escape') return;
@@ -592,6 +596,7 @@
       stockPicker.open = false;
       stockTrigger.focus();
     });
+    document.getElementById('feedReturnToStock').addEventListener('click', UI.returnToFeedStock);
     document.getElementById('feedCategorySelect').addEventListener('change', UI.syncMedReminderVisibility);
     document.getElementById('feedMealSlot').addEventListener('change', UI.syncMedReminderVisibility);
     var mealPicker = document.getElementById('feedMealPicker');
@@ -642,30 +647,26 @@
     deductionSwitch.addEventListener('change', refreshFeedPortion);
     feedAmount.addEventListener('input', function () {
       delete feedAmount.dataset.doseChoice;
+      delete feedAmount.dataset.automaticPortion;
       refreshFeedPortion();
     });
     document.getElementById('feedDateInput').addEventListener('change', function () {
       if (this.value !== Utils.getTodayStr()) deductionSwitch.checked = false;
+      UI.syncAllDateDisplays();
       refreshFeedPortion();
     });
 
     document.getElementById('feedPortionChips').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-portion]');
       if (!btn) return;
-      if (document.getElementById('feedForm').classList.contains('feed-care-mode')) {
-        feedAmount.dataset.doseChoice = btn.id || btn.dataset.frac;
-      }
+      delete feedAmount.dataset.automaticPortion;
+      feedAmount.dataset.doseChoice = btn.id || btn.dataset.portion;
       var item = selectedFeedItem();
       var flavor = UI.getFeedFlavor(item);
-      if (btn.dataset.frac === 'rest' && item) {
-        var remainder = (flavor || item).openRemainFraction || 1;
-        feedAmount.value = UI.portionLabel(remainder + item.unit, remainder, item, flavor);
-      } else {
-        var portion = btn.dataset.portion;
-        feedAmount.value = btn.hasAttribute('data-package-portion') && item
-          ? UI.portionLabel(portion, btn.dataset.frac === '0.34' ? 1 / 3 : Number(btn.dataset.frac), item, flavor)
-          : portion;
-      }
+      var portion = btn.dataset.portion;
+      feedAmount.value = btn.hasAttribute('data-package-portion') && item && document.getElementById('feedForm').classList.contains('feed-care-mode')
+        ? UI.portionLabel(portion, btn.dataset.frac === '0.34' ? 1 / 3 : Number(btn.dataset.frac), item, flavor)
+        : portion;
       refreshFeedPortion();
     });
 
@@ -793,8 +794,27 @@
       var portionChange = null;
       var flavorPalatability = isMedication ? '' : feedPalatabilityField.value;
 
-      if (fItemId) {
-        var stItem = st.items.find(function (x) { return x.id === fItemId; });
+      var form = document.getElementById('feedForm');
+      var manualFlavor = !fItemId && form.dataset.manualProduct === 'true'
+        ? document.getElementById('feedManualFlavor').value.trim() : '';
+      var stItem;
+      if (!fItemId && form.dataset.dailyEntry === 'true' && form.dataset.manualProduct === 'true') {
+        var stockBrand = fBrand || '未命名品牌';
+        var matches = st.items.filter(function (item) {
+          return item.category === fCat && item.brand === stockBrand && item.name === fName;
+        });
+        stItem = matches.find(function (item) { return item.quantity > 0; }) || matches[0];
+        if (!stItem) {
+          stItem = Domain.sanitizeItem({
+            id: 'item_' + Date.now() + '_' + Math.floor(Math.random() * 1000000),
+            category: fCat, brand: stockBrand, name: fName, quantity: 0,
+            manualFeedArchive: true, openDaysLimit: null
+          });
+          st.items.unshift(stItem);
+        }
+        fItemId = stItem.id;
+      } else if (fItemId) {
+        stItem = st.items.find(function (x) { return x.id === fItemId; });
         if (!stItem) {
           UI.showToast('库存批次已不存在，请重新选择');
           return;
@@ -856,7 +876,7 @@
         deductedUnit: actualDeductedUnit,
         deductedFrac: actualDeductedFrac,
         flavorId: flavor && flavor.id,
-        flavorName: flavor && flavor.name,
+        flavorName: flavor ? flavor.name : manualFlavor,
         flavorPalatability: flavorPalatability,
         medicationOutcome: medicationOutcome,
         careType: isMedication ? 'medication' : undefined,

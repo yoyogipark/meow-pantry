@@ -836,7 +836,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   padding-inline: 7px;
 }
 
-.flavor-row .ios-btn, #addFlavorBtn, #openFlavorBtn, #discardFlavorBtn {
+.flavor-row .ios-btn, #addFlavorBtn {
   min-height: 32px;
   padding: 4px 8px;
   margin-top: 4px;
@@ -852,23 +852,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
 
 .flavor-stock-finished {
   color: var(--text-muted);
-}
-
-#feedFlavorFields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 5px;
-  align-items: center;
-  font-size: 12px;
-}
-
-#feedFlavorFields label {
-  grid-column: 1;
-}
-
-#feedFlavorHint {
-  grid-column: 1 / -1;
-  overflow-wrap: anywhere;
 }
 
 .detail-card-heading,
@@ -1833,10 +1816,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
   background: var(--card-bg);
 }
 
-#itemForm {
-  --stock-section-gap: 15px;
+:is(#itemForm, #feedForm) {
   --stock-control-height: 40px;
-  --stock-flavor-name-gap: 5px;
   --stock-field-font-size: 15px;
   --stock-unit-font-size: 14px;
   --stock-field-inset: 12px;
@@ -1844,6 +1825,11 @@ input[type="checkbox"] { accent-color: var(--accent); }
   --stock-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23807870' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
   --stock-switch-off: var(--status-neutral-bg);
   --stock-switch-thumb: color-mix(in srgb, var(--text-muted) 32%, var(--stock-switch-off));
+}
+
+#itemForm {
+  --stock-section-gap: 15px;
+  --stock-flavor-name-gap: 5px;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1999,18 +1985,18 @@ input[type="checkbox"] { accent-color: var(--accent); }
   color: var(--text-main); font-size: 13px; cursor: pointer;
 }
 .purchase-packaging-toggle > span { display: flex; align-items: center; gap: 6px; }
-#itemForm .purchase-packaging-toggle input {
+#itemForm .purchase-packaging-toggle input, #feedForm #feedDeductStock {
   appearance: none; position: relative; width: 36px; height: 22px; margin: 0;
   flex: none; border: 1px solid var(--border-warm); border-radius: 999px;
   background: var(--stock-switch-off); cursor: pointer;
 }
-#itemForm .purchase-packaging-toggle input::after {
+#itemForm .purchase-packaging-toggle input::after, #feedForm #feedDeductStock::after {
   content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
   border-radius: 50%; background: var(--stock-switch-thumb);
 }
-#itemForm .purchase-packaging-toggle input:checked { background: var(--accent-fill); border-color: var(--accent); }
-#itemForm .purchase-packaging-toggle input:checked::after { left: auto; right: 2px; background: var(--text-on-accent); }
-#itemForm .purchase-packaging-toggle input:disabled { opacity: .55; cursor: default; }
+#itemForm .purchase-packaging-toggle input:checked, #feedForm #feedDeductStock:checked { background: var(--accent-fill); border-color: var(--accent); }
+#itemForm .purchase-packaging-toggle input:checked::after, #feedForm #feedDeductStock:checked::after { left: auto; right: 2px; background: var(--text-on-accent); }
+#itemForm .purchase-packaging-toggle input:disabled, #feedForm #feedDeductStock:disabled { opacity: .55; cursor: default; }
 #stockPackGrid {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   align-items: start; margin-top: var(--stock-pack-gap);
@@ -3424,7 +3410,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   font-weight: var(--weight-heading);
 }
 .feed-meal-picker { position: relative; min-width: 0; }
-.feed-meal-picker summary {
+.feed-meal-picker > summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3433,7 +3419,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   cursor: pointer;
   list-style: none;
 }
-.feed-meal-picker summary::-webkit-details-marker { display: none; }
+.feed-meal-picker > summary::-webkit-details-marker { display: none; }
 #feedMealChoices {
   position: absolute;
   z-index: 3;
@@ -3483,29 +3469,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .feed-care-mode .feed-reminder-note,
 #feedCareDeductHelp { display: block; color: var(--text-muted); font-size: var(--font-caption); }
 .feed-care-mode #feedNextReminderDays { width: 100% !important; }
-.feed-care-mode #feedDeductStock {
-  appearance: none;
-  position: relative;
-  width: 42px !important;
-  height: 26px !important;
-  margin: 0;
-  border: 1px solid var(--control-border);
-  border-radius: var(--radius-pill);
-  background: var(--status-neutral-bg);
-  cursor: pointer;
-}
-.feed-care-mode #feedDeductStock:checked { background: var(--accent-fill); }
-.feed-care-mode #feedDeductStock::after {
-  content: "";
-  position: absolute;
-  inset: 3px auto 3px 3px;
-  width: 18px;
-  border-radius: 50%;
-  background: var(--text-on-accent);
-}
-.feed-care-mode #feedDeductStock:checked::after { inset-inline-start: auto; inset-inline-end: 3px; }
-.feed-care-mode #feedDeductStock:disabled { opacity: .55; cursor: default; }
-
 .feed-care-segments {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3545,22 +3508,100 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .daily-care-icon .ui-icon,
 .med-reminder-icon .ui-icon { margin: 0; }
 
-.feed-care-mode #feedPortionChips :is([data-package-portion], #chipLastPortion) {
-  display: inline-flex;
-  align-items: center;
-  min-height: 32px;
-  padding: 4px 9px !important;
-  border: 1px solid var(--control-border) !important;
-  background: var(--control-bg) !important;
-  color: var(--text-muted) !important;
-  font-size: var(--font-caption) !important;
-  font-weight: var(--weight-medium) !important;
+.feed-form-sheet { padding: 16px 16px 0; max-width: 480px; max-height: 92dvh; }
+#feedForm label, #feedForm .feed-meal-label, #feedStockLabel, #feedNursingProjects legend {
+  color: var(--text-muted); font-size: 13px; font-weight: 400;
 }
-.feed-care-mode #feedPortionChips :is([data-package-portion], #chipLastPortion)[aria-pressed="true"] {
-  border-color: var(--accent) !important;
-  background: var(--selection-bg) !important;
-  color: var(--accent-strong) !important;
+#feedForm label, #feedStockLabel { display: block; margin-bottom: 4px; }
+#feedForm :is(.ios-input, .ios-date-wrap) {
+  box-sizing: border-box;
+  height: var(--stock-control-height); min-height: var(--stock-control-height); max-height: var(--stock-control-height);
+  padding-block: 0; padding-inline-start: var(--stock-field-inset);
+  color: var(--text-main); font-size: var(--stock-field-font-size); font-weight: 400;
 }
+#feedForm :is(select.ios-input, .feed-meal-picker > summary) {
+  -webkit-appearance: none; appearance: none; padding-inline-end: 26px;
+  background-image: var(--stock-select-arrow); background-position: right 8px center;
+  background-repeat: no-repeat; background-size: 13px 13px;
+}
+#feedForm .ios-date-display { justify-content: flex-start; padding-right: 28px; font-size: 15px; font-weight: 400; }
+#feedForm .stock-date-icon { position: absolute; right: 12px; pointer-events: none; color: var(--text-muted); }
+#feedForm .ios-input::placeholder, #feedForm .ios-date-display.is-placeholder { color: var(--stock-placeholder-color); }
+#feedMealSelection { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.feed-locked-product {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border: var(--border-default-width) solid var(--border-warm);
+  border-radius: 10px; background: var(--secondary-bg);
+}
+.feed-locked-product img { width: 40px; height: 40px; object-fit: cover; border-radius: 8px; flex: none; }
+.feed-locked-copy { flex: 1; min-width: 0; }
+.feed-locked-copy :is(strong, small) {
+  display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.feed-locked-copy strong { font-size: 15px; font-weight: 500; }
+.feed-locked-copy small, .feed-remaining-hint { color: var(--text-muted); font-size: 12px; }
+.feed-locked-product > .ui-icon { flex: none; margin: 0; color: var(--text-muted); }
+#feedStockArea:has(> #feedStockField.hidden-view):has(> #feedFlavorFields.hidden-view) { display: none; }
+#feedStockArea { --feed-flavor-section-gap: 16px; }
+#feedStockArea:has(> #feedFlavorFields:not(.hidden-view)) { padding-bottom: 4px; }
+#feedFlavorFields { min-width: 0; margin-top: var(--feed-flavor-section-gap); }
+#feedStockField.hidden-view + #feedFlavorFields { margin-top: 4px; }
+.feed-flavor-heading {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin-bottom: 8px; white-space: nowrap;
+}
+#feedForm .feed-flavor-heading label { margin: 0; }
+.feed-flavor-open {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  box-sizing: border-box; flex: none; height: 32px; padding: 0 10px;
+  border: 1px dashed var(--control-border); border-radius: var(--radius-pill);
+  background: transparent; color: var(--text-muted); font-size: 13px; line-height: 1; cursor: pointer;
+}
+.feed-flavor-open .ui-icon { flex: none; margin: 0; }
+.feed-flavor-open::before {
+  content: ""; position: absolute; inset: -6px 0; margin-block: -1px;
+}
+.has-selected-flavor .feed-flavor-open {
+  border-color: transparent; background: var(--accent-soft); color: var(--accent-strong); font-weight: 600;
+}
+.feed-flavor-open:disabled { cursor: default; }
+#feedForm #feedFlavorSelect {
+  width: 100%; height: 48px; min-height: 48px; max-height: 48px;
+  border-color: var(--control-border); color: var(--stock-placeholder-color);
+}
+#feedForm .has-selected-flavor #feedFlavorSelect {
+  border-color: var(--accent-edge); color: var(--text-main);
+}
+.feed-flavor-support { display: flex; align-items: center; gap: 6px; margin: 8px 0 0 2px; line-height: 1.25; }
+#feedFlavorHint {
+  flex: 1; min-width: 0; color: var(--stock-placeholder-color); font-size: 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#discardFlavorBtn {
+  flex: none; padding: 0 2px; border: 0; background: none;
+  color: var(--text-muted); font-size: 12px; cursor: pointer;
+}
+#discardFlavorBtn:disabled { display: none; }
+
+#feedForm .feed-remaining-hint { white-space: nowrap; }
+#feedPortionChips {
+  display: flex; gap: 5px; flex-wrap: nowrap; overflow-x: auto; margin-top: 6px;
+}
+#feedPortionChips:empty { display: none; }
+#feedForm #feedPortionChips button {
+  display: inline-flex; align-items: center; flex: none; min-height: 32px; padding: 0 9px; white-space: nowrap;
+  border: 1px solid var(--control-border); border-radius: var(--radius-pill);
+  background: var(--control-bg); color: var(--text-muted); font-size: 12px; cursor: pointer;
+}
+#feedForm #feedPortionChips button[aria-pressed="true"] {
+  border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong);
+}
+#feedDeductBox { padding: 8px 10px; border: 1px solid var(--border-warm); border-radius: 10px; background: var(--card-bg); }
+#feedForm #feedManualDeductLabelWrap { display: flex; min-height: 44px; margin: 0; }
+#feedForm #feedDeductLabel { font-size: 13px !important; color: var(--text-main) !important; font-weight: 400 !important; }
+#feedSplitAutoInfo { display: block; margin-top: 3px; color: var(--text-muted); font-size: 12px; }
+.feed-care-mode .feed-food-required { display: none; }
+.feed-form-footer { display: flex; gap: 10px; padding: 4px 0 max(10px, env(safe-area-inset-bottom, 0px)); }
 
 .feed-stock-choices {
   position: absolute;
@@ -3592,6 +3633,50 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .feed-stock-group-label { padding: 5px 8px 0; font-size: var(--font-caption); color: var(--text-muted); }
 .feed-stock-choices button.feed-stock-archived { color: var(--text-muted); }
 .feed-stock-choices button[aria-pressed="true"] { background: var(--selection-bg); }
+#feedForm #feedStockPickerTrigger {
+  border-color: var(--control-border); box-shadow: none;
+}
+#feedForm #feedStockPickerTrigger:focus-visible {
+  outline: 2px solid var(--control-border); outline-offset: 2px;
+}
+#feedForm #feedStockPickerTrigger.has-stock-selection {
+  height: auto; min-height: 58px; max-height: none;
+}
+#feedStockSelection { width: 100%; }
+.has-stock-selection #feedStockSelection {
+  display: flex; align-items: center; gap: 8px; padding-block: 6px;
+}
+.feed-batch-thumb {
+  display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+  border-radius: 8px; background: var(--secondary-bg); object-fit: cover;
+}
+.feed-batch-copy { min-width: 0; }
+.feed-batch-copy :is(strong, small) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feed-batch-copy strong { color: var(--text-main); font-size: 16px; font-weight: 500; }
+.feed-batch-copy small { color: var(--text-muted); font-size: 13px; }
+.feed-stock-archive-group > summary {
+  display: flex; align-items: center; justify-content: space-between; min-height: 40px;
+  padding: 0 8px; color: var(--text-muted); font-size: 13px; cursor: pointer; list-style: none;
+}
+.feed-stock-archive-group > summary::-webkit-details-marker { display: none; }
+.feed-stock-archive-group > summary::after {
+  content: ""; width: 6px; height: 6px; border: solid var(--text-muted);
+  border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+}
+.feed-stock-archive-group[open] > summary::after { transform: rotate(225deg); }
+.feed-stock-check { margin-inline-start: auto; visibility: hidden; color: var(--accent-strong); }
+.feed-stock-choices button[aria-pressed="true"] .feed-stock-check { visibility: visible; }
+.feed-stock-choices .feed-stock-manual-option {
+  position: sticky; bottom: 0; z-index: 1; border-top: 1px solid var(--border-warm);
+  border-radius: 0; background: var(--card-bg); color: var(--info-text); font-size: 13px;
+}
+.feed-manual-product { display: grid; gap: 10px; min-width: 0; }
+.feed-manual-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#feedForm .feed-manual-heading .feed-meal-label { margin: 0; }
+#feedReturnToStock {
+  padding: 0; border: 0; background: none;
+  color: var(--info-text); font-size: 13px; cursor: pointer; white-space: nowrap;
+}
 #feedStockPickerTrigger[aria-disabled="true"] { cursor: default; color: var(--text-muted); }
 
 .detail-card-top {

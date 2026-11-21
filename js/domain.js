@@ -1038,7 +1038,7 @@
     var groups = [];
     emptyItems.forEach(function (it) {
       var key = Domain.getProductGroupKey(it);
-      var batchUsed = Number(it.consumedCount) || Number(it.lastQuantity) || 1;
+      var batchUsed = it.manualFeedArchive === true ? 0 : Number(it.consumedCount) || Number(it.lastQuantity) || 1;
       if (!map[key]) {
         map[key] = {
           groupKey: key,

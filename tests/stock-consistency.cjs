@@ -143,7 +143,7 @@ async function run() {
   for (const [number, amount] of [[7, '半袋'], [8, '1/2袋']]) {
     bag = make('bag', 2, '袋', { category: 'treat' });
     reset(bag);
-    assert.match(feed(bag, amount), /更新开封余量/);
+    assert.match(feed(bag, amount), /预计余量 1\/2袋/);
     assert.equal(bag.quantity, 2);
     assert.equal(bag.openRemainFraction, 0.5);
     assert.equal(state.logs[0].amount, amount);
@@ -166,7 +166,7 @@ async function run() {
   await settle();
   await persisted(s => assert.ok(Math.abs(s.items[0].openRemainFraction * 50 - 4) < 1e-10));
   pass(10);
-  assert.match(feed(item, '4g'), /核销 1杯/);
+  assert.match(feed(item, '4g'), /预计剩余约 0g|预计余量 0杯/);
   assert.equal(item.quantity, 0);
   pass(11);
   // Reopen through the saved receipt, then undo the earlier partial operation in order.
@@ -1374,7 +1374,7 @@ async function run() {
   assert.equal(el('saveFeedBtn').textContent, '保存用药记录');
   assert.equal(el('feedStockLabel').textContent, '选择药品批次（或手动输入）');
   set('feedStockSelect', '');
-  assert.ok(!el('feedDeductBox').classList.contains('hidden-view'));
+  assert.ok(el('feedDeductBox').classList.contains('hidden-view'));
   assert.ok(el('feedDeductStock').disabled);
   assert.equal(el('feedCareDeductHelp').textContent, '选择药品批次后可扣减');
   set('feedStockSelect', careBatch.id);
@@ -1408,7 +1408,7 @@ async function run() {
   reset(supplementBatch, foodBatch, archiveDose, careBatch);
   const stockOptions = () => Array.from(el('feedStockSelect').options, option => option.value);
   ui.openFeedModal(foodBatch.id, today);
-  assert.equal(el('feedNameLabel').textContent, '品名 / 口味');
+  assert.equal(el('feedNameLabel').textContent, '商品名');
   assert.deepEqual(stockOptions(), ['', foodBatch.id]);
   el('feedMealChoices').querySelector('[data-meal-slot="care"]').click();
   assert.equal(el('feedNameLabel').textContent, '药品名称');
@@ -1426,7 +1426,7 @@ async function run() {
   assert.ok(el('feedDeductStock').checked);
   assert.match(el('feedPortionChips').querySelector('[data-frac="0.5"]').textContent, /半瓶/);
   el('feedMealChoices').querySelector('[data-meal-slot="breakfast"]').click();
-  assert.equal(el('feedNameLabel').textContent, '品名 / 口味');
+  assert.equal(el('feedNameLabel').textContent, '商品名');
   assert.equal(el('feedItemId').value, '');
   assert.equal(el('feedBrandInput').value, '');
   assert.equal(el('feedAmountInput').value, '');

@@ -95,7 +95,7 @@
         }
         category.skus += 1;
         addUnitQuantity(category.stockByUnit, unit, q);
-      } else {
+      } else if (it.manualFeedArchive !== true) {
         var used = Number(it.consumedCount) || Number(it.lastQuantity) || 1;
         groupTotals[grp].eatenBatches += 1;
         addUnitQuantity(category.eatenByUnit, unit, used);
