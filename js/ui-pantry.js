@@ -76,6 +76,17 @@
       '</span>';
   }
 
+  function detailedStockQuantityPill(item) {
+    var unit = item.unit || '件';
+    var used = Number(item.eatenCount) || 0;
+    var opened = detailedOpenStock(item, unit).packageCount;
+    return '<span class="stock-quantity-pill detail-card-stock-pill">' +
+      '<span class="stock-quantity-main">在库 ' + Utils.escapeHtml(Utils.formatQuantity(Number(item.quantity) || 0, unit)) + '</span>' +
+      (opened > 0 ? '<span class="stock-quantity-open"><i aria-hidden="true"></i>开封 ' + Utils.escapeHtml(Utils.formatNumber(opened)) + '</span>' : '') +
+      (used > 0 ? '<span class="stock-quantity-used">已用 ' + Utils.escapeHtml(Utils.formatNumber(used)) + '</span>' : '') +
+      '</span>';
+  }
+
   UI.renderStatusCounts = function () {
     var st = MP.state;
     var cStock = 0;
@@ -253,7 +264,9 @@
       ? item.flavors.filter(function (flavor) { return flavor.quantity > 0 && flavor.openedDate; })
       : (opened ? [item] : []);
     var stockText = '在库 ' + Utils.formatQuantity(quantity, unit);
+    var openText = opened ? '已开封 ' + Utils.formatQuantity(Math.max(1, openPackages.length), unit) : '';
     if (shared && opened) stockText += ' · 共用包装已开封';
+    if (shared && opened) openText = '共用包装已开封';
     var dates = shared || !item.flavors
       ? (item.openedDate ? [item.openedDate] : [])
       : openPackages.map(function (flavor) { return flavor.name + ' ' + flavor.openedDate; });
@@ -267,12 +280,14 @@
         ? Utils.formatRemainFractionText(openPackages[0].openRemainFraction, unit, true) : '';
       if (fractionText) {
         parts.push('开封余 ' + fractionText.slice(1));
+        openText = '开封余 ' + fractionText.slice(1);
       } else {
         parts.push('已开封 ' + Utils.formatQuantity(openPackages.length, unit));
+        openText = '已开封 ' + Utils.formatQuantity(openPackages.length, unit);
       }
       stockText = parts.join(' + ');
     }
-    return { opened: opened, text: stockText, dates: dates, openCount: openPackages.length, packageCount: packageCount };
+    return { opened: opened, text: stockText, openText: openText, dates: dates, openCount: openPackages.length, packageCount: packageCount };
   }
 
   function shelfRemainingPercentage(item, days) {
@@ -486,7 +501,7 @@
         return '<article class="ios-card archive-card redeemed-card"><div class="redeemed-heading">' +
           archiveAction('preview-img', item, thumbnail, ' class="redeemed-photo" aria-label="查看商品图片"') +
           '<div class="redeemed-copy"><div class="redeemed-tags"><span>' + esc(MP.CATEGORIES[item.category].label) +
-          '</span><span>' + esc(item.brand) + '</span>' + (pal ? '<span style="background:' + pal.bg + ';color:' + pal.text + ';">' +
+          '</span><span>' + esc(item.brand) + '</span>' + (pal ? '<span class="palatability-label">' +
             Utils.formatPalatabilityBadge(item, pal) + '</span>' : '') +
           '</div><h3>' + esc(item.name) + (spec ? ' <small>' + esc(spec) + '</small>' : '') + '</h3>' +
           content.summary + '</div></div>' + content.batches + content.footer + '</article>';
@@ -531,10 +546,8 @@
     }
     function renderCompactArchive(grp) {
       var rep = grp.latestItem;
-      var palKey = MP.getItemPalatability(rep);
-      var palIcon = palKey === 'mixed' ? '口味分化'
-        : (['love', 'meh'].includes(palKey) && MP.getCategoryGroup(rep.category) !== 'med'
-          ? Utils.getPalatabilityIcon(palKey) : '');
+      var archivePal = MP.getPalatabilityBadgeInfo(rep);
+      var palIcon = archivePal ? Utils.formatPalatabilityBadge(rep, archivePal) : '';
       return (
         '<div class="ios-card archive-card" style="padding:10px 12px;border-radius:14px;">' +
           '<div data-action="edit" data-id="' + Utils.escapeHtml(rep.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
@@ -561,7 +574,7 @@
       var unitStr = Utils.escapeHtml(rep.unit || '件');
       var palInfoRep = MP.getPalatabilityBadgeInfo(rep);
       var palHtml = palInfoRep
-        ? '<span style="background:' + palInfoRep.bg + ';color:' + palInfoRep.text + ';padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;">' + Utils.formatPalatabilityBadge(rep, palInfoRep) + '</span>'
+        ? '<span class="palatability-label">' + Utils.formatPalatabilityBadge(rep, palInfoRep) + '</span>'
         : '';
       var coverSrc = MP.getItemCoverSrc(rep);
       var realTag = rep.imageData
@@ -657,7 +670,7 @@
     }
 
     if (st.pantryDisplayMode === 'compact') {
-      listEl.style.gap = st.statusFilter === 'empty' ? '7px' : '8px';
+      listEl.style.gap = '8px';
       listEl.innerHTML = pagedItems.map(function (entry) {
         if (entry.archive) return renderCompactArchive(entry.archive);
         var it = entry.item;
@@ -668,18 +681,35 @@
           : expiryDays < 0 ? '已过期 ' + Utils.formatDays(expiryDays).text
           : expiryDays === 0 ? '今天到期' : '剩 ' + Utils.formatDays(expiryDays).text;
 
-        var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit || '罐', true) : '';
+        var unit = it.unit || '件';
+        var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, unit, true) : '';
         var palInfo = MP.getPalatabilityBadgeInfo(it);
-        var palIcon = palInfo ? Utils.formatPalatabilityBadge(it, palInfo) : '';
+        var palIcon = palInfo
+          ? '<span class="compact-palatability" data-rating="' + Utils.escapeHtml(palInfo.key) + '" aria-label="' +
+            Utils.escapeHtml(palInfo.label) + '">' + (palInfo.emoji
+              ? '<span class="medication-outcome-emoji" aria-hidden="true">' + Utils.escapeHtml(palInfo.emoji) + '</span>'
+              : Utils.getPalatabilityIcon(palInfo.key)) +
+            '<span class="compact-palatability-label">' + Utils.escapeHtml(palInfo.label) + '</span></span>'
+          : '';
+
+        var compactStock = detailedOpenStock(it, unit);
+        var compactOpened = compactStock.packageCount;
+        var compactUsed = Number(it.eatenCount) || 0;
+        var compactStockHtml = '<span class="compact-stock-main">在库 ' +
+          Utils.escapeHtml(Utils.formatQuantity(Number(it.quantity) || 0, unit)) + '</span>' +
+          (compactOpened > 0 ? '<span class="compact-stock-divider">·</span><span class="compact-stock-open"><i aria-hidden="true"></i>开封 ' +
+            Utils.escapeHtml(Utils.formatNumber(compactOpened)) + '</span>' : '') +
+          (compactUsed > 0 ? '<span class="compact-stock-divider">·</span><span class="compact-stock-used">已用 ' +
+            Utils.escapeHtml(Utils.formatNumber(compactUsed)) + '</span>' : '');
 
         var freshnessBadge = '';
         if (Domain.isStockOpened(it)) {
           var openDays = ev.openRemaining;
           var freshness = openDays === null ? '未填写开封保鲜期'
             : openDays < 0 ? '开封超期 ' + Utils.formatDays(openDays).text : '开封剩 ' + Utils.formatDays(openDays).text;
-          freshnessBadge = '<span class="detail-card-open-badge compact-freshness detail-card-open-badge--' +
+          freshnessBadge = '<span class="detail-card-open-badge compact-status-badge compact-freshness detail-card-open-badge--' +
             Utils.formatDays(openDays).tone + '">' +
-            '<svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>' +
+            '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>' +
             '<span>' + Utils.escapeHtml(freshness) + '</span></span>';
         }
         var displaySpec = Utils.formatItemSpec(it);
@@ -688,32 +718,25 @@
 
         return (
           '<div class="ios-card compact-stock-card" data-action="edit" data-id="' + id + '">' +
-            '<div class="compact-card-header">' +
-              '<div class="compact-card-tags compact-card-identity">' +
-                '<span class="compact-category-icon">' + Utils.getCategoryIcon(it.category, 20) + '</span>' +
-                '<span class="compact-brand" title="' + Utils.escapeHtml(it.brand) + '">' + Utils.escapeHtml(it.brand) + '</span>' +
-                (palIcon ? '<span class="compact-palatability">' + palIcon + '</span>' : '') +
-              '</div>' +
-              '<span class="detail-card-status compact-expiry-badge detail-card-status--' +
-                Utils.formatDays(expiryDays).tone + '">' + Utils.escapeHtml(expiryLabel) + '</span>' +
+            '<div class="compact-brand-row">' +
+              '<span class="compact-category-icon">' + Utils.getCategoryIcon(it.category, 20) + '</span>' +
+              '<span class="compact-brand" title="' + Utils.escapeHtml(it.brand) + '">' + Utils.escapeHtml(it.brand) + '</span>' +
+              palIcon +
             '</div>' +
-            '<div class="compact-card-main">' +
-              '<div class="compact-title" title="' + identity + '">' +
-                '<span class="compact-product-name">' + Utils.escapeHtml(it.name) + '</span>' +
-                (displaySpec ? '<span class="product-title-spec">' + Utils.escapeHtml(displaySpec) + '</span>' : '') +
-                (fracTxtCompact ? '<span class="compact-product-extra">' + Utils.escapeHtml(fracTxtCompact) + '</span>' : '') +
-              '</div>' +
-              '<div class="compact-card-controls">' +
-                '<button type="button" data-action="log-feed" data-id="' + id + '" class="btn-feed">' + UI.feedButtonContent(catInfo.group === 'med' ? '记用药' : '') + '</button>' +
-                '<button type="button" data-action="edit" data-id="' + id + '" class="edit-only compact-edit-btn">编辑</button>' +
-              '</div>' +
+            '<span class="detail-card-status compact-status-badge compact-expiry-badge detail-card-status--' +
+              Utils.formatDays(expiryDays).tone + '">' + Utils.escapeHtml(expiryLabel) + '</span>' +
+            '<div class="compact-title" title="' + identity + '">' +
+              '<span class="compact-product-name">' + Utils.escapeHtml(it.name) + '</span>' +
+              ((displaySpec || fracTxtCompact) ? '<span class="compact-product-spec">' +
+                Utils.escapeHtml([displaySpec, fracTxtCompact].filter(Boolean).join(' · ')) + '</span>' : '') +
             '</div>' +
-            '<div class="compact-stock-row' + (freshnessBadge ? ' has-freshness' : '') + '">' +
-              stockQuantityPill(it) +
+            '<button type="button" data-action="log-feed" data-id="' + id + '" class="btn-feed compact-card-action">' +
+              UI.feedButtonContent(catInfo.group === 'med' ? '记用药' : '记喂食') + '</button>' +
+            '<div class="compact-stock-row"><span class="compact-stock-copy">' + compactStockHtml + '</span>' +
               '<span class="compact-location"' + (it.location ? ' title="' + Utils.escapeHtml(it.location) + '"' : '') + '>' +
-                (it.location ? Utils.iconLabel('map-pin', it.location) : '') + '</span>' +
-              freshnessBadge +
+                (it.location ? Utils.uiIcon('map-pin', 14) + '<span>' + Utils.escapeHtml(it.location) + '</span>' : '') + '</span>' +
             '</div>' +
+            '<div class="compact-freshness-slot">' + freshnessBadge + '</div>' +
           '</div>'
         );
       }).join('');
@@ -738,14 +761,16 @@
 
       var palInfo = MP.getPalatabilityBadgeInfo(it);
       var palHtml = palInfo
-        ? '<span class="detail-card-palatability" data-rating="' + Utils.escapeHtml(palInfo.key) + '" style="--rating-bg:' + palInfo.bg + ';--rating-ink:' + palInfo.text + ';">' + (catInfo.group === 'food' ? Utils.getPalatabilityIcon(palInfo.key) : '') + Utils.escapeHtml(palInfo.label) + '</span>'
+        ? '<span class="detail-card-palatability" data-rating="' + Utils.escapeHtml(palInfo.key) + '">' +
+          (palInfo.emoji ? '<span class="medication-outcome-emoji" aria-hidden="true">' + Utils.escapeHtml(palInfo.emoji) + '</span>' : Utils.getPalatabilityIcon(palInfo.key)) +
+          '<span class="detail-card-palatability-label">' + Utils.escapeHtml(palInfo.label) + '</span></span>'
         : '';
       var lastFedHtml = buildLastFedTagHtml(it);
 
 
       var qtyNum = Number(it.quantity) || 0;
       var unitStr = Utils.escapeHtml(unit);
-      var stockHtml = '<span class="detail-card-stock-text">' + Utils.escapeHtml(stock.text) + '</span>';
+      var stockHtml = '<span class="detail-card-stock-text">' + Utils.escapeHtml(stock.openText) + '</span>';
       var openedProgress = stock.opened ? detailedOpenedProgress(it, ev.openRemaining) : '';
       var openedBannerHtml = stock.opened
         ? '<div class="detail-card-open-stock detail-card-open-stock--' + Utils.formatDays(ev.openRemaining).tone + '">' +
@@ -806,8 +831,11 @@
             '<div class="detail-card-information">' +
               '<div class="detail-card-heading">' +
                 '<div class="detail-card-tags">' +
-                  '<span class="detail-card-category">' + Utils.getCategoryIcon(it.category, 20) + ' ' + catInfo.label + (subtypeLabel ? ' · ' + Utils.escapeHtml(subtypeLabel) : '') + '</span>' +
-                  '<span class="detail-card-brand" title="' + Utils.escapeHtml(it.brand) + '">' + Utils.escapeHtml(it.brand) + '</span>' +
+                  '<span class="detail-card-identity">' +
+                    '<span class="detail-card-category">' + Utils.getCategoryIcon(it.category, 20) + '<span>' + catInfo.label + (subtypeLabel ? ' · ' + Utils.escapeHtml(subtypeLabel) : '') + '</span></span>' +
+                    '<span class="detail-card-brand" title="' + Utils.escapeHtml(it.brand) + '">' + Utils.escapeHtml(it.brand) + '</span>' +
+                  '</span>' +
+                  palHtml +
                 '</div>' +
               '</div>' +
               '<h3 class="detail-card-product-title" title="' + Utils.escapeHtml([it.name, displaySpec].filter(Boolean).join(' ')) + '">' +
@@ -828,7 +856,7 @@
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--status-neutral-bg);">' +
             '<div class="detail-card-actions">' +
-              '<div class="detail-card-stock-tags">' + stockQuantityPill(it) + palHtml + '</div>' +
+              '<div class="detail-card-stock-tags">' + detailedStockQuantityPill(it) + '</div>' +
               '<div class="detail-card-action-buttons">' +
                 '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(it.id) + '" aria-label="历史记录" title="历史记录" class="detail-card-history-btn">' + historyIcon + '</button>' +
                 '<button type="button" data-action="log-feed" data-id="' + Utils.escapeHtml(it.id) + '" class="btn-feed">' + UI.feedButtonContent(feedBtnLabel) + '</button>' +

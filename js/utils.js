@@ -54,16 +54,22 @@
   };
 
   Utils.getPalatabilityIcon = function (key, size) {
-    if (!['love', 'ok', 'coax', 'meh'].includes(key)) return '';
     var pixels = size === 32 ? 32 : 16;
-    return '<svg class="pal-cat-face-inline" width="' + pixels + '" height="' + pixels +
-      '" viewBox="0 0 36 36" aria-hidden="true"><use href="#pal-cat-' + key + '"></use></svg>';
+    return '<span class="palatability-emoji" aria-hidden="true" style="font-size:' + pixels + 'px">' +
+      Utils.escapeHtml(MP.getPalatabilityEmoji(key)) + '</span>';
   };
 
   Utils.formatPalatabilityBadge = function (item, badge) {
-    if (badge.key === 'mixed') return Utils.escapeHtml(badge.label);
-    if (MP.getCategoryGroup(item.category) === 'med') return Utils.iconLabel(badge.icon, badge.label);
-    return Utils.getPalatabilityIcon(badge.key) + ' ' + Utils.escapeHtml(badge.label);
+    var icon = badge.emoji
+      ? '<span class="medication-outcome-emoji" aria-hidden="true">' + Utils.escapeHtml(badge.emoji) + '</span>'
+      : Utils.getPalatabilityIcon(badge.key);
+    return icon + ' ' + Utils.escapeHtml(badge.label);
+  };
+
+  Utils.formatMedicationOutcome = function (value) {
+    var info = MP.getMedicationOutcomeInfo(value || '');
+    return '<span class="medication-outcome-emoji" aria-hidden="true">' + Utils.escapeHtml(info.emoji) + '</span>' +
+      '<span>' + Utils.escapeHtml(info.label) + '</span>';
   };
 
   Utils.round2 = function (num) {

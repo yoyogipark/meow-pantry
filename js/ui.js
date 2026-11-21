@@ -447,7 +447,7 @@
     if (!choices.childElementCount) {
       choices.innerHTML = Array.from(select.options, function (option) {
         return '<button type="button" class="care-chip" data-outcome="' + Utils.escapeHtml(option.value) + '">' +
-          careChipContent(option.textContent) + '</button>';
+          '<span class="care-chip-copy medication-outcome-copy">' + Utils.formatMedicationOutcome(option.value) + '</span></button>';
       }).join('');
     }
     Array.from(choices.children).forEach(function (button) {
@@ -1367,10 +1367,10 @@
     var bMeh = document.getElementById('palBtnMeh');
     if (catKey === 'med') {
       if (palTitle) palTitle.innerHTML = Utils.getCategoryIcon('med', 20) + ' 给药反应与耐受度记录';
-      if (bLove) bLove.textContent = '无异常';
-      if (bOk) bOk.textContent = '好喂';
-      if (bCoax) bCoax.textContent = '抗拒';
-      if (bMeh) bMeh.textContent = '不适';
+      if (bLove) bLove.innerHTML = Utils.formatMedicationOutcome('smooth');
+      if (bOk) bOk.innerHTML = Utils.formatMedicationOutcome('coaxed');
+      if (bCoax) bCoax.innerHTML = Utils.formatMedicationOutcome('resisted');
+      if (bMeh) bMeh.innerHTML = Utils.formatMedicationOutcome('vomited');
     } else if (catKey === 'supp') {
       if (palTitle) palTitle.innerHTML = Utils.getCategoryIcon('supp', 20) + ' 营养品接受度反馈';
       if (bLove) bLove.innerHTML = Utils.getPalatabilityIcon('love') + ' 主动吃';
@@ -1391,8 +1391,7 @@
 
   function flavorRatingContent(key) {
     var icon = key ? Utils.getPalatabilityIcon(key)
-      : '<svg class="pal-cat-face-inline" width="16" height="16" viewBox="0 0 36 36" aria-hidden="true">' +
-        '<use href="#pal-cat-base"></use><use href="#pal-cat-green-eyes"></use></svg>';
+      : Utils.getPalatabilityIcon('unrated');
     return icon + '<span>' + flavorRatingOptions[key] + '</span>';
   }
 
