@@ -365,8 +365,11 @@
     var type = recordType(log);
     var metaLabel = type === 'food' ? (slot?.label || '其他') : recordTypes[type][0];
     var metaIcon = type === 'food' ? (slot?.icon || 'utensils') : (type === 'medication' ? 'stethoscope' : icon);
+    var medicationOutcome = type === 'medication'
+      ? '<span class="daily-medication-outcome">' + Utils.formatMedicationOutcome(log.medicationOutcome || '') + '</span>'
+      : '';
     var copy = nursing ? name : '<p class="daily-support daily-record-meta">' + Utils.uiIcon(metaIcon, 14) +
-      '<span>' + esc([metaLabel, brand].filter(Boolean).join(' · ')) + '</span></p>' + name;
+      '<span>' + esc([metaLabel, brand].filter(Boolean).join(' · ')) + '</span>' + medicationOutcome + '</p>' + name;
     var amountText = nursing ? (String(log.amount || '').trim() || '1次') : row.amount.primary;
     var amount = '<div class="daily-record-amount"><strong>' + esc(amountText) +
       (row.amount.secondary ? '<span class="daily-record-conversion">' + esc(row.amount.secondary) + '</span>' : '') + '</strong></div>';
@@ -403,7 +406,10 @@
       var product = Domain.resolveLogProduct(log);
       var amount = type === 'medication' ? displayAmount(log).primary : log.amount;
       var name = type === 'nursing' ? Domain.nursingLabel(log) : product.name;
-      var text = type === 'medication' ? [knownBrand(product), name, amount].filter(Boolean).join(' ') : name;
+      var outcome = type === 'medication' ? MP.getMedicationOutcomeInfo(log.medicationOutcome || '') : null;
+      var text = type === 'medication'
+        ? [knownBrand(product), name, amount, outcome && outcome.emoji + ' ' + outcome.label].filter(Boolean).join(' ')
+        : name;
       var key = JSON.stringify([type, product.category, knownBrand(product), name, amount, log.note, log.medicationOutcome, log.nextDueDate]);
       var entry = entries.get(key);
       if (entry) entry.count++;

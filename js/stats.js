@@ -552,7 +552,7 @@
               '<div class="pal-record-tags">' +
                 '<span style="font-size:11px;font-weight:700;color:var(--text-main);background:var(--border-warm);padding:1px 6px;border-radius:5px;">' + Utils.getCategoryIcon(prod.category, 20) + ' ' + catInfo.label + '</span>' +
                 '<span style="font-size:11px;font-weight:700;color:var(--accent-strong);background:var(--accent-soft);padding:1px 7px;border-radius:5px;">' + Utils.escapeHtml(prod.brand) + '</span>' +
-                (palBadge ? '<span style="font-size:11px;font-weight:700;background:' + palBadge.bg + ';color:' + palBadge.text + ';padding:1px 7px;border-radius:999px;">' + Utils.formatPalatabilityBadge(prod.rep, palBadge) + '</span>' : '') +
+                (palBadge ? '<span class="palatability-label">' + Utils.formatPalatabilityBadge(prod.rep, palBadge) + '</span>' : '') +
               '</div>' +
               '<div class="pal-record-title">' +
                 Utils.escapeHtml(prod.name) + (prod.spec ? (' <span class="pal-record-spec">(' + Utils.escapeHtml(prod.spec) + ')</span>') : '') +

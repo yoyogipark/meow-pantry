@@ -83,10 +83,33 @@
   };
 
   MP.PALATABILITY = {
-    love: { label: '超爱吃', suppLabel: '主动爱吃', medLabel: '顺利无异常', bg: 'var(--accent-soft)', text: 'var(--accent-strong)' },
-    ok:   { label: '正常吃', suppLabel: '拌粮顺吃', medLabel: '顺畅好喂',   bg: 'var(--warn-soft)', text: 'var(--status-warning-text)' },
-    coax: { label: '需哄吃', suppLabel: '需哄喂',   medLabel: '抗拒/流口水', bg: 'var(--info-bg)', text: 'var(--info-text)' },
-    meh:  { label: '不爱吃', suppLabel: '抗拒拒食', medLabel: '软便/不适',   bg: 'var(--status-neutral-bg)', text: 'var(--text-main)' }
+    love: { label: '超爱吃', suppLabel: '主动爱吃', emoji: '😍', bg: 'var(--accent-soft)', text: 'var(--accent-strong)' },
+    ok:   { label: '正常吃', suppLabel: '拌粮顺吃', emoji: '😋', bg: 'var(--warn-soft)', text: 'var(--status-warning-text)' },
+    coax: { label: '需哄吃', suppLabel: '需哄喂',   emoji: '😐', bg: 'var(--info-bg)', text: 'var(--info-text)' },
+    meh:  { label: '不爱吃', suppLabel: '抗拒拒食', emoji: '😣', bg: 'var(--status-neutral-bg)', text: 'var(--text-main)' }
+  };
+
+  MP.getPalatabilityEmoji = function (key) {
+    return MP.PALATABILITY[key]?.emoji || (key === 'mixed' ? '🔀' : '❔');
+  };
+
+  MP.MEDICATION_OUTCOMES = {
+    '':        { label: '未记录', emoji: '➖' },
+    smooth:    { label: '顺利',   emoji: '✅' },
+    coaxed:    { label: '需哄喂', emoji: '🥹' },
+    resisted:  { label: '抗拒',   emoji: '🙅' },
+    vomited:   { label: '吐了',   emoji: '🤮' }
+  };
+
+  MP.MEDICATION_PALATABILITY_OUTCOME = {
+    love: 'smooth',
+    ok: 'coaxed',
+    coax: 'resisted',
+    meh: 'vomited'
+  };
+
+  MP.getMedicationOutcomeInfo = function (value) {
+    return MP.MEDICATION_OUTCOMES[Object.hasOwn(MP.MEDICATION_OUTCOMES, value) ? value : ''];
   };
 
   MP.STOCK_ACTION_META = {
@@ -132,10 +155,12 @@
     if (!Object.hasOwn(MP.PALATABILITY, key)) return null;
     var p = MP.PALATABILITY[key];
     var grp = MP.getCategoryGroup(item.category);
-    var lbl = grp === 'med' ? p.medLabel : (grp === 'supp' ? p.suppLabel : p.label);
+    var medOutcome = grp === 'med' ? MP.MEDICATION_PALATABILITY_OUTCOME[key] : '';
+    var medInfo = medOutcome ? MP.getMedicationOutcomeInfo(medOutcome) : null;
+    var lbl = medInfo ? medInfo.label : (grp === 'supp' ? p.suppLabel : p.label);
     return {
       key: key,
-      icon: grp === 'med' ? { love: 'circle-check', ok: 'pill', coax: 'droplet', meh: 'triangle-alert' }[key] : '',
+      emoji: medInfo?.emoji,
       label: lbl,
       bg: p.bg,
       text: p.text

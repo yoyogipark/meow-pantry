@@ -545,7 +545,7 @@ async function run() {
   const openedCardItem = make('opened-card', 3, '罐', {
     prodDate: utils.shiftDaysFromToday(-20), expDate: utils.shiftDaysFromToday(20),
     isOpened: true, openedDate: utils.shiftDaysFromToday(-3), openDaysLimit: 4,
-    openRemainFraction: 0.25, eatenCount: 1
+    openRemainFraction: 0.25, eatenCount: 1, palatability: 'ok'
   });
   const unopenedCardItem = make('unopened-card', 2, '杯', { prodDate: today, openDaysLimit: 4, eatenCount: 2 });
   const defaultLimitItem = make('default-limit', 1, '罐', { isOpened: true, openedDate: today });
@@ -590,9 +590,14 @@ async function run() {
   const banner = activeCard.querySelector('.detail-card-open-stock');
   const summary = banner.firstElementChild;
   assert.ok(summary.matches('.detail-card-open-summary'));
-  assert.equal(summary.querySelector('.detail-card-stock-text').textContent, '未开封 2罐 + 开封余 1/4罐');
+  assert.equal(summary.querySelector('.detail-card-stock-text').textContent, '开封余 1/4罐');
   assert.doesNotMatch(summary.textContent, /已用/);
-  assert.equal(activeCard.querySelector('.stock-quantity-pill .stock-quantity-used').textContent, '已用 1罐');
+  assert.equal(activeCard.querySelector('.stock-quantity-pill .stock-quantity-open').textContent, '开封 1');
+  assert.equal(activeCard.querySelector('.stock-quantity-pill .stock-quantity-used').textContent, '已用 1');
+  assert.ok(activeCard.querySelector('.detail-card-tags > .detail-card-palatability'));
+  assert.equal(activeCard.querySelector('.detail-card-stock-tags .detail-card-palatability'), null);
+  assert.deepEqual(Array.from(activeCard.querySelector('.detail-card-identity').children, node => node.className),
+    ['detail-card-category', 'detail-card-brand']);
   assert.equal(summary.lastElementChild.textContent, '开封日期 ' + openedCardItem.openedDate);
   assert.equal(summary.nextElementSibling, progress(openedCardItem.id));
   assert.deepEqual(Array.from(progress(openedCardItem.id).children, child => child.className),
@@ -604,12 +609,12 @@ async function run() {
     assert.deepEqual(Array.from(actions.querySelectorAll('button'), button => button.dataset.action), ['item-history', 'log-feed']);
   }
   assert.equal(card(multiCardItem.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '已开封 2杯');
-  assert.equal(card(sharedDetail.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '在库 3杯 · 共用包装已开封');
+  assert.equal(card(sharedDetail.id).querySelector('.detail-card-open-summary .detail-card-stock-text').textContent, '共用包装已开封');
   const unopenedCard = card(unopenedCardItem.id);
   assert.equal(unopenedCard.querySelector('.detail-card-open-stock'), null);
   assert.equal(unopenedCard.querySelector('.stock-quantity-pill').firstElementChild.textContent, '在库 2杯');
-  assert.equal(unopenedCard.querySelector('.stock-quantity-pill .stock-quantity-used').textContent, '已用 2杯');
-  assert.equal(card(multiCardItem.id).querySelector('.stock-quantity-open').textContent, '开封 2杯');
+  assert.equal(unopenedCard.querySelector('.stock-quantity-pill .stock-quantity-used').textContent, '已用 2');
+  assert.equal(card(multiCardItem.id).querySelector('.stock-quantity-open').textContent, '开封 2');
   const checkOpenedStock = (item, expected) => {
     const row = card(item.id).querySelector('.detail-card-open-summary');
     assert.equal(row.querySelector('.detail-card-stock-text').textContent, expected);
@@ -617,10 +622,10 @@ async function run() {
   };
   checkOpenedStock(salmonFins, '已开封 1袋');
   checkOpenedStock(partlyUsedCan, '开封余 1/4罐');
-  checkOpenedStock(twoDayItem, '未开封 2罐 + 开封余 3/4罐');
+  checkOpenedStock(twoDayItem, '开封余 3/4罐');
   salmonFins.quantity = 3;
   ui.renderPantryList();
-  checkOpenedStock(salmonFins, '未开封 2袋 + 已开封 1袋');
+  checkOpenedStock(salmonFins, '已开封 1袋');
   assert.equal(activeCard.querySelector('[data-shelf-progress]').getAttribute('aria-label'), '保质期剩余 50.0%');
   assert.equal(unopenedCard.querySelector('[data-shelf-progress]').getAttribute('aria-label'), '保质期剩余 100.0%');
   assert.ok(card(openedCardItem.id).querySelector('.detail-card-shelf-tip').classList.contains('hidden-view'));
@@ -646,6 +651,25 @@ async function run() {
     checkProgress(openedCardItem.id, label, tone, width);
     assert.equal(card(openedCardItem.id).querySelector('.detail-card-shelf').outerHTML, shelfBefore);
   }
+  state.pantryDisplayMode = 'compact';
+  ui.renderPantryList();
+  const compactOpened = w.document.querySelector('.compact-stock-card[data-id="' + openedCardItem.id + '"]');
+  const compactUnopened = w.document.querySelector('.compact-stock-card[data-id="' + unopenedCardItem.id + '"]');
+  assert.deepEqual(Array.from(compactOpened.children, node => node.className), [
+    'compact-brand-row',
+    'detail-card-status compact-status-badge compact-expiry-badge detail-card-status--fresh',
+    'compact-title',
+    'btn-feed compact-card-action',
+    'compact-stock-row',
+    'compact-freshness-slot'
+  ]);
+  assert.equal(compactOpened.querySelector('.stock-quantity-pill'), null);
+  assert.match(compactOpened.querySelector('.compact-stock-copy').textContent, /在库 3罐·开封 1·已用 1/);
+  assert.equal(compactOpened.querySelector('.compact-card-action').textContent, '记喂食');
+  assert.equal(compactOpened.querySelector('.compact-palatability').getAttribute('aria-label'), '正常吃');
+  assert.ok(compactOpened.querySelector('.compact-freshness'));
+  assert.equal(compactUnopened.querySelector('.compact-freshness-slot').textContent, '');
+  state.pantryDisplayMode = 'card';
   openedCardItem.openedDate = '';
   ui.renderPantryList();
   assert.equal(progress(openedCardItem.id), null);
@@ -1261,7 +1285,7 @@ async function run() {
   const log = (id, properties) => domain.sanitizeLog({ id, date: today, ...properties });
   const nextReminderYear = Number(today.slice(0, 4)) + 1;
   state.logs = [
-    log('daily-med', { category: 'med', brand: '大宠爱', name: '外驱', amount: '1 支', nextDueDate: nextReminderYear + '-05-19' }),
+    log('daily-med', { category: 'med', brand: '大宠爱', name: '外驱', amount: '1 支', medicationOutcome: 'smooth', nextDueDate: nextReminderYear + '-05-19' }),
     log('daily-food-late', { category: 'dry', name: '午后猫粮', amount: '22g', mealSlot: 'lunch', time: '14:00' }),
     log('daily-food-early', { category: 'dry', name: '上午猫粮', amount: '19g', mealSlot: 'lunch', time: '09:00' }),
     log('daily-fraction', { itemId: dailyWet.id, category: 'can', mealSlot: '🍪 加餐/零食', amount: '1/4罐' }),
@@ -1295,7 +1319,7 @@ async function run() {
   assert.equal(el('dailyFeedTimeline').querySelector('.daily-record-group'), null);
   assert.equal(el('dailyFeedTimeline').querySelector('.daily-reminder'), null);
   assert.deepEqual(Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-record-meta'), node => node.textContent),
-    ['中午', '中午', '晚上', '零食加餐 · 测试牌', '用药 · 大宠爱']);
+    ['中午', '中午', '晚上', '零食加餐 · 测试牌', '用药 · 大宠爱✅顺利']);
   el('dailyPrevWeek').click();
   assert.ok(!el('dailyPastWeek').classList.contains('hidden-view'));
   assert.ok(!el('dailyNextWeek').disabled);
@@ -1318,7 +1342,7 @@ async function run() {
   assert.deepEqual(scrolled.at(-1), [0, 240]);
   el('dailyHistoryFilters').querySelector('[data-daily-history-filter="medication"]').click();
   assert.equal(el('dailyHistoryList').querySelectorAll('[data-daily-history-date]').length, 1);
-  assert.match(el('dailyHistoryList').textContent, /大宠爱 外驱 1支/);
+  assert.match(el('dailyHistoryList').textContent, /大宠爱 外驱 1支 ✅ 顺利/);
   assert.equal(el('dailyHistoryList').querySelector('.daily-history-counts > :last-child').textContent, '用药 1次');
   el('dailyHistoryFilters').querySelector('[data-daily-history-filter="nursing"]').click();
   assert.equal(el('dailyHistoryList').textContent, '没有护理记录');
@@ -1372,7 +1396,7 @@ async function run() {
   assert.equal(state.logs[0].subtype, '外驱');
   assert.equal(state.logs[0].nextDueDate, utils.shiftDaysFromToday(30));
   assert.ok(!el('dailyMedReminders').querySelector('[data-record-reminder="upcoming-reminder"]'));
-  assert.match(el('dailyFeedTimeline').textContent, /用药 · 大宠爱外驱/);
+  assert.match(el('dailyFeedTimeline').textContent, /用药 · 大宠爱➖未记录外驱/);
   assert.equal(el('dailyFeedTimeline').querySelector('.daily-reminder'), null);
   el('dailyMedReminders').querySelector('[data-record-reminder="other-reminder"]').click();
   assert.equal(el('feedItemId').value, '');
@@ -1388,6 +1412,11 @@ async function run() {
   ui.renderAll();
   assert.ok(el('dailyMedReminders').classList.contains('hidden-view'));
   const careBatch = make('care-tablet', 1, '片', { category: 'med' });
+  const medicineBadge = w.MeowPantry.getPalatabilityBadgeInfo({ category: 'med', palatability: 'love' });
+  assert.equal(medicineBadge.label, '顺利');
+  assert.equal(medicineBadge.emoji, '✅');
+  assert.match(utils.formatPalatabilityBadge({ category: 'med' }, medicineBadge), /✅.*顺利/);
+  assert.doesNotMatch(utils.formatPalatabilityBadge({ category: 'med' }, medicineBadge), /😍|顺利无异常/);
   reset(careBatch);
   ui.openFeedModal(careBatch.id, today);
   assert.match(el('feedModalTitle').textContent, /记录用药/);
@@ -1400,6 +1429,8 @@ async function run() {
   set('feedStockSelect', careBatch.id);
   assert.ok(el('feedDeductStock').checked);
   assert.equal(el('feedMedicationOutcome').value, '');
+  assert.deepEqual(Array.from(el('feedMedicationOutcomeChoices').children, button => button.textContent),
+    ['➖未记录', '✅顺利', '🥹需哄喂', '🙅抗拒', '🤮吐了']);
   assert.match(el('feedPortionChips').querySelector('[data-frac="0.5"]').textContent, /半片/);
   set('feedMedicationOutcome', 'coaxed');
   set('feedNextReminderDays', 'custom');
@@ -1656,7 +1687,7 @@ async function run() {
   assert.equal(firstRatingPicker.open, true);
   firstRatingPicker.querySelector('[data-flavor-rate="ok"]').click();
   assert.equal(firstRatingPicker.open, false);
-  assert.equal(firstRatingPicker.querySelector('summary use').getAttribute('href'), '#pal-cat-ok');
+  assert.equal(firstRatingPicker.querySelector('summary .palatability-emoji').textContent, '😋');
   el('itemForm').requestSubmit();
   assert.equal(w.MeowPantry.getPalatabilityBadgeInfo(byId(ratedMix.id)).key, 'ok');
   ui.openEditModal(ratedMix.id);
