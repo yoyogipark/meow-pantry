@@ -17,7 +17,18 @@ const boot = (localEntries = []) => {
   Object.defineProperty(window, 'indexedDB', { value: db });
   window.scrollTo = () => {};
   for (const [key, value] of localEntries) window.localStorage.setItem(key, value);
-  for (const file of scripts) window.eval(fs.readFileSync(path.join(root, file), 'utf8'));
+  let markReady;
+  window.__appReady = new Promise(resolve => { markReady = resolve; });
+  for (const file of scripts) {
+    if (file === 'js/app.js') {
+      const loadFromStorage = window.MeowPantry.Storage.loadFromStorage;
+      window.MeowPantry.Storage.loadFromStorage = done => loadFromStorage(() => {
+        done();
+        markReady();
+      });
+    }
+    window.eval(fs.readFileSync(path.join(root, file), 'utf8'));
+  }
   return window;
 };
 const settle = () => new Promise(resolve => setTimeout(resolve, 30));
@@ -26,7 +37,7 @@ const pass = number => console.log('T' + String(number).padStart(2, '0') + ' pas
 
 async function run() {
   const w = boot();
-  await settle();
+  await w.__appReady;
   const { Domain: domain, Utils: utils, Storage: storage, UI: ui, state } = w.MeowPantry;
   const today = utils.getTodayStr();
   const yesterday = utils.shiftDaysFromToday(-1);
@@ -64,7 +75,7 @@ async function run() {
   const byId = id => state.items.find(item => item.id === id);
   async function persisted(check) {
     const reopened = boot(Object.keys(w.localStorage).map(key => [key, w.localStorage.getItem(key)]));
-    await settle();
+    await reopened.__appReady;
     check(reopened.MeowPantry.state);
     reopened.close();
   }
