@@ -59,9 +59,8 @@
       var inp = document.getElementById(ids[i]);
       var txt = document.getElementById(ids[i] + 'Text');
       if (inp && txt) {
-        var inStockForm = ids[i] !== 'feedDateInput';
-        txt.textContent = inp.value ? (inStockForm ? inp.value : Utils.formatCnDateText(inp.value)) : '选择日期';
-        if (inStockForm) txt.classList.toggle('is-placeholder', !inp.value);
+        txt.textContent = inp.value || '选择日期';
+        txt.classList.toggle('is-placeholder', !inp.value);
       }
     }
   };
@@ -149,6 +148,34 @@
     });
   }
 
+  var manualFeedDrafts = Object.create(null);
+  var manualFeedFields = ['feedCategorySelect', 'feedBrandInput', 'feedNameInput', 'feedAmountInput', 'feedFlavorPal', 'feedManualFlavor'];
+
+  function syncFeedBatchDisplay(item) {
+    var form = document.getElementById('feedForm');
+    var locked = form.dataset.productEntry === 'true' && item;
+    var linked = Boolean(document.getElementById('feedItemId').value);
+    var manual = !linked && form.dataset.manualProduct === 'true';
+    var card = document.getElementById('feedProductCard');
+    var esc = Utils.escapeHtml;
+    var name = item ? [item.brand, item.name].filter(Boolean).join(' ') : '原记录批次';
+    var category = item && MP.CATEGORIES[item.category]?.label || '';
+    document.getElementById('feedStockField').classList.toggle('hidden-view', Boolean(locked) || manual);
+    card.classList.toggle('hidden-view', !locked);
+    form.querySelectorAll('[data-feed-manual]').forEach(function (field) {
+      field.classList.toggle('hidden-view', !manual);
+    });
+    if (locked) {
+      var cover = MP.getItemCoverSrc(item);
+      card.innerHTML = '<span class="feed-meal-label">喂食商品</span><div class="feed-locked-product">' +
+        (cover ? '<img src="' + esc(cover) + '" alt="">' : Utils.getCategoryIcon(item.category)) +
+        '<div class="feed-locked-copy"><strong title="' + esc(name) + '">' + esc(name) + '</strong><small>' +
+        esc(category + ' · 余' + Utils.formatQuantity(item.quantity, item.unit)) + '</small></div>' +
+        Utils.uiIcon('lock', 16) + '</div>';
+    }
+
+  }
+
   UI.populateFeedStockDropdown = function (selectedItemId) {
     var select = document.getElementById('feedStockSelect');
     var mode = feedStockMode();
@@ -161,11 +188,16 @@
       ? [{ label: '药品', group: 'med' }, { label: '营养品', group: 'supp' }]
       : [{ label: '', group: 'food' }];
     var current = items.find(function (item) { return item.id === selectedItemId; });
-    var prompt = batches.length ? '手动填写'
-      : mode === 'medication' ? '暂无药品库存，可手动填写' : '暂无口粮库存，可手动填写';
+    var prompt = batches.length ? '请选择仓库商品' : '暂无仓库商品';
     var safe = Utils.escapeHtml;
-    var options = '<option value="">' + safe(prompt) + '</option>';
-    var choices = '<button type="button" data-feed-stock-id=""><span class="feed-stock-option-text">' + safe(prompt) + '</span></button>';
+    var options = '<option value="">手动输入商品…</option>';
+    var choices = { active: '', archived: '' };
+    function thumbnail(item) {
+      var cover = MP.getItemCoverSrc(item);
+      return '<span class="feed-batch-thumb" aria-hidden="true">' +
+        (cover ? '<img src="' + safe(cover) + '" alt="">' : '') +
+        '<span' + (cover ? ' hidden' : '') + '>' + Utils.getCategoryIcon(item.category, 20) + '</span></span>';
+    }
     function displayName(item) { return [item.brand, item.name].filter(Boolean).join(' '); }
     function balanceLabel(item) {
       return item.quantity > 0 ? '余' + Utils.formatQuantity(item.quantity, item.unit) : '已核销';
@@ -179,14 +211,16 @@
         if (!group.length) return;
         var heading = archived ? (section.label ? section.label + ' · 已核销' : '已核销') : section.label;
         var optionRows = '';
-        if (heading) choices += '<div class="feed-stock-group-label">' + safe(heading) + '</div>';
+        var sectionKey = archived ? 'archived' : 'active';
+        if (section.label) choices[sectionKey] += '<div class="feed-stock-group-label">' + safe(section.label) + '</div>';
         group.forEach(function (item) {
           var id = safe(item.id);
           var text = safe(label(item));
           optionRows += '<option value="' + id + '">' + text + '</option>';
-          choices += '<button type="button" data-feed-stock-id="' + id + '"' + (archived ? ' class="feed-stock-archived"' : '') +
-            ' title="' + text + '"><span class="feed-stock-option-text">' + safe(displayName(item)) +
-            '</span><span class="feed-stock-balance"> · ' + safe(balanceLabel(item)) + '</span></button>';
+          choices[sectionKey] += '<button type="button" data-feed-stock-id="' + id + '"' + (archived ? ' class="feed-stock-archived"' : '') +
+            ' title="' + text + '">' + thumbnail(item) + '<span class="feed-stock-option-text">' + safe(displayName(item)) +
+            '</span><span class="feed-stock-balance"> · ' + safe(balanceLabel(item)) +
+            '</span><span class="feed-stock-check" aria-hidden="true">✓</span></button>';
         });
         options += heading ? '<optgroup label="' + safe(heading) + '">' + optionRows + '</optgroup>' : optionRows;
       });
@@ -204,21 +238,68 @@
     trigger.setAttribute('aria-disabled', String(select.disabled));
     trigger.tabIndex = select.disabled ? -1 : 0;
     var selection = document.getElementById('feedStockSelection');
-    selection.textContent = select.selectedOptions[0]?.textContent || prompt;
-    selection.title = selection.textContent;
+    trigger.classList.toggle('has-stock-selection', Boolean(current));
+    if (current) {
+      selection.innerHTML = thumbnail(current) + '<span class="feed-batch-copy"><strong>' + safe(displayName(current)) +
+        '</strong><small>' + safe((MP.CATEGORIES[current.category]?.label || '') + ' · ' + balanceLabel(current)) +
+        '</small></span>';
+    } else {
+      selection.textContent = selectedItemId && select.disabled ? '原记录批次' : prompt;
+    }
+    selection.title = current ? label(current) : selection.textContent;
     var list = document.getElementById('feedStockChoices');
-    list.innerHTML = choices;
+    var selectedArchived = current && current.quantity <= 0;
+    list.innerHTML = (choices.active ? '<div class="feed-stock-group-label">在库</div>' + choices.active : '') +
+      (choices.archived ? '<details class="feed-stock-archive-group"' + (selectedArchived ? ' open' : '') +
+        '><summary>已用完 / 已归档</summary>' + choices.archived + '</details>' : '') +
+      '<button type="button" class="feed-stock-manual-option" data-feed-stock-id=""><span aria-hidden="true">＋</span>手动输入商品…</button>';
     list.querySelectorAll('button').forEach(function (button) {
       button.setAttribute('aria-pressed', String(button.dataset.feedStockId === select.value));
     });
+    picker.querySelectorAll('.feed-batch-thumb img').forEach(function (image) {
+      function showFallback() {
+        image.nextElementSibling.hidden = false;
+        image.remove();
+      }
+      image.addEventListener('error', showFallback, { once: true });
+      if (image.complete && !image.naturalWidth) showFallback();
+    });
+  };
+
+  UI.returnToFeedStock = function () {
+    var form = document.getElementById('feedForm');
+    form.dataset.manualProduct = 'false';
+    manualFeedDrafts = Object.create(null);
+    clearFeedBatchFields(feedStockMode());
+    ['feedManualFlavor', 'feedFlavorPal'].forEach(function (id) { document.getElementById(id).value = ''; });
+    delete document.getElementById('feedFlavorPal').dataset.manual;
+    UI.syncMedReminderVisibility();
+    document.getElementById('feedStockPicker').open = true;
+    document.getElementById('feedStockPickerTrigger').focus();
   };
 
   UI.applyFeedBatchChange = function (itemId) {
     var mode = feedStockMode();
     var previous = document.getElementById('feedItemId').value;
     var item = MP.state.items.find(function (batch) { return batch.id === itemId && isFeedStockMatch(batch, mode); });
-    if (!item && previous) clearFeedBatchFields(mode);
-    else UI.applyFeedStockSelection(item?.id || '');
+    var form = document.getElementById('feedForm');
+    var wasManual = form.dataset.manualProduct === 'true';
+    form.dataset.manualProduct = String(!item);
+    if (!previous && item && wasManual) {
+      manualFeedDrafts[mode] = manualFeedFields.map(function (id) { return document.getElementById(id).value; });
+      manualFeedDrafts[mode].manualRating = Boolean(document.getElementById('feedFlavorPal').dataset.manual);
+    }
+    if (!item && previous) {
+      document.getElementById('feedDeductStock').checked = false;
+      clearFeedBatchFields(mode);
+      var draft = manualFeedDrafts[mode];
+      if (draft) {
+        manualFeedFields.forEach(function (id, index) { document.getElementById(id).value = draft[index]; });
+        var rating = document.getElementById('feedFlavorPal');
+        if (draft.manualRating) rating.dataset.manual = '1';
+        else delete rating.dataset.manual;
+      }
+    } else UI.applyFeedStockSelection(item?.id || '');
     if (item && item.id !== previous && mode === 'medication' && !document.getElementById('feedLogEditId').value) {
       document.getElementById('feedDeductStock').checked = true;
     }
@@ -281,8 +362,6 @@
     var amount = document.getElementById('feedAmountInput');
     var deduct = document.getElementById('feedDeductStock');
     form.classList.toggle('feed-care-mode', care);
-    if (care) deduct.setAttribute('role', 'switch');
-    else deduct.removeAttribute('role');
     if (care && !wasCare) {
       amount.dataset.foodPlaceholder = amount.placeholder;
       form.dataset.foodDeduct = String(deduct.checked);
@@ -297,27 +376,25 @@
       amount.placeholder = '如：半' + unit + '、1' + unit;
     }
     document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel(nursing ? 'clipboard-copy' : care ? 'stethoscope' : editing ? 'pencil' : 'paw-print',
-      nursing ? (editing ? '编辑护理记录' : '记录护理') : care ? (editing ? '编辑用药 / 护理记录' : '记录用药 / 护理') : (editing ? '编辑饮食记录' : '记录饮食 / 营养 / 用药'), 20);
+      nursing ? (editing ? '编辑护理记录' : '记录护理') : care ? (editing ? '编辑用药 / 护理记录' : '记录用药 / 护理') : (editing ? '编辑饮食记录' : form.dataset.productEntry === 'true' ? '记录喂食' : '记录饮食 / 营养 / 用药'), 20);
     document.getElementById('feedPalatabilityField').classList.toggle('hidden-view', care);
     document.getElementById('feedMedicationOutcomeField').classList.toggle('hidden-view', !care || nursing);
-    document.getElementById('feedNameLabel').textContent = care ? '药品名称' : '品名 / 口味';
-    document.getElementById('feedNameInput').placeholder = care ? '如：大宠爱 / 福来恩 / 拜宠清' : '如：无谷鸡肉猫粮 / 马鲛鱼罐头';
-    document.getElementById('feedBrandInput').placeholder = care ? '如：辉瑞 / 勃林格殷格翰' : '如：渴望 / 巅峰';
-    document.getElementById('feedStockLabel').textContent = care ? '选择药品批次（或手动输入）' : '选择商品批次（含已核销批次，或手动输入）';
+    document.getElementById('feedNameLabel').textContent = care ? '药品名称' : '商品名';
+    document.getElementById('feedNameInput').placeholder = care ? '如：大宠爱 / 福来恩 / 拜宠清' : '如 小灶猫饭';
+    document.getElementById('feedBrandInput').placeholder = care ? '如：辉瑞 / 勃林格殷格翰' : '如 喵梵思';
+    document.getElementById('feedStockLabel').textContent = care ? '选择药品批次（或手动输入）' : '商品批次';
     document.getElementById('saveFeedBtn').textContent = nursing ? '保存护理记录' : care ? '保存用药记录' : '保存喂食记录';
     document.getElementById('feedAmountLabel').textContent = care ? '用量' : '投喂份量';
-    document.getElementById('feedNoteLabel').textContent = nursing ? '备注（选填）' : care ? '服药反应 / 备注' : '光盘情况 / 反应备注 (选填)';
+    document.getElementById('feedNoteLabel').textContent = nursing ? '备注' : care ? '服药反应 / 备注' : '光盘情况 / 反应备注';
     document.getElementById('feedNoteInput').placeholder = nursing ? '如：状态是否配合、有无异常' : care ? '如：有无呕吐、精神状态' : '如：秒光盘、兑了40ml温水、便便正常';
     document.getElementById('feedBrandInput').required = !care;
     document.querySelectorAll('[data-care-interval]').forEach(function (option) { option.hidden = !care; });
     document.querySelectorAll('[data-nursing-interval]').forEach(function (option) { option.hidden = !nursing; });
     document.querySelectorAll('[data-medication-interval]').forEach(function (option) { option.hidden = nursing; });
-    if (care || wasCare) {
-      syncPortionChips(target, care);
-      syncLastPortionChip(target, care, editing);
-      UI.syncFeedSplitCanUI(target);
-    }
-
+    syncFeedBatchDisplay(target);
+    syncPortionChips(target, care);
+    syncLastPortionChip(target, care, editing);
+    UI.syncFeedSplitCanUI(target);
   };
 
   UI.syncNursingOther = function () {
@@ -348,6 +425,7 @@
       return;
     }
     form.dataset.careType = type;
+    form.dataset.manualProduct = 'false';
     document.getElementById('feedStockSelect').value = '';
     UI.applyFeedStockSelection('');
     document.getElementById('feedCategorySelect').value = 'med';
@@ -359,61 +437,65 @@
     UI.syncMedReminderVisibility();
   };
 
+  function feedFractionLabel(fraction, unit) {
+    return Utils.formatRemainFractionText(fraction, unit, true).replace(/^余/, '') ||
+      Utils.formatQuantity(fraction || 0, unit);
+  }
+
   UI.syncFeedSplitCanUI = function (target) {
     var editing = Boolean(document.getElementById('feedLogEditId').value);
     var deduct = document.getElementById('feedDeductStock');
     var care = document.getElementById('feedForm').classList.contains('feed-care-mode');
     var hint = document.getElementById('feedSplitHintTag');
-    var rest = document.getElementById('chipFinishRestCan');
     var info = document.getElementById('feedSplitAutoInfo');
     var flavor = target && target.flavors && UI.getFeedFlavor(target);
     var unit = target && target.unit || '罐';
     var remaining = flavor ? flavor.openRemainFraction : target && !target.flavors && target.openRemainFraction;
-    document.getElementById('feedDeductBox').classList.toggle('hidden-view', !care ? !target || editing : editing && Boolean(target));
+    document.getElementById('feedDeductBox').classList.toggle('hidden-view', !target || editing);
     deduct.disabled = !target || editing || (!care && (
       target.quantity < 1 || (!Domain.isPackageUnit(unit) && unit !== '粒') || Boolean(flavor && flavor.quantity < 1)));
     if (deduct.disabled) deduct.checked = false;
-    hint.innerHTML = remaining > 0 ? Utils.iconLabel('lock-open', '当前' + Utils.formatRemainFractionText(remaining, unit, true)) : '';
-    rest.classList.toggle('hidden-view', !(remaining > 0 && deduct.checked));
-    rest.innerHTML = Utils.iconLabel('sparkles', '吃完本' + unit + '剩余');
+    var weight = target ? Number(target.unit_net_weight_g) || Utils.legacyUnitWeight(target.spec, unit) : 0;
+    var currentFraction = target && (flavor || target).quantity >= 1 && (!target.flavors || flavor) ? Number(remaining) || 1 : 0;
+    hint.textContent = target && currentFraction > 0 && !care
+      ? '剩余约 ' + (weight > 0 ? Math.round(weight * currentFraction) + 'g（' +
+        Utils.formatNumber(currentFraction * 100, 1) + '%）' : feedFractionLabel(currentFraction, unit))
+      : '';
     var careHelp = document.getElementById('feedCareDeductHelp');
     careHelp.classList.toggle('hidden-view', !care);
     careHelp.textContent = !target ? '选择药品批次后可扣减' : deduct.checked ? '开启后从该药品余量中扣除本次用量' : '仅记录，不影响余量';
-    info.classList.toggle('hidden-view', care || !target || editing);
-    var dose = document.getElementById('feedAmountInput').value.trim();
-    var choice = document.getElementById('feedAmountInput').dataset.doseChoice;
-    var chips = Array.from(document.querySelectorAll('#feedPortionChips :is([data-package-portion], #chipLastPortion)'));
-    if (choice) {
-      var preferred = chips.findIndex(function (button) { return (button.id || button.dataset.frac) === choice; });
-      if (preferred > 0) chips.unshift(chips.splice(preferred, 1)[0]);
-    }
-    var matchingDose = false;
-    chips.forEach(function (button) {
-      if (!care) {
-        button.removeAttribute('aria-pressed');
-        return;
-      }
-      var value = button.dataset.portion;
-      if (target && button.hasAttribute('data-package-portion')) {
+    info.classList.toggle('hidden-view', care);
+    var amount = document.getElementById('feedAmountInput');
+    var dose = amount.value.trim();
+    var choice = amount.dataset.doseChoice;
+    var chips = Array.from(document.querySelectorAll('#feedPortionChips button:not(.hidden-view)'));
+    var selected = dose && (care || !amount.dataset.automaticPortion) && (chips.find(function (button) {
+      return choice && (button.id || button.dataset.portion) === choice;
+    }) || chips.find(function (button) {
+      if (!button.dataset.portion) return false;
+      if (dose.toLowerCase() === button.dataset.portion.toLowerCase()) return true;
+      if (button.hasAttribute('data-package-portion') && !care &&
+          (dose === button.dataset.frac || (button.dataset.frac === '0.34' && dose === '1/3'))) return true;
+      if (button.hasAttribute('data-package-portion') && target) {
         var fraction = button.dataset.frac === '0.34' ? 1 / 3 : Number(button.dataset.frac);
-        value = UI.portionLabel(value, fraction, target, flavor);
+        return dose === UI.portionLabel(button.dataset.portion, fraction, target, flavor) ||
+          (UI.parseFeedPortion(dose, target, flavor).valid && Math.abs(UI.parseFeedPortion(dose, target, flavor).fraction - fraction) < 1e-6);
       }
-      var selected = !matchingDose && !button.classList.contains('hidden-view') && Boolean(dose) && dose === value;
-      if (selected) matchingDose = true;
-      button.setAttribute('aria-pressed', String(selected));
+      return /^\d+(?:\.\d+)?g$/i.test(button.dataset.portion) &&
+        dose.toLowerCase().replace(/\s+/g, '').replace(/克$/, 'g') === button.dataset.portion.toLowerCase();
+    }));
+    document.querySelectorAll('#feedPortionChips button').forEach(function (button) {
+      button.setAttribute('aria-pressed', String(button === selected));
     });
     if (care) return;
     if (!target || !deduct.checked) {
-      info.textContent = deduct.disabled && target && target.quantity > 0
-        ? '此批次或口味当前无法安全扣减，只记录喂食。'
-        : '仅记录喂食，库存和开封余量保持原样。';
+      info.textContent = '仅记录喂食，库存和开封余量保持原样';
       return;
     }
-    var portion = UI.parseFeedPortion(document.getElementById('feedAmountInput').value, target, flavor);
-    var plan = Domain.planFeedingPortion(target, flavor, portion);
-    info.textContent = plan.error || (plan.after
-      ? '本次将更新开封余量（' + Utils.formatRemainFractionText(plan.after, unit, true) + '），暂不核销整件。'
-      : '本次将核销 1' + unit + '库存。');
+    var plan = Domain.planFeedingPortion(target, flavor, UI.parseFeedPortion(dose, target, flavor));
+    info.textContent = plan.error || (weight > 0
+      ? '将从本批次扣减 ' + Math.round(plan.used * weight) + 'g，预计剩余约 ' + Math.round(plan.after * weight) + 'g'
+      : '将从本批次扣减 ' + feedFractionLabel(plan.used, unit) + '，预计余量 ' + feedFractionLabel(plan.after, unit));
   };
 
   UI.portionLabel = function (base, fraction, item, flavor) {
@@ -458,17 +540,28 @@
 
   function syncPortionChips(item, care) {
     var unit = item?.unit || (care ? '支' : '');
+    var category = item?.category || document.getElementById('feedCategorySelect').value;
+    var configured = MP.FEED_PORTION_PRESETS[category] || MP.FEED_PORTION_PRESETS.dry;
     var natural = care || /^(杯|罐|包|盒|支|粒|瓶|袋)$/.test(unit);
-    var presets = { '0.5': natural ? '半' + unit : '1/2', '0.34': natural ? '1/3' + unit : '1/3',
+    var presets = { '0.5': natural ? '半' + unit : '1/2',
+      '0.34': natural ? '1/3' + unit : '1/3',
       '0.25': natural ? '1/4' + unit : '1/4', '1': '1' + unit };
     document.querySelectorAll('#feedPortionChips [data-package-portion]').forEach(function (button) {
       var portion = presets[button.dataset.frac];
       button.dataset.portion = portion;
       button.textContent = portion;
-      button.classList.toggle('hidden-view', Boolean(!care && item && !Domain.isPackageUnit(unit) && unit !== '粒'));
+      button.classList.toggle('hidden-view', !care && !configured.includes(button.dataset.frac));
     });
-    document.querySelector('#feedPortionChips [data-portion="1支"]:not([data-package-portion])')
-      .classList.toggle('hidden-view', Boolean(care || item));
+    var quickChips = document.getElementById('feedPortionChips');
+    quickChips.querySelectorAll('[data-configured-portion]').forEach(function (button) { button.remove(); });
+    if (!care) configured.filter(function (preset) { return !Object.hasOwn(presets, preset); }).forEach(function (preset) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.configuredPortion = '';
+      button.dataset.portion = preset;
+      button.textContent = preset;
+      quickChips.append(button);
+    });
   }
 
   UI.getFeedFlavor = function (item) {
@@ -488,6 +581,7 @@
     var hasFlavor = Boolean(historical && historical.flavorId || item && item.flavors);
     wrap.classList.toggle('hidden-view', !hasFlavor);
     select.disabled = Boolean(historical);
+    wrap.classList.toggle('has-selected-flavor', Boolean(historical && hasFlavor));
     document.getElementById('openFlavorBtn').disabled = Boolean(historical);
     document.getElementById('discardFlavorBtn').disabled = Boolean(historical);
     select.innerHTML = '<option value="">请选择口味</option>';
@@ -498,7 +592,8 @@
     }
     if (historical && hasFlavor) {
       select.add(new Option(historical.flavorName, historical.flavorId, true, true));
-      document.getElementById('feedFlavorHint').textContent = '历史口味与库存流水关联';
+      var hint = document.getElementById('feedFlavorHint');
+      hint.textContent = hint.title = '历史口味与库存流水关联';
     } else if (hasFlavor) {
       item.flavors.forEach(function (f) {
         select.add(new Option(f.name + ' · 余' + Utils.formatQuantity(f.quantity, item.unit), f.id));
@@ -512,13 +607,18 @@
   UI.updateFeedFlavor = function (item) {
     var flavor = UI.getFeedFlavor(item);
     syncFeedPalatability(item, flavor);
-    document.getElementById('discardFlavorBtn').disabled = !MP.state.editMode || !flavor || flavor.quantity <= 0;
+    var discard = document.getElementById('discardFlavorBtn');
+    discard.disabled = !MP.state.editMode || !flavor || flavor.quantity <= 0;
     var open = document.getElementById('openFlavorBtn');
-    open.textContent = item && Domain.hasSharedSeal(item) ? '记录共用包装开封' : '记录该口味开封';
-    open.disabled = !MP.state.editMode || !flavor || flavor.quantity <= 0 || Boolean(Domain.hasSharedSeal(item) ? item.isOpened : flavor.openedDate);
-    document.getElementById('feedFlavorHint').textContent = flavor
-      ? '支持克数、分数或件数。当前' + UI.flavorStockText({ flavors: [flavor], unit_net_weight_g: item.unit_net_weight_g, unit: item.unit }, true)
-      : '请先选择实际喂食的口味';
+    var openedDate = item && Domain.hasSharedSeal(item) ? item.openedDate : flavor?.openedDate;
+    open.disabled = Boolean(flavor && (!MP.state.editMode || flavor.quantity <= 0 ||
+      (Domain.hasSharedSeal(item) ? item.isOpened : flavor.openedDate)));
+    document.getElementById('feedFlavorFields').classList.toggle('has-selected-flavor', Boolean(flavor));
+    var days = Utils.diffDaysBetween(openedDate, Utils.getTodayStr());
+    var hint = document.getElementById('feedFlavorHint');
+    hint.textContent = !flavor ? '选好口味后，可记录这一口味开封' : days === null
+      ? '如换新罐，可点右上角记录开封' : '这个口味已开封 ' + Math.max(0, days) + ' 天，如换新罐可点右上角记录';
+    hint.title = hint.textContent;
   };
 
   function syncLastPortionChip(item, care, editing) {
@@ -527,16 +627,25 @@
       return log.id !== document.getElementById('feedLogEditId').value &&
         (log.category === 'med' || log.mealSlot === 'care');
     } : undefined);
-    if ((!care && editing) || item?.flavors) last = null;
+    if (!care && editing) last = null;
     chip.classList.toggle('hidden-view', !last?.amount);
     if (last?.amount) {
       chip.dataset.portion = last.amount;
-      chip.innerHTML = Utils.iconLabel('zap', (care ? '上次用量：' : '上次：') + last.amount);
+      var label = last.amount;
+      if (!care && ['dry', 'freeze', 'treat'].includes(item?.category)) {
+        var weight = Number(item.unit_net_weight_g) || Utils.legacyUnitWeight(item.spec, item.unit);
+        var fraction = UI.parseFeedPortion(last.amount, item).fraction;
+        if (weight > 0 && fraction > 0) label = Utils.formatNumber(weight * fraction, 1) + 'g';
+      }
+      chip.innerHTML = Utils.iconLabel('zap', care ? '上次用量：' + last.amount : item?.category === 'can' ? '上次' : '上次 ' + label);
     }
   }
 
   UI.applyFeedStockSelection = function (itemId) {
-    delete document.getElementById('feedAmountInput').dataset.doseChoice;
+    var amount = document.getElementById('feedAmountInput');
+    delete amount.dataset.doseChoice;
+    delete amount.dataset.automaticPortion;
+    if (itemId) amount.dataset.automaticPortion = '1';
     var target = MP.state.items.find(function (it) { return it.id === itemId; }) || null;
     document.getElementById('feedItemId').value = target ? target.id : '';
     UI.syncFeedFlavor(target);
@@ -617,7 +726,13 @@
     select.value = String(days || 0);
   }
 
-  UI.openFeedModal = function (itemId, customDate, manualEntry) {
+  UI.openFeedModal = function (itemId, customDate, manualEntry, productEntry, dailyEntry) {
+    manualFeedDrafts = Object.create(null);
+    var feedForm = document.getElementById('feedForm');
+    feedForm.dataset.productEntry = String(Boolean(productEntry));
+    feedForm.dataset.dailyEntry = String(Boolean(dailyEntry));
+    feedForm.dataset.manualProduct = 'false';
+    document.getElementById('feedManualFlavor').value = '';
     document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel('paw-print', '记录饮食 / 营养 / 用药', 20);
     document.getElementById('feedStockSelect').disabled = false;
     document.getElementById('feedLogEditId').value = '';
@@ -625,6 +740,7 @@
     loadNursingFields();
     document.getElementById('feedForm').classList.remove('feed-care-mode');
     delete document.getElementById('feedAmountInput').dataset.doseChoice;
+    delete document.getElementById('feedAmountInput').dataset.automaticPortion;
     document.getElementById('feedMedicationOutcome').value = '';
     document.getElementById('feedCustomReminderDays').value = '';
     document.getElementById('feedAmountInput').placeholder = '如 1/2、1/3、40g';
@@ -645,11 +761,18 @@
       if (requested && !MP.isFoodCategory(requested.category)) selectMealSlot('care');
       UI.applyFeedStockSelection(itemId);
     } else {
-      var activeFood = MP.state.items.filter(function (it) { return isFeedStockMatch(it, 'food') && Number(it.quantity) > 0; });
-      var firstActive = !manualEntry && (activeFood.find(function (it) { return it.isOpened; }) || activeFood[0]);
+      var foodBatches = MP.state.items.filter(function (it) {
+        return isFeedStockMatch(it, 'food') && (!it.sourceBatchId || !MP.state.items.some(function (batch) { return batch.id === it.sourceBatchId; }));
+      });
+      var lastLog = MP.state.logs.filter(function (log) {
+        return foodBatches.some(function (batch) { return batch.id === log.itemId; }) && !Domain.getCareType(log);
+      }).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); })[0];
+      var firstActive = !manualEntry && (foodBatches.find(function (item) { return item.id === lastLog?.itemId; }) ||
+        foodBatches.find(function (item) { return item.quantity > 0; }) || foodBatches[0]);
       if (firstActive) {
         UI.applyFeedStockSelection(firstActive.id);
       } else {
+        feedForm.dataset.manualProduct = 'true';
         document.getElementById('feedItemId').value = '';
         document.getElementById('feedBrandInput').value = '';
         document.getElementById('feedNameInput').value = '';
@@ -658,9 +781,10 @@
         UI.syncFeedSplitCanUI(null);
       }
     }
+    if (productEntry && document.getElementById('feedItemId').value) document.getElementById('feedStockSelect').disabled = true;
     UI.syncMedReminderVisibility();
     UI.syncAllDateDisplays();
-    UI.showModal('feedModalBackdrop', 'feedStockPickerTrigger');
+    UI.showModal('feedModalBackdrop', productEntry || feedForm.dataset.manualProduct === 'true' ? 'closeFeedModalBtn' : 'feedStockPickerTrigger');
   };
 
   UI.openFeedFromReminder = function (log) {
@@ -692,12 +816,19 @@
   UI.openEditFeedModal = function (logId) {
     var lg = MP.state.logs.find(function (x) { return x.id === logId; });
     if (!lg) return;
+    manualFeedDrafts = Object.create(null);
+    var feedForm = document.getElementById('feedForm');
+    delete feedForm.dataset.productEntry;
+    delete feedForm.dataset.dailyEntry;
+    feedForm.dataset.manualProduct = String(!lg.itemId);
+    document.getElementById('feedManualFlavor').value = !lg.flavorId ? lg.flavorName || '' : '';
     document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel('pencil', '编辑饮食记录', 20);
     document.getElementById('feedLogEditId').value = lg.id;
     document.getElementById('feedForm').dataset.careType = Domain.getCareType(lg) === 'nursing' ? 'nursing' : 'medication';
     loadNursingFields(lg);
     document.getElementById('feedForm').classList.remove('feed-care-mode');
     delete document.getElementById('feedAmountInput').dataset.doseChoice;
+    delete document.getElementById('feedAmountInput').dataset.automaticPortion;
     document.getElementById('feedMedicationOutcome').value = lg.medicationOutcome || '';
     document.getElementById('feedCustomReminderDays').value = '';
     document.getElementById('feedDateInput').value = lg.date || Utils.getTodayStr();

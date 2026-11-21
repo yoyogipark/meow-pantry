@@ -50,6 +50,13 @@
     freeze: { label: '冻干类型', options: ['主食冻干', '零食冻干'] }
   };
 
+  MP.FEED_PORTION_PRESETS = {
+    dry: ['15g', '30g', '50g'],
+    freeze: ['15g', '30g', '50g'],
+    treat: ['15g', '30g', '50g'],
+    can: ['0.5', '0.34', '1']
+  };
+
   MP.STOCK_WEIGHT_PRESETS = {
     dry: [400, 1500, 1800, 4500, 5400],
     treat: [30, 50, 100],

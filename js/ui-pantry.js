@@ -81,7 +81,7 @@
       }
       var ev = Domain.evaluateItem(it);
       if (ev.status === 'empty') {
-        emptyItems.push(it);
+        if (it.manualFeedArchive !== true) emptyItems.push(it);
       } else {
         cStock += 1;
         if (ev.status === 'expiring') cExpiring += 1;
