@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=214">
-  <link rel="stylesheet" href="./css/styles.css?v=214">
+  <link rel="stylesheet" href="./css/tokens.css?v=224">
+  <link rel="stylesheet" href="./css/styles.css?v=224">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -39,6 +39,7 @@
     <symbol id="ui-pencil" viewBox="0 0 24 24"><path d="m4 16 12-12a2.8 2.8 0 0 1 4 4L8 20l-5 1z M14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v10H5z M12 14v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-lock-open" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0M5 10h14v10H5z M12 14v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-circle-check" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 1 1 18 0z M8 12l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-inbox" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3z M3 13h5l2 3h4l2-3h5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z M15 10a3 3 0 1 1-6 0 3 3 0 1 1 6 0z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -48,6 +49,8 @@
     <symbol id="ui-shopping-cart" viewBox="0 0 24 24"><path d="M2 3h3l3 12h11l2-8H6m4 13h.01m8 0h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-trash-2" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-pill" viewBox="0 0 24 24"><path d="m5 12 7-7a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7z M8 9l7 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-clipboard-copy" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a2 2 0 0 0-2-2h-3M9 15l2 2 4-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
+    <symbol id="ui-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="m8.2 8.2 11.6 11.6M8.2 15.8 19.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
     <symbol id="ui-droplet" viewBox="0 0 24 24"><path d="M12 3c3 5 7 8 7 12a7 7 0 0 1-14 0c0-4 4-7 7-12z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-triangle-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20z M12 9v4m0 4h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-sunrise" viewBox="0 0 24 24"><path d="M3 17h18M5 21h14M7 17a5 5 0 1 1 10 0M12 9V3m-3 3 3-3 3 3M4 10l2 2m14-2-2 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -201,6 +204,7 @@
             <option value="all">全部品牌</option>
           </select>
           <select id="sortSelect" aria-label="排序方式" class="ios-input">
+            <option value="finished_desc" hidden>最近核销</option>
             <option value="exp_asc">先到期先吃</option>
             <option value="exp_desc">保质期最长</option>
             <option value="prod_desc">生产日期最新</option>
@@ -253,29 +257,29 @@
       </div>
     </main>
 
-    <!-- ==================== TAB 2: 饮食记录 (DAILY FEEDING LOG) ==================== -->
+    <!-- ==================== TAB 2: 每日记录 (DAILY FEEDING LOG) ==================== -->
     <section id="viewDaily" class="hidden-view">
       <div id="dailyHome">
         <header class="page-heading">
           <div class="daily-page-heading-copy">
-            <h2 class="page-title">饮食记录</h2>
+            <h2 class="page-title">每日记录</h2>
             <p id="dailyDateLabel" class="daily-support"></p>
           </div>
           <div class="daily-actions">
             <button id="copyPrevDayLogsBtn" type="button" class="ios-btn ios-btn-secondary">复制前一天</button>
-            <button id="openQuickFeedBtn" type="button" class="btn-feed"><svg class="btn-feed__icon" width="16" height="16" aria-hidden="true"><use href="#feed-paw"></use></svg><span>记喂食</span></button>
+            <button id="openQuickFeedBtn" type="button" class="btn-feed"><svg class="btn-feed__icon" width="16" height="16" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>记录</span></button>
           </div>
         </header>
 
         <div class="daily-stack">
           <section class="daily-week" aria-label="选择记录日期">
             <div class="daily-week-heading">
-              <button id="dailyPrevWeek" type="button" class="daily-icon-btn" aria-label="上一周">‹</button>
+              <button id="dailyPrevWeek" type="button" class="daily-icon-btn" aria-label="上一周"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
               <button id="dailyWeekTitle" type="button" class="daily-week-title" aria-label="查看全部历史记录">
                 <span id="dailyWeekTitleText"></span>
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>
               </button>
-              <button id="dailyNextWeek" type="button" class="daily-icon-btn" aria-label="下一周">›</button>
+              <button id="dailyNextWeek" type="button" class="daily-icon-btn" aria-label="下一周"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
             </div>
             <div id="dailyWeekDays" class="daily-week-days"></div>
             <div id="dailyPastWeek" class="daily-heading hidden-view">
@@ -305,15 +309,16 @@
       <div id="dailyHistory" class="daily-stack hidden-view">
         <header>
           <div class="daily-history-heading">
-            <button id="dailyHistoryBack" type="button" class="daily-icon-btn" aria-label="返回饮食记录">‹</button>
-            <h2 class="daily-page-title">全部饮食记录</h2>
+            <button id="dailyHistoryBack" type="button" class="daily-icon-btn" aria-label="返回每日记录">‹</button>
+            <h2 class="daily-page-title">全部每日记录</h2>
           </div>
           <p id="dailyHistoryCount" class="daily-support"></p>
         </header>
         <div id="dailyHistoryFilters" class="filter-chips no-scrollbar" role="group" aria-label="历史记录筛选">
           <button type="button" data-daily-history-filter="all" class="pill-chip">全部</button>
           <button type="button" data-daily-history-filter="food" class="pill-chip">喂食</button>
-          <button type="button" data-daily-history-filter="care" class="pill-chip">护理</button>
+          <button type="button" data-daily-history-filter="medication" class="pill-chip">用药</button>
+          <button type="button" data-daily-history-filter="nursing" class="pill-chip">护理</button>
         </div>
         <div id="dailyHistoryList" class="daily-stack"></div>
         <button id="dailyHistoryMore" type="button" class="ios-btn ios-btn-secondary">加载更多</button>
@@ -504,7 +509,7 @@
           <div class="settings-action-list settings-export-grid">
             <button id="exportJsonBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="file-json" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M10 12c-1 0-1 1-1 2s-1 1-1 1 1 0 1 1 0 2 1 2m4-6c1 0 1 1 1 2s1 1 1 1-1 0-1 1 0 2-1 2"/></svg><span>JSON 完整备份</span></button>
             <button id="exportCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="file-spreadsheet" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><rect x="8" y="12" width="8" height="6" rx="1"/><path d="M8 15h8m-4-3v6"/></svg><span>库存盘点 .csv</span></button>
-            <button id="exportLogsCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon" data-lucide="file-utensils" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 11v3a2 2 0 0 0 4 0v-3m-2 0v8m6-8c-1 1-2 3-2 5h2m0-5v8"/></svg><span>饮食记录 .csv</span></button>
+            <button id="exportLogsCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon" data-lucide="file-utensils" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 11v3a2 2 0 0 0 4 0v-3m-2 0v8m6-8c-1 1-2 3-2 5h2m0-5v8"/></svg><span>每日记录 .csv</span></button>
             <button id="copySummaryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="clipboard-copy" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v3M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4m2-7h8m-3-3 3 3-3 3"/></svg><span>复制在库清单</span></button>
             <button id="settingsOpenHistoryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="history" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7m2-5v5l3 2"/></svg><span>查看库存操作历史流水</span><svg class="settings-icon settings-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
             <button id="clearAllDataBtn" type="button" class="edit-only ios-btn-text settings-danger-action">清空全部数据</button>
@@ -586,7 +591,7 @@
         <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
           <span id="dailyMedReminderDot" class="hidden-view" aria-hidden="true"></span>
         </span>
-        <span>饮食记录</span>
+        <span>每日记录</span>
       </button>
       <button type="button" data-nav="stats" id="navBtnStats" class="nav-tab">
         <svg class="nav-icon" data-lucide="chart-line" aria-hidden="true" width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 15l4-4 4 3 5-6"/></svg>
@@ -909,7 +914,8 @@
         <input type="hidden" id="feedLogEditId">
         <input type="hidden" id="feedItemId">
 
-        <div class="grid-safe" style="display:grid;grid-template-columns:1.15fr 1fr;gap:8px;">
+        <div class="feed-form-fields">
+        <div class="grid-safe feed-date-meal-row" style="display:grid;grid-template-columns:1.15fr 1fr;gap:8px;">
           <div>
             <label for="feedDateInput">日期</label>
             <div class="ios-date-wrap"><span id="feedDateInputText" class="ios-date-display">选择日期</span><svg class="stock-date-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#stock-calendar-icon"></use></svg><input id="feedDateInput" type="date" required></div>
@@ -934,20 +940,20 @@
         <fieldset id="feedNursingProjects" class="feed-nursing-projects hidden-view">
           <legend>护理项目</legend>
           <div class="feed-nursing-options">
-            <label><input type="checkbox" value="梳毛" data-nursing-project><span>梳毛</span></label>
-            <label><input type="checkbox" value="剪指甲" data-nursing-project><span>剪指甲</span></label>
-            <label><input type="checkbox" value="洗耳朵" data-nursing-project><span>洗耳朵</span></label>
-            <label><input type="checkbox" value="刷牙" data-nursing-project><span>刷牙</span></label>
-            <label><input type="checkbox" value="洗澡" data-nursing-project><span>洗澡</span></label>
-            <label><input type="checkbox" value="清理眼屎" data-nursing-project><span>清理眼屎</span></label>
-            <label><input type="checkbox" value="其他" data-nursing-project><span>其他</span></label>
+            <label class="care-chip"><input type="checkbox" value="梳毛" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="梳毛"><span>梳毛</span></span></label>
+            <label class="care-chip"><input type="checkbox" value="剪指甲" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="剪指甲"><span>剪指甲</span></span></label>
+            <label class="care-chip"><input type="checkbox" value="洗耳朵" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="洗耳朵"><span>洗耳朵</span></span></label>
+            <label class="care-chip"><input type="checkbox" value="刷牙" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="刷牙"><span>刷牙</span></span></label>
+            <label class="care-chip"><input type="checkbox" value="洗澡" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="洗澡"><span>洗澡</span></span></label>
+            <label class="care-chip"><input type="checkbox" value="清理眼屎" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="清理眼屎"><span>清理眼屎</span></span></label>
+            <label class="care-chip"><input type="checkbox" value="其他" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="其他"><span>其他</span></span></label>
           </div>
+          <p id="feedNursingHint" class="daily-support hidden-view" aria-live="polite"></p>
           <label id="feedNursingOtherField" class="feed-care-field hidden-view">
             <span>其他护理项目</span>
             <input id="feedNursingOther" class="ios-input" type="text" placeholder="填写护理项目">
           </label>
         </fieldset>
-        <p id="feedNursingHint" class="daily-support hidden-view">仅记录护理，不影响库存</p>
 
         <div data-medication-field id="feedProductCard" class="hidden-view"></div>
         <div data-medication-field id="feedStockArea">
@@ -1041,11 +1047,12 @@
         </div>
 
         <div id="feedMedicationOutcomeField" class="hidden-view">
-          <label for="feedMedicationOutcome">服药情况</label>
-          <select id="feedMedicationOutcome" class="ios-input">
+          <span id="feedMedicationOutcomeLabel" class="feed-meal-label">使用情况</span>
+          <select id="feedMedicationOutcome" hidden>
             <option value="">未记录</option><option value="smooth">顺利</option>
             <option value="coaxed">需哄喂</option><option value="resisted">抗拒</option><option value="vomited">吐了</option>
           </select>
+          <div id="feedMedicationOutcomeChoices" class="feed-outcome-choices" role="group" aria-labelledby="feedMedicationOutcomeLabel"></div>
         </div>
         <!-- Indoor Cat Low-Frequency Deworming / Medicine Reminder -->
         <div id="medNextReminderBox" class="hidden-view" style="padding:10px 12px;border-radius:12px;background:var(--ok-soft);border:1px solid var(--positive-border);">
@@ -1064,16 +1071,27 @@
               <option value="365" data-medication-interval>1年后 (365天)</option>
               <option value="custom" data-care-interval hidden>自定义</option>
             </select>
+            <div id="feedNursingReminderChoices" class="feed-outcome-choices hidden-view" role="group" aria-labelledby="feedReminderTitle"></div>
             <label id="feedCustomReminderField" class="hidden-view feed-care-field">
               <span>自定义间隔（天）</span>
               <input id="feedCustomReminderDays" class="ios-input" type="number" inputmode="numeric" min="1" max="3650" step="1">
             </label>
+            <label id="feedCustomReminderDateField" class="hidden-view">
+              提醒日期
+              <input id="feedCustomReminderDate" class="ios-input" type="date">
+            </label>
+            <small id="feedReminderPreview" class="hidden-view" aria-live="polite"></small>
           </div>
         </div>
 
-        <div>
+        <button id="feedAddNursingNote" class="hidden-view" type="button" aria-controls="feedNoteField">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>添加备注
+        </button>
+        <div id="feedNoteField">
           <label id="feedNoteLabel" for="feedNoteInput">光盘情况 / 反应备注</label>
           <input id="feedNoteInput" type="text" placeholder="如：秒光盘、兑了40ml温水、便便正常" class="ios-input">
+        </div>
+
         </div>
 
         <div class="feed-form-footer">
@@ -1093,7 +1111,7 @@
           <span id="historyCountBadge" style="font-size:11px;color:var(--text-muted);">共 0 条记录</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-          <button id="clearHistoryItemFilterBtn" type="button" class="hidden-view" style="border:1px solid var(--accent-edge);background:var(--accent-soft);color:var(--accent-strong);padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">查看全部商品</button>
+          <button id="clearHistoryItemFilterBtn" type="button" class="hidden-view" style="border:1px solid var(--accent-edge);background:var(--accent-soft);color:var(--accent-strong);padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">查看全部流水</button>
           <button id="exportStockHistoryCsvBtn" type="button" style="border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-main);padding:4px 9px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">导出CSV</button>
           <button id="closeHistoryModalBtn" type="button" aria-label="关闭库存流水" style="width:30px;height:30px;border-radius:999px;border:none;background:var(--status-neutral-bg);cursor:pointer;font-weight:700;">✕</button>
         </div>
@@ -1141,7 +1159,7 @@
       </label>
       <label id="confirmExtraOptionWrap" class="hidden-view" style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:14px;border-radius:11px;background:var(--accent-soft);border:1px solid var(--accent-edge);cursor:pointer;">
         <input id="confirmExtraCheckbox" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
-        <span class="confirm-extra-copy"><span id="confirmExtraLabel" style="font-size:12px;font-weight:700;color:var(--accent-strong);line-height:1.35;">同时记入今日饮食记录</span><span class="delete-log-revert-hint"><span id="deleteLogRestoreAmount"></span><span>只删记录，库存和余量保持不变</span></span></span>
+        <span class="confirm-extra-copy"><span id="confirmExtraLabel" style="font-size:12px;font-weight:700;color:var(--accent-strong);line-height:1.35;">同时记入今天的每日记录</span><span class="delete-log-revert-hint"><span id="deleteLogRestoreAmount"></span><span>只删记录，库存和余量保持不变</span></span></span>
       </label>
       <label id="confirmMealQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
         实际补记份量（件数，含已开封余量）
@@ -1169,18 +1187,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=214"></script>
-  <script src="./js/constants.js?v=214"></script>
-  <script src="./js/utils.js?v=214"></script>
-  <script src="./js/forecast.js?v=214"></script>
-  <script src="./js/domain.js?v=214"></script>
-  <script src="./js/storage.js?v=214"></script>
-  <script src="./js/stats.js?v=214"></script>
-  <script src="./js/modal.js?v=214"></script>
-  <script src="./js/ui.js?v=214"></script>
-  <script src="./js/ui-pantry.js?v=214"></script>
-  <script src="./js/ui-daily.js?v=214"></script>
-  <script src="./js/ui-settings.js?v=214"></script>
-  <script src="./js/app.js?v=214"></script>
+  <script src="./js/covers.js?v=224"></script>
+  <script src="./js/constants.js?v=224"></script>
+  <script src="./js/utils.js?v=224"></script>
+  <script src="./js/forecast.js?v=224"></script>
+  <script src="./js/domain.js?v=224"></script>
+  <script src="./js/storage.js?v=224"></script>
+  <script src="./js/stats.js?v=224"></script>
+  <script src="./js/modal.js?v=224"></script>
+  <script src="./js/ui.js?v=224"></script>
+  <script src="./js/ui-pantry.js?v=224"></script>
+  <script src="./js/ui-daily.js?v=224"></script>
+  <script src="./js/ui-settings.js?v=224"></script>
+  <script src="./js/app.js?v=224"></script>
 </body>
 </html>

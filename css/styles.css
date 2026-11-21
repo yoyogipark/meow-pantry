@@ -2546,37 +2546,41 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .daily-week-days [aria-current="date"] .has-record { background: var(--card-bg); }
 #dailyQuickFeedBox .filter-chips, #dailyHistoryFilters { margin: 0; }
 #dailyQuickFeedBox > p { margin-bottom: var(--daily-week-gap); }
+#dailyTotals { padding: 12px; border: 0.5px solid var(--border-warm); border-radius: 13px; }
+#dailyTotals .daily-card-title { color: var(--text-main); font-size: 15px; font-weight: var(--weight-semibold); }
+#dailyTotals .daily-heading > .daily-support, #dailyTotals .daily-total-grid .daily-support { font-size: 12px; }
 .daily-total-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--card-gap);
-  margin-top: var(--card-gap);
+  gap: 8px;
+  margin-top: 8px;
 }
-.daily-total-cell, .daily-total-unset { display: grid; align-content: start; gap: var(--daily-date-gap); min-width: 0; }
-.daily-total-cell strong, .daily-total-unset strong, .daily-record-amount strong {
-  font-size: var(--font-card-title);
-  font-weight: var(--weight-medium);
+.daily-total-cell, .daily-total-unset {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-width: 0;
 }
-.daily-target { color: var(--text-muted); font-size: var(--font-caption); }
 .daily-total-values {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
+  align-content: start;
+  margin-top: 2px;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
+  line-height: 18px;
 }
-.daily-total-values > :not(.daily-over) { flex: none; }
-.daily-total-values > .daily-over {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: pre;
-  color: var(--status-warning-text);
+.daily-total-values strong {
+  color: var(--text-main); font-size: 15px; font-weight: var(--weight-medium);
 }
+.daily-total-values > * { min-width: 0; overflow-wrap: anywhere; }
+.daily-target, .daily-total-over { font-size: 12px; }
+.daily-target { color: var(--text-muted); }
+.daily-total-over { margin-inline-start: 2px; color: var(--status-warning-text); font-weight: var(--weight-medium); }
 .daily-total-unset { padding: 0; border: 0; background: transparent; color: var(--text-main); text-align: start; cursor: pointer; }
 .daily-total-unset .daily-target { color: var(--accent-strong); }
 .daily-total-track {
-  height: var(--daily-date-marker);
+  height: 5px;
+  margin-top: 3px;
   border-radius: var(--radius-pill);
   background: var(--progress-track-bg);
   overflow: hidden;
@@ -2656,6 +2660,13 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .daily-history-date { justify-items: center; font-size: var(--font-caption); color: var(--text-muted); }
 .daily-history-date strong { font-size: var(--font-date-number); font-weight: var(--weight-medium); color: var(--text-main); }
 .daily-history-copy > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.daily-history-copy > .daily-history-counts { display: flex; align-items: center; gap: 5px; }
+.daily-history-counts > :last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.daily-history-today {
+  flex: none; padding: 0 5px; border-radius: var(--radius-pill);
+  background: var(--accent-soft); color: var(--accent-strong); font-size: 11px;
+}
+#dailyHistoryFilters .is-empty { opacity: .65; }
 .daily-history-day > :last-child { white-space: nowrap; }
 .daily-history-end { text-align: center; }
 .daily-history-heading { margin-bottom: var(--daily-week-gap); }
@@ -3470,16 +3481,36 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #feedCareDeductHelp { display: block; color: var(--text-muted); font-size: var(--font-caption); }
 .feed-care-mode #feedNextReminderDays { width: 100% !important; }
 .feed-care-segments {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  padding: 4px;
-  background: var(--secondary-bg);
-  border-radius: var(--radius-input);
+  height: 44px;
+  box-sizing: border-box;
+  padding: 3px;
+  border: 0.5px solid var(--control-border);
+  border-radius: 12px;
+  background: var(--status-neutral-bg);
 }
-.feed-care-segments button[aria-pressed="true"] {
+.feed-care-segments::before {
+  content: "";
+  position: absolute;
+  inset: 3px 50% 3px 3px;
   background: var(--accent-fill);
-  color: var(--text-on-accent);
+  border-radius: 9px;
+  transition: transform 150ms ease;
+}
+.feed-care-segments:has([data-feed-care-type="nursing"][aria-pressed="true"])::before { transform: translateX(100%); }
+.feed-care-segments button {
+  position: relative;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.feed-care-segments button[aria-pressed="true"] { color: var(--text-on-accent); font-weight: var(--weight-semibold); }
+@media (prefers-reduced-motion: reduce) {
+  .feed-care-segments::before { transition: none; }
 }
 .feed-nursing-mode [data-medication-field] { display: none !important; }
 .feed-nursing-projects {
@@ -3488,21 +3519,15 @@ input[type="checkbox"] { accent-color: var(--accent); }
   padding: 0;
   border: 0;
 }
-.feed-nursing-projects legend { margin-bottom: 6px; font-weight: var(--weight-semibold); }
-.feed-nursing-options { display: flex; flex-wrap: wrap; gap: 6px; }
-.feed-nursing-options label {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 40px;
-  padding: 0 8px;
-  margin: 0;
-  border: var(--border-default-width) solid var(--border-warm);
-  border-radius: var(--radius-pill);
-  background: var(--control-bg);
-  cursor: pointer;
+.feed-nursing-mode .feed-form-fields > .feed-nursing-projects { margin-top: 2px; }
+.feed-nursing-projects legend { margin: 0 0 8px; padding: 0; }
+.feed-nursing-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.feed-nursing-options input {
+  position: absolute; width: 1px; height: 1px; margin: 0; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
 }
-.feed-nursing-options label:has(:checked) { background: var(--selection-bg); color: var(--accent-strong); }
+.feed-nursing-options label:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+#feedNursingHint { margin: 8px 0 0; color: var(--text-muted); font-size: 12px; }
 #feedNursingOtherField { margin-top: 8px; }
 .daily-care-icon { justify-self: center; color: var(--text-muted); }
 .daily-care-icon .ui-icon,
@@ -3588,12 +3613,12 @@ input[type="checkbox"] { accent-color: var(--accent); }
   display: flex; gap: 5px; flex-wrap: nowrap; overflow-x: auto; margin-top: 6px;
 }
 #feedPortionChips:empty { display: none; }
-#feedForm #feedPortionChips button {
+#feedForm #feedPortionChips button:not(.care-chip) {
   display: inline-flex; align-items: center; flex: none; min-height: 32px; padding: 0 9px; white-space: nowrap;
   border: 1px solid var(--control-border); border-radius: var(--radius-pill);
   background: var(--control-bg); color: var(--text-muted); font-size: 12px; cursor: pointer;
 }
-#feedForm #feedPortionChips button[aria-pressed="true"] {
+#feedForm #feedPortionChips button:not(.care-chip)[aria-pressed="true"] {
   border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong);
 }
 #feedDeductBox { padding: 8px 10px; border: 1px solid var(--border-warm); border-radius: 10px; background: var(--card-bg); }
@@ -3873,3 +3898,210 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 #categoryStatsGrid .forecast-package-status [data-package-status="expiring"] { color: var(--status-warning-text); }
 .forecast-value-basis { display: block; font-size: var(--font-support); color: var(--text-support); }
+
+.feed-form-fields { display: contents; }
+.feed-form-sheet:has(.feed-care-mode) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.feed-form-sheet:has(.feed-care-mode) > :first-child { flex: none; }
+#feedForm.feed-care-mode { flex: 1 1 auto; min-height: 0; gap: 0 !important; }
+.feed-care-mode .feed-form-fields {
+  display: flex; flex-direction: column; min-height: 0; gap: 12px;
+  overflow: auto; padding-block: 2px 12px;
+}
+.feed-care-mode .feed-form-fields > * { flex: none; min-width: 0; }
+.feed-care-mode .feed-date-meal-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+#feedForm.feed-care-mode :is(.ios-input, .ios-date-wrap) {
+  height: 44px; min-height: 44px; max-height: 44px; font-size: 15px;
+}
+#feedForm.feed-care-mode #feedStockPickerTrigger.has-stock-selection { height: auto; min-height: 48px; max-height: none; }
+.feed-care-mode #feedStockSelection .feed-batch-thumb { width: 36px; height: 36px; border-radius: 8px; }
+.feed-care-mode .feed-batch-copy strong { font-size: 15px; }
+.feed-care-mode .feed-batch-copy small { font-size: 12px; }
+.feed-care-mode #feedMealChoices button[aria-pressed="true"] {
+  background: var(--accent-soft); color: var(--text-main); font-weight: var(--weight-semibold);
+}
+.feed-care-mode .feed-locked-product { background: var(--card-bg); border: 0.5px solid var(--control-border); border-radius: 12px; }
+.feed-care-mode .feed-locked-product img { width: 36px; height: 36px; }
+.feed-care-mode .feed-locked-copy strong { font-size: 15px; }
+.feed-care-mode .feed-locked-copy small { font-size: 12px; }
+.feed-product-selected {
+  flex: none; padding: 2px 7px; border: 0.5px solid var(--control-border);
+  border-radius: var(--radius-pill); color: var(--text-muted); font-size: 12px;
+}
+#feedForm.feed-care-mode #feedPortionChips { gap: 8px; flex-wrap: wrap; }
+.feed-care-mode #feedDeductBox {
+  padding: 8px 0 0; border: 0; border-top: 0.5px solid var(--control-border);
+  border-radius: 0; background: transparent;
+}
+#feedForm.feed-care-mode #feedDeductLabel { font-size: 14px !important; }
+.feed-care-mode #feedDeductLabel .ui-icon { display: none; }
+#feedForm.feed-care-mode #feedCareDeductHelp { font-size: 12px; }
+.feed-outcome-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+#feedForm.feed-care-mode {
+  --care-control-border: color-mix(in srgb, var(--text-muted) 36%, var(--control-border));
+}
+#feedForm .care-chip {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 36px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 14px;
+  border: 0.5px solid var(--care-control-border);
+  border-radius: var(--radius-pill);
+  background: var(--control-bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+}
+#feedForm .care-chip:is(:has(:checked), [aria-pressed="true"]) {
+  padding-inline: 13.5px;
+  border-width: 1px;
+  border-color: var(--accent-fill);
+  background: color-mix(in srgb, var(--accent-fill) 18%, var(--control-bg));
+  color: color-mix(in srgb, var(--accent-strong) 58%, var(--text-main));
+  font-weight: var(--weight-semibold);
+}
+#feedForm .care-chip[data-nursing-reminder="custom"] { border-style: dashed; }
+.care-chip .care-chip-check { flex: none; display: none; }
+.care-chip:is(:has(:checked), [aria-pressed="true"]) .care-chip-check { display: block; }
+.care-chip small { font-size: 11px; font-weight: 400; }
+.feed-nursing-mode #feedNextReminderDays { display: none; }
+#feedNursingReminderChoices { min-width: 0; }
+#feedAddNursingNote {
+  display: flex; align-items: center; min-height: 40px; padding: 0 12px;
+  border: 0.5px dashed var(--care-control-border); border-radius: 12px;
+  background: transparent; color: var(--text-muted); font: inherit; font-size: 14px; cursor: pointer;
+}
+.feed-care-mode #medNextReminderBox { padding: 0 !important; border: 0 !important; background: transparent !important; }
+#feedForm.feed-care-mode .feed-reminder-fields > label {
+  color: var(--text-muted) !important; font-size: 13px !important; font-weight: 400 !important;
+}
+.feed-care-mode :is(.feed-reminder-note, .feed-reminder-fields [data-category-icon]) { display: none; }
+#feedReminderPreview { color: var(--text-muted); font-size: 12px; }
+#feedCustomReminderDate { display: block; margin-top: 4px; width: 100%; }
+.feed-care-mode .feed-form-footer {
+  flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  border-top: 0.5px solid var(--control-border); padding-top: 8px; background: var(--card-bg);
+}
+.feed-care-mode .feed-form-footer button { width: 100% !important; height: 44px; min-height: 44px; padding-block: 0; }
+
+/* Compact daily-record header and grouped timeline. */
+#dailyHome > .page-heading { min-height: 40px; padding-block: 0; margin-bottom: 4px; }
+#dailyHome .daily-page-heading-copy .daily-support { position: static; }
+#dailyHome .daily-actions { gap: 6px; }
+#dailyHome .daily-actions button { box-sizing: border-box; min-height: 36px; height: 36px; }
+#dailyHome > .daily-stack { gap: 4px; }
+#dailyQuickFeedBox, #dailyQuickFeedBox:not(.hidden-view) + #dailyTotals { margin-top: 8px; }
+#dailyTotals + section { margin-top: 12px; }
+#dailyHome .daily-week { gap: 4px; }
+.daily-week-heading .daily-icon-btn {
+  position: relative; width: 44px; height: 28px;
+  border: 0; background: transparent; color: var(--text-main);
+}
+.daily-week-heading .daily-icon-btn::before { content: ""; position: absolute; inset: -8px 0; }
+.daily-week-heading .daily-icon-btn svg { width: 20px; height: 20px; }
+.daily-week-heading .daily-icon-btn:disabled { color: var(--text-muted); opacity: .5; }
+.daily-week-title { min-height: 28px; font-size: 13px; color: var(--text-muted); }
+.daily-week-days button { box-sizing: border-box; height: 56px; padding: 0; border-radius: 10px; font-size: 10px; }
+.daily-week-days button strong { font-size: 16px; }
+.daily-week-days button i { width: 4px; height: 4px; }
+#dailyQuickFeedBox > p { margin-bottom: 6px; font-size: 12px; line-height: 14px; }
+#dailyQuickFeedTrack { padding-block: 0; }
+#dailyQuickFeedTrack .pill-chip { min-height: 32px; font-size: 13px; border-radius: var(--radius-pill); }
+#dailyHome .daily-detail-heading { margin: 0 0 4px; }
+#dailyDetailTitle { font-size: 16px; font-weight: var(--weight-semibold); }
+#dailyTotalCountBadge { font-size: 12px; }
+.daily-record-card {
+  overflow: hidden; background: var(--card-bg); border: 0.5px solid var(--border-warm); border-radius: 14px;
+}
+/* Keep the existing action menu accessible at the bottom of the card. */
+.daily-record-card:has(.daily-record-menu[open]) { overflow: visible; }
+.daily-record-group h4 {
+  display: flex; align-items: center; gap: 5px; margin: 0; padding: 5px 10px;
+  background: var(--status-neutral-bg); color: var(--text-muted); font-size: 12px; font-weight: var(--weight-medium);
+}
+.daily-record-group:first-child h4 { border-radius: 14px 14px 0 0; }
+.daily-record-group h4 svg { width: 14px; height: 14px; margin: 0; }
+.daily-record-card .daily-records { border: 0; }
+.daily-record-card .daily-record { gap: 8px; padding: 4px 4px 4px 10px; }
+.daily-record-card .daily-record + .daily-record { border-top-width: 0.5px; }
+.daily-record--nursing { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.daily-record-thumb { display: block; width: 40px; height: 40px; object-fit: cover; border-radius: 10px; }
+.daily-nursing-thumb { display: grid; place-items: center; background: var(--status-neutral-bg); color: var(--text-muted); }
+.daily-nursing-thumb svg { width: 22px; height: 22px; margin: 0; }
+.daily-record-card .daily-record-copy .daily-support, .daily-record-amount .daily-support { font-size: 11px; }
+.daily-record-meta, .daily-record-copy .daily-reminder span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.daily-record-card .daily-record-name { margin: 0; color: var(--text-main); font-size: 15px; }
+.daily-record-amount strong { font-size: 15px; font-weight: var(--weight-semibold); }
+.daily-record-more { width: 44px; height: 44px; }
+
+/* Redeemed inventory */
+.redeemed-card { padding: 12px; border-radius: 16px; }
+.redeemed-heading { display: flex; align-items: flex-start; gap: 10px; }
+.redeemed-thumb {
+  display: grid; place-items: center; flex: none; overflow: hidden;
+  width: 64px; height: 64px; border-radius: 14px;
+  background: var(--control-bg); color: var(--accent-strong);
+}
+.redeemed-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.redeemed-photo { border: 0; padding: 0; background: transparent; cursor: pointer; }
+.redeemed-copy { flex: 1; min-width: 0; }
+.redeemed-copy h3 { margin: 4px 0 2px; font-size: 15px; line-height: 1.35; overflow-wrap: anywhere; }
+.redeemed-copy small, .redeemed-muted { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+.redeemed-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.redeemed-tags > span, .redeemed-batch-id, .redeemed-duration {
+  border-radius: var(--radius-pill); padding: 1px 6px; font-size: 11px;
+}
+.redeemed-tags > span, .redeemed-duration { background: var(--accent-soft); color: var(--accent-strong); }
+.redeemed-tags > :first-child, .redeemed-batch-id { background: var(--status-neutral-bg); color: var(--text-muted); }
+.redeemed-summary { color: var(--text-muted); font-size: 12px; }
+.redeemed-summary strong { color: var(--ok); }
+.redeemed-batches { margin-top: 10px; background: var(--control-bg); border: 1px solid var(--border-warm); border-radius: 12px; }
+.redeemed-batch { padding: 8px 9px; overflow-wrap: anywhere; }
+.redeemed-batch + .redeemed-batch, .redeemed-older, .redeemed-older[open] > .redeemed-batch {
+  border-top: 0.5px solid var(--border-warm);
+}
+.redeemed-batch-main { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-bottom: 3px; font-size: 12px; }
+.redeemed-duration { margin-inline-start: auto; }
+.redeemed-batch-edit { display: flex; gap: 4px; margin-top: 3px; }
+.redeemed-batch-edit button, .redeemed-quick-buy {
+  border: 0; border-radius: 8px; background: var(--secondary-bg); color: var(--text-main);
+  padding: 0 9px; min-height: 34px; font-size: 12px; cursor: pointer;
+}
+.redeemed-older > summary { padding: 7px 9px; min-height: 34px; color: var(--text-muted); font-size: 12px; cursor: pointer; }
+.redeemed-footer { margin-top: 10px; padding: 0; border: 0; overflow: visible; }
+.redeemed-footer > *, .redeemed-footer button { height: 36px; }
+.redeemed-footer [data-action="archive-history"] {
+  display: grid; place-items: center; width: 40px; color: var(--text-main);
+}
+.redeemed-footer [data-action="archive-history"] svg { width: 18px; height: 18px; }
+.redeemed-footer [data-action="restock-new"] { padding-inline: 12px; font-size: 13px; }
+.redeemed-month { display: grid; gap: 6px; }
+.redeemed-month > h3 { margin: 0 0 2px; font-size: 12px; color: var(--text-muted); }
+.redeemed-compact { position: relative; border-radius: 14px; }
+.redeemed-compact > details > summary {
+  display: flex; align-items: center; list-style: none; min-height: 52px;
+  padding: 7px 9px; gap: 8px; cursor: pointer;
+}
+.redeemed-compact > details > summary::-webkit-details-marker { display: none; }
+.redeemed-compact .redeemed-thumb { width: 36px; height: 36px; border-radius: 9px; }
+.redeemed-compact .redeemed-thumb svg { width: 20px; height: 20px; }
+.redeemed-compact-copy { display: grid; flex: 1; min-width: 0; padding-inline-end: 52px; }
+.redeemed-compact-copy > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.redeemed-compact-name { font-size: 11px; color: var(--text-muted); }
+.redeemed-compact-name strong { font-size: 13px; color: var(--text-main); }
+.redeemed-quick-buy { position: absolute; top: 9px; right: 26px; }
+.redeemed-chevron { color: var(--text-muted); }
+.redeemed-expanded { padding: 0 10px 10px; }
+.redeemed-expanded .stock-quantity-pill { visibility: hidden; }

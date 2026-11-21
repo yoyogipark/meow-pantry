@@ -167,11 +167,13 @@
     });
     if (locked) {
       var cover = MP.getItemCoverSrc(item);
-      card.innerHTML = '<span class="feed-meal-label">喂食商品</span><div class="feed-locked-product">' +
+      var care = form.classList.contains('feed-care-mode');
+      var label = care ? (form.classList.contains('feed-nursing-mode') ? '护理用品' : '药品') : '喂食商品';
+      card.innerHTML = '<span class="feed-meal-label">' + label + '</span><div class="feed-locked-product">' +
         (cover ? '<img src="' + esc(cover) + '" alt="">' : Utils.getCategoryIcon(item.category)) +
         '<div class="feed-locked-copy"><strong title="' + esc(name) + '">' + esc(name) + '</strong><small>' +
         esc(category + ' · 余' + Utils.formatQuantity(item.quantity, item.unit)) + '</small></div>' +
-        Utils.uiIcon('lock', 16) + '</div>';
+        (care ? '<span class="feed-product-selected">已选定</span>' : Utils.uiIcon('lock', 16)) + '</div>';
     }
 
   }
@@ -332,17 +334,116 @@
     });
     box.classList.toggle('hidden-view', !(cat === 'med' || slot === 'care' || (cat === 'supp' && (fromReminder || editingReminder))));
     syncCareForm(slot === 'care', Boolean(editId));
-    UI.syncFeedReminderInterval();
     UI.syncNursingOther();
+    UI.syncNursingProjects();
+    UI.syncFeedReminderInterval();
   };
 
   UI.syncFeedReminderInterval = function () {
-    var custom = document.getElementById('feedForm').classList.contains('feed-care-mode') &&
-      document.getElementById('feedNextReminderDays').value === 'custom';
+    var form = document.getElementById('feedForm');
+    var select = document.getElementById('feedNextReminderDays');
+    var care = form.classList.contains('feed-care-mode');
+    var nursing = form.classList.contains('feed-nursing-mode');
+    var custom = care && select.value === 'custom';
     var input = document.getElementById('feedCustomReminderDays');
-    input.required = custom;
     input.disabled = !custom;
-    document.getElementById('feedCustomReminderField').classList.toggle('hidden-view', !custom);
+    document.getElementById('feedCustomReminderDateField').classList.toggle('hidden-view', !custom);
+    var date = document.getElementById('feedDateInput').value;
+    var days = Number(custom ? input.value : select.value);
+    var due = date && days > 0 ? Utils.addShelfLife(date, days, 'days') : '';
+    var dateInput = document.getElementById('feedCustomReminderDate');
+    dateInput.disabled = !custom;
+    dateInput.required = custom;
+    dateInput.value = custom ? due : '';
+    dateInput.min = date ? Utils.addShelfLife(date, 1, 'days') : '';
+    dateInput.max = date ? Utils.addShelfLife(date, 3650, 'days') : '';
+    var preview = document.getElementById('feedReminderPreview');
+    preview.textContent = care && due ? '将在 ' + due + ' 提醒你再次' + (nursing ? '护理' : '用药') : '';
+    preview.classList.toggle('hidden-view', !preview.textContent);
+    if (nursing) renderNursingReminders(select.value, Number(form.dataset.nursingSuggestion));
+  };
+
+  function careChipContent(label) {
+    var text = Utils.escapeHtml(label);
+    return '<svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg>' +
+      '<span class="care-chip-copy" data-label="' + text + '"><span>' + text + '</span></span>';
+  }
+
+  function renderNursingReminders(selected, suggestion) {
+    var choices = document.getElementById('feedNursingReminderChoices');
+    var options = [['0', '不设'], ['7', '1周后'], ['14', '2周后'], ['30', '1个月后'], ['custom', '自定义']];
+    [Number(selected), suggestion].forEach(function (days) {
+      if (days > 0 && !options.some(function (option) { return option[0] === String(days); })) {
+        options.splice(1, 0, [String(days), days + '天后']);
+      }
+    });
+    var signature = JSON.stringify([options, suggestion]);
+    if (choices.dataset.rendered !== signature) {
+      choices.dataset.rendered = signature;
+      choices.innerHTML = options.map(function (option) {
+        return '<button type="button" class="care-chip" data-nursing-reminder="' + option[0] + '">' +
+          careChipContent(option[1]) + (Number(option[0]) === suggestion && suggestion > 0 ? '<small>建议</small>' : '') +
+          '</button>';
+      }).join('');
+    }
+    Array.from(choices.children).forEach(function (button) {
+      button.setAttribute('aria-pressed', String(button.dataset.nursingReminder === selected));
+    });
+  }
+
+  UI.syncNursingProjects = function (applySuggestion) {
+    var form = document.getElementById('feedForm');
+    if (!form.classList.contains('feed-nursing-mode')) return;
+    var selected = Array.from(form.querySelectorAll('[data-nursing-project]:checked'), function (input) { return input.value; });
+    var periods = selected.map(function (name) { return MP.NURSING_REMINDER_DAYS[name]; }).filter(function (days) { return days > 0; });
+    var suggestion = periods.length ? Math.min(...periods) : 0;
+    form.dataset.nursingSuggestion = String(suggestion);
+    if (applySuggestion && !form.dataset.nursingReminderManual) setFeedReminderDays(suggestion);
+    var select = document.getElementById('feedNextReminderDays');
+    if (suggestion && !Array.from(select.options).some(function (option) { return Number(option.value) === suggestion; })) {
+      var option = new Option(suggestion + '天后', suggestion);
+      option.dataset.legacyInterval = '1';
+      option.hidden = true;
+      select.add(option);
+    }
+
+    var hint = document.getElementById('feedNursingHint');
+    var today = Utils.getTodayStr();
+    var other = document.getElementById('feedNursingOther').value.trim();
+    var past = MP.state.logs.filter(function (log) { return log.date <= today && Domain.getCareType(log) === 'nursing'; });
+    var summary = selected.slice(0, 3).map(function (project) {
+      var dates = past.filter(function (log) {
+        if (project !== '其他') return log.careProjects?.includes(project);
+        return other ? log.careProjects?.includes(other) || log.careOther === other : Boolean(log.careOther);
+      }).map(function (log) { return log.date; }).sort();
+      var days = Utils.diffDaysBetween(dates.at(-1), today);
+      return (other && project === '其他' ? other : project) + ' ' +
+        (days === null ? '还没有记录过' : days === 0 ? '今天已记录' : days + ' 天前');
+    });
+    hint.textContent = summary.length ? '上次' + summary.join(' · ') + (selected.length > 3 ? ' · 等 ' + selected.length + ' 项' : '') : '';
+    hint.classList.toggle('hidden-view', !summary.length);
+  };
+
+  UI.syncNursingNote = function () {
+    var form = document.getElementById('feedForm');
+    var nursing = form.classList.contains('feed-nursing-mode');
+    var collapsed = nursing && !form.dataset.nursingNoteOpen && !document.getElementById('feedNoteInput').value;
+    document.getElementById('feedAddNursingNote').classList.toggle('hidden-view', !collapsed);
+    document.getElementById('feedNoteField').classList.toggle('hidden-view', collapsed);
+  };
+
+  UI.syncMedicationOutcome = function () {
+    var select = document.getElementById('feedMedicationOutcome');
+    var choices = document.getElementById('feedMedicationOutcomeChoices');
+    if (!choices.childElementCount) {
+      choices.innerHTML = Array.from(select.options, function (option) {
+        return '<button type="button" class="care-chip" data-outcome="' + Utils.escapeHtml(option.value) + '">' +
+          careChipContent(option.textContent) + '</button>';
+      }).join('');
+    }
+    Array.from(choices.children).forEach(function (button) {
+      button.setAttribute('aria-pressed', String(button.dataset.outcome === select.value));
+    });
   };
 
   function syncCareForm(care, editing) {
@@ -354,11 +455,15 @@
     });
     form.classList.toggle('feed-nursing-mode', nursing);
     document.getElementById('feedNursingProjects').classList.toggle('hidden-view', !nursing);
-    document.getElementById('feedNursingHint').classList.toggle('hidden-view', !nursing);
+    document.getElementById('feedNursingReminderChoices').classList.toggle('hidden-view', !nursing);
+    UI.syncNursingNote();
     ['feedNameInput', 'feedAmountInput'].forEach(function (id) { document.getElementById(id).required = !nursing; });
-    document.getElementById('feedReminderTitle').textContent = nursing ? '下次护理提醒' : '下次用药/驱虫提醒';
+    document.getElementById('feedMealSlotLabel').textContent = care ? '记录类型' : '餐次时段';
+    document.getElementById('feedReminderTitle').textContent = nursing ? '下次护理提醒' : care ? '下次提醒' : '下次用药/驱虫提醒';
     var wasCare = form.classList.contains('feed-care-mode');
     var target = MP.state.items.find(function (item) { return item.id === document.getElementById('feedItemId').value; });
+    document.getElementById('feedMedicationOutcomeLabel').textContent = /口服/.test(target?.subtype || '') ? '服药情况' : '使用情况';
+    UI.syncMedicationOutcome();
     var amount = document.getElementById('feedAmountInput');
     var deduct = document.getElementById('feedDeductStock');
     form.classList.toggle('feed-care-mode', care);
@@ -375,8 +480,8 @@
       var unit = target?.unit || '支';
       amount.placeholder = '如：半' + unit + '、1' + unit;
     }
-    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel(nursing ? 'clipboard-copy' : care ? 'stethoscope' : editing ? 'pencil' : 'paw-print',
-      nursing ? (editing ? '编辑护理记录' : '记录护理') : care ? (editing ? '编辑用药 / 护理记录' : '记录用药 / 护理') : (editing ? '编辑饮食记录' : form.dataset.productEntry === 'true' ? '记录喂食' : '记录饮食 / 营养 / 用药'), 20);
+    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel(care ? 'stethoscope' : editing ? 'pencil' : 'paw-print',
+      nursing ? (editing ? '编辑护理记录' : '记录护理') : care ? (editing ? '编辑用药记录' : '记录用药') : (editing ? '编辑每日记录' : form.dataset.productEntry === 'true' ? '记录喂食' : form.dataset.dailyEntry === 'true' ? '新增记录' : '记录饮食 / 营养 / 用药'), 20);
     document.getElementById('feedPalatabilityField').classList.toggle('hidden-view', care);
     document.getElementById('feedMedicationOutcomeField').classList.toggle('hidden-view', !care || nursing);
     document.getElementById('feedNameLabel').textContent = care ? '药品名称' : '商品名';
@@ -385,12 +490,22 @@
     document.getElementById('feedStockLabel').textContent = care ? '选择药品批次（或手动输入）' : '商品批次';
     document.getElementById('saveFeedBtn').textContent = nursing ? '保存护理记录' : care ? '保存用药记录' : '保存喂食记录';
     document.getElementById('feedAmountLabel').textContent = care ? '用量' : '投喂份量';
-    document.getElementById('feedNoteLabel').textContent = nursing ? '备注' : care ? '服药反应 / 备注' : '光盘情况 / 反应备注';
+    document.getElementById('feedNoteLabel').textContent = nursing ? '备注' : care ? '反应 / 备注' : '光盘情况 / 反应备注';
     document.getElementById('feedNoteInput').placeholder = nursing ? '如：状态是否配合、有无异常' : care ? '如：有无呕吐、精神状态' : '如：秒光盘、兑了40ml温水、便便正常';
     document.getElementById('feedBrandInput').required = !care;
-    document.querySelectorAll('[data-care-interval]').forEach(function (option) { option.hidden = !care; });
+    document.querySelectorAll('[data-care-interval]').forEach(function (option) {
+      option.hidden = !care || (!nursing && option.value !== 'custom' && !option.selected);
+    });
     document.querySelectorAll('[data-nursing-interval]').forEach(function (option) { option.hidden = !nursing; });
-    document.querySelectorAll('[data-medication-interval]').forEach(function (option) { option.hidden = nursing; });
+    document.querySelectorAll('[data-medication-interval]').forEach(function (option) {
+      option.hidden = nursing || (care && Number(option.value) > 90 && !option.selected);
+    });
+    var reminder = document.getElementById('feedNextReminderDays');
+    ['30', '60', '90'].forEach(function (value) {
+      var option = reminder.querySelector('[value="' + value + '"]');
+      if (!option.dataset.originalLabel) option.dataset.originalLabel = option.textContent;
+      option.textContent = care && !nursing ? Number(value) / 30 + '个月后' : option.dataset.originalLabel;
+    });
     syncFeedBatchDisplay(target);
     syncPortionChips(target, care);
     syncLastPortionChip(target, care, editing);
@@ -425,6 +540,7 @@
       return;
     }
     form.dataset.careType = type;
+    delete form.dataset.nursingReminderManual;
     form.dataset.manualProduct = 'false';
     document.getElementById('feedStockSelect').value = '';
     UI.applyFeedStockSelection('');
@@ -549,10 +665,16 @@
     document.querySelectorAll('#feedPortionChips [data-package-portion]').forEach(function (button) {
       var portion = presets[button.dataset.frac];
       button.dataset.portion = portion;
-      button.textContent = portion;
+      button.classList.toggle('care-chip', care);
+      if (care) button.innerHTML = careChipContent(portion);
+      else button.textContent = portion;
       button.classList.toggle('hidden-view', !care && !configured.includes(button.dataset.frac));
     });
     var quickChips = document.getElementById('feedPortionChips');
+    var order = care ? ['0.25', '0.34', '0.5', '1'] : ['0.5', '0.34', '0.25', '1'];
+    order.forEach(function (fraction) {
+      quickChips.append(quickChips.querySelector('[data-frac="' + fraction + '"][data-package-portion]'));
+    });
     quickChips.querySelectorAll('[data-configured-portion]').forEach(function (button) { button.remove(); });
     if (!care) configured.filter(function (preset) { return !Object.hasOwn(presets, preset); }).forEach(function (preset) {
       var button = document.createElement('button');
@@ -623,6 +745,7 @@
 
   function syncLastPortionChip(item, care, editing) {
     var chip = document.getElementById('chipLastPortion');
+    chip.classList.toggle('care-chip', care);
     var last = Domain.getLastFedInfoForItem(item, care ? function (log) {
       return log.id !== document.getElementById('feedLogEditId').value &&
         (log.category === 'med' || log.mealSlot === 'care');
@@ -637,7 +760,8 @@
         var fraction = UI.parseFeedPortion(last.amount, item).fraction;
         if (weight > 0 && fraction > 0) label = Utils.formatNumber(weight * fraction, 1) + 'g';
       }
-      chip.innerHTML = Utils.iconLabel('zap', care ? '上次用量：' + last.amount : item?.category === 'can' ? '上次' : '上次 ' + label);
+      chip.innerHTML = care ? careChipContent('上次用量：' + last.amount) :
+        Utils.iconLabel('zap', item?.category === 'can' ? '上次' : '上次 ' + label);
     }
   }
 
@@ -729,6 +853,8 @@
   UI.openFeedModal = function (itemId, customDate, manualEntry, productEntry, dailyEntry) {
     manualFeedDrafts = Object.create(null);
     var feedForm = document.getElementById('feedForm');
+    delete feedForm.dataset.nursingReminderManual;
+    delete feedForm.dataset.nursingNoteOpen;
     feedForm.dataset.productEntry = String(Boolean(productEntry));
     feedForm.dataset.dailyEntry = String(Boolean(dailyEntry));
     feedForm.dataset.manualProduct = 'false';
@@ -793,6 +919,7 @@
     UI.openFeedModal(!nursing && item ? item.id : '', Utils.getTodayStr(), nursing || !item);
     if (nursing) {
       document.getElementById('feedForm').dataset.careType = 'nursing';
+      document.getElementById('feedForm').dataset.nursingReminderManual = 'true';
       selectMealSlot('care');
       loadNursingFields(log);
     }
@@ -818,11 +945,13 @@
     if (!lg) return;
     manualFeedDrafts = Object.create(null);
     var feedForm = document.getElementById('feedForm');
+    feedForm.dataset.nursingReminderManual = 'true';
+    delete feedForm.dataset.nursingNoteOpen;
     delete feedForm.dataset.productEntry;
     delete feedForm.dataset.dailyEntry;
     feedForm.dataset.manualProduct = String(!lg.itemId);
     document.getElementById('feedManualFlavor').value = !lg.flavorId ? lg.flavorName || '' : '';
-    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel('pencil', '编辑饮食记录', 20);
+    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel('pencil', '编辑每日记录', 20);
     document.getElementById('feedLogEditId').value = lg.id;
     document.getElementById('feedForm').dataset.careType = Domain.getCareType(lg) === 'nursing' ? 'nursing' : 'medication';
     loadNursingFields(lg);
@@ -851,7 +980,8 @@
     document.getElementById('feedDeductBox').classList.add('hidden-view');
     UI.syncMedReminderVisibility();
     UI.syncAllDateDisplays();
-    UI.showModal('feedModalBackdrop', Domain.getCareType(lg) === 'nursing' ? 'feedNoteInput' : 'feedAmountInput');
+    UI.showModal('feedModalBackdrop', Domain.getCareType(lg) === 'nursing'
+      ? (lg.note ? 'feedNoteInput' : 'feedAddNursingNote') : 'feedAmountInput');
   };
 
   UI.closeFeedModal = function () {
@@ -859,9 +989,11 @@
   };
 
   // ==================== STOCK OPERATION HISTORY MODAL ====================
-  UI.openStockHistoryModal = function (filterItemId) {
+  UI.openStockHistoryModal = function (filterItemId, byProduct) {
     var st = MP.state;
     st.historyItemFilter = filterItemId || '';
+    var item = byProduct && st.items.find(function (entry) { return entry.id === filterItemId; });
+    st.historyProductFilter = item ? Domain.getProductGroupKey(item) : '';
     st.historyTypeFilter = 'all';
     st.historyPage = 1;
     var searchInp = document.getElementById('historySearchInput');
@@ -882,8 +1014,11 @@
 
     if (st.historyItemFilter) {
       var refItem = st.items.find(function (x) { return x.id === st.historyItemFilter || x.sourceBatchId === st.historyItemFilter; });
-      titleEl.innerHTML = Utils.iconLabel('scroll-text', refItem ? '流水 · ' + refItem.brand + ' ' + refItem.name : '单品库存操作流水', 20);
-      if (clearItemBtn) clearItemBtn.classList.remove('hidden-view');
+      titleEl.innerHTML = Utils.iconLabel('scroll-text', refItem ? (st.historyProductFilter ? refItem.name + ' · 流水' : '流水 · ' + refItem.brand + ' ' + refItem.name) : '单品库存操作流水', 20);
+      if (clearItemBtn) {
+        clearItemBtn.textContent = st.historyProductFilter ? '查看全部流水' : '查看全部商品';
+        clearItemBtn.classList.remove('hidden-view');
+      }
     } else {
       titleEl.innerHTML = Utils.iconLabel('scroll-text', '库存操作历史流水', 20);
       if (clearItemBtn) clearItemBtn.classList.add('hidden-view');
@@ -896,8 +1031,11 @@
     }
 
     var q = (st.historySearchQuery || '').trim().toLowerCase();
+    var productIds = st.historyProductFilter ? new Set(st.items.filter(function (item) {
+      return Domain.getProductGroupKey(item) === st.historyProductFilter;
+    }).flatMap(function (item) { return [item.id, item.sourceBatchId].filter(Boolean); })) : null;
     var matched = st.stockHistory.filter(function (h) {
-      if (st.historyItemFilter && h.itemId !== st.historyItemFilter) return false;
+      if (productIds ? !productIds.has(h.itemId) : st.historyItemFilter && h.itemId !== st.historyItemFilter) return false;
       if (st.historyTypeFilter !== 'all') {
         var meta = MP.STOCK_ACTION_META[h.action] || MP.STOCK_ACTION_META.adjust;
         if (meta.group !== st.historyTypeFilter) return false;

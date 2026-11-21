@@ -37,6 +37,20 @@
     return Number.isSafeInteger(total) ? total : null;
   }
 
+  function archivedItemCount(item) {
+    return Number(item.consumedCount) || Number(item.lastQuantity) || 0;
+  }
+
+  function archivePieceCount(batches) {
+    return Utils.round2(batches.reduce(function (sum, item) { return sum + archivedItemCount(item); }, 0));
+  }
+
+  function latestArchiveDate(group) {
+    return group.batches.reduce(function (latest, item) {
+      return item.finishedDate > latest ? item.finishedDate : latest;
+    }, '');
+  }
+
   function purchasePackagingText(item) {
     var pack = item.purchasePackaging;
     return pack ? '购入 ' + Utils.escapeHtml(UI.purchasePackagingLabel(pack, item.unit)) : '';
@@ -113,7 +127,10 @@
     document.getElementById('countStockPieces').textContent = formatPieceCount(Domain.summarizeStockQuantity(st.items).pieces);
     document.getElementById('countExpiringPieces').textContent = formatPieceCount(expiringPieces);
     document.getElementById('countExpiredPieces').textContent = formatPieceCount(expiredPieces);
-    document.getElementById('countEmptyPieces').textContent = formatPieceCount(summarizeArchivedPieces(emptyItems));
+    var archiveMode = st.statusFilter === 'empty';
+    document.getElementById('countEmptyPieces').textContent = formatPieceCount(
+      archiveMode ? archivePieceCount(emptyItems) : summarizeArchivedPieces(emptyItems)
+    );
 
     var cards = document.querySelectorAll('[data-status-filter]');
     for (var i = 0; i < cards.length; i++) {
@@ -140,8 +157,13 @@
 
   function pantryEntries(items) {
     // Keep the existing archive cards when an archived product appears alongside live batches.
+    if (MP.state.statusFilter === 'empty') {
+      var redeemed = items.filter(function (item) { return !item.manualFeedArchive; });
+      var manual = items.filter(function (item) { return item.manualFeedArchive; });
+      return Domain.groupEmptyItemsByProduct(redeemed).concat(Domain.groupEmptyItemsByProduct(manual))
+        .map(function (group) { return { archive: group }; });
+    }
     var archives = Domain.groupEmptyItemsByProduct(items.filter(function (item) { return item.quantity <= 0; }));
-    if (MP.state.statusFilter === 'empty') return archives.map(function (group) { return { archive: group }; });
     var byKey = new Map(archives.map(function (group) { return [group.groupKey, group]; }));
     var entries = [];
     items.forEach(function (item) {
@@ -162,6 +184,8 @@
     var st = MP.state;
     var counts = { all: 0, dry: 0, can: 0, freeze: 0, treat: 0, supp: 0, med: 0 };
     var matched = st.items.filter(function (item) { return itemMatchesStatus(item, Domain.evaluateItem(item)); });
+    var archiveMode = st.statusFilter === 'empty';
+    if (archiveMode) matched = matched.filter(function (item) { return !item.manualFeedArchive; });
     pantryEntries(matched).forEach(function (entry) {
       var item = entry.item || entry.archive.latestItem;
       counts.all += 1;
@@ -174,7 +198,12 @@
       var baseLabel = cat === 'all' ? '全部' : (MP.CATEGORIES[cat]?.label || '其他');
       var icon = cat === 'all' ? '' : Utils.getCategoryIcon(cat, 20) + ' ';
       btns[i].innerHTML = icon + Utils.escapeHtml(baseLabel) + ' ' + Utils.formatNumber(counts[cat] || 0);
+      btns[i].classList.toggle('hidden-view', archiveMode && cat !== 'all' && !counts[cat]);
       btns[i].classList.toggle('active', cat === st.catFilter);
+    }
+    if (archiveMode && st.catFilter !== 'all' && !counts[st.catFilter]) {
+      st.catFilter = 'all';
+      Array.from(btns).forEach(function (btn) { btn.classList.toggle('active', btn.dataset.cat === 'all'); });
     }
   };
 
@@ -281,6 +310,12 @@
   UI.renderPantryList = function () {
     var historyIcon = document.querySelector('#openStockHistoryBtn svg').outerHTML;
     var st = MP.state;
+    var archiveMode = st.statusFilter === 'empty';
+    var sort = document.getElementById('sortSelect');
+    Array.from(sort.options).forEach(function (option) {
+      option.hidden = archiveMode ? !['finished_desc', 'brand_asc'].includes(option.value) : option.value === 'finished_desc';
+    });
+    sort.value = archiveMode ? st.archiveSortBy || 'finished_desc' : st.sortBy;
     var q = st.searchQuery.trim().toLowerCase();
     var filtered = st.items.filter(function (it) {
       var ev = Domain.evaluateItem(it);
@@ -297,7 +332,7 @@
       return true;
     });
 
-    filtered.sort(function (a, b) {
+    if (!archiveMode) filtered.sort(function (a, b) {
       var ea = Domain.evaluateItem(a);
       var eb = Domain.evaluateItem(b);
       if (st.sortBy === 'exp_asc') return ea.effectiveDays - eb.effectiveDays;
@@ -322,6 +357,13 @@
     }
 
     var entries = pantryEntries(filtered);
+    if (archiveMode) {
+      entries.sort(function (a, b) {
+        var left = a.archive, right = b.archive;
+        if (sort.value === 'brand_asc') return left.latestItem.brand.localeCompare(right.latestItem.brand, 'zh-CN');
+        return latestArchiveDate(right).localeCompare(latestArchiveDate(left));
+      });
+    }
     var hasExtraFilter = (st.statusFilter !== 'in_stock' || Boolean(st.pantryHealthFilter) || st.catFilter !== 'all' || st.brandFilter !== 'all' || Boolean(q));
     var summaryBar = document.getElementById('activeFilterSummaryBar');
     var summaryTxt = document.getElementById('filterResultCountText');
@@ -329,7 +371,10 @@
     if (hasExtraFilter) {
       var displayCount = entries.length;
       var unitWord = st.statusFilter === 'empty' ? '款产品' : st.statusFilter === 'all' ? '条商品记录' : '批商品';
-      summaryTxt.textContent = '当前筛选结果：共 ' + Utils.formatQuantity(displayCount, unitWord);
+      var redeemed = filtered.filter(function (item) { return !item.manualFeedArchive; });
+      summaryTxt.textContent = archiveMode
+        ? Utils.formatQuantity(pantryEntries(redeemed).length, '款') + '，共 ' + Utils.formatQuantity(archivePieceCount(redeemed), '件已核销')
+        : '当前筛选结果：共 ' + Utils.formatQuantity(displayCount, unitWord);
     }
 
     var pagedItems = Utils.paginateList(entries, st, 'pantryPage', pagerEl);
@@ -350,6 +395,124 @@
         totals.eatenCount += Number(item.eatenCount) || 0;
         liveTotals.set(key, totals);
       });
+    }
+
+    if (archiveMode) {
+      var esc = Utils.escapeHtml;
+      function dateText(date) { return date ? date.slice(5) : ''; }
+      function redemption(count, unit) { return count ? '核销 ' + Utils.formatQuantity(count, unit) : '核销数量未记录'; }
+      function archiveThumb(item) {
+        var photo = MP.getItemCoverSrc(item);
+        return '<span class="redeemed-thumb">' +
+          (photo ? '<img src="' + esc(photo) + '" alt="">' : Utils.getCategoryIcon(item.category)) + '</span>';
+      }
+      function archiveAction(action, item, label, extra) {
+        return '<button type="button" data-action="' + action + '" data-id="' + esc(item.id) + '"' + (extra || '') + '>' + label + '</button>';
+      }
+      function batchDuration(item) {
+        return Utils.calcConsumeDays(item.archivedOpenedDate || item.openedDate, item.finishedDate);
+      }
+      function archiveBody(group, batches, total, unit) {
+        var days = 0, datedUnits = 0;
+        var costs = new Map();
+        var rows = batches.map(function (item, index) {
+          var count = archivedItemCount(item);
+          var duration = batchDuration(item);
+          if (duration !== null && count > 0) { days += duration; datedUnits += count; }
+          if (Number(item.price) > 0 && count > 0) {
+            var currency = item.currency || 'CNY';
+            var cost = costs.get(currency) || { price: 0, units: 0 };
+            cost.price += Number(item.price) * count;
+            cost.units += count;
+            costs.set(currency, cost);
+          }
+          var opening = dateText(item.archivedOpenedDate || item.openedDate);
+          var finished = dateText(item.finishedDate);
+          var dates = [opening && opening + (item.category === 'med' ? ' 使用' : ' 开封'), finished && finished + ' 用完'].filter(Boolean).join(' → ');
+          var pack = item.purchasePackaging;
+          var purchase = [
+            pack && '购入 ' + UI.purchasePackagingLabel(pack, item.unit),
+            Utils.formatMoney(pack ? item.price * pack.size * pack.count : item.price, item.currency, pack ? '' : unit),
+            item.batchCode
+          ].filter(Boolean).join(' · ');
+          var shelf = [item.prodDate && '产 ' + item.prodDate, item.expDate && '期 ' + item.expDate].filter(Boolean).join(' · ');
+          return '<div class="redeemed-batch"><div class="redeemed-batch-main"><span class="redeemed-batch-id">' +
+            '#' + (batches.length - index) + '</span><span>' + esc(dates || '核销日期未记录') + '</span>' +
+            (batches.length > 1 && count > 0 ? '<span>' + esc(Utils.formatQuantity(count, unit)) + '</span>' : '') +
+            (duration !== null ? '<span class="redeemed-duration">用时 ' + Utils.formatQuantity(duration, '天') + '</span>' : '') +
+            '</div>' + (purchase ? '<div class="redeemed-muted">' + esc(purchase) + '</div>' : '') +
+            (shelf ? '<div class="redeemed-muted">' + esc(shelf) + '</div>' : '') +
+            '<div class="redeemed-batch-edit edit-only">' + archiveAction('edit', item, '编辑') +
+            archiveAction('delete', item, '删除') + '</div></div>';
+        });
+        var metrics = datedUnits ? ['均每' + unit + ' ' + Utils.formatQuantity(Math.max(1, Math.round(days / datedUnits)), '天')] : [];
+        costs.forEach(function (cost, currency) {
+          metrics.push((batches.length > 1 ? '平均' : '') + Utils.formatMoney(cost.price / cost.units, currency, unit));
+        });
+        var countLabel = redemption(total, unit);
+        var summary = '<div class="redeemed-summary"><strong>' + esc(batches.length > 1 && total ? '共' + countLabel : countLabel) + '</strong>' +
+          esc((batches.length > 1 ? ' · ' + batches.length + '批' : '') + (metrics.length ? ' · ' + metrics.join(' · ') : '')) + '</div>';
+        var folded = rows.length > 3 ? '<details class="redeemed-older"><summary>查看更早 ' + (rows.length - 3) + ' 批</summary>' +
+          rows.slice(3).join('') + '</details>' : '';
+        var rep = group.latestItem;
+        var stock = liveTotals.get(group.groupKey)?.quantity || 0;
+        return {
+          summary: summary,
+          batches: '<div class="redeemed-batches">' + rows.slice(0, 3).join('') + folded + '</div>',
+          footer: '<div class="archive-footer redeemed-footer"><span class="stock-quantity-pill">在库 ' +
+            esc(Utils.formatQuantity(Utils.round2(stock), unit)) + '</span>' +
+            archiveAction('archive-history', rep, historyIcon, ' aria-label="流水" title="流水"') +
+            archiveAction('restock-new', rep, '复购入库') + '</div>'
+        };
+      }
+      function renderRedeemed(group, compact) {
+        var item = group.latestItem;
+        var batches = group.batches.slice().sort(function (a, b) { return String(b.finishedDate || '').localeCompare(String(a.finishedDate || '')); });
+        var unit = item.unit || '件';
+        var total = archivePieceCount(batches);
+        var content = archiveBody(group, batches, total, unit);
+        var thumbnail = archiveThumb(item);
+        if (compact) {
+          var duration = batchDuration(batches[0]);
+          var meta = [redemption(total, unit), duration !== null && '用时 ' + Utils.formatQuantity(duration, '天'), dateText(batches[0].finishedDate)].filter(Boolean);
+          return '<article class="ios-card archive-card redeemed-compact"><details><summary>' + thumbnail +
+            '<span class="redeemed-compact-copy"><span class="redeemed-compact-name"><strong>' + esc(item.name) + '</strong> ' + esc(item.brand) +
+            '</span><span class="redeemed-muted">' + esc(meta.join(' · ')) + '</span></span><span class="redeemed-chevron" aria-hidden="true">›</span></summary>' +
+            '<div class="redeemed-expanded">' + content.batches + content.footer + '</div></details>' +
+            archiveAction('restock-new', item, '复购', ' class="redeemed-quick-buy"') + '</article>';
+        }
+        var pal = MP.getPalatabilityBadgeInfo(item);
+        var spec = Utils.formatItemSpec(item);
+        return '<article class="ios-card archive-card redeemed-card"><div class="redeemed-heading">' +
+          archiveAction('preview-img', item, thumbnail, ' class="redeemed-photo" aria-label="查看商品图片"') +
+          '<div class="redeemed-copy"><div class="redeemed-tags"><span>' + esc(MP.CATEGORIES[item.category].label) +
+          '</span><span>' + esc(item.brand) + '</span>' + (pal ? '<span style="background:' + pal.bg + ';color:' + pal.text + ';">' +
+            Utils.formatPalatabilityBadge(item, pal) + '</span>' : '') +
+          '</div><h3>' + esc(item.name) + (spec ? ' <small>' + esc(spec) + '</small>' : '') + '</h3>' +
+          content.summary + '</div></div>' + content.batches + content.footer + '</article>';
+      }
+      var compact = st.pantryDisplayMode === 'compact';
+      listEl.style.gap = compact ? '8px' : '12px';
+      var months = new Map();
+      var cards = [];
+      pagedItems.forEach(function (entry) {
+        var group = entry.archive;
+        var month = group.batches.every(function (item) { return item.manualFeedArchive; }) ? '手动归档' : latestArchiveDate(group).slice(0, 7);
+        var card = renderRedeemed(group, compact);
+        if (!compact && month !== '手动归档') { cards.push(card); return; }
+        if (!months.has(month)) months.set(month, []);
+        months.get(month).push(card);
+      });
+      listEl.innerHTML = cards.join('') + Array.from(months.keys()).sort(function (a, b) {
+        return a === '手动归档' ? 1 : b === '手动归档' ? -1 : b.localeCompare(a);
+      }).map(function (month) {
+        var label = month === '手动归档' ? month : month ? Number(month.slice(5)) + ' 月' : '核销月份未记录';
+        if (month && month !== '手动归档' && month.slice(0, 4) !== Utils.getTodayStr().slice(0, 4)) {
+          label = month.slice(0, 4) + ' 年 ' + label;
+        }
+        return '<section class="redeemed-month"><h3>' + esc(label) + '</h3>' + months.get(month).join('') + '</section>';
+      }).join('');
+      return;
     }
 
     function archiveFooter(group) {

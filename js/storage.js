@@ -898,7 +898,7 @@
         lg.note || ''
       ]);
     });
-    Storage.triggerFileDownload('猫咪饮食记录_' + Utils.getTodayStr() + '.csv', rowsToCsv(rows), 'text/csv;charset=utf-8');
+    Storage.triggerFileDownload('猫咪每日记录_' + Utils.getTodayStr() + '.csv', rowsToCsv(rows), 'text/csv;charset=utf-8');
   };
 
   Storage.exportStockHistoryCsv = function () {

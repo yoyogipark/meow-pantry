@@ -696,7 +696,7 @@
         deltaText: '+' + dUnit + uLabel + (target.openRemainFraction > 0 ? ('(' + Utils.formatRemainFractionText(target.openRemainFraction, uLabel) + ')') : ''),
         beforeQty: beforeQ,
         afterQty: restoredQ,
-        note: adjustmentNote || ('删除饮食记录并退回库存（原记录 ' + (lg.date || '') + ' ' + (lg.amount || '') + '）')
+        note: adjustmentNote || ('删除每日记录并退回库存（原记录 ' + (lg.date || '') + ' ' + (lg.amount || '') + '）')
       });
       return true;
     }
