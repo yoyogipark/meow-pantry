@@ -46,8 +46,15 @@
   };
 
   MP.FOOD_SUBTYPES = {
-    can: { label: '包装类型', options: ['罐头', '餐盒', '餐包'], units: ['罐', '杯', '包'] },
+    can: { label: '包装类型', options: ['罐头', '餐盒', '餐包'], innerUnits: { '罐头': '罐', '餐盒': '杯', '餐包': '包' } },
     freeze: { label: '冻干类型', options: ['主食冻干', '零食冻干'] }
+  };
+
+  MP.STOCK_WEIGHT_PRESETS = {
+    dry: [400, 1500, 1800, 4500, 5400],
+    treat: [30, 50, 100],
+    supp: [30, 60, 100],
+    med: [1, 5, 10]
   };
 
   MP.PALATABILITY = {

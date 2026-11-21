@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=190">
-  <link rel="stylesheet" href="./css/styles.css?v=190">
+  <link rel="stylesheet" href="./css/tokens.css?v=209">
+  <link rel="stylesheet" href="./css/styles.css?v=209">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -30,6 +30,7 @@
     <symbol id="ui-tag" viewBox="0 0 24 24"><path d="M20 13 13 20 4 11V4h7z M8 8h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-sparkles" viewBox="0 0 24 24"><path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z M20 2v4m-2-2h4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-zap" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-12h-7z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="stock-calendar-icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m-13 5h2m4 0h2"/></symbol>
     <symbol id="ui-package" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z M3 7l9 4 9-4M12 11v10M7 5l9 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-scroll-text" viewBox="0 0 24 24"><path d="M7 19V5a2 2 0 1 0-4 0v2h4m0-2a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v11m-9-8h5m-5 4h5M7 19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3H11v3a2 2 0 0 1-2 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-package-plus" viewBox="0 0 24 24"><path d="M12 21l-9-4V7l9-4 9 4v4M3 7l9 4 9-4M12 11v10m4-4h6m-3-3v6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -606,28 +607,19 @@
     <div class="modal-sheet stock-form-sheet">
       <div class="stock-form-header">
         <h2 id="modalTitle" style="margin:0;font-size:18px;font-weight:800;color:var(--text-main);">录入商品</h2>
+        <span id="requiredProgressText">必填 0/4</span>
         <button id="closeItemModalBtn" type="button" aria-label="关闭弹窗"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       </div>
 
+      <div class="stock-form-progress">
+        <progress id="requiredProgress" max="4" value="0" aria-label="必填项目进度"></progress>
+      </div>
       <form id="itemForm" novalidate>
         <div class="stock-form-body">
         <input type="hidden" id="fieldId">
         <input type="hidden" id="fieldIsRestockMode" value="">
 
-        <!-- Category Selector (3x2 Grid for 6 Categories) -->
-        <div>
-          <label>分类</label>
-          <div id="modalCatSelector" class="stock-form-chips no-scrollbar">
-            <button type="button" data-form-cat="dry" class="pill-chip active" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="dry"></span> 猫粮</button>
-            <button type="button" data-form-cat="can" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="can"></span> 湿粮</button>
-            <button type="button" data-form-cat="freeze" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="freeze"></span> 冻干</button>
-            <button type="button" data-form-cat="treat" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="treat"></span> 零食</button>
-            <button type="button" data-form-cat="supp" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="supp"></span> 营养品</button>
-            <button type="button" data-form-cat="med" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="med"></span> 药品</button>
-          </div>
-        </div>
-
-        <div class="stock-form-photo stock-form-card">
+        <div class="stock-form-photo">
           <img id="formPhotoPreview" src="./icon-192.png" alt="商品配图预览">
           <div>
             <div>包装实拍 · 选填</div>
@@ -638,6 +630,17 @@
           <button id="clearPhotoBtn" type="button" class="stock-form-link stock-form-muted hidden-view">恢复默认</button>
         </div>
 
+        <div>
+          <div class="stock-form-category-strip"><div id="modalCatSelector" class="stock-form-chips no-scrollbar">
+            <button type="button" data-form-cat="dry" class="pill-chip active" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="dry"></span> 猫粮</button>
+            <button type="button" data-form-cat="can" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="can"></span> 湿粮</button>
+            <button type="button" data-form-cat="freeze" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="freeze"></span> 冻干</button>
+            <button type="button" data-form-cat="treat" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="treat"></span> 零食</button>
+            <button type="button" data-form-cat="supp" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="supp"></span> 营养品</button>
+            <button type="button" data-form-cat="med" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="med"></span> 药品</button>
+          </div></div>
+        </div>
+
         <!-- Brand + Quick Brand Chips -->
         <div>
           <label for="fieldBrand">品牌 <span class="stock-form-required">*</span></label>
@@ -645,21 +648,14 @@
           <div id="quickBrandChips" class="no-scrollbar" style="display:flex;gap:6px;overflow-x:auto;margin-top:6px;"></div>
         </div>
 
-        <!-- Product Name & Spec -->
-        <div class="grid-safe" style="display:grid;grid-template-columns:minmax(0, 2fr) minmax(0, 1fr);gap:10px;">
-          <div>
-            <label for="fieldName">品名 / 口味配方 <span class="stock-form-required">*</span></label>
-            <input id="fieldName" type="text" required placeholder="如：鸡肉无谷配方 / 鹿肉主食罐" class="ios-input">
-          </div>
-          <div>
-            <label id="fieldSpecLabel" for="fieldSpec">单件规格</label>
-            <input id="fieldSpec" type="text" placeholder="170g" class="ios-input" style="padding:8px 9px;font-size:13px;">
-          </div>
+        <div>
+          <label for="fieldName"><span id="stockFormNameLabel">品名 / 口味配方</span> <span class="stock-form-required">*</span></label>
+          <input id="fieldName" type="text" required placeholder="如：鸡肉无谷配方" class="ios-input">
         </div>
 
         <div id="itemPackageWeight" class="stock-form-grid stock-form-two">
           <div id="itemSubtypeWrap" class="hidden-view">
-            <label for="fieldSubtype"><span id="itemSubtypeLabel"></span> <span id="itemSubtypeRequired" class="stock-form-required">*</span></label>
+            <label for="fieldSubtype"><span id="itemSubtypeLabel"></span></label>
             <select id="fieldSubtype" class="ios-input"></select>
           </div>
           <div id="netWeightField" class="hidden-view">
@@ -668,211 +664,221 @@
               <input id="fieldNetWeight" aria-describedby="netWeightUnit" class="ios-input" type="number" min="0" step="any" inputmode="decimal">
               <span id="netWeightUnit">克</span>
             </div>
-          </div>
-        </div>
-
-        <!-- Quantity, Unit, and Price + Currency -->
-        <div class="stock-form-grid stock-form-quantity">
-          <div>
-            <label for="fieldQty"><span id="fieldQtyLabel">入库数量</span> <span class="stock-form-required">*</span></label>
-            <input id="fieldQty" type="number" min="0" step="0.5" required value="1" class="ios-input">
-          </div>
-          <div>
-            <label for="fieldUnit">内包装</label>
-            <select id="fieldUnit" class="ios-input">
-              <option value="袋">袋</option>
-              <option value="罐">罐</option>
-              <option value="包">包</option>
-              <option value="盒">盒</option>
-              <option value="支">支</option>
-              <option value="粒">粒</option>
-              <option value="瓶">瓶</option>
-              <option value="杯">杯</option>
-            </select>
-          </div>
-          <div>
-            <div class="stock-form-price-label">
-              <label for="fieldPrice">总价</label>
-              <div id="currencyToggleGroup" role="group" aria-label="币种">
-                <button type="button" data-form-currency="CNY">人民币</button>
-                <button type="button" data-form-currency="JPY">日元</button>
-              </div>
-            </div>
-            <div style="position:relative;min-width:0;">
-              <input id="fieldPrice" type="number" min="0" step="0.01" placeholder="0.00" class="ios-input" aria-describedby="priceCurrencyUnit" style="padding-right:26px;">
-              <span id="priceCurrencyUnit" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:700;color:var(--text-muted);pointer-events:none;">元</span>
+            <div id="stockWeightPresets" class="stock-form-chips stock-form-presets no-scrollbar hidden-view">
+              <span>常用规格</span>
+              <div id="stockWeightPresetOptions" class="stock-form-preset-options"></div>
             </div>
           </div>
         </div>
 
-        <p id="unitChangeHint" class="stock-form-unit-change hidden-view" role="status"></p>
-        <p id="modalUnitPriceHint" class="stock-form-note" role="status"></p>
-        <div class="purchase-packaging stock-form-card stock-form-tinted">
+        <div class="purchase-packaging stock-form-card">
           <label class="purchase-packaging-toggle">
-            <input id="fieldPackagingEnabled" type="checkbox">
-            组合包装 <small>选填</small>
+            <span><svg class="ui-icon" width="18" height="18" aria-hidden="true"><use href="#ui-package"></use></svg>组合包装</span><input id="fieldPackagingEnabled" type="checkbox" role="switch">
           </label>
           <div id="purchasePackagingFields" class="hidden-view">
-            <div class="grid-safe purchase-packaging-grid">
-              <label for="fieldPackCount">购买数量 <span class="stock-form-required">*</span>
+            <div id="stockPackGrid" class="purchase-packaging-grid">
+              <div><label for="fieldPackCount">购买数量</label>
                 <input id="fieldPackCount" type="number" min="1" step="1" inputmode="numeric" value="1" class="ios-input">
-              </label>
-              <label for="fieldPackOuterUnit">外包装
+              </div>
+              <div><label for="fieldPackOuterUnit">外包装</label>
                 <select id="fieldPackOuterUnit" class="ios-input">
-                  <option value="盒" selected>盒</option>
-                  <option value="袋">袋</option>
-                  <option value="桶">桶</option>
-                  <option value="箱">箱</option>
+                  <option value="盒">盒</option><option value="箱">箱</option><option value="包">包</option>
+                  <option value="袋">袋</option><option value="桶">桶</option>
                 </select>
-              </label>
-              <label for="fieldPackSize">每包装件数 <span class="stock-form-required">*</span>
-                <input id="fieldPackSize" type="number" min="1" step="1" inputmode="numeric" value="8" class="ios-input">
-              </label>
-            </div>
-            <div class="stock-form-seal">
-              <label id="packSealLabel">密封方式</label>
-              <input id="fieldPackSeal" type="hidden" value="independent">
-              <div id="packSealOptions" role="group" aria-labelledby="packSealLabel">
-                <button type="button" data-seal="independent">各件独立密封</button>
-                <button type="button" data-seal="shared">共用一个密封包装</button>
+              </div>
+              <div><label for="fieldPackSize" id="stockPackSizeLabel">每盒件数</label>
+                <div class="stock-form-suffix">
+                  <input id="fieldPackSize" type="number" min="1" step="1" inputmode="numeric" value="8" class="ios-input">
+                  <span id="stockPackSizeUnit" aria-hidden="true"></span>
+                </div>
               </div>
             </div>
+          </div>
+          <div id="stockQuantityGrid" class="stock-form-grid">
+            <div>
+              <label for="fieldQty"><span id="fieldQtyLabel">入库数量</span> <span id="stockQuantityRequired" class="stock-form-required">*</span></label>
+              <div class="stock-form-suffix">
+                <input id="fieldQty" type="number" min="0" step="0.01" inputmode="decimal" required value="1" class="ios-input">
+                <span id="stockQuantityUnit" aria-hidden="true">袋</span>
+              </div>
+            </div>
+            <div class="stock-form-price">
+              <label for="fieldPrice">总价</label>
+              <div class="stock-form-price-row">
+                <div class="stock-form-price-input">
+                  <input id="fieldPrice" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" class="ios-input" aria-describedby="modalUnitPriceHint">
+                  <select id="priceCurrencyUnit" class="ios-input" aria-label="总价币种">
+                    <option value="CNY" label="元">元</option>
+                    <option value="JPY" label="円">円</option>
+                  </select>
+                </div>
+                <p id="modalUnitPriceHint" class="stock-form-note" role="status"></p>
+              </div>
+            </div>
+            <div id="stockInnerPackage">
+              <label id="stockInnerPackageLabel" for="fieldUnit">包装</label>
+              <select id="fieldUnit" class="ios-input">
+                <option value="袋">袋</option>
+                <option value="罐">罐</option>
+                <option value="包">包</option>
+                <option value="盒">盒</option>
+                <option value="支">支</option>
+                <option value="粒">粒</option>
+                <option value="瓶">瓶</option>
+                <option value="杯">杯</option>
+              </select>
+              <output id="stockLockedUnit" class="ios-input hidden-view" aria-labelledby="stockInnerPackageLabel">—</output>
+            </div>
+          </div>
+          <div id="stockPackOptions" class="hidden-view">
+            <p id="purchasePackagingPreview" class="purchase-packaging-preview" role="status"></p>
+            <label class="purchase-packaging-toggle stock-form-pack-label stock-form-seal">
+              <span>整盒共用一个密封包装</span><input id="stockPackSealToggle" type="checkbox" role="switch" aria-describedby="packSealHelp">
+            </label>
+            <input id="fieldPackSeal" type="hidden" value="independent">
+            <p id="packSealHelp" class="purchase-packaging-note"></p>
             <div class="stock-form-flavor-heading">
-              <label class="purchase-packaging-toggle">
-                <input id="fieldMixedFlavors" type="checkbox">混合口味 <small>选填</small>
+              <label class="purchase-packaging-toggle stock-form-pack-label">
+                <span>混合口味</span><input id="fieldMixedFlavors" type="checkbox" role="switch">
               </label>
-              <p id="flavorSummary" role="status" tabindex="-1"></p>
             </div>
             <div id="flavorFields" class="hidden-view">
               <div id="flavorProgress" aria-hidden="true"></div>
               <div id="flavorRows"></div>
               <div id="flavorQuickActions">
-                <div id="flavorSuggestions"></div>
-                <div class="stock-form-flavor-shortcuts">
-                  <button type="button" class="stock-form-link" data-flavor-distribute="last">余量补给最后一个</button>
+                <div class="stock-form-flavor-actions">
                   <button type="button" class="stock-form-link" data-flavor-distribute="even">平均分配</button>
+                  <p id="flavorSummary" role="status" tabindex="-1"></p>
                 </div>
+                <div id="flavorSuggestions"></div>
               </div>
               <label id="flavorReasonWrap" class="hidden-view">调整原因（选填）
                 <input id="adjustFlavorReason" class="ios-input" maxlength="100" placeholder="盘点少了 / 送人了 / 过期">
               </label>
             </div>
-            <p id="purchasePackagingPreview" class="purchase-packaging-preview" role="status"></p>
-            <p id="packSealHelp" class="purchase-packaging-note"></p>
           </div>
         </div>
-
-        <!-- Date Calculation Box -->
-        <div class="stock-form-card stock-form-tinted stock-form-dates">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-            <strong>日期</strong>
-            <span class="stock-form-note">三项可互相推算</span>
+        <p id="unitChangeHint" class="stock-form-unit-change hidden-view" role="status"></p>
+        <div class="stock-form-dates">
+          <div class="stock-form-date-heading">
+            <span class="stock-form-date-label">日期 <span class="stock-form-required">*</span></span>
+            <span class="stock-form-note">填包装上有的一项即可</span>
           </div>
-
-          <div class="grid-safe" style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px;margin-bottom:8px;">
-            <div>
+          <div id="stockDateMode" role="group" aria-label="日期类型">
+            <button type="button" data-stock-date="production">生产日期</button>
+            <button type="button" data-stock-date="expiry">过期日期</button>
+          </div>
+          <div class="stock-form-grid stock-form-two stock-form-date-inputs">
+            <div id="stockProductionField">
               <label for="fieldProdDate">生产日期 <span id="productionDatePending" class="hidden-view">待确认</span></label>
-              <div class="ios-date-wrap"><span id="fieldProdDateText" class="ios-date-display">选择日期</span><input id="fieldProdDate" type="date"></div>
+              <div class="ios-date-wrap"><span id="fieldProdDateText" class="ios-date-display">选择日期</span><svg class="stock-date-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#stock-calendar-icon"></use></svg><input id="fieldProdDate" type="date"></div>
             </div>
+            <div id="stockExpiryField">
+              <label for="fieldExpDate">过期日期</label>
+              <div class="ios-date-wrap"><span id="fieldExpDateText" class="ios-date-display">选择日期</span><svg class="stock-date-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#stock-calendar-icon"></use></svg><input id="fieldExpDate" type="date"></div>
+            </div>
+          </div>
+          <p id="stockDateEstimate" class="stock-form-note" role="status"><span id="stockDateEstimateBadge" class="hidden-view">推算</span> <span id="stockDateEstimateText">填保质期后自动推算</span></p>
+          <div class="stock-form-grid stock-form-two stock-form-duration">
             <div>
               <label for="fieldShelfValue">保质期</label>
-              <div class="grid-safe" style="display:grid;grid-template-columns:minmax(0, 1fr) minmax(0, 1.25fr);gap:5px;">
-                <input id="fieldShelfValue" type="number" min="1" max="3650" placeholder="18" class="ios-input" style="background:var(--card-bg);padding:8px 6px;text-align:center;">
-                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input" style="background-color:var(--card-bg);padding:8px 22px 8px 8px;font-size:13px;">
-                  <option value="months">个月</option>
-                  <option value="days">天</option>
+              <div class="stock-form-shelf-input">
+                <input id="fieldShelfValue" type="number" min="1" max="3650" inputmode="numeric" class="ios-input">
+                <select id="fieldShelfUnit" aria-label="保质期单位" class="ios-input">
+                  <option value="months">个月</option><option value="days">天</option>
                 </select>
               </div>
             </div>
-          </div>
-
-          <div id="shelfPresetsBar" style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;overflow-x:auto;margin-bottom:8px;" class="no-scrollbar">
-            <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">常用：</span>
-            <button type="button" data-preset-months="6" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">6个月</button>
-            <button type="button" data-preset-months="12" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">12个月</button>
-            <button type="button" data-preset-months="18" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">18个月</button>
-            <button type="button" data-preset-months="21" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">21个月</button>
-            <button type="button" data-preset-months="24" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">24个月</button>
-            <button type="button" data-preset-months="36" style="white-space:nowrap;font-size:11px;padding:3px 7px;border-radius:7px;background:var(--card-bg);border:1px solid var(--accent-edge);color:var(--accent-strong);cursor:pointer;">36个月</button>
-          </div>
-
-          <div class="stock-form-grid stock-form-two">
-            <div>
-              <label for="fieldExpDate">过期日期 <span class="stock-form-required">*</span></label>
-              <div class="ios-date-wrap"><span id="fieldExpDateText" class="ios-date-display">选择日期</span><input id="fieldExpDate" type="date" required></div>
-            </div>
             <div id="openLimitColWrap">
-              <label for="fieldOpenLimit">开封保鲜期（天）</label>
-              <div class="stock-form-open-limit-suffix">
-                <input id="fieldOpenLimit" type="number" min="1" max="365" value="45" class="ios-input">
+              <label for="fieldOpenLimit">开封后保鲜期</label>
+              <div class="stock-form-suffix">
+                <input id="fieldOpenLimit" type="number" min="1" max="365" inputmode="numeric" class="ios-input">
                 <span aria-hidden="true">天</span>
               </div>
             </div>
+          </div>
+          <div id="shelfPresetsBar" class="stock-form-chips stock-form-presets no-scrollbar">
+            <span>常用保质期</span>
+            <div id="stockShelfPresetOptions" class="stock-form-preset-options"></div>
           </div>
           <button id="calcProdFromExpBtn" type="button" class="stock-form-link">根据过期日期反推生产日期</button>
           <span id="dateCalcHint" class="stock-form-note" role="status"></span>
         </div>
 
-        <div id="batchOpeningCard" class="stock-form-card stock-form-opened">
-          <div class="stock-form-opening-header">
-            <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>
+        <details id="stockFormMore">
+          <summary><span>更多信息</span><span class="stock-form-more-hint">适口性 · 位置 · 渠道 · 备注</span></summary>
+          <div class="stock-form-more-body">
+            <div id="stockFlavorRatingSection" class="hidden-view" role="group" aria-labelledby="stockFlavorRatingTitle">
+              <h3 id="stockFlavorRatingTitle">猫咪适口性</h3>
+              <div id="stockFlavorRatings"></div>
+            </div>
+            <!-- Palatability / Acceptance / Medicine Tolerance -->
             <div>
-              <div id="openedCheckboxTitle">已拆封 0</div>
-              <div id="openingSubtitle" class="stock-form-note">单独计算开封保鲜期</div>
+              <label id="palatabilityFieldTitle"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>猫咪适口性记录</label>
+              <div id="palatabilityGroup" class="grid-safe" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;">
+                <button type="button" data-pal="" class="pill-chip active" style="padding:7px 2px;font-size:11.5px;text-align:center;">未测</button>
+                <button type="button" data-pal="love" id="palBtnLove" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">超爱</button>
+                <button type="button" data-pal="ok" id="palBtnOk" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">正常</button>
+                <button type="button" data-pal="coax" id="palBtnCoax" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">需哄</button>
+                <button type="button" data-pal="meh" id="palBtnMeh" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">不吃</button>
+              </div>
             </div>
-            <input id="fieldIsOpened" type="checkbox" role="switch" aria-label="已拆封" aria-checked="false" aria-controls="openedExtraFields">
-          </div>
-          <div id="openedExtraFields" class="stock-form-grid stock-form-two hidden-view">
-            <div>
-              <label for="fieldOpenedDate">开封日期</label>
-              <div class="ios-date-wrap"><span id="fieldOpenedDateText" class="ios-date-display">选择日期</span><input id="fieldOpenedDate" type="date" aria-describedby="openedDateError"></div>
-            </div>
-            <div id="freshUntilCol">
-              <div class="stock-form-fresh-label"><label for="fieldFreshUntil">保鲜截止日期</label><span id="openingDaysLeft" role="status"></span></div>
-              <input id="fieldFreshUntil" type="text" class="ios-input" readonly value="—">
-            </div>
-            <div id="finishedDateColWrap" class="hidden-view">
-              <label for="fieldFinishedDate">用完日期</label>
-              <div class="ios-date-wrap"><span id="fieldFinishedDateText" class="ios-date-display">选择日期</span><input id="fieldFinishedDate" type="date"></div>
-            </div>
-          </div>
-          <p id="openedDateError" class="stock-form-opening-error" role="status"></p>
-        </div>
 
-        <!-- Palatability / Acceptance / Medicine Tolerance -->
-        <div>
-          <label id="palatabilityFieldTitle"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>猫咪适口性记录</label>
-          <div id="palatabilityGroup" class="grid-safe" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;">
-            <button type="button" data-pal="" class="pill-chip active" style="padding:7px 2px;font-size:11.5px;text-align:center;">未测</button>
-            <button type="button" data-pal="love" id="palBtnLove" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">超爱</button>
-            <button type="button" data-pal="ok" id="palBtnOk" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">正常</button>
-            <button type="button" data-pal="coax" id="palBtnCoax" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">需哄</button>
-            <button type="button" data-pal="meh" id="palBtnMeh" class="pill-chip" style="padding:7px 2px;font-size:11.5px;text-align:center;">不吃</button>
-          </div>
-        </div>
-
-        <!-- Location & Channel/Batch -->
-        <div>
-          <div class="grid-safe" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+            <!-- Location & Channel/Batch -->
             <div>
-              <label for="fieldLocation">存放位置</label>
-              <input id="fieldLocation" type="text" placeholder="如：储物柜 / 冰箱" class="ios-input">
+              <div class="grid-safe" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;">
+                <div>
+                  <label for="fieldLocation">存放位置</label>
+                  <input id="fieldLocation" type="text" placeholder="如：储物柜 / 冰箱" class="ios-input">
+                </div>
+                <div>
+                  <label for="fieldBatch">购入渠道</label>
+                  <input id="fieldBatch" type="text" placeholder="如：旗舰店" class="ios-input">
+                </div>
+              </div>
+              <div class="stock-form-location-strip">
+                <div id="quickLocationChips" class="stock-form-chips no-scrollbar"></div>
+              </div>
+              <div id="locationSuggestion" class="stock-form-note" aria-live="polite"></div>
+            </div>
+
+            <div>
+              <label for="fieldNotes">备注</label>
+              <input id="fieldNotes" type="text" placeholder="如：需兑温水骗水、换粮7日过渡用..." class="ios-input">
             </div>
             <div>
-              <label for="fieldBatch">购入渠道</label>
-              <input id="fieldBatch" type="text" placeholder="如：旗舰店" class="ios-input">
+              <label id="fieldSpecLabel" for="fieldSpec">包装补充</label>
+              <input id="fieldSpec" type="text" placeholder="如：每袋独立密封" class="ios-input" aria-describedby="fieldSpecHelp">
+              <p id="fieldSpecHelp" class="stock-form-note">补充包装版本或密封方式。</p>
             </div>
-          </div>
-          <div class="stock-form-location-strip">
-            <div id="quickLocationChips" class="stock-form-chips no-scrollbar"></div>
-          </div>
-          <div id="locationSuggestion" class="stock-form-note" aria-live="polite"></div>
-        </div>
+            <div id="batchOpeningCard" class="stock-form-opened">
+              <div class="stock-form-opening-header">
+                <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>
+                <div>
+                  <div id="openedCheckboxTitle">已拆封 0</div>
+                  <div id="openingSubtitle" class="stock-form-note">单独计算开封保鲜期</div>
+                </div>
+                <input id="fieldIsOpened" type="checkbox" role="switch" aria-label="已拆封" aria-checked="false" aria-controls="openedExtraFields">
+              </div>
+              <div id="openedExtraFields" class="stock-form-grid stock-form-two hidden-view">
+                <div>
+                  <label for="fieldOpenedDate">开封日期</label>
+                  <div class="ios-date-wrap"><span id="fieldOpenedDateText" class="ios-date-display">选择日期</span><svg class="stock-date-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#stock-calendar-icon"></use></svg><input id="fieldOpenedDate" type="date" aria-describedby="openedDateError"></div>
+                </div>
+                <div id="freshUntilCol">
+                  <div class="stock-form-fresh-label"><label for="fieldFreshUntil">保鲜截止日期</label><span id="openingDaysLeft" role="status"></span></div>
+                  <input id="fieldFreshUntil" type="text" class="ios-input" readonly value="—">
+                </div>
+                <div id="finishedDateColWrap" class="hidden-view">
+                  <label for="fieldFinishedDate">用完日期</label>
+                  <div class="ios-date-wrap"><span id="fieldFinishedDateText" class="ios-date-display">选择日期</span><svg class="stock-date-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#stock-calendar-icon"></use></svg><input id="fieldFinishedDate" type="date"></div>
+                </div>
+              </div>
+              <p id="openedDateError" class="stock-form-opening-error" role="status"></p>
+            </div>
 
-        <div>
-          <label for="fieldNotes">备注</label>
-          <input id="fieldNotes" type="text" placeholder="如：需兑温水骗水、换粮7日过渡用..." class="ios-input">
-        </div>
+          </div>
+        </details>
 
         <div id="cloneBatchFromEditWrap" class="hidden-view">
           <button id="cloneBatchFromEditBtn" type="button">
@@ -1152,18 +1158,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=190"></script>
-  <script src="./js/constants.js?v=190"></script>
-  <script src="./js/utils.js?v=190"></script>
-  <script src="./js/forecast.js?v=190"></script>
-  <script src="./js/domain.js?v=190"></script>
-  <script src="./js/storage.js?v=190"></script>
-  <script src="./js/stats.js?v=190"></script>
-  <script src="./js/modal.js?v=190"></script>
-  <script src="./js/ui.js?v=190"></script>
-  <script src="./js/ui-pantry.js?v=190"></script>
-  <script src="./js/ui-daily.js?v=190"></script>
-  <script src="./js/ui-settings.js?v=190"></script>
-  <script src="./js/app.js?v=190"></script>
+  <script src="./js/covers.js?v=209"></script>
+  <script src="./js/constants.js?v=209"></script>
+  <script src="./js/utils.js?v=209"></script>
+  <script src="./js/forecast.js?v=209"></script>
+  <script src="./js/domain.js?v=209"></script>
+  <script src="./js/storage.js?v=209"></script>
+  <script src="./js/stats.js?v=209"></script>
+  <script src="./js/modal.js?v=209"></script>
+  <script src="./js/ui.js?v=209"></script>
+  <script src="./js/ui-pantry.js?v=209"></script>
+  <script src="./js/ui-daily.js?v=209"></script>
+  <script src="./js/ui-settings.js?v=209"></script>
+  <script src="./js/app.js?v=209"></script>
 </body>
 </html>

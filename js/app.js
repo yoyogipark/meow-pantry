@@ -1088,6 +1088,7 @@
       UI.syncModalCategoryUI(newCat, !isEditing);
       UI.syncNetWeight();
       UI.suggestProductionDate();
+      if (!isEditing) UI.autoComputeExpDate();
       UI.syncModalUnitPriceHint();
       if (isEditing && !document.getElementById('fieldIsOpened').checked) {
         var cInfo = MP.CATEGORIES[newCat] || MP.CATEGORIES.dry;
@@ -1119,9 +1120,8 @@
     document.getElementById('pickPhotoBtn').addEventListener('click', function () {
       document.getElementById('fieldPhotoInput').click();
     });
-    document.getElementById('currencyToggleGroup').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-form-currency]');
-      if (btn) UI.syncModalCurrencyUI(btn.getAttribute('data-form-currency'));
+    document.getElementById('priceCurrencyUnit').addEventListener('change', function () {
+      UI.syncModalCurrencyUI(this.value);
     });
     document.getElementById('palatabilityGroup').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-pal]');
@@ -1136,7 +1136,8 @@
           itemViewport.height < document.documentElement.clientHeight - 100;
         var offset = keyboard ? Math.max(0, document.documentElement.clientHeight - itemViewport.height - itemViewport.offsetTop) : 0;
         itemBackdrop.style.setProperty('--stock-form-keyboard-offset', offset + 'px');
-        itemBackdrop.style.setProperty('--stock-form-viewport-height', keyboard ? itemViewport.height + 'px' : '92dvh');
+        if (keyboard) itemBackdrop.style.setProperty('--stock-form-viewport-height', itemViewport.height + 'px');
+        else itemBackdrop.style.removeProperty('--stock-form-viewport-height');
         var field = document.activeElement;
         if (keyboard && field?.closest('#itemForm .stock-form-body') && !itemBackdrop.classList.contains('hidden-view')) {
           field.scrollIntoView?.({ block: 'nearest' });
@@ -1147,10 +1148,8 @@
     }
 
     document.getElementById('fieldMixedFlavors').addEventListener('change', UI.syncPurchasePackaging);
-    document.getElementById('packSealOptions').addEventListener('click', function (ev) {
-      var button = ev.target.closest('[data-seal]');
-      if (!button || button.disabled) return;
-      document.getElementById('fieldPackSeal').value = button.dataset.seal;
+    document.getElementById('stockPackSealToggle').addEventListener('change', function () {
+      document.getElementById('fieldPackSeal').value = this.checked ? 'shared' : 'independent';
       UI.syncModalUnitPriceHint();
     });
     document.getElementById('flavorRows').addEventListener('input', UI.syncFlavorForm);
@@ -1160,7 +1159,7 @@
       }
     });
     document.getElementById('flavorRows').addEventListener('keydown', function (ev) {
-      if (ev.key === 'Enter' && !ev.isComposing && ev.target.matches('[data-flavor-name]')) {
+      if (ev.key === 'Enter' && !ev.isComposing && ev.target.matches('[data-flavor-name], [data-flavor-count]')) {
         ev.preventDefault();
         ev.target.blur();
       }
@@ -1186,7 +1185,7 @@
       var button = ev.target.closest('button');
       if (!button) return;
       if (button.dataset.flavorDistribute) {
-        UI.distributeFlavors(button.dataset.flavorDistribute);
+        UI.distributeFlavors();
       } else if (button.dataset.suggestFlavor) {
         if (button.classList.contains('hidden-view')) return;
         UI.addFlavorRow({ name: button.dataset.suggestFlavor });
@@ -1209,29 +1208,56 @@
       if (document.getElementById('fieldId').value) UI.syncNetWeight();
       UI.syncModalUnitPriceHint();
     });
+    document.getElementById('stockWeightPresetOptions').addEventListener('click', function (ev) {
+      var button = ev.target.closest('[data-preset-grams]');
+      if (!button) return;
+      var weight = document.getElementById('fieldNetWeight');
+      weight.value = button.dataset.presetGrams;
+      weight.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     document.getElementById('fieldNetWeight').addEventListener('input', function (ev) {
       ev.target.dataset.manualWeight = '1';
       UI.syncModalUnitPriceHint();
     });
+    document.getElementById('stockDateMode').addEventListener('click', function (ev) {
+      var button = ev.target.closest('[data-stock-date]');
+      if (button) UI.selectStockDateMode(button.dataset.stockDate);
+    });
     document.getElementById('fieldProdDate').addEventListener('click', UI.confirmProductionDate);
     document.getElementById('fieldProdDate').addEventListener('change', function () {
+      delete this.dataset.computed;
+      document.getElementById('dateCalcHint').textContent = '';
       UI.confirmProductionDate();
+      UI.selectStockDateMode('production');
       UI.autoComputeExpDate();
       UI.syncOpenedFieldsVisibility();
     });
-    document.getElementById('fieldExpDate').addEventListener('change', function (ev) {
-      delete ev.target.dataset.computed;
+    document.getElementById('fieldExpDate').addEventListener('change', function () {
+      delete this.dataset.computed;
+      document.getElementById('dateCalcHint').textContent = '';
+      if (!document.getElementById('fieldId').value) {
+        UI.selectStockDateMode('expiry');
+        UI.autoComputeExpDate();
+      }
       UI.syncAllDateDisplays();
     });
     ['input', 'change'].forEach(function (name) {
       document.getElementById('fieldOpenedDate').addEventListener(name, UI.syncOpenedFieldsVisibility);
     });
-    document.getElementById('fieldOpenLimit').addEventListener('input', UI.syncOpenedFieldsVisibility);
+    document.getElementById('fieldOpenLimit').addEventListener('input', function () {
+      this.dataset.custom = '1';
+      UI.syncOpenedFieldsVisibility();
+    });
     document.getElementById('fieldFinishedDate').addEventListener('change', UI.syncAllDateDisplays);
     document.getElementById('fieldQty').addEventListener('input', UI.syncModalUnitPriceHint);
     document.getElementById('feedDateInput').addEventListener('change', UI.syncAllDateDisplays);
-    document.getElementById('fieldShelfValue').addEventListener('input', UI.autoComputeExpDate);
-    document.getElementById('fieldShelfUnit').addEventListener('change', UI.autoComputeExpDate);
+    function updateStockShelfLife() {
+      document.getElementById('fieldShelfValue').dataset.custom = '1';
+      UI.autoComputeExpDate();
+      UI.renderStockDateEstimate();
+    }
+    document.getElementById('fieldShelfValue').addEventListener('input', updateStockShelfLife);
+    document.getElementById('fieldShelfUnit').addEventListener('change', updateStockShelfLife);
     document.getElementById('fieldIsOpened').addEventListener('change', function () {
       var opened = document.getElementById('fieldOpenedDate');
       if (this.checked && !opened.value) opened.value = Utils.getTodayStr();
@@ -1243,8 +1269,8 @@
       if (!btn) return;
       document.getElementById('fieldShelfValue').value = btn.getAttribute('data-preset-months');
       document.getElementById('fieldShelfUnit').value = 'months';
-      if (document.getElementById('fieldProdDate').value) {
-        UI.autoComputeExpDate();
+      if (!document.getElementById('fieldId').value || document.getElementById('fieldProdDate').value) {
+        updateStockShelfLife();
       } else if (document.getElementById('fieldExpDate').value) {
         var backProd = Utils.subtractShelfLife(
           document.getElementById('fieldExpDate').value,
@@ -1255,6 +1281,7 @@
           document.getElementById('fieldProdDate').value = backProd;
           UI.confirmProductionDate();
           document.getElementById('dateCalcHint').textContent = '已反推生产日期';
+          UI.renderStockDateEstimate();
           UI.syncOpenedFieldsVisibility();
         }
       }
@@ -1291,7 +1318,19 @@
       UI.syncModalUnitPriceHint();
     });
 
+    document.getElementById('itemModalBackdrop').addEventListener('click', function (ev) {
+      document.querySelectorAll('#stockFlavorRatings details[open]').forEach(function (picker) {
+        if (!picker.contains(ev.target)) picker.open = false;
+      });
+    });
     var itemForm = document.getElementById('itemForm');
+    itemForm.addEventListener('input', function (ev) {
+      if (ev.target.classList.contains('is-invalid')) {
+        ev.target.classList.remove('is-invalid');
+        ev.target.removeAttribute('aria-invalid');
+      }
+      UI.syncStockRequiredProgress();
+    });
     itemForm.addEventListener('submit', function (ev) {
       ev.preventDefault();
       saveItemForm();
@@ -1306,6 +1345,10 @@
       var expDate = Utils.normalizeDateStr(document.getElementById('fieldExpDate').value);
       function showFieldError(fieldId, message) {
         var field = typeof fieldId === 'string' ? document.getElementById(fieldId) : fieldId;
+        var more = field.closest('details');
+        if (more) more.open = true;
+        field.classList.add('is-invalid');
+        field.setAttribute('aria-invalid', 'true');
         field.focus({ preventScroll: true });
         field.scrollIntoView?.({ block: 'center' });
         UI.showToast(message);
@@ -1326,18 +1369,13 @@
         showFieldError('fieldNetWeight', '请填写大于 0 的单件净含量');
         return;
       }
-      if (!expDate) { showFieldError('fieldExpDate', '请填写有效的过期日期'); return; }
-      if (prodDate && expDate < prodDate) {
-        showFieldError('fieldExpDate', '过期日期不能早于生产日期');
-        return;
-      }
       var packaging = UI.readPurchasePackaging();
       if (document.getElementById('fieldPackagingEnabled').checked && !packaging) {
         var countField = document.getElementById('fieldPackCount');
         var sizeField = document.getElementById('fieldPackSize');
         var invalidCount = !Number.isSafeInteger(Number(countField.value)) || Number(countField.value) < 1;
         var invalidSize = !Number.isSafeInteger(Number(sizeField.value)) || Number(sizeField.value) < 1;
-        showFieldError(invalidCount ? countField.id : invalidSize ? sizeField.id : document.querySelector('#packSealOptions [aria-pressed="true"]'),
+        showFieldError(invalidCount ? countField.id : invalidSize ? sizeField.id : 'stockPackSealToggle',
           '请核对购买数量、每包装件数、内包装单位和密封方式');
         return;
       }
@@ -1345,18 +1383,42 @@
       var newQty = packaging && !id
         ? purchasedQty
         : Math.max(0, Utils.round2(Number(document.getElementById('fieldQty').value) || 0));
+      if (!id && !(newQty > 0)) {
+        showFieldError('fieldQty', '请填写大于 0 的入库数量');
+        return;
+      }
+      if (!prodDate && !expDate) {
+        var dateField = document.getElementById('stockDateMode').dataset.mode === 'expiry' ? 'fieldExpDate' : 'fieldProdDate';
+        showFieldError(dateField, '填写生产日期或过期日期其一');
+        return;
+      }
+      if (!expDate) {
+        showFieldError(id ? 'fieldExpDate' : 'fieldShelfValue', id ? '请填写有效的过期日期' : '填写保质期以推算过期日期');
+        return;
+      }
+      if (prodDate && expDate < prodDate) {
+        showFieldError('fieldExpDate', '过期日期不能早于生产日期');
+        return;
+      }
       var original = id && st.items.find(function (item) { return item.id === id; });
       var selectedUnit = document.getElementById('fieldUnit').value;
       var unitChanged = Boolean(original && selectedUnit !== original.unit);
       if (unitChanged) {
         var unitError = Domain.stockUnitCorrectionError(original, selectedUnit);
-        if (unitError) { showFieldError('fieldUnit', unitError); return; }
+        if (unitError) { showFieldError(MP.FOOD_SUBTYPES[st.formCat]?.innerUnits ? 'fieldSubtype' : 'fieldUnit', unitError); return; }
       }
       if (original && original.flavors) {
         newQty = original.quantity;
         packaging = original.purchasePackaging;
       }
       var flavors = original && original.flavors;
+      if (packaging && document.getElementById('fieldMixedFlavors').checked) {
+        var invalidFlavorCount = UI.invalidFlavorCount();
+        if (invalidFlavorCount) {
+          showFieldError(invalidFlavorCount, '请输入有效的整数件数');
+          return;
+        }
+      }
       var adjustments = flavors ? UI.readFlavorAdjustments() : [];
       if (adjustments.some(function (draft) {
         var flavor = Domain.findFlavor(original, draft.id);
@@ -1397,7 +1459,7 @@
       }
 
       var invalid = Array.from(itemForm.elements).find(function (field) {
-        return field.willValidate && !field.validity.valid && !field.closest('.hidden-view');
+        return field.willValidate && !field.validity.valid && !field.closest('.hidden-view, details:not([open])');
       });
       if (invalid) { showFieldError(invalid, '请检查此字段的格式或数值范围'); return; }
 

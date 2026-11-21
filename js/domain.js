@@ -135,7 +135,7 @@
 
   Domain.validatePackaging = function (raw, innerUnit) {
     // 组 and 提 remain valid for existing records and imported backups.
-    if (!raw || !/^(盒|袋|桶|箱|组|提)$/.test(raw.outerUnit)) return null;
+    if (!raw || !/^(盒|袋|桶|箱|包|组|提)$/.test(raw.outerUnit)) return null;
     if (!Domain.isPackageUnit(innerUnit) && innerUnit !== '粒') return null;
     var count = Number(raw.count);
     var size = Number(raw.size);

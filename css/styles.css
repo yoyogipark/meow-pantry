@@ -1827,10 +1827,23 @@ input[type="checkbox"] { accent-color: var(--accent); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 4px 12px;
+  gap: 10px;
+  border-bottom: var(--border-default-width) solid var(--border-warm);
+  background: var(--card-bg);
 }
 
 #itemForm {
+  --stock-section-gap: 15px;
+  --stock-control-height: 40px;
+  --stock-flavor-name-gap: 5px;
+  --stock-field-font-size: 15px;
+  --stock-unit-font-size: 14px;
+  --stock-field-inset: 12px;
+  --stock-placeholder-color: color-mix(in srgb, var(--text-muted) 76%, var(--control-bg));
+  --stock-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23807870' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+  --stock-switch-off: var(--status-neutral-bg);
+  --stock-switch-thumb: color-mix(in srgb, var(--text-muted) 32%, var(--stock-switch-off));
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1839,7 +1852,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .stock-form-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--form-gap);
+  gap: var(--stock-section-gap);
   min-height: 0;
   padding: 0 12px 10px;
   overflow-y: auto;
@@ -1855,13 +1868,12 @@ input[type="checkbox"] { accent-color: var(--accent); }
   padding: 10px 12px max(10px, env(safe-area-inset-bottom, 0px));
 }
 
-#itemForm label {
-  display: block;
-  margin: 0 0 4px;
-  font-size: 11px;
+#itemForm label, #itemForm .stock-form-date-label {
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-muted);
 }
+#itemForm label { display: block; margin: 0 0 4px; }
 
 #itemForm .purchase-packaging-toggle {
   display: flex;
@@ -1875,21 +1887,43 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #itemForm .ios-input,
 #itemForm .ios-date-wrap,
 #itemForm #unitCorrectionFields .ios-input {
-  box-sizing: border-box;
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  height: var(--control-height);
-  min-height: var(--control-height);
-  max-height: var(--control-height);
   margin: 0;
-  font-size: var(--font-card-title) !important;
+}
+#itemForm :is(.ios-input, .ios-date-wrap, .flavor-stepper input),
+#itemForm #stockFlavorRatings .flavor-rating-picker summary {
+  box-sizing: border-box;
+  height: var(--stock-control-height);
+  min-height: var(--stock-control-height);
+  max-height: var(--stock-control-height);
 }
 
-#itemForm .ios-input { padding-block: 0 !important; }
+#itemForm :is(.ios-input, .ios-date-display, .stock-flavor-name, .flavor-stepper input,
+  .flavor-rating-picker summary, .flavor-rating-options button) {
+  color: var(--text-main);
+  font-size: var(--stock-field-font-size);
+  font-weight: 400;
+  line-height: 1.25;
+}
+#itemForm .ios-input { padding-block: 0; padding-inline-start: var(--stock-field-inset); }
+#itemForm .ios-input::placeholder, #itemForm .ios-date-display.is-placeholder {
+  color: var(--stock-placeholder-color);
+  opacity: 1;
+}
 #itemForm input[readonly] { background-color: var(--status-neutral-bg); }
-#itemForm select.ios-input { padding-left: 7px; }
-#itemForm .ios-date-display { font-size: 14px; }
+#itemForm :is(select.ios-input, .flavor-rating-picker summary) {
+  background-image: var(--stock-select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 13px 13px;
+}
+#itemForm select.ios-input { -webkit-appearance: none; appearance: none; }
+#itemForm select.ios-input:has(option[value=""]:checked) { color: var(--stock-placeholder-color); }
+#itemForm :is(#fieldPackOuterUnit, #fieldUnit).ios-input { font-size: var(--stock-unit-font-size); }
+#itemForm .ios-date-display { justify-content: flex-start; padding: 0 35px 0 var(--stock-field-inset); }
+#itemForm .stock-date-icon { position: absolute; inset-inline-end: 12px; color: var(--text-main); pointer-events: none; }
 #itemForm .ios-date-wrap.stock-form-date-pending { border-color: var(--status-warning-progress); }
 #productionDatePending { color: var(--status-warning-text); margin-inline-start: 3px; }
 
@@ -1916,17 +1950,182 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border-radius: 12px;
 }
 
-.stock-form-tinted { background: var(--accent-soft); border-color: var(--accent-edge); }
 .stock-form-grid { display: grid; gap: 10px; min-width: 0; }
 .stock-form-grid > * { min-width: 0; }
 .stock-form-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-#itemPackageWeight, .stock-form-quantity { align-items: start; }
+#itemPackageWeight { align-items: start; }
 .stock-form-two > :only-child,
 .stock-form-two > .hidden-view + :last-child { grid-column: 1 / -1; }
-.stock-form-quantity {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr);
+
+.stock-form-header h2 { margin-inline-end: auto !important; }
+.is-editing-item :is(#requiredProgressText, .stock-form-progress) { display: none; }
+#requiredProgressText { flex: none; color: var(--text-muted); font-size: 12px; }
+.stock-form-progress { padding: 8px 12px; }
+.stock-form-progress progress {
+  display: block; appearance: none; width: 100%; height: 4px; border: 0;
+  border-radius: 999px; overflow: hidden; background: var(--progress-track-bg);
+}
+.stock-form-progress progress::-webkit-progress-bar { background: var(--progress-track-bg); }
+.stock-form-progress progress::-webkit-progress-value { background: var(--accent); }
+.stock-form-progress progress::-moz-progress-bar { background: var(--accent); }
+
+.stock-form-category-strip { position: relative; }
+.stock-form-category-strip::after {
+  content: ""; position: absolute; inset: 0 0 0 auto; width: 24px;
+  background: linear-gradient(to right, transparent, var(--card-bg)); pointer-events: none;
+}
+#modalCatSelector { padding-inline-end: 24px; }
+#itemForm :is(#modalCatSelector, #quickBrandChips, #shelfPresetsBar, #stockWeightPresets, #quickLocationChips, #palatabilityGroup) button {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 30px; min-height: 30px; padding-block: 0 !important; font-size: 12px !important;
 }
 
+#itemForm :is(#modalCatSelector, #palatabilityGroup) button { gap: 6px; }
+#itemForm :is(#modalCatSelector, #palatabilityGroup) button svg { flex: none; margin: 0; }
+
+#itemForm :is(button, summary, .purchase-packaging-toggle) {
+  min-height: 44px;
+}
+#itemForm input.ios-input[type="number"] { border-radius: 10px; }
+#itemForm :is(button, summary, input, select):focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+#itemForm .is-invalid, #itemForm .ios-date-wrap:has(.is-invalid) { border-color: var(--status-danger-text); }
+
+#itemForm .purchase-packaging { padding: 12px; background: var(--card-bg); border-color: var(--border-warm); }
+#itemForm .purchase-packaging:not(:has(#fieldPackagingEnabled:checked)) {
+  padding: 0; border: 0; background: transparent;
+}
+#itemForm .purchase-packaging-toggle {
+  justify-content: space-between; width: 100%; margin: 0;
+  color: var(--text-main); font-size: 13px; cursor: pointer;
+}
+.purchase-packaging-toggle > span { display: flex; align-items: center; gap: 6px; }
+#itemForm .purchase-packaging-toggle input {
+  appearance: none; position: relative; width: 36px; height: 22px; margin: 0;
+  flex: none; border: 1px solid var(--border-warm); border-radius: 999px;
+  background: var(--stock-switch-off); cursor: pointer;
+}
+#itemForm .purchase-packaging-toggle input::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--stock-switch-thumb);
+}
+#itemForm .purchase-packaging-toggle input:checked { background: var(--accent-fill); border-color: var(--accent); }
+#itemForm .purchase-packaging-toggle input:checked::after { left: auto; right: 2px; background: var(--text-on-accent); }
+#itemForm .purchase-packaging-toggle input:disabled { opacity: .55; cursor: default; }
+#stockPackGrid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start; margin-top: var(--stock-pack-gap);
+}
+#stockPackGrid > div { min-width: 0; }
+#itemForm #stockPackGrid label { line-height: 16px; white-space: nowrap; }
+#itemForm #stockPackGrid .ios-input {
+  border-radius: 10px;
+}
+#stockQuantityGrid { margin-top: var(--stock-pack-gap); gap: var(--stock-pack-gap); }
+#itemForm:not(:has(#fieldPackagingEnabled:checked)) #stockQuantityGrid {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.3fr) minmax(0, 0.9fr);
+  gap: 8px; align-items: start;
+}
+#itemForm:not(:has(#fieldPackagingEnabled:checked)) #stockQuantityGrid label { white-space: nowrap; }
+#itemForm:not(:has(#fieldPackagingEnabled:checked)) .stock-form-price-row {
+  grid-template-columns: minmax(0, 1fr); gap: 4px;
+}
+#itemForm .purchase-packaging {
+  --stock-pack-gap: 12px;
+}
+#itemForm .stock-form-pack-label { color: var(--text-muted); font-size: 12px; font-weight: 400; }
+#itemForm .stock-form-seal { margin-top: var(--stock-pack-gap); }
+#purchasePackagingPreview:empty { display: none; }
+#purchasePackagingPreview { color: var(--status-warning-text); font-size: 12px; }
+#packSealHelp { margin-top: 0; color: var(--text-muted); font-size: 12px; }
+#itemForm:has(#fieldPackagingEnabled:checked) #stockQuantityGrid {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 8px; align-items: start;
+}
+#itemForm:has(#fieldPackagingEnabled:checked) #stockQuantityGrid label {
+  margin-bottom: 6px; line-height: 16px; white-space: nowrap;
+}
+#itemForm:has(#fieldPackagingEnabled:checked) .stock-form-price-row {
+  grid-template-columns: minmax(0, 1fr); gap: 4px;
+}
+#itemForm #fieldQty[readonly], #itemForm #stockLockedUnit { background: var(--secondary-bg); }
+#itemForm #fieldQty[readonly] { text-align: start; }
+#itemForm #stockLockedUnit {
+  display: flex; align-items: center; border-radius: 10px; color: var(--text-muted);
+}
+#stockPackSizeUnit:empty, #stockQuantityUnit:empty { display: none; }
+#itemForm #fieldPackSize { padding-inline-end: 5px !important; }
+#itemForm .stock-form-suffix:has(#stockPackSizeUnit:not(:empty)) #fieldPackSize { padding-inline-end: 27px !important; }
+#itemForm #flavorFields { display: grid; gap: var(--stock-pack-gap); }
+#itemForm #flavorRows { display: grid; gap: 8px; }
+#stockFlavorRatingTitle {
+  margin: 0 0 8px; color: var(--text-muted); font-size: 12px; font-weight: 500;
+}
+#stockFlavorRatings { display: grid; gap: 8px; }
+#itemForm .flavor-row :is([data-flavor-step], [data-remove-flavor]) { min-width: 44px; min-height: 44px; }
+#itemForm #flavorSummary { margin: 0 0 0 auto; text-align: end; }
+#itemForm #flavorSummary.is-invalid { outline: 1px solid var(--status-danger-text); }
+
+.stock-form-date-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+#stockDateMode { box-sizing: border-box; display: flex; gap: 3px; height: 40px; padding: 2px; border-radius: 10px; background: var(--status-neutral-bg); margin-bottom: 8px; }
+#itemForm #stockDateMode button {
+  box-sizing: border-box; flex: 1; height: 36px; min-height: 36px; padding: 0; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--text-muted); font-size: 13px; cursor: pointer;
+}
+#itemForm #stockDateMode button[aria-pressed="true"] {
+  border-color: var(--border-warm); background: var(--card-bg); color: var(--text-main); font-weight: 600;
+}
+#itemModalBackdrop:not(.is-editing-item) .stock-form-date-inputs { grid-template-columns: minmax(0, 1fr); }
+#itemModalBackdrop:not(.is-editing-item) .stock-form-date-inputs label:not(:has(#productionDatePending:not(.hidden-view))) {
+  position: absolute; clip-path: inset(50%);
+}
+#itemModalBackdrop:not(.is-editing-item) #calcProdFromExpBtn { display: none; }
+#itemForm #stockDateEstimate { margin: 6px 0 0; }
+#stockDateEstimateBadge { padding: 2px 5px; border-radius: 5px; background: var(--status-neutral-bg); }
+#itemForm #stockDateEstimate.is-expired { color: var(--status-warning-text) !important; }
+.stock-form-duration { margin-top: var(--stock-section-gap); }
+.stock-form-shelf-input { position: relative; }
+#itemForm .stock-form-shelf-input input { padding-inline-end: 73px; }
+#itemForm .stock-form-shelf-input select {
+  position: absolute; inset: 50% 0 auto auto; width: 71px; transform: translateY(-50%);
+  border: 0; border-radius: 10px; background-color: transparent;
+  color: var(--text-muted); font-size: var(--stock-unit-font-size);
+}
+.stock-form-presets { align-items: center; gap: 4px; margin-top: 5px; }
+.stock-form-presets > span { color: var(--text-muted); font-size: 11px; }
+.stock-form-preset-options { display: flex; gap: 4px; }
+.stock-form-presets button { padding: 0 7px; font-size: 12px; }
+.stock-form-presets button[aria-pressed="true"] { border-color: var(--accent-edge); background: var(--accent-soft); color: var(--accent-strong); }
+#stockWeightPresets button { padding-inline: 6px; }
+@media (max-width: 374px) {
+  #stockWeightPresets {
+    padding-inline-end: 16px;
+    mask-image: linear-gradient(to right, black calc(100% - 16px), transparent);
+  }
+}
+
+#stockFormMore { min-width: 0; border: 1px solid var(--border-warm); border-radius: 12px; }
+#stockFormMore > summary {
+  display: flex; align-items: center; gap: 7px; min-width: 0; padding: 0 10px; list-style: none;
+  color: var(--text-main); font-size: 13px; cursor: pointer;
+}
+#stockFormMore > summary::-webkit-details-marker { display: none; }
+#stockFormMore > summary::after {
+  content: ""; flex: none; width: 6px; height: 6px; border: solid var(--text-muted);
+  border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+}
+#stockFormMore[open] > summary::after { margin-inline-start: auto; transform: rotate(225deg); }
+#stockFormMore[open] .stock-form-more-hint { display: none; }
+.stock-form-more-hint {
+  margin-inline-start: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text-muted); font-size: 11px;
+}
+.stock-form-more-body { display: grid; gap: 13px; min-width: 0; padding: 12px 10px; }
+.stock-form-more-body > * { min-width: 0; }
+#itemForm .stock-form-footer button { min-height: 44px; }
+#itemForm .stock-form-footer { padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 480px) {
+  #itemModalBackdrop .stock-form-sheet { max-height: min(96dvh, var(--stock-form-viewport-height, 96dvh)); }
+}
 .stock-form-unit-change {
   margin: 0;
   padding: 8px 12px;
@@ -1939,12 +2138,12 @@ input[type="checkbox"] { accent-color: var(--accent); }
 
 .stock-form-photo {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto auto;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
   gap: 7px;
   align-items: center;
   font-size: 12px;
 }
-.stock-form-photo img { width: 48px; height: 48px; border-radius: 9px; object-fit: cover; }
+.stock-form-photo img { width: 36px; height: 36px; border-radius: 9px; object-fit: cover; }
 .stock-form-note, #photoCompressHint, #itemForm #dateCalcHint {
   margin: 0;
   color: var(--text-muted) !important;
@@ -1963,31 +2162,26 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .stock-form-link { font-size: var(--font-support); }
 .stock-form-photo .stock-form-link { white-space: nowrap; }
 .stock-form-muted { color: var(--text-muted); }
-.stock-form-price-label { display: flex; align-items: center; justify-content: space-between; gap: 3px; margin-bottom: 4px; }
-#itemForm .stock-form-price-label label { margin: 0; white-space: nowrap; }
-#currencyToggleGroup { display: inline-flex; gap: 1px; background: var(--secondary-bg); border-radius: 6px; }
-#currencyToggleGroup button {
-  padding: 2px 3px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 11px;
-  white-space: nowrap;
+.stock-form-price-row { display: grid; grid-template-columns: 56% minmax(0, 1fr); align-items: center; gap: 8px; }
+.stock-form-price-input { position: relative; min-width: 0; }
+#itemForm #fieldPrice { min-width: 0; padding-inline-end: 60px; text-align: start; }
+#itemForm #priceCurrencyUnit {
+  position: absolute; inset: 50% 0 auto auto; width: 56px; transform: translateY(-50%);
+  border: 0; border-radius: 0 10px 10px 0;
+  background-color: transparent; color: var(--text-muted); font-size: var(--stock-unit-font-size);
 }
-#currencyToggleGroup button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-strong); }
-.stock-form-suffix,
-.is-editing-item .stock-form-open-limit-suffix { position: relative; }
-.stock-form-suffix input,
-.is-editing-item .stock-form-open-limit-suffix input { padding-right: 26px !important; }
-.stock-form-suffix span,
-.is-editing-item .stock-form-open-limit-suffix span {
+#itemForm #modalUnitPriceHint { font-size: 12px; overflow-wrap: anywhere; }
+.stock-form-suffix { position: relative; }
+.stock-form-suffix input { padding-inline-end: 34px !important; }
+#itemForm:not(:has(#fieldPackagingEnabled:checked)) #fieldQty { padding-inline-end: 9px !important; }
+#itemForm:not(:has(#fieldPackagingEnabled:checked)) #stockQuantityUnit { display: none; }
+.stock-form-suffix span {
   position: absolute;
   inset-inline-end: 9px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--stock-unit-font-size);
   pointer-events: none;
 }
 #itemForm input[type="number"] { appearance: textfield; }
@@ -2001,45 +2195,25 @@ input[type="checkbox"] { accent-color: var(--accent); }
   justify-content: space-between;
   gap: 4px;
   border-top: var(--border-default-width) solid var(--border-warm);
-  margin-top: 8px;
-}
-#itemForm #purchasePackagingFields .ios-input { height: 40px; min-height: 40px; max-height: 40px; font-size: 16px !important; }
-#itemForm :is(.purchase-packaging-toggle, #flavorQuickActions button, #packSealOptions button, .flavor-row button) {
-  min-height: 40px;
+  margin-top: var(--stock-pack-gap);
 }
 #itemForm :is(.purchase-packaging-toggle small, .flavor-ratio) { color: var(--text-muted); }
 #itemForm .stock-form-flavor-heading label { margin: 0; }
 #flavorSummary { margin: 0; font-size: 12px; color: var(--text-muted); }
 #flavorSummary[data-allocation="complete"] { color: var(--status-normal-text); }
-#flavorSummary[data-allocation="pending"] { color: var(--status-warning-text); }
+#flavorSummary[data-allocation="pending"] { color: var(--status-danger-text); }
 #flavorSummary[data-allocation="incomplete"] { color: var(--status-danger-text); }
-#packSealOptions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-}
-#packSealOptions {
-  padding: 3px;
-  background: var(--secondary-bg);
-  border-radius: var(--radius-input);
-}
-#packSealOptions button, #itemForm .flavor-row button {
+#itemForm .flavor-row button {
   border: var(--border-default-width) solid var(--border-warm);
   border-radius: var(--radius-input);
   background: var(--card-bg);
   color: var(--secondary-text);
   cursor: pointer;
 }
-#packSealOptions button[aria-pressed="true"] {
-  background: var(--selection-bg);
-  border-color: var(--accent);
-  color: var(--accent-strong);
-}
 #flavorProgress {
   display: flex;
   gap: 2px;
   height: 6px;
-  margin-bottom: 6px;
 }
 #flavorProgress.is-dense { gap: 0; }
 #flavorProgress span {
@@ -2049,7 +2223,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border-radius: 4px;
 }
 #itemForm .flavor-row {
-  grid-template-columns: 7px minmax(0, 1fr) auto auto;
+  grid-template-columns: 8px minmax(0, 1fr) auto auto;
+  column-gap: var(--stock-flavor-name-gap);
   align-items: center;
   min-height: 44px;
   margin: 0;
@@ -2057,7 +2232,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border: 0;
 }
 #itemForm .flavor-name-field { min-width: 0; }
-#itemForm .flavor-row input[data-flavor-name] { padding-inline: 5px; }
 #itemForm .flavor-row [data-flavor-name-display] {
   display: block;
   width: 100%;
@@ -2066,13 +2240,12 @@ input[type="checkbox"] { accent-color: var(--accent); }
   background: transparent;
   border: 0;
   color: var(--text-main);
-  font: inherit;
   text-align: start;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-#itemForm .flavor-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--flavor-color); }
+#itemForm .flavor-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--flavor-color); }
 #itemForm .flavor-quantity, #itemForm .flavor-stepper {
   display: flex;
   align-items: center;
@@ -2080,11 +2253,16 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 #itemForm .flavor-quantity { gap: 4px; }
 #itemForm .flavor-stepper {
+  box-sizing: border-box; height: 36px;
   border: var(--border-default-width) solid var(--border-warm);
   border-radius: var(--radius-pill);
   background: var(--card-bg);
 }
-#itemForm .flavor-stepper output { min-width: 2ch; text-align: center; }
+#itemForm .flavor-stepper input {
+  width: 4ch; min-width: 3ch; padding: 0; border: 0;
+  background: transparent;
+  font-variant-numeric: tabular-nums; text-align: center;
+}
 #itemForm .flavor-row button { min-width: 40px; margin: 0; padding: 0 3px; }
 #itemForm .flavor-row button:disabled { opacity: 0.55; }
 #itemForm .flavor-stepper button, #itemForm .flavor-row [data-remove-flavor] {
@@ -2092,7 +2270,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border: 0;
   border-radius: var(--radius-pill);
 }
-#itemForm .flavor-row [data-remove-flavor] { color: var(--text-muted); font-size: 18px; }
+#itemForm .flavor-row [data-remove-flavor] { margin-inline-start: -4px; color: var(--text-muted); font-size: 18px; }
 #itemForm .flavor-row [data-flavor-open] { font-size: 11px; }
 #itemForm .flavor-row :is([data-flavor-open-panel], [data-flavor-changed], .flavor-ratio) { grid-column: 2 / -1; }
 #itemForm .flavor-row [data-flavor-changed] { color: var(--accent-strong); }
@@ -2100,7 +2278,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   display: flex;
   flex-wrap: nowrap;
   gap: 4px;
-  margin-block: 6px;
+  margin: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -2117,7 +2295,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #flavorSuggestions .pill-chip span {
   display: inline-flex;
   align-items: center;
-  height: 32px;
+  height: 30px;
   padding-inline: 12px;
   border: var(--border-default-width) solid var(--border-warm);
   border-radius: var(--radius-pill);
@@ -2125,23 +2303,16 @@ input[type="checkbox"] { accent-color: var(--accent); }
   font-size: 13px;
   white-space: nowrap;
 }
-#flavorSuggestions #addFlavorBtn span { border-style: dashed; }
-#itemForm .stock-form-flavor-shortcuts {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-}
-#itemForm .stock-form-flavor-shortcuts button { min-width: 40px; font-size: 13px; }
+#flavorSuggestions #addFlavorBtn span { border-color: var(--accent-edge); color: var(--accent-strong); }
+#itemForm #flavorQuickActions { display: grid; gap: 4px; min-width: 0; }
+#itemForm .stock-form-flavor-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+#itemForm .stock-form-flavor-actions button { flex: none; font-size: 12px; white-space: nowrap; }
+#itemForm .stock-form-flavor-actions button:disabled { opacity: .5; cursor: default; }
+
 #flavorReasonWrap { margin-top: 8px !important; }
 #purchasePackagingPreview:empty { display: none; }
 #itemForm #palatabilityGroup .pill-chip { white-space: nowrap; min-width: 0; }
 
-#itemForm #fieldShelfUnit {
-  padding-right: 17px !important;
-  background-position: right 3px center;
-  background-size: 11px;
-}
 
 .stock-form-opening-header {
   display: grid;
@@ -2164,7 +2335,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   margin: 0;
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--progress-track-bg);
+  background: var(--stock-switch-off);
   cursor: pointer;
 }
 #itemForm #fieldIsOpened::after {
@@ -2175,10 +2346,10 @@ input[type="checkbox"] { accent-color: var(--accent); }
   width: 19px;
   height: 19px;
   border-radius: 50%;
-  background: var(--card-bg);
+  background: var(--stock-switch-thumb);
 }
 #itemForm #fieldIsOpened[aria-checked="true"] { background: var(--accent-fill); }
-#itemForm #fieldIsOpened[aria-checked="true"]::after { left: auto; right: 3px; }
+#itemForm #fieldIsOpened[aria-checked="true"]::after { left: auto; right: 3px; background: var(--text-on-accent); }
 #itemForm #fieldIsOpened:disabled { opacity: .65; cursor: default; }
 #openedExtraFields { margin-top: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .stock-form-fresh-label { display: flex; align-items: baseline; justify-content: space-between; gap: 3px; }
@@ -2912,8 +3083,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
   display: grid;
   place-items: center;
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -2922,17 +3093,10 @@ input[type="checkbox"] { accent-color: var(--accent); }
   cursor: pointer;
 }
 #itemModalBackdrop.is-editing-item #fieldQty { background: var(--card-bg); }
-#itemModalBackdrop.is-editing-item #currencyToggleGroup button[aria-pressed="true"] {
-  background: var(--accent-fill);
-  color: var(--text-on-accent);
-}
 
 #viewPantry .stock-action-icon { vertical-align: middle; }
 
 
-#itemModalBackdrop:not(.is-editing-item) .stock-form-open-limit-suffix span {
-  display: none;
-}
 #itemModalBackdrop.is-editing-item #correctUnitBtn {
   display: flex;
   width: fit-content;
@@ -3195,17 +3359,39 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .delete-log-record { --category-icon-muted: var(--delete-muted); }
 
 #itemForm .flavor-rating-field {
-  grid-column: 2 / -1;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 112px;
+  align-items: center; gap: 8px; margin: 0;
 }
-
-#itemForm .flavor-rating-field select {
-  width: 100%;
-  min-height: 40px;
+.flavor-rating-caption {
+  display: flex; align-items: center; gap: var(--stock-flavor-name-gap); min-width: 0; color: var(--text-main);
 }
+.flavor-rating-caption .flavor-dot { flex: none; }
+.flavor-rating-caption [data-flavor-rating-name] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#itemForm .flavor-rating-picker { position: relative; min-width: 0; }
+#itemForm .flavor-rating-picker summary,
+#itemForm .flavor-rating-options button {
+  display: flex; align-items: center; gap: 6px; padding: 0 8px;
+  list-style: none; cursor: pointer;
+}
+#itemForm #stockFlavorRatings .flavor-rating-picker summary {
+  box-sizing: border-box;
+  border: var(--border-default-width) solid var(--control-border);
+  padding-inline: var(--stock-field-inset) 24px;
+  border-radius: 10px; background-color: var(--control-bg);
+}
+.flavor-rating-picker summary::-webkit-details-marker { display: none; }
+.flavor-rating-options {
+  position: absolute; z-index: 4; inset: calc(100% + 3px) 0 auto;
+  padding: 3px; border: var(--border-default-width) solid var(--border-warm);
+  border-radius: 10px; background: var(--card-bg);
+}
+#itemForm .flavor-rating-options button {
+  width: 100%; border: 0; border-radius: 7px; background: transparent;
+}
+#itemForm .flavor-rating-options button[aria-pressed="true"] {
+  background: var(--selection-bg); color: var(--accent-strong);
+}
+#fieldSpecHelp { margin-top: 4px; }
 
 .flavor-stock-rating {
   color: var(--text-muted);
