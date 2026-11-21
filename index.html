@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=224">
-  <link rel="stylesheet" href="./css/styles.css?v=224">
+  <link rel="stylesheet" href="./css/tokens.css?v=233">
+  <link rel="stylesheet" href="./css/styles.css?v=233">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -50,6 +50,10 @@
     <symbol id="ui-trash-2" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-pill" viewBox="0 0 24 24"><path d="m5 12 7-7a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7z M8 9l7 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-clipboard-copy" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a2 2 0 0 0-2-2h-3M9 15l2 2 4-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
+    <symbol id="ui-clipboard-check" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a2 2 0 0 0-2-2h-3M9 14l2 2 4-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
+    <symbol id="ui-brush" viewBox="0 0 24 24"><path d="m9 11 8-8a2.8 2.8 0 0 1 4 4l-8 8M8 12l4 4M3 21c3 0 6-1 6-5a3 3 0 0 0-6 0c0 2-1 3-1 3s0 2 1 2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-ear" viewBox="0 0 24 24"><path d="M6 10a6 6 0 0 1 12 0c0 5-5 5-5 9a3 3 0 0 1-6 0M9 10a3 3 0 0 1 6 0c0 2-2 3-3 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-bath" viewBox="0 0 24 24"><path d="M3 12h18v3a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5zM7 12V6a3 3 0 0 1 6 0v1M5 20v2m14-2v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-scissors" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.75"/><path d="m8.2 8.2 11.6 11.6M8.2 15.8 19.8 4.2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></symbol>
     <symbol id="ui-droplet" viewBox="0 0 24 24"><path d="M12 3c3 5 7 8 7 12a7 7 0 0 1-14 0c0-4 4-7 7-12z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-triangle-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20z M12 9v4m0 4h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -133,12 +137,12 @@
 
     <!-- ==================== TAB 1: 粮仓库存 (PANTRY LIST) ==================== -->
     <main id="viewPantry">
-      <header class="page-heading">
-        <div class="pantry-page-heading-copy">
+      <header class="page-header">
+        <div class="page-header__copy">
           <h2 class="page-title">粮仓库存</h2>
           <p id="pantryStockSummary" class="daily-support"></p>
         </div>
-        <div class="pantry-heading-actions">
+        <div class="page-header__actions">
           <label class="ios-btn pantry-edit-toggle">
             <input id="globalEditModeToggle" type="checkbox" aria-label="库存与记录编辑模式">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg>
@@ -260,13 +264,12 @@
     <!-- ==================== TAB 2: 每日记录 (DAILY FEEDING LOG) ==================== -->
     <section id="viewDaily" class="hidden-view">
       <div id="dailyHome">
-        <header class="page-heading">
-          <div class="daily-page-heading-copy">
+        <header class="page-header">
+          <div class="page-header__copy">
             <h2 class="page-title">每日记录</h2>
             <p id="dailyDateLabel" class="daily-support"></p>
           </div>
-          <div class="daily-actions">
-            <button id="copyPrevDayLogsBtn" type="button" class="ios-btn ios-btn-secondary">复制前一天</button>
+          <div class="page-header__actions">
             <button id="openQuickFeedBtn" type="button" class="btn-feed"><svg class="btn-feed__icon" width="16" height="16" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>记录</span></button>
           </div>
         </header>
@@ -328,7 +331,7 @@
 
     <!-- ==================== TAB 3: 喂养分析 (FEEDING ANALYTICS) ==================== -->
     <section id="viewStats" class="hidden-view">
-      <header class="page-heading"><h2 class="page-title">喂养分析</h2></header>
+      <header class="page-header"><div class="page-header__copy"><h2 class="page-title">喂养分析</h2></div></header>
       <div class="feeding-tabs">
         <div id="statsSubTabSwitch" role="group" aria-label="喂养分析视图">
           <button type="button" data-stats-subtab="stock" class="active">消耗与到期</button>
@@ -476,7 +479,7 @@
 
     <!-- ==================== TAB 4: 备份设置 (SETTINGS & BACKUP) ==================== -->
     <section id="viewSettings" class="hidden-view">
-      <header class="page-heading"><h2 class="page-title">备份设置</h2></header>
+      <header class="page-header"><div class="page-header__copy"><h2 class="page-title">备份设置</h2></div></header>
       <div class="settings-panel">
         <section class="ios-card settings-section" aria-labelledby="settingsBackupTitle">
           <div class="settings-heading">
@@ -939,15 +942,7 @@
         </div>
         <fieldset id="feedNursingProjects" class="feed-nursing-projects hidden-view">
           <legend>护理项目</legend>
-          <div class="feed-nursing-options">
-            <label class="care-chip"><input type="checkbox" value="梳毛" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="梳毛"><span>梳毛</span></span></label>
-            <label class="care-chip"><input type="checkbox" value="剪指甲" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="剪指甲"><span>剪指甲</span></span></label>
-            <label class="care-chip"><input type="checkbox" value="洗耳朵" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="洗耳朵"><span>洗耳朵</span></span></label>
-            <label class="care-chip"><input type="checkbox" value="刷牙" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="刷牙"><span>刷牙</span></span></label>
-            <label class="care-chip"><input type="checkbox" value="洗澡" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="洗澡"><span>洗澡</span></span></label>
-            <label class="care-chip"><input type="checkbox" value="清理眼屎" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="清理眼屎"><span>清理眼屎</span></span></label>
-            <label class="care-chip"><input type="checkbox" value="其他" data-nursing-project><svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg><span class="care-chip-copy" data-label="其他"><span>其他</span></span></label>
-          </div>
+          <div class="feed-nursing-options"></div>
           <p id="feedNursingHint" class="daily-support hidden-view" aria-live="polite"></p>
           <label id="feedNursingOtherField" class="feed-care-field hidden-view">
             <span>其他护理项目</span>
@@ -1187,18 +1182,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=224"></script>
-  <script src="./js/constants.js?v=224"></script>
-  <script src="./js/utils.js?v=224"></script>
-  <script src="./js/forecast.js?v=224"></script>
-  <script src="./js/domain.js?v=224"></script>
-  <script src="./js/storage.js?v=224"></script>
-  <script src="./js/stats.js?v=224"></script>
-  <script src="./js/modal.js?v=224"></script>
-  <script src="./js/ui.js?v=224"></script>
-  <script src="./js/ui-pantry.js?v=224"></script>
-  <script src="./js/ui-daily.js?v=224"></script>
-  <script src="./js/ui-settings.js?v=224"></script>
-  <script src="./js/app.js?v=224"></script>
+  <script src="./js/covers.js?v=233"></script>
+  <script src="./js/constants.js?v=233"></script>
+  <script src="./js/utils.js?v=233"></script>
+  <script src="./js/forecast.js?v=233"></script>
+  <script src="./js/domain.js?v=233"></script>
+  <script src="./js/storage.js?v=233"></script>
+  <script src="./js/stats.js?v=233"></script>
+  <script src="./js/modal.js?v=233"></script>
+  <script src="./js/ui.js?v=233"></script>
+  <script src="./js/ui-pantry.js?v=233"></script>
+  <script src="./js/ui-daily.js?v=233"></script>
+  <script src="./js/ui-settings.js?v=233"></script>
+  <script src="./js/app.js?v=233"></script>
 </body>
 </html>

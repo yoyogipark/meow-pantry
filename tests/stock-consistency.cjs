@@ -1291,7 +1291,11 @@ async function run() {
   assert.match(el('dailyFeedTimeline').textContent, /1\/4罐约21克/);
   assert.deepEqual(Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-card-title'), node => node.textContent),
     ['上午猫粮', '午后猫粮', '零食', '鸡肉湿粮', '外驱']);
-  assert.equal(el('dailyFeedTimeline').querySelector('.daily-reminder').textContent, '下次用药 ' + nextReminderYear + '年5月19日');
+  assert.equal(el('copyPrevDayLogsBtn'), null);
+  assert.equal(el('dailyFeedTimeline').querySelector('.daily-record-group'), null);
+  assert.equal(el('dailyFeedTimeline').querySelector('.daily-reminder'), null);
+  assert.deepEqual(Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-record-meta'), node => node.textContent),
+    ['中午', '中午', '晚上', '零食加餐 · 测试牌', '用药 · 大宠爱']);
   el('dailyPrevWeek').click();
   assert.ok(!el('dailyPastWeek').classList.contains('hidden-view'));
   assert.ok(!el('dailyNextWeek').disabled);
@@ -1368,8 +1372,8 @@ async function run() {
   assert.equal(state.logs[0].subtype, '外驱');
   assert.equal(state.logs[0].nextDueDate, utils.shiftDaysFromToday(30));
   assert.ok(!el('dailyMedReminders').querySelector('[data-record-reminder="upcoming-reminder"]'));
-  assert.match(el('dailyFeedTimeline').textContent, /药品 · 大宠爱外驱/);
-  assert.match(el('dailyFeedTimeline').textContent, /下次补充.*已过期 1 天/);
+  assert.match(el('dailyFeedTimeline').textContent, /用药 · 大宠爱外驱/);
+  assert.equal(el('dailyFeedTimeline').querySelector('.daily-reminder'), null);
   el('dailyMedReminders').querySelector('[data-record-reminder="other-reminder"]').click();
   assert.equal(el('feedItemId').value, '');
   assert.equal(el('feedNameInput').value, '补充剂');
@@ -1467,6 +1471,9 @@ async function run() {
   assert.equal(el('saveFeedBtn').textContent, '保存护理记录');
   const project = name => Array.from(el('feedNursingProjects').querySelectorAll('input[type="checkbox"]'))
     .find(input => input.value === name);
+  assert.deepEqual(Array.from(el('feedNursingProjects').querySelectorAll('.care-chip-copy use'), use => use.getAttribute('href')),
+    ['#ui-brush', '#ui-scissors', '#ui-ear', '#ui-sparkles', '#ui-bath', '#ui-clipboard-check']);
+  assert.equal(project('清理眼屎'), undefined);
   project('梳毛').click();
   project('其他').click();
   set('feedNursingOther', '擦脚');
@@ -1478,7 +1485,12 @@ async function run() {
   assert.equal(nursing.nextDueDate, utils.shiftDaysFromToday(3));
   assert.equal(nursing.deductedFrac, 0);
   assert.equal(nursing.note, '状态配合');
-  assert.match(el('dailyFeedTimeline').textContent, /护理.*梳毛、擦脚/);
+  const nursingRows = Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-record--nursing'));
+  assert.deepEqual(nursingRows.map(row => row.querySelector('.daily-record-name').textContent), ['梳毛', '擦脚']);
+  assert.deepEqual(nursingRows.map(row => row.querySelector('.daily-record-amount').textContent), ['1次', '1次']);
+  assert.ok(nursingRows.every(row => !row.querySelector('.daily-record-meta')));
+  assert.deepEqual(nursingRows.map(row => row.querySelector('.daily-nursing-icon use').getAttribute('href')),
+    ['#ui-brush', '#ui-clipboard-check']);
   assert.equal(w.MeowPantry.Stats.computeOverviewMetrics(state.items, state.logs).recent30.nursing.length, 1);
   ui.openEditFeedModal(nursing.id);
   assert.ok(project('梳毛').checked);
@@ -1501,7 +1513,7 @@ async function run() {
   }
   assert.equal(el('openProfileEditor'), null);
   assert.equal(el('profileForm'), null);
-  assert.ok(el('globalEditModeToggle').closest('.pantry-heading-actions'));
+  assert.ok(el('globalEditModeToggle').closest('.page-header__actions'));
   ui.switchTab('stats');
   el('statsSubTabSwitch').querySelector('[data-stats-subtab="pal"]').click();
   assert.equal(el('statsSubTabSwitch').querySelector('[data-stats-subtab="pal"]').getAttribute('aria-pressed'), 'true');

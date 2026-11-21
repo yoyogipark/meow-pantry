@@ -424,6 +424,15 @@
     hint.classList.toggle('hidden-view', !summary.length);
   };
 
+  UI.renderNursingProjectChoices = function () {
+    var box = document.querySelector('.feed-nursing-options');
+    box.innerHTML = Object.keys(MP.NURSING_PROJECTS).map(function (project) {
+      return '<label class="care-chip"><input type="checkbox" value="' + Utils.escapeHtml(project) +
+        '" data-nursing-project><span class="care-chip-copy" data-label="' + Utils.escapeHtml(project) + '">' +
+        Utils.uiIcon(MP.getNursingProjectIcon(project), 16) + '<span>' + Utils.escapeHtml(project) + '</span></span></label>';
+    }).join('');
+  };
+
   UI.syncNursingNote = function () {
     var form = document.getElementById('feedForm');
     var nursing = form.classList.contains('feed-nursing-mode');

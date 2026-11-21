@@ -481,48 +481,6 @@
       });
     });
 
-    document.getElementById('copyPrevDayLogsBtn').addEventListener('click', function () {
-      var targetDate = st.selectedLogDate || Utils.getTodayStr();
-      var prevDateStr = Utils.shiftDaysFromDate(targetDate, -1);
-      // Copy routine food & supplements by default (do NOT accidentally duplicate quarterly deworming med reminders!)
-      var prevLogs = st.logs.filter(function (lg) { return lg.date === prevDateStr && lg.category !== 'med' && Domain.getCareType(lg) === ''; });
-      if (prevLogs.length === 0) {
-        UI.showToast('前一天 (' + prevDateStr + ') 没有可复制的喂食记录');
-        return;
-      }
-      UI.openConfirm(
-        '复制前一天喂食记录？',
-        '将把 ' + prevDateStr + ' 的 ' + Utils.formatQuantity(prevLogs.length, '条') + '日常饮食/营养品记录复制到 ' + targetDate + '（自动跳过低频驱虫药记录，复制后可单条微调）。',
-        '确认复制',
-        function () {
-          for (var idx = prevLogs.length - 1; idx >= 0; idx--) {
-            var srcLog = prevLogs[idx];
-            Domain.appendFeedingLog({
-              date: targetDate,
-              mealSlot: srcLog.mealSlot,
-              itemId: srcLog.itemId,
-              category: srcLog.category,
-              subtype: srcLog.subtype,
-              brand: srcLog.brand,
-              name: srcLog.name,
-              productSpec: srcLog.productSpec,
-              productUnit: srcLog.productUnit,
-              productUnitWeightGrams: srcLog.productUnitWeightGrams,
-              flavorId: srcLog.flavorId,
-              flavorName: srcLog.flavorName,
-              flavorPalatability: srcLog.flavorPalatability,
-              medicationOutcome: srcLog.medicationOutcome,
-              amount: srcLog.amount,
-              note: srcLog.note
-            });
-          }
-          Storage.saveToStorage();
-          UI.renderAll();
-          UI.showToast('已复制 ' + Utils.formatQuantity(prevLogs.length, '条') + '记录到 ' + targetDate);
-        }
-      );
-    });
-
     // 6. Feed Form Interactions & Split-Can Stock Deduction
     function selectedFeedItem() {
       var id = document.getElementById('feedItemId').value;
@@ -1933,6 +1891,7 @@
   App.init = function () {
     var st = MP.state;
     UI.syncStaticBrandIcons();
+    UI.renderNursingProjectChoices();
     document.querySelectorAll('[data-category-icon]').forEach(function (node) {
       node.innerHTML = Utils.getCategoryIcon(node.dataset.categoryIcon, 20);
     });
