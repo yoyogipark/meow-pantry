@@ -81,6 +81,14 @@
   --scroll-fade-width: 24px;
   --badge-size: 16px;
   --badge-offset-block: 5px;
+
+  /* Shared app brand bar; intentionally independent from page-level sizing overrides. */
+  --brand-bar-height: 48px;
+  --brand-icon-size: 32px;
+  --brand-icon-radius: 10px;
+  --brand-gap: 8px;
+  --brand-title-size: 17px;
+  --brand-title-weight: 700;
 }
 
 /* Existing settings sizing is kept local to that tab. */

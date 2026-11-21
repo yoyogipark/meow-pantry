@@ -323,56 +323,53 @@
   }
 
   function renderDetails(rows, isToday) {
-    var groups = Utils.mealSlotOptions().filter(function (slot) { return slot.id !== 'care'; });
-    groups.push({ id: 'other', label: '其他喂食', icon: 'utensils' },
-      { id: 'medication', label: '用药', icon: 'stethoscope' },
-      { id: 'nursing', label: '护理', icon: 'clipboard-copy' });
-    var grouped = new Map(groups.map(function (group) { return [group.id, []]; }));
+    var detailOrder = ['breakfast', 'lunch', 'dinner', 'snack', 'other', 'medication', 'nursing'];
     var counts = { food: 0, medication: 0, nursing: 0 };
     rows.forEach(function (row) {
-      var log = row.log;
-      var type = recordType(log);
-      var slot = Utils.normalizeMealSlot(log.mealSlot);
-      var group = type === 'food' ? (slots.includes(slot) ? slot : 'other') : type;
+      var type = recordType(row.log);
       counts[type]++;
-      grouped.get(group).push(row);
     });
     el('dailyTotalCountBadge').textContent = recordCounts(counts);
     var empty = rows.length ? '' : '<div class="empty-state daily-empty">' +
       '<span>' + (isToday ? '今天还没有记录' : '这天没有记录') +
       '</span><button type="button" class="ios-btn-text" data-daily-add>记一条</button></div>';
-    var records = groups.map(function (group) {
-      var entries = grouped.get(group.id);
-      if (!entries.length) return '';
-      var unit = ['medication', 'nursing'].includes(group.id) ? '次' : '顿';
-      return '<section class="daily-record-group"><h4>' + Utils.uiIcon(group.icon) + esc(group.label) +
-        ' · ' + entries.length + ' ' + unit + '</h4><ul class="daily-records">' +
-        entries.sort(function (a, b) {
-          return (clock(a.log) ?? 86400) - (clock(b.log) ?? 86400);
-        }).map(renderDetailRow).join('') + '</ul></section>';
+    var records = rows.slice().sort(function (a, b) {
+      function key(row) {
+        var type = recordType(row.log);
+        if (type !== 'food') return detailOrder.indexOf(type);
+        var slot = Utils.normalizeMealSlot(row.log.mealSlot);
+        return detailOrder.indexOf(slots.includes(slot) ? slot : 'other');
+      }
+      return key(a) - key(b) || (clock(a.log) ?? 86400) - (clock(b.log) ?? 86400);
+    }).map(function (row) {
+      if (recordType(row.log) !== 'nursing') return renderDetailRow(row);
+      var projects = row.log.careProjects?.filter(Boolean) || [];
+      if (!projects.length) projects = [row.log.careOther || '护理'];
+      return projects.map(function (project) { return renderDetailRow(row, project); }).join('');
     }).join('');
-    el('dailyFeedTimeline').innerHTML = empty + (records ? '<div class="daily-record-card">' + records + '</div>' : '');
+    el('dailyFeedTimeline').innerHTML = empty + (records ? '<div class="daily-record-card"><ul class="daily-records">' + records + '</ul></div>' : '');
   }
 
-  function renderDetailRow(row) {
+  function renderDetailRow(row, nursingProject) {
     var log = row.log;
     var product = Domain.resolveLogProduct(log);
-    var care = careInfo(log, product);
     var nursing = recordType(log) === 'nursing';
     var brand = knownBrand(product);
-    var category = MP.CATEGORIES[product.category || log.category] || MP.CATEGORIES.dry;
-    var singleProject = log.careProjects?.length === 1 ? log.careProjects[0] : '';
-    var icon = { 剪指甲: 'scissors', 洗澡: 'droplet' }[singleProject] || 'clipboard-copy';
-    var thumb = nursing ? '<span class="daily-record-thumb daily-nursing-thumb">' + Utils.uiIcon(icon, 20) + '</span>' :
+    var icon = MP.getNursingProjectIcon(nursingProject);
+    var thumb = nursing ? '<span class="daily-nursing-icon">' + Utils.uiIcon(icon, 20) + '</span>' :
       '<img class="daily-record-thumb" src="' + esc(MP.getItemCoverSrc(Domain.resolveLogProduct(log, true))) + '" alt="" loading="lazy">';
-    var reminder = nursing && log.nextDueDate ? nursingDetailReminder(log) : detailReminder(log, care, Utils.getTodayStr());
-    var nameText = nursing ? Domain.nursingLabel(log) : product.name;
+    var nameText = nursing ? nursingProject : product.name;
     var name = '<p class="daily-card-title daily-record-name" title="' + esc([nameText, log.note].filter(Boolean).join(' · ')) + '">' +
       esc(nameText) + '</p>';
-    var copy = nursing ? name + reminder :
-      '<p class="daily-support daily-record-meta">' + esc([category.label, brand].filter(Boolean).join(' · ')) + '</p>' + name + reminder;
-    var amount = nursing ? '' : '<div class="daily-record-amount"><strong>' + esc(row.amount.primary) + '</strong>' +
-      (row.amount.secondary ? '<span class="daily-support">' + esc(row.amount.secondary) + '</span>' : '') + '</div>';
+    var slot = Utils.mealSlotOptions().find(function (option) { return option.id === Utils.normalizeMealSlot(log.mealSlot); });
+    var type = recordType(log);
+    var metaLabel = type === 'food' ? (slot?.label || '其他') : recordTypes[type][0];
+    var metaIcon = type === 'food' ? (slot?.icon || 'utensils') : (type === 'medication' ? 'stethoscope' : icon);
+    var copy = nursing ? name : '<p class="daily-support daily-record-meta">' + Utils.uiIcon(metaIcon, 14) +
+      '<span>' + esc([metaLabel, brand].filter(Boolean).join(' · ')) + '</span></p>' + name;
+    var amountText = nursing ? (String(log.amount || '').trim() || '1次') : row.amount.primary;
+    var amount = '<div class="daily-record-amount"><strong>' + esc(amountText) +
+      (row.amount.secondary ? '<span class="daily-record-conversion">' + esc(row.amount.secondary) + '</span>' : '') + '</strong></div>';
     var id = esc(log.id);
     return '<li class="daily-record' + (nursing ? ' daily-record--nursing' : '') + '">' + thumb +
       '<div class="daily-record-copy">' + copy + '</div>' + amount +

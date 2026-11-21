@@ -50,8 +50,22 @@
     freeze: { label: '冻干类型', options: ['主食冻干', '零食冻干'] }
   };
 
-  MP.NURSING_REMINDER_DAYS = {
-    梳毛: 3, 剪指甲: 14, 洗耳朵: 14, 刷牙: 1, 洗澡: 30, 清理眼屎: 0, 其他: 0
+  // Single source of truth for nursing projects used by the form and daily details.
+  MP.NURSING_PROJECTS = {
+    梳毛: { icon: 'brush', reminderDays: 3 },
+    剪指甲: { icon: 'scissors', reminderDays: 14 },
+    洗耳朵: { icon: 'ear', reminderDays: 14 },
+    刷牙: { icon: 'sparkles', reminderDays: 1 },
+    洗澡: { icon: 'bath', reminderDays: 30 },
+    其他: { icon: 'clipboard-check', reminderDays: 0 }
+  };
+
+  MP.NURSING_REMINDER_DAYS = Object.fromEntries(Object.entries(MP.NURSING_PROJECTS).map(function (entry) {
+    return [entry[0], entry[1].reminderDays];
+  }));
+
+  MP.getNursingProjectIcon = function (project) {
+    return (MP.NURSING_PROJECTS[project] || MP.NURSING_PROJECTS.其他).icon;
   };
 
   MP.FEED_PORTION_PRESETS = {

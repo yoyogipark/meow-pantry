@@ -386,50 +386,86 @@ body:not(.is-edit-mode) .edit-only {
   display: none !important;
 }
 
-.app-header, .page-heading {
+.app-header {
   display: flex;
   align-items: center;
-  gap: var(--card-gap);
-  min-height: 48px;
-}
-.app-header { border-bottom: var(--border-default-width) solid var(--border-warm); }
-.app-header h1, .page-title {
-  margin: 0;
-  font-size: var(--font-page-title);
-  font-weight: var(--weight-heading);
+  gap: var(--brand-gap);
+  height: var(--brand-bar-height);
+  min-height: var(--brand-bar-height);
+  padding-block: 0;
+  border-bottom: var(--border-default-width) solid var(--border-warm);
 }
 .app-header h1 {
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--brand-title-size);
+  font-weight: var(--brand-title-weight);
+  line-height: 1.2;
+  letter-spacing: normal;
+  transform: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 #headerMascotImg {
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: var(--brand-icon-size);
+  height: var(--brand-icon-size);
   object-fit: cover;
   border: var(--border-default-width) solid var(--border-warm);
-  border-radius: var(--radius-input);
+  border-radius: var(--brand-icon-radius);
   background: var(--secondary-bg);
 }
-.app-shell { --page-heading-gap: 12px; }
-.page-heading {
+.page-header {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  min-height: 56px;
-  padding-block: 6px;
-  margin-bottom: var(--page-heading-gap);
+  gap: var(--card-gap);
+  min-height: 66px;
+  padding-top: 16px;
+  margin-bottom: 16px;
 }
-.page-heading > * { min-width: 0; }
-.page-heading .page-title, .page-heading .daily-support { line-height: 1.2; }
-.pantry-page-heading-copy, .daily-page-heading-copy { position: relative; }
-.pantry-page-heading-copy .daily-support,
-.daily-page-heading-copy .daily-support {
-  position: absolute;
-  inset-block-start: 100%;
-  inset-inline-start: 0;
+.page-header > * { min-width: 0; }
+.page-header__copy {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-self: flex-start;
+  min-width: 0;
+  min-height: 50px;
+}
+.page-header .page-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.page-header__copy .daily-support {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.page-header__actions { display: flex; flex: none; align-items: center; gap: 6px; }
+.page-header__actions > :is(button, label) {
+  box-sizing: border-box;
+  height: 40px;
+  min-height: 40px;
+  padding-inline: 12px;
+  border-radius: var(--radius-card);
+  font-size: 14px;
   white-space: nowrap;
 }
-.pantry-heading-actions { display: flex; align-items: center; gap: 6px; }
+.page-header:not(:has(.page-header__actions)):not(:has(.page-header__copy > .daily-support)) {
+  min-height: 0;
+  margin-bottom: 8px;
+}
+.page-header:not(:has(.page-header__actions)):not(:has(.page-header__copy > .daily-support)) .page-header__copy {
+  min-height: 0;
+}
 .pantry-edit-toggle {
   position: relative;
   gap: 4px;
@@ -1388,7 +1424,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
   margin-bottom: 14px;
   background: var(--bg-cream);
 }
-#viewStats > .page-heading { min-height: 40px; margin-bottom: 12px; }
 #statsSubTabSwitch {
   --segment-track: #EBE3D8;
   --segment-text: #7A6A5D;
@@ -1399,7 +1434,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
   position: relative;
   display: flex;
   gap: 2px;
-  padding: 4px;
+  height: 40px;
+  padding: 3px;
   border-radius: 14px;
   background: var(--segment-track);
 }
@@ -1409,8 +1445,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
   content: "";
   box-sizing: border-box;
   position: absolute;
-  inset: 4px auto 4px 4px;
-  width: calc((100% - 12px) / 3);
+  inset: 3px auto 3px 3px;
+  width: calc((100% - 10px) / 3);
   border: var(--border-default-width) solid var(--segment-border);
   border-radius: 11px;
   background: var(--segment-selected);
@@ -1422,13 +1458,15 @@ input[type="checkbox"] { accent-color: var(--accent); }
   position: relative;
   flex: 1;
   min-width: 0;
-  min-height: 40px;
-  padding: 4px 0;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 2px;
   border: 0;
   border-radius: 11px;
   background: transparent;
   color: var(--segment-text);
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: var(--weight-medium);
   text-align: center;
   white-space: nowrap;
   cursor: pointer;
@@ -2861,9 +2899,11 @@ input[type="checkbox"] { accent-color: var(--accent); }
   .settings-panel .settings-preference + .settings-preference { padding-top: 4px; }
 }
 
+#viewSettings { --settings-module-gap: 12px; }
+#viewSettings > .page-header { margin-bottom: var(--settings-module-gap); }
 #viewSettings .settings-panel {
   display: grid;
-  gap: 30px;
+  gap: var(--settings-module-gap);
   padding: 0;
 }
 #viewSettings .settings-section {
@@ -3522,6 +3562,8 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .feed-nursing-mode .feed-form-fields > .feed-nursing-projects { margin-top: 2px; }
 .feed-nursing-projects legend { margin: 0 0 8px; padding: 0; }
 .feed-nursing-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.feed-nursing-options .care-chip-copy { display: inline-flex; align-items: center; gap: 6px; }
+.feed-nursing-options .care-chip-copy .ui-icon { flex: none; margin: 0; color: currentColor; }
 .feed-nursing-options input {
   position: absolute; width: 1px; height: 1px; margin: 0; padding: 0;
   overflow: hidden; clip-path: inset(50%); white-space: nowrap;
@@ -3996,11 +4038,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 .feed-care-mode .feed-form-footer button { width: 100% !important; height: 44px; min-height: 44px; padding-block: 0; }
 
-/* Compact daily-record header and grouped timeline. */
-#dailyHome > .page-heading { min-height: 40px; padding-block: 0; margin-bottom: 4px; }
-#dailyHome .daily-page-heading-copy .daily-support { position: static; }
-#dailyHome .daily-actions { gap: 6px; }
-#dailyHome .daily-actions button { box-sizing: border-box; min-height: 36px; height: 36px; }
+/* Compact daily-record header and continuous timeline. */
 #dailyHome > .daily-stack { gap: 4px; }
 #dailyQuickFeedBox, #dailyQuickFeedBox:not(.hidden-view) + #dailyTotals { margin-top: 8px; }
 #dailyTotals + section { margin-top: 12px; }
@@ -4027,24 +4065,35 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 /* Keep the existing action menu accessible at the bottom of the card. */
 .daily-record-card:has(.daily-record-menu[open]) { overflow: visible; }
-.daily-record-group h4 {
-  display: flex; align-items: center; gap: 5px; margin: 0; padding: 5px 10px;
-  background: var(--status-neutral-bg); color: var(--text-muted); font-size: 12px; font-weight: var(--weight-medium);
-}
-.daily-record-group:first-child h4 { border-radius: 14px 14px 0 0; }
-.daily-record-group h4 svg { width: 14px; height: 14px; margin: 0; }
 .daily-record-card .daily-records { border: 0; }
-.daily-record-card .daily-record { gap: 8px; padding: 4px 4px 4px 10px; }
+.daily-record-card .daily-record {
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, max-content) 32px;
+  column-gap: 10px; min-height: 56px; box-sizing: border-box; padding: 8px 12px;
+}
 .daily-record-card .daily-record + .daily-record { border-top-width: 0.5px; }
-.daily-record--nursing { grid-template-columns: 40px minmax(0, 1fr) auto; }
-.daily-record-thumb { display: block; width: 40px; height: 40px; object-fit: cover; border-radius: 10px; }
-.daily-nursing-thumb { display: grid; place-items: center; background: var(--status-neutral-bg); color: var(--text-muted); }
-.daily-nursing-thumb svg { width: 22px; height: 22px; margin: 0; }
-.daily-record-card .daily-record-copy .daily-support, .daily-record-amount .daily-support { font-size: 11px; }
-.daily-record-meta, .daily-record-copy .daily-reminder span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.daily-record-card .daily-record-name { margin: 0; color: var(--text-main); font-size: 15px; }
-.daily-record-amount strong { font-size: 15px; font-weight: var(--weight-semibold); }
-.daily-record-more { width: 44px; height: 44px; }
+.daily-record-thumb { display: block; width: 40px; height: 40px; object-fit: cover; border-radius: 8px; }
+.daily-record-card .daily-record--nursing {
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, max-content) 32px;
+  column-gap: 8px; min-height: 36px; padding-block: 6px;
+}
+.daily-nursing-icon { display: flex; align-items: center; justify-content: flex-start; width: 20px; height: 24px; color: var(--text-muted); }
+.daily-nursing-icon svg { flex: none; margin: 0; }
+.daily-record--nursing .daily-record-more { height: 24px; }
+.daily-record-card .daily-record-copy { gap: 2px; }
+.daily-record-card .daily-record-copy .daily-support { font-size: 12px; }
+.daily-record-meta { display: flex; align-items: center; gap: 4px; overflow: hidden; white-space: nowrap; }
+.daily-record-meta svg { flex: none; margin: 0; }
+.daily-record-meta span { overflow: hidden; text-overflow: ellipsis; }
+.daily-record-card .daily-record-name {
+  margin: 0; overflow: hidden; color: var(--text-main); font-size: 15px; font-weight: var(--weight-medium);
+  line-height: 20px; white-space: nowrap; text-overflow: ellipsis;
+}
+.daily-record-amount strong { font-size: 15px; font-weight: var(--weight-medium); white-space: nowrap; }
+.daily-record-conversion {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+.daily-record-more { width: 32px; height: 40px; }
 
 /* Redeemed inventory */
 .redeemed-card { padding: 12px; border-radius: 16px; }
