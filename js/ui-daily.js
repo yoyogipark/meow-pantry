@@ -184,7 +184,7 @@
 
   function renderQuickFeed(items) {
     var candidates = items.filter(function (item) {
-      return item.quantity > 0 && Domain.evaluateItem(item).status !== 'expired';
+      return MP.getCategoryGroup(item.category) !== 'supplies' && item.quantity > 0 && Domain.evaluateItem(item).status !== 'expired';
     });
     function score(item) {
       return (item.isOpened ? (item.openRemainFraction > 0 ? 100 : 60) : 0) + (MP.isFoodCategory(item.category) ? 20 : 0);
@@ -228,7 +228,8 @@
     var product = Domain.resolveLogProduct(log, true);
     var hint = /\s*[（(]([^（）()]+)[）)]$/.exec(amount);
     var portion = hint ? amount.slice(0, hint.index).trim() : amount;
-    var packageItem = { unit: log.productUnit || product.unit };
+    var packageItem = { unit: log.productUnit || product.unit,
+      feedUsageUnit: log.productFeedUsageUnit, feedUsagePerItem: log.productFeedUsagePerItem };
     var specifiedUnit = /(支|包|袋|盒|杯|罐|瓶|粒|件|份)$/.exec(portion);
     if (!packageItem.unit && specifiedUnit) packageItem.unit = specifiedUnit[1];
     var parsed = UI.parseFeedPortion(portion, packageItem);
@@ -368,15 +369,17 @@
     var medicationOutcome = type === 'medication'
       ? '<span class="daily-medication-outcome">' + Utils.formatMedicationOutcome(log.medicationOutcome || '') + '</span>'
       : '';
+    var reminder = nursing ? nursingDetailReminder(log) : detailReminder(log, careInfo(log, product), Utils.getTodayStr());
     var copy = nursing ? name : '<p class="daily-support daily-record-meta">' + Utils.uiIcon(metaIcon, 14) +
       '<span>' + esc([metaLabel, brand].filter(Boolean).join(' · ')) + '</span>' + medicationOutcome + '</p>' + name;
+    copy += reminder;
     var amountText = nursing ? (String(log.amount || '').trim() || '1次') : row.amount.primary;
     var amount = '<div class="daily-record-amount"><strong>' + esc(amountText) +
       (row.amount.secondary ? '<span class="daily-record-conversion">' + esc(row.amount.secondary) + '</span>' : '') + '</strong></div>';
     var id = esc(log.id);
     return '<li class="daily-record' + (nursing ? ' daily-record--nursing' : '') + '">' + thumb +
       '<div class="daily-record-copy">' + copy + '</div>' + amount +
-      '<details class="daily-record-menu"><summary class="daily-record-more" aria-label="更多操作"><svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></summary><div class="daily-record-menu-items">' +
+      '<details class="daily-record-menu"><summary class="daily-record-more" aria-label="更多操作">' + Utils.uiIcon('more-vertical', 20) + '</summary><div class="daily-record-menu-items">' +
       '<button type="button" data-edit-log="' + id + '">编辑</button><button type="button" data-del-log="' + id + '">删除</button></div></details></li>';
   }
 

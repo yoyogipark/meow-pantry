@@ -49,7 +49,7 @@
     if (statusCard) {
       statusCard.classList.toggle('needs-backup', needBackup);
       document.getElementById('backupStatusTitle').textContent = needBackup
-        ? Utils.formatNumber(badgeCount) + ' 项未备份' : '已是最新备份';
+        ? Utils.formatNumber(badgeCount) + ' 项未备份' : backupDate ? '已是最新备份' : '尚无备份';
       var timeLabel = document.getElementById('backupStatusTime');
       timeLabel.textContent = backupDate
         ? '上次 ' + Utils.formatRelativeYearDate(backupDate) + (backupTime ? ' ' + backupTime : '') : '尚未备份过';

@@ -57,6 +57,7 @@
         event.preventDefault();
         var closers = {
           confirmModalBackdrop: UI.closeConfirm,
+          flavorOpenModalBackdrop: UI.closeFlavorOpenModal,
           itemModalBackdrop: UI.closeItemModal,
           feedModalBackdrop: UI.closeFeedModal,
           historyModalBackdrop: UI.closeStockHistoryModal,
@@ -96,6 +97,7 @@
   UI.openConfirm = function (title, message, okLabel, onConfirm, extraOpt) {
     var deleteLog = extraOpt && extraOpt.deleteLog;
     document.getElementById('confirmModalBackdrop').classList.toggle('confirm-delete-log', Boolean(deleteLog));
+    document.getElementById('confirmModalBackdrop').classList.toggle('confirm-open-action', Boolean(extraOpt && extraOpt.confirmTone === 'accent'));
     if (deleteLog) {
       document.getElementById('deleteLogCategoryIcon').innerHTML = MP.Utils.getCategoryIcon(deleteLog.category);
       document.getElementById('deleteLogName').textContent = deleteLog.name;
@@ -106,6 +108,7 @@
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmMessage').textContent = message;
     document.getElementById('confirmOkBtn').textContent = okLabel || '确定';
+    document.getElementById('confirmOkBtn').disabled = false;
     var extraWrap = document.getElementById('confirmExtraOptionWrap');
     var extraChk = document.getElementById('confirmExtraCheckbox');
     var extraLbl = document.getElementById('confirmExtraLabel');
@@ -125,6 +128,14 @@
       stock.add(new Option('剩余全部 ' + redemption.quantity + redemption.unit, redemption.quantity));
     }
     document.getElementById('confirmStockQuantityWrap').classList.toggle('hidden-view', !redemption || stock.options.length < 2);
+    var openDateWrap = document.getElementById('confirmOpenDateWrap');
+    if (extraOpt && extraOpt.openDateItem) {
+      openDateWrap.classList.remove('hidden-view');
+      UI.prepareOpenDatePicker(openDateWrap, extraOpt.openDateItem, extraOpt.openDate || MP.Utils.getTodayStr());
+    } else {
+      openDateWrap.classList.add('hidden-view');
+      openDateWrap.dataset.itemId = '';
+    }
     UI.syncRedemptionPortion();
     pendingConfirmFn = onConfirm;
     pendingAlternativeFn = extraOpt && extraOpt.onAlternative;
@@ -151,12 +162,24 @@
     var quantity = Number(document.getElementById('confirmStockQuantity').value);
     var mealInput = document.getElementById('confirmMealQuantity');
     var mealQuantity = checked && quantity > 1 ? Number(mealInput.value) : quantity;
+    var openDateWrap = document.getElementById('confirmOpenDateWrap');
+    var openDate = '';
+    if (!openDateWrap.classList.contains('hidden-view')) {
+      var item = MP.state.items.find(function (entry) { return entry.id === openDateWrap.dataset.itemId; });
+      var result = UI.syncOpenDatePicker(openDateWrap, item);
+      if (result.error) {
+        openDateWrap.querySelector('[data-open-date-input]').focus();
+        return;
+      }
+      openDate = result.date;
+    }
     if (checked && quantity > 1 && (!Number.isInteger(mealQuantity) || mealQuantity < 1 || mealQuantity > quantity)) {
       UI.showToast('请填写实际补记件数，不能超过核销数量');
       mealInput.focus();
       return;
     }
     UI.closeConfirm();
-    fn(checked, quantity, mealQuantity);
+    if (openDate) fn(checked, quantity, mealQuantity, openDate);
+    else fn(checked, quantity, mealQuantity);
   };
 })(typeof window !== 'undefined' ? window : globalThis);

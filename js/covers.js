@@ -15,5 +15,6 @@
     treat: IMG_3,
     supp: IMG_0,
     med: IMG_4,
+    supplies: IMG_0,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

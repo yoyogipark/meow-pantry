@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=240">
-  <link rel="stylesheet" href="./css/styles.css?v=240">
+  <link rel="stylesheet" href="./css/tokens.css?v=287">
+  <link rel="stylesheet" href="./css/styles.css?v=287">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -37,6 +37,7 @@
     <symbol id="ui-package-open" viewBox="0 0 24 24"><path d="m3 10 9 4 9-4v8l-9 4-9-4zM12 14v8M3 10l-1-5 8-3 2 4 2-4 8 3-1 5M12 6l9 4M12 6l-9 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-refresh-cw" viewBox="0 0 24 24"><path d="M20 10a8 8 0 0 0-14-4L3 9m0-5v5h5m-4 5a8 8 0 0 0 14 4l3-3m0 5v-5h-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-pencil" viewBox="0 0 24 24"><path d="m4 16 12-12a2.8 2.8 0 0 1 4 4L8 20l-5 1z M14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-more-vertical" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="19" r="1.7" fill="currentColor"/></symbol>
     <symbol id="ui-lock" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3M5 10h14v10H5z M12 14v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-lock-open" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0M5 10h14v10H5z M12 14v2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -88,7 +89,7 @@
         <div style="font-size:12px;color:var(--status-warning-text);flex:1;min-width:190px;">
           <strong>示例体验中：</strong>已预置 4 条猫粮/湿粮/冻干示例，可直接点「记喂食」或录入你的囤货。
         </div>
-        <button id="clearSamplesBtn" type="button" class="edit-only" style="border:none;padding:5px 10px;border-radius:8px;background:var(--alert-border);color:var(--status-warning-text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+        <button id="clearSamplesBtn" type="button" style="border:none;padding:5px 10px;border-radius:8px;background:var(--alert-border);color:var(--status-warning-text);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
           一键清空示例
         </button>
       </div>
@@ -102,11 +103,6 @@
           <p id="pantryStockSummary" class="daily-support"></p>
         </div>
         <div class="page-header__actions">
-          <label class="ios-btn pantry-edit-toggle">
-            <input id="globalEditModeToggle" type="checkbox" aria-label="库存与记录编辑模式">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg>
-            <span id="globalEditModeText" aria-hidden="true">编辑</span>
-          </label>
           <button id="openAddModalBtn" type="button" class="ios-btn ios-btn-primary">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             <span>记囤货</span>
@@ -147,6 +143,7 @@
         <button type="button" data-cat="treat" class="pill-chip"><span data-category-icon="treat"></span> 零食</button>
         <button type="button" data-cat="supp" class="pill-chip"><span data-category-icon="supp"></span> 营养品</button>
         <button type="button" data-cat="med" class="pill-chip"><span data-category-icon="med"></span> 药品</button>
+        <button type="button" data-cat="supplies" class="pill-chip"><span data-category-icon="supplies"></span> 日用品</button>
       </section>
 
       <section class="ios-card pantry-filters">
@@ -168,6 +165,8 @@
           </select>
           <select id="sortSelect" aria-label="排序方式" class="ios-input">
             <option value="finished_desc" hidden>最近核销</option>
+            <option value="supply_days_asc" hidden>最快用完</option>
+            <option value="supply_arrival_desc" hidden>最近入库</option>
             <option value="exp_asc">先到期先吃</option>
             <option value="exp_desc">保质期最长</option>
             <option value="prod_desc">生产日期最新</option>
@@ -307,18 +306,19 @@
             <summary>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10.5 4.5 3 18a1.4 1.4 0 0 0 1.2 2h15.6a1.4 1.4 0 0 0 1.2-2l-7.5-13.5a1.7 1.7 0 0 0-3 0ZM12 9v4m0 3h.01"/></svg>
               <strong id="feedingTaskCount"></strong>
-              <span id="feedingTaskSummary"></span>
             </summary>
-            <div id="forecastAlert" class="forecast-alert hidden-view" role="status"></div>
-            <div id="stockHealthBox" class="forecast-alert hidden-view" role="status"></div>
+            <div id="feedingTaskList" class="feeding-task-list"></div>
           </details>
 
           <!-- Scope Filter Pills -->
-          <div id="statsScopeBar" class="filter-chips no-scrollbar" role="group" aria-label="分析分类">
-            <button type="button" data-stats-scope="all" class="subfilter-chip active">全部</button>
-            <button type="button" data-stats-scope="food" class="subfilter-chip">普通食品</button>
-            <button type="button" data-stats-scope="supp" class="subfilter-chip">营养品</button>
-            <button type="button" data-stats-scope="med" class="subfilter-chip">药品</button>
+          <div class="stats-scope-wrap">
+            <div id="statsScopeBar" class="filter-chips no-scrollbar" role="group" aria-label="分析分类">
+              <button type="button" data-stats-scope="all" class="subfilter-chip active">全部</button>
+              <button type="button" data-stats-scope="food" class="subfilter-chip">普通食品</button>
+              <button type="button" data-stats-scope="supp" class="subfilter-chip">营养品</button>
+              <button type="button" data-stats-scope="med" class="subfilter-chip">药品</button>
+              <button type="button" data-stats-scope="supplies" class="subfilter-chip">日用品</button>
+            </div>
           </div>
 
           <!-- Category Tiles Grid -->
@@ -328,7 +328,7 @@
 
         <section class="ios-card feeding-extra feeding-priority">
           <h2>近期优先投喂</h2>
-          <p>已拆封优先，其次按过期日期排序，已排除药品</p>
+          <p>已开封优先，其次按过期日期排序，已排除药品和已过期商品</p>
           <div id="priorityFeedList"></div>
         </section>
 
@@ -474,7 +474,7 @@
             <button id="exportLogsCsvBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon" data-lucide="file-utensils" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Zm0 0v6h6M8 11v3a2 2 0 0 0 4 0v-3m-2 0v8m6-8c-1 1-2 3-2 5h2m0-5v8"/></svg><span>每日记录 .csv</span></button>
             <button id="copySummaryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="clipboard-copy" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v3M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4m2-7h8m-3-3 3 3-3 3"/></svg><span>复制在库清单</span></button>
             <button id="settingsOpenHistoryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="history" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7m2-5v5l3 2"/></svg><span>查看库存操作历史流水</span><svg class="settings-icon settings-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
-            <button id="clearAllDataBtn" type="button" class="edit-only ios-btn-text settings-danger-action">清空全部数据</button>
+            <button id="clearAllDataBtn" type="button" class="ios-btn-text settings-danger-action">清空全部数据</button>
           </div>
         </section>
 
@@ -605,6 +605,7 @@
             <button type="button" data-form-cat="treat" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="treat"></span> 零食</button>
             <button type="button" data-form-cat="supp" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="supp"></span> 营养品</button>
             <button type="button" data-form-cat="med" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="med"></span> 药品</button>
+            <button type="button" data-form-cat="supplies" class="pill-chip" style="padding:8px 4px;font-size:12px;text-align:center;"><span data-category-icon="supplies"></span> 日用品</button>
           </div></div>
         </div>
 
@@ -624,21 +625,24 @@
           <div id="itemSubtypeWrap" class="hidden-view">
             <label for="fieldSubtype"><span id="itemSubtypeLabel"></span></label>
             <select id="fieldSubtype" class="ios-input"></select>
+            <input id="fieldSubtypeCustom" class="ios-input hidden-view" type="text" maxlength="60" placeholder="填写自定义类型" aria-label="自定义商品类型">
           </div>
           <div id="netWeightField" class="hidden-view">
             <label for="fieldNetWeight"><span id="fieldNetWeightLabel">单件净含量</span> <span id="netWeightRequired" class="stock-form-required">*</span></label>
-            <div class="stock-form-suffix">
+            <div class="stock-form-suffix stock-form-spec-input">
               <input id="fieldNetWeight" aria-describedby="netWeightUnit" class="ios-input" type="number" min="0" step="any" inputmode="decimal">
               <span id="netWeightUnit">克</span>
+              <select id="fieldNetWeightUnit" class="ios-input hidden-view" aria-label="每份规格单位">
+              </select>
             </div>
             <div id="stockWeightPresets" class="stock-form-chips stock-form-presets no-scrollbar hidden-view">
-              <span>常用规格</span>
+              <span id="stockWeightPresetLabel">常用规格</span>
               <div id="stockWeightPresetOptions" class="stock-form-preset-options"></div>
             </div>
           </div>
         </div>
 
-        <div class="purchase-packaging stock-form-card">
+        <div id="stockPurchasePackaging" class="purchase-packaging stock-form-card">
           <label class="purchase-packaging-toggle">
             <span><svg class="ui-icon" width="18" height="18" aria-hidden="true"><use href="#ui-package"></use></svg>组合包装</span><input id="fieldPackagingEnabled" type="checkbox" role="switch">
           </label>
@@ -691,6 +695,7 @@
                 <option value="盒">盒</option>
                 <option value="支">支</option>
                 <option value="粒">粒</option>
+                <option value="片">片</option>
                 <option value="瓶">瓶</option>
                 <option value="杯">杯</option>
               </select>
@@ -726,10 +731,29 @@
           </div>
         </div>
         <p id="unitChangeHint" class="stock-form-unit-change hidden-view" role="status"></p>
-        <div class="stock-form-dates">
-          <div class="stock-form-date-heading">
-            <span class="stock-form-date-label">日期 <span class="stock-form-required">*</span></span>
-            <span class="stock-form-note">填包装上有的一项即可</span>
+        <details id="stockUsageConfig" class="stock-form-card">
+          <summary id="stockUsageSummary"><span>使用单位与换算</span><span id="stockUsageStatus" class="stock-form-more-hint">未设置</span></summary>
+          <div class="stock-form-grid stock-form-two">
+            <div id="stockUsageUnitField">
+              <label for="fieldUsageUnit">投喂单位</label>
+              <select id="fieldUsageUnit" class="ios-input">
+                <option value="">使用默认单位</option>
+                <option value="支">支</option><option value="粒">粒</option><option value="个">个</option>
+                <option value="块">块</option><option value="勺">勺</option><option value="片">片</option><option value="滴">滴</option>
+                <option value="g">g</option><option value="ml">ml</option><option value="份">份</option>
+              </select>
+            </div>
+            <div>
+              <label id="stockUsageAmountLabel" for="fieldUsagePerItem">每件包含多少使用单位</label>
+              <input id="fieldUsagePerItem" class="ios-input" type="number" min="0" step="any" inputmode="decimal" placeholder="如 30">
+            </div>
+          </div>
+          <p id="stockUsageHelp" class="stock-form-note">未填写换算时仅记录，不按该单位扣库存。</p>
+        </details>
+        <div id="stockFormDates" class="stock-form-dates">
+          <div id="stockDateHeading" class="stock-form-date-heading">
+            <span class="stock-form-date-label">日期 <span id="stockDateRequired" class="stock-form-required">*</span></span>
+            <span id="stockDateHint" class="stock-form-note">填包装上有的一项即可</span>
           </div>
           <div id="stockDateMode" role="group" aria-label="日期类型">
             <button type="button" data-stock-date="production">生产日期</button>
@@ -780,7 +804,7 @@
               <div id="stockFlavorRatings"></div>
             </div>
             <!-- Palatability / Acceptance / Medicine Tolerance -->
-            <div>
+            <div id="palatabilityFieldWrap">
               <label id="palatabilityFieldTitle"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>猫咪适口性记录</label>
               <div id="palatabilityGroup" class="grid-safe" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;">
                 <button type="button" data-pal="" class="pill-chip active" style="padding:7px 2px;font-size:11.5px;text-align:center;"><span class="palatability-emoji" aria-hidden="true">❔</span>未测</button>
@@ -809,11 +833,19 @@
               <div id="locationSuggestion" class="stock-form-note" aria-live="polite"></div>
             </div>
 
+            <div id="stockEffectTagsField">
+              <label>功效标签</label>
+              <div id="stockEffectTags" class="stock-form-chips stock-form-presets no-scrollbar" role="group" aria-label="功效标签"></div>
+              <div id="stockEffectCustom" class="stock-effect-custom hidden-view">
+                <input id="fieldEffectCustom" type="text" maxlength="30" class="ios-input" placeholder="输入自定义标签" aria-label="自定义功效标签">
+                <button id="addEffectCustomBtn" type="button" class="pill-chip">添加</button>
+              </div>
+            </div>
             <div>
               <label for="fieldNotes">备注</label>
               <input id="fieldNotes" type="text" placeholder="如：需兑温水骗水、换粮7日过渡用..." class="ios-input">
             </div>
-            <div>
+            <div id="stockPackagingSupplementField">
               <label id="fieldSpecLabel" for="fieldSpec">包装补充</label>
               <input id="fieldSpec" type="text" placeholder="如：每袋独立密封" class="ios-input" aria-describedby="fieldSpecHelp">
               <p id="fieldSpecHelp" class="stock-form-note">补充包装版本或密封方式。</p>
@@ -822,10 +854,10 @@
               <div class="stock-form-opening-header">
                 <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>
                 <div>
-                  <div id="openedCheckboxTitle">已拆封 0</div>
+                  <div id="openedCheckboxTitle">已开封 0</div>
                   <div id="openingSubtitle" class="stock-form-note">单独计算开封保鲜期</div>
                 </div>
-                <input id="fieldIsOpened" type="checkbox" role="switch" aria-label="已拆封" aria-checked="false" aria-controls="openedExtraFields">
+                <input id="fieldIsOpened" type="checkbox" role="switch" aria-label="已开封" aria-checked="false" aria-controls="openedExtraFields">
               </div>
               <div id="openedExtraFields" class="stock-form-grid stock-form-two hidden-view">
                 <div>
@@ -842,6 +874,7 @@
                 </div>
               </div>
               <p id="openedDateError" class="stock-form-opening-error" role="status"></p>
+              <p id="openedDateWarning" class="stock-form-opening-warning" role="status"></p>
             </div>
 
           </div>
@@ -925,24 +958,20 @@
           <div id="feedFlavorFields" class="hidden-view flavor-control">
             <div class="feed-flavor-heading">
               <label for="feedFlavorSelect">实际喂食口味</label>
-              <button id="openFlavorBtn" type="button" class="feed-flavor-open">
-                <svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-package-open"></use></svg>记录开封
-              </button>
             </div>
-            <select id="feedFlavorSelect" class="ios-input" aria-describedby="feedFlavorHint"></select>
+            <select id="feedFlavorSelect" class="ios-input"></select>
             <div class="feed-flavor-support">
-              <small id="feedFlavorHint"></small>
-              <button id="discardFlavorBtn" type="button" class="edit-only">核销1件</button>
+              <button id="discardFlavorBtn" type="button">核销1件</button>
             </div>
           </div>
         </div>
 
         <div data-medication-field data-feed-manual class="feed-manual-product hidden-view">
           <div class="feed-manual-heading">
-            <span class="feed-meal-label">手动输入商品</span>
+            <span id="feedManualTitle" class="feed-meal-label">手动输入商品</span>
             <button id="feedReturnToStock" type="button">改选仓库商品</button>
           </div>
-          <div>
+          <div id="feedManualBrandField">
             <label for="feedBrandInput">品牌 <span class="feed-food-required" style="color:var(--accent-strong);">*</span></label>
             <input id="feedBrandInput" type="text" required placeholder="如 喵梵思" class="ios-input">
           </div>
@@ -981,7 +1010,13 @@
             <button type="button" data-package-portion data-frac="0.25">1/4</button>
             <button type="button" data-package-portion data-frac="1">1</button>
           </div>
+          <button type="button" id="feedReopenLink" class="feed-reopen-link hidden-view">换新的了？记录开封</button>
         </div>
+
+        <label id="feedAutoOpenBox" class="feed-auto-open hidden-view" data-medication-field>
+          <span><strong id="feedAutoOpenTitle"></strong><small id="feedAutoOpenHelp"></small></span>
+          <input id="feedAutoOpen" type="checkbox" role="switch" checked>
+        </label>
 
         <!-- Smart Split-Can / Stock Deduction Status Box -->
         <div data-medication-field id="feedDeductBox">
@@ -1071,6 +1106,8 @@
         </div>
       </div>
 
+      <p id="historyRetentionNotice" style="margin:0 0 10px;font-size:11px;color:var(--text-muted);"></p>
+
       <div id="historyTypeFilterBar" class="filter-chips no-scrollbar">
         <button type="button" data-hist-type="all" class="subfilter-chip active">全部变动</button>
         <button type="button" data-hist-type="in" class="subfilter-chip"><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-package-plus"></use></svg>入库与复购</button>
@@ -1087,6 +1124,25 @@
         <span id="historyPageInfo" style="font-size:11.5px;font-weight:700;color:var(--text-muted);">第 1 / 1 页</span>
         <button id="nextHistoryPageBtn" type="button" class="ios-btn ios-btn-secondary" style="min-height:32px;padding:0 10px;font-size:11.5px;">下一页<svg class="ui-icon ui-icon--trailing" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
       </div>
+    </div>
+  </div>
+
+  <div id="flavorOpenModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="flavorOpenModalTitle">
+    <div class="modal-sheet flavor-open-sheet">
+      <div class="modal-handle" aria-hidden="true"></div>
+      <div class="flavor-open-heading">
+        <div><h3 id="flavorOpenModalTitle">选择要开封的口味</h3><p>只会记录所选口味的开封日期</p></div>
+        <button id="closeFlavorOpenModalBtn" type="button" aria-label="关闭">×</button>
+      </div>
+      <div id="flavorOpenOptions" class="flavor-open-options"></div>
+      <div id="flavorOpenDatePicker" class="open-date-picker" data-message-id="flavorOpenDateMessage">
+        <p id="flavorOpenDateMessage" class="open-date-message"></p>
+        <label>开封日期<input type="date" data-open-date-input></label>
+        <div class="open-date-presets" aria-label="开封日期快捷选择"><button type="button" data-open-date-offset="0">今天</button><button type="button" data-open-date-offset="-1">昨天</button><button type="button" data-open-date-offset="-3">3天前</button><button type="button" data-open-date-offset="-7">1周前</button></div>
+        <p class="open-date-error" data-open-date-error role="alert"></p>
+        <p class="open-date-warning hidden-view" data-open-date-warning role="status">按这个日期，开封保鲜期已过</p>
+      </div>
+      <button id="confirmFlavorOpenBtn" type="button" class="ios-btn ios-btn-primary flavor-open-confirm" disabled>确认开封</button>
     </div>
   </div>
 
@@ -1107,6 +1163,12 @@
         <span id="deleteLogAmount"></span>
       </div>
       <p id="confirmMessage" style="margin:0 0 14px 0;font-size:13.5px;color:var(--text-muted);line-height:1.5;"></p>
+      <div id="confirmOpenDateWrap" class="open-date-picker hidden-view" data-message-id="confirmMessage">
+        <label>开封日期<input id="confirmOpenDateInput" type="date" data-open-date-input></label>
+        <div class="open-date-presets" aria-label="开封日期快捷选择"><button type="button" data-open-date-offset="0">今天</button><button type="button" data-open-date-offset="-1">昨天</button><button type="button" data-open-date-offset="-3">3天前</button><button type="button" data-open-date-offset="-7">1周前</button></div>
+        <p class="open-date-error" data-open-date-error role="alert"></p>
+        <p class="open-date-warning hidden-view" data-open-date-warning role="status">按这个日期，开封保鲜期已过</p>
+      </div>
       <label id="confirmStockQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
         核销数量
         <select id="confirmStockQuantity" class="ios-input" style="margin-top:4px;"></select>
@@ -1141,18 +1203,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=240"></script>
-  <script src="./js/constants.js?v=240"></script>
-  <script src="./js/utils.js?v=240"></script>
-  <script src="./js/forecast.js?v=240"></script>
-  <script src="./js/domain.js?v=240"></script>
-  <script src="./js/storage.js?v=240"></script>
-  <script src="./js/stats.js?v=240"></script>
-  <script src="./js/modal.js?v=240"></script>
-  <script src="./js/ui.js?v=240"></script>
-  <script src="./js/ui-pantry.js?v=240"></script>
-  <script src="./js/ui-daily.js?v=240"></script>
-  <script src="./js/ui-settings.js?v=240"></script>
-  <script src="./js/app.js?v=240"></script>
+  <script src="./js/covers.js?v=287"></script>
+  <script src="./js/constants.js?v=287"></script>
+  <script src="./js/utils.js?v=287"></script>
+  <script src="./js/forecast.js?v=287"></script>
+  <script src="./js/domain.js?v=287"></script>
+  <script src="./js/storage.js?v=287"></script>
+  <script src="./js/stats.js?v=287"></script>
+  <script src="./js/modal.js?v=287"></script>
+  <script src="./js/ui.js?v=287"></script>
+  <script src="./js/ui-pantry.js?v=287"></script>
+  <script src="./js/ui-daily.js?v=287"></script>
+  <script src="./js/ui-settings.js?v=287"></script>
+  <script src="./js/app.js?v=287"></script>
 </body>
 </html>

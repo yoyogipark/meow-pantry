@@ -11,7 +11,7 @@ for (const file of ['constants.js', 'utils.js', 'domain.js', 'storage.js']) {
   vm.runInContext(fs.readFileSync(path.join(root, 'js', file), 'utf8'), sandbox);
 }
 
-const { Utils, Storage } = sandbox.MeowPantry;
+const { Utils, Storage, Domain } = sandbox.MeowPantry;
 
 assert.equal(Utils.formatQuantity(1250.7, '克'), '1,251克');
 assert.equal(Utils.formatQuantity(2.5, '袋'), '2.5袋');
@@ -79,6 +79,28 @@ assert.deepEqual(Array.from(weightBackup.items, item => item.unit_net_weight_g),
 assert.equal(Utils.formatItemSpec(weightBackup.items[0]), '1.8kg');
 assert.equal(Utils.formatItemSpec(weightBackup.items[3]), '15g · 独立包装');
 assert.equal(Utils.formatPer100gPrice(36, 'CNY', 1800), '≈2.00元/100g');
+
+const supplyProduct = {
+  category: 'supplies', brand: '品牌', name: '猫砂', unit: '袋',
+  unit_spec_value: 6, unit_spec_unit: '升', spec: '无香'
+};
+const supplyKey = item => Domain.getProductGroupKey({ ...supplyProduct, ...item });
+assert.equal(supplyKey({}), supplyKey({ unit_spec_value: 6000, unit_spec_unit: '毫升', spec: ' 无香 ' }));
+assert.notEqual(supplyKey({}), supplyKey({ spec: '绿茶香' }));
+assert.notEqual(supplyKey({}), supplyKey({ spec: '' }));
+assert.notEqual(supplyKey({}), supplyKey({ unit_spec_value: 5, unit_spec_unit: '升' }));
+assert.notEqual(supplyKey({}), supplyKey({ brand: '其他品牌' }));
+assert.notEqual(supplyKey({}), supplyKey({ unit: '包' }));
+assert.equal(supplyKey({ unit_spec_value: 1.25, unit_spec_unit: '千克' }),
+  supplyKey({ unit_spec_value: 1250, unit_spec_unit: '克' }));
+assert.equal(supplyKey({ unit_spec_value: null, unit_net_weight_g: 1250 }),
+  supplyKey({ unit_spec_value: 1.25, unit_spec_unit: '千克' }));
+assert.equal(supplyKey({ unit_spec_value: 0.000001, unit_spec_unit: '升' }),
+  supplyKey({ unit_spec_value: 0.001, unit_spec_unit: '毫升' }));
+assert.notEqual(supplyKey({ unit_spec_value: 80, unit_spec_unit: '片' }),
+  supplyKey({ unit_spec_value: 80, unit_spec_unit: '张' }));
+assert.notEqual(supplyKey({ unit_spec_value: 1, unit_spec_unit: '瓶' }),
+  supplyKey({ unit_spec_value: 1, unit_spec_unit: '支' }));
 
 const categoryIcons = ['dry', 'can', 'freeze', 'treat', 'supp', 'med', 'other'];
 assert.equal(new Set(categoryIcons.map(key => Utils.getCategoryIcon(key))).size, categoryIcons.length);

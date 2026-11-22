@@ -314,7 +314,10 @@
             !(Number(item.unit_net_weight_g) > 0) &&
             Utils.legacyUnitWeight(item.spec, item.unit || MP.CATEGORIES[item.category].defaultUnit) > 0;
         });
-        if (migratedWeight) Storage.saveToStorage(true);
+        var migratedSpec = chosenItems.some(function (item) {
+          return item && item.category !== 'supplies' && String(item.spec || '').trim() && !item.legacySpecInNotes;
+        });
+        if (migratedWeight || migratedSpec) Storage.saveToStorage(true);
       } else {
         // Brand-new user first visit: initialize sample items & logs without touching any existing records
         st.items = Domain.buildSampleItems();
@@ -524,6 +527,21 @@
     var batchIds = new Map();
     for (var item of rawItems) {
       if (!item || typeof item !== 'object') continue;
+      if (item.effectTags !== undefined && (!Array.isArray(item.effectTags) ||
+          item.effectTags.some(function (tag) { return typeof tag !== 'string' || !tag.trim(); }))) {
+        return { ok: false, error: '备份中存在无效的功效标签' };
+      }
+      if (item.feedUsageUnit && !MP.FEED_USAGE_UNITS.includes(item.feedUsageUnit)) {
+        return { ok: false, error: '备份中存在无效的投喂单位' };
+      }
+      if (item.feedUsagePerItem != null && (!item.feedUsageUnit || !Number.isFinite(Number(item.feedUsagePerItem)) || Number(item.feedUsagePerItem) <= 0)) {
+        return { ok: false, error: '备份中存在无效的投喂单位换算' };
+      }
+      if (item.feedUsagePerItem != null && ((item.feedUsageUnit === item.unit && Number(item.feedUsagePerItem) !== 1) ||
+          (item.feedUsageUnit === 'g' && Number(item.unit_net_weight_g) > 0 &&
+           Math.abs(Number(item.feedUsagePerItem) - Number(item.unit_net_weight_g)) > 1e-9))) {
+        return { ok: false, error: '备份中的投喂单位换算与库存规格不一致' };
+      }
       if (item.purchasePackaging && !Domain.validatePackaging(item.purchasePackaging, String(item.unit || '').trim())) {
         return { ok: false, error: '备份中存在无效的购买包装，请检查数量、单位和密封方式' };
       }
@@ -593,7 +611,7 @@
   }
 
   function stockSignature(item) {
-    return JSON.stringify([item.quantity, item.unit, item.isOpened, item.openedDate, item.openRemainFraction,
+    return JSON.stringify([item.quantity, item.unit, item.feedUsageUnit || '', item.feedUsagePerItem || null, item.isOpened, item.openedDate, item.openRemainFraction,
       item.eatenCount, item.consumedCount, item.finishedDate, item.purchasePackaging || null,
       item.portionRevision || '', (item.flavors || []).map(function (flavor) {
         return [flavor.id, flavor.perPack, flavor.quantity, flavor.openedDate, flavor.openRemainFraction, flavor.revision];
@@ -685,9 +703,12 @@
     }
     Storage.openIDB(function (db) {
       if (pendingSmartMerge !== operation || !db) { finish(false); return; }
-      var settings = Object.assign({}, plan.settings || Object.assign({}, st.settings, {
-        lastBackupDate: Utils.getTodayStr(), unsavedChangesCount: 0
-      }), {
+      var changed = JSON.stringify([plan.items, plan.logs, plan.stockHistory]) !==
+        JSON.stringify([st.items, st.logs, st.stockHistory]);
+      var mergeSettings = Object.assign({}, st.settings, {
+        unsavedChangesCount: (Number(st.settings.unsavedChangesCount) || 0) + (changed ? 1 : 0)
+      });
+      var settings = Object.assign({}, plan.settings || mergeSettings, {
         lastSavedAt: Math.max(Date.now(), (st.settings.lastSavedAt || 0) + 1),
         schemaVersion: MP.SCHEMA_VERSION, lsSlimMode: false
       });
@@ -847,13 +868,16 @@
       var shelfStr = it.shelfLifeValue ? (it.shelfLifeValue + (it.shelfLifeUnit === 'days' ? '天' : '个月')) : '';
       var palObj = MP.getPalatabilityBadgeInfo(it);
       var palStr = palObj ? palObj.label : '';
+      var openedFlavors = (it.flavors || []).filter(function (flavor) {
+        return flavor.quantity > 0 && flavor.openedDate;
+      });
       var eatenQty = (Number(it.quantity) || 0) > 0 ? (Number(it.eatenCount) || 0) : (Number(it.consumedCount) || Number(it.lastQuantity) || 1);
       rows.push([
         grpInfo.label,
         catInfo.label,
         it.brand || '',
         it.name || '',
-        it.spec || '',
+        it.category === 'supplies' ? Utils.formatItemSpec(it) : (it.spec || ''),
         String(it.quantity),
         String(eatenQty),
         it.unit || '',
@@ -863,9 +887,12 @@
         shelfStr,
         it.expDate || '',
         ev.expDays !== null ? String(ev.expDays) : '',
-        it.isOpened ? '已开封' : '未开封',
-        it.openedDate || it.archivedOpenedDate || '',
-        it.openRemainFraction ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit) : '',
+        Domain.isStockOpened(it) ? '已开封' : '未开封',
+        openedFlavors.length ? openedFlavors.map(function (flavor) { return flavor.name + '：' + flavor.openedDate; }).join('；')
+          : it.openedDate || it.archivedOpenedDate || '',
+        openedFlavors.length ? openedFlavors.filter(function (flavor) { return flavor.openRemainFraction > 0; })
+          .map(function (flavor) { return flavor.name + '：' + Utils.formatRemainFractionText(flavor.openRemainFraction, it.unit); }).join('；')
+          : it.openRemainFraction ? Utils.formatRemainFractionText(it.openRemainFraction, it.unit) : '',
         palStr,
         it.location || '',
         it.batchCode || '',

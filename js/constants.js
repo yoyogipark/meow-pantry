@@ -31,13 +31,15 @@
     freeze: { label: '冻干',   group: 'food', defaultUnit: '包', defaultOpenDays: 60, defaultShelfMonths: 18 },
     treat:  { label: '零食',   group: 'food', defaultUnit: '盒', defaultOpenDays: 14, defaultShelfMonths: 18 },
     supp:   { label: '营养品', group: 'supp', defaultUnit: '瓶', defaultOpenDays: 90, defaultShelfMonths: 24 },
-    med:    { label: '药品',   group: 'med',  defaultUnit: '支', defaultOpenDays: 30, defaultShelfMonths: 36 }
+    med:    { label: '药品',   group: 'med',  defaultUnit: '支', defaultOpenDays: 30, defaultShelfMonths: 36 },
+    supplies: { label: '日用品', group: 'supplies', defaultUnit: '袋', defaultOpenDays: 90, defaultShelfMonths: null }
   };
 
   MP.CATEGORY_GROUPS = {
     food: { key: 'food', label: '普通食品', cats: ['dry', 'can', 'freeze', 'treat'] },
     supp: { key: 'supp', label: '营养品',   cats: ['supp'] },
-    med:  { key: 'med',  label: '药品护理', cats: ['med'] }
+    med:  { key: 'med',  label: '药品护理', cats: ['med'] },
+    supplies: { key: 'supplies', label: '日用品', cats: ['supplies'] }
   };
 
   MP.CURRENCIES = {
@@ -47,7 +49,12 @@
 
   MP.FOOD_SUBTYPES = {
     can: { label: '包装类型', options: ['罐头', '餐盒', '餐包'], innerUnits: { '罐头': '罐', '餐盒': '杯', '餐包': '包' } },
-    freeze: { label: '冻干类型', options: ['主食冻干', '零食冻干'] }
+    freeze: { label: '冻干类型', options: ['主食冻干', '零食冻干', '冻干粉末'] },
+    dry: { label: '商品形态', options: [], optional: true, hidden: true },
+    treat: { label: '商品形态', options: ['猫条', '肉干', '饼干', '洁齿', '奶制品', '其他'], optional: true },
+    supp: { label: '商品形态', options: ['粉剂', '膏剂', '液体', '片剂', '胶囊'], optional: true },
+    med: { label: '药品形态', options: ['片剂', '胶囊', '膏剂', '滴剂/液体'], custom: true, optional: true },
+    supplies: { label: '日用品类型', options: ['猫砂', '清洁用品', '一次性用品', '配件耗材'], optional: true }
   };
 
   // Single source of truth for nursing projects used by the form and daily details.
@@ -72,7 +79,73 @@
     dry: ['15g', '30g', '50g'],
     freeze: ['15g', '30g', '50g'],
     treat: ['15g', '30g', '50g'],
-    can: ['0.5', '0.34', '1']
+    can: ['0.5', '0.34', '0.25', '1']
+  };
+  MP.FEED_USAGE_UNITS = ['支', '粒', '个', '块', '勺', '片', '滴', 'g', 'ml', '份'];
+  MP.ITEM_FORM_DEFAULTS = { units: ['袋', '罐', '包', '盒', '支', '粒', '片', '瓶', '杯'], netWeightUnit: '克' };
+  MP.ITEM_FORM_RULES = {
+    can: {
+      '罐头': { units: ['罐'], defaultUnit: '罐', conversionLayout: 'none' },
+      '餐盒': { units: ['杯'], defaultUnit: '杯', conversionLayout: 'none' },
+      '餐包': { units: ['包'], defaultUnit: '包', conversionLayout: 'none' }
+    },
+    freeze: {
+      '主食冻干': { units: ['袋', '包'], defaultUnit: '袋', conversionLayout: 'none' },
+      '零食冻干': { units: ['袋', '包'], defaultUnit: '袋', conversionLayout: 'inline', feedUnit: '块' },
+      '冻干粉末': { units: ['袋', '包', '瓶'], defaultUnit: '袋', conversionLayout: 'inline', feedUnit: '勺', help: '填写后可按勺自动扣库存' }
+    },
+    treat: {
+      '猫条': { units: ['支'], defaultUnit: '支', conversionLayout: 'none', feedUnit: '支' },
+      '猫条／肉泥条': { units: ['支'], defaultUnit: '支', conversionLayout: 'none', feedUnit: '支' },
+      '肉干': { units: ['袋', '包'], defaultUnit: '袋' },
+      '饼干': { units: ['袋', '包'], defaultUnit: '袋' },
+      '洁齿': { units: ['袋', '包'], defaultUnit: '袋' },
+      '奶制品': { units: ['袋', '包'], defaultUnit: '袋' },
+      '其他': { units: ['袋', '包'], defaultUnit: '袋' }
+    },
+    supp: {
+      '粉剂': { conversionLayout: 'inline', feedUnit: '勺' },
+      '膏剂': { conversionLayout: 'collapsible' },
+      '液体': { conversionLayout: 'collapsible' },
+      '片剂': { units: ['片', '粒', '包'], defaultUnit: '片', conversionLayout: 'none', feedUnit: '片' },
+      '胶囊': { units: ['粒', '包'], defaultUnit: '粒', conversionLayout: 'none' }
+    },
+    med: {
+      '片剂': { units: ['片', '粒', '包'], defaultUnit: '片', conversionLayout: 'none', feedUnit: '片' },
+      '胶囊': { units: ['粒', '包'], defaultUnit: '粒', conversionLayout: 'none' },
+      '膏剂': { conversionLayout: 'collapsible' },
+      '滴剂/液体': { conversionLayout: 'inline', selectLiquidUnit: true }
+    }
+  };
+  MP.EFFECT_TAG_PRESETS = {
+    dry: { default: ['日常营养', '肠胃', '美毛', '洁齿', '泌尿', '体重管理'] },
+    can: { default: ['日常营养', '补水', '肠胃', '美毛', '泌尿', '体重管理'] },
+    freeze: {
+      default: ['日常营养', '肠胃', '美毛', '排毛', '拌粮', '奖励'],
+      '主食冻干': ['日常营养', '肠胃', '美毛', '排毛', '泌尿', '体重管理'],
+      '零食冻干': ['奖励', '互动', '拌粮', '肠胃', '美毛', '排毛'],
+      '冻干粉末': ['拌粮', '增加适口性', '肠胃', '美毛', '排毛', '日常营养']
+    },
+    treat: {
+      default: ['奖励', '互动', '洁齿', '排毛', '美毛', '肠胃'],
+      '猫条': ['奖励', '互动', '补水', '排毛', '美毛', '肠胃'],
+      '肉干': ['奖励', '互动', '磨牙', '肠胃', '美毛', '补充营养'],
+      '饼干': ['奖励', '互动', '洁齿', '排毛', '肠胃', '补充营养'],
+      '洁齿': ['洁齿', '口腔护理', '奖励', '互动', '排毛', '肠胃'],
+      '奶制品': ['奖励', '互动', '肠胃', '补充营养', '美毛', '补水']
+    },
+    supp: {
+      default: ['肠胃', '美毛', '排毛', '口腔护理', '关节', '日常营养'],
+      '膏剂': ['排毛', '肠胃', '美毛', '口腔护理', '补充营养', '日常营养'],
+      '液体': ['补水', '肠胃', '美毛', '口腔护理', '补充营养', '日常营养']
+    },
+    med: {
+      default: ['体内驱虫', '体外驱虫', '皮肤护理', '耳部护理', '眼部护理', '其他护理'],
+      '片剂': ['体内驱虫', '肠胃', '皮肤护理', '关节', '日常护理', '其他护理'],
+      '胶囊': ['体内驱虫', '肠胃', '皮肤护理', '关节', '日常护理', '其他护理'],
+      '膏剂': ['皮肤护理', '外伤护理', '口腔护理', '眼部护理', '耳部护理', '其他护理'],
+      '滴剂/液体': ['体外驱虫', '眼部护理', '耳部护理', '皮肤护理', '口腔护理', '其他护理']
+    }
   };
 
   MP.STOCK_WEIGHT_PRESETS = {
@@ -81,6 +154,9 @@
     supp: [30, 60, 100],
     med: [1, 5, 10]
   };
+
+  MP.SUPPLY_SPEC_UNITS = ['克', '千克', '毫升', '升', '片', '张'];
+  MP.LEGACY_SUPPLY_SPEC_UNITS = ['包', '支', '瓶'];
 
   MP.PALATABILITY = {
     love: { label: '超爱吃', suppLabel: '主动爱吃', emoji: '😍', bg: 'var(--accent-soft)', text: 'var(--accent-strong)' },

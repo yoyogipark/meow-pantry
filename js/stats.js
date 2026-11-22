@@ -5,6 +5,66 @@
   var Utils = MP.Utils;
   var Domain = MP.Domain;
   var Stats = MP.Stats = {};
+  var timelineExpanded = false;
+  var timelineScope = '';
+
+  function displayEntries(item) {
+    if (!item.flavors || !item.flavors.length) {
+      return [{ item: item, flavor: null, evaluation: Domain.evaluateItem(item), quantity: Number(item.quantity) || 0 }];
+    }
+    return item.flavors.filter(function (flavor) { return Number(flavor.quantity) > 0; }).map(function (flavor) {
+      var shared = Domain.hasSharedSeal(item);
+      var openedDate = shared ? item.openedDate : flavor.openedDate;
+      var piece = Object.assign({}, item, {
+        quantity: flavor.quantity, flavors: null,
+        isOpened: shared ? item.isOpened : Boolean(openedDate), openedDate: openedDate
+      });
+      return { item: item, flavor: flavor, evaluation: Domain.evaluateItem(piece), quantity: Number(flavor.quantity) };
+    });
+  }
+
+  function displayName(entry) {
+    return entry.item.name + (entry.flavor && entry.item.flavors.length > 1 ? ' · ' + entry.flavor.name : '');
+  }
+
+  function missingWetRemainder(items, today) {
+    return items.find(function (item) {
+      if (item.category !== 'can' || item.isSample || !(Number(item.quantity) > 0) ||
+          !MP.Forecast.unitGrams(item) || Utils.diffDaysFromToday(item.expDate, today) < 0) return false;
+      var shared = Domain.hasSharedSeal(item);
+      if (shared && item.isOpened && Utils.openShelfDaysRemaining(item.openedDate, item.openDaysLimit, today) < 0) return false;
+      function missingFraction(fraction) { return !(fraction > 0 && fraction < 1); }
+      if (!item.flavors || !item.flavors.length) {
+        return item.isOpened && Utils.openShelfDaysRemaining(item.openedDate, item.openDaysLimit, today) >= 0 &&
+          missingFraction(item.openRemainFraction);
+      }
+      var openedFlavors = item.flavors.filter(function (flavor) { return flavor.quantity > 0 && flavor.openedDate; });
+      if (item.isOpened && !openedFlavors.length) return true;
+      return openedFlavors.some(function (flavor) {
+        return (shared || Utils.openShelfDaysRemaining(flavor.openedDate, item.openDaysLimit, today) >= 0) &&
+          missingFraction(flavor.openRemainFraction);
+      });
+    });
+  }
+
+  Stats.toggleTimeline = function () {
+    timelineExpanded = !timelineExpanded;
+    Stats.renderStatsView();
+  };
+
+  Stats.syncScopeScroll = function (showSelected) {
+    var bar = document.getElementById('statsScopeBar');
+    if (!bar || !bar.clientWidth) return;
+    var selected = bar.querySelector('[aria-pressed="true"]');
+    if (showSelected && selected) {
+      var left = selected.offsetLeft - bar.offsetLeft;
+      if (left < bar.scrollLeft) bar.scrollLeft = left;
+      else if (left + selected.offsetWidth > bar.scrollLeft + bar.clientWidth - 20) {
+        bar.scrollLeft = left + selected.offsetWidth - bar.clientWidth + 20;
+      }
+    }
+    bar.parentElement.classList.toggle('has-more', bar.scrollWidth - bar.clientWidth - bar.scrollLeft > 1);
+  };
 
   function addUnitQuantity(totals, unit, quantity) {
     if (quantity > 0) totals[unit] = Utils.round2((totals[unit] || 0) + quantity);
@@ -68,7 +128,8 @@
     var groupTotals = {
       food: { batches: 0, cny: 0, jpy: 0, eatenBatches: 0 },
       supp: { batches: 0, cny: 0, jpy: 0, eatenBatches: 0 },
-      med:  { batches: 0, cny: 0, jpy: 0, eatenBatches: 0 }
+      med:  { batches: 0, cny: 0, jpy: 0, eatenBatches: 0 },
+      supplies: { batches: 0, cny: 0, jpy: 0, eatenBatches: 0 }
     };
     var catStats = {};
     Object.keys(MP.CATEGORIES).forEach(function (k) {
@@ -219,33 +280,33 @@
       scopeBtns[scIdx].classList.toggle('active', scKey === scope);
     }
 
-    var scopedCny = scope === 'all' ? (gt.food.cny + gt.supp.cny + gt.med.cny) : gt[scope].cny;
-    var scopedJpy = scope === 'all' ? (gt.food.jpy + gt.supp.jpy + gt.med.jpy) : gt[scope].jpy;
+    var scopedCny = scope === 'all' ? (gt.food.cny + gt.supp.cny + gt.med.cny + gt.supplies.cny) : gt[scope].cny;
+    var scopedJpy = scope === 'all' ? (gt.food.jpy + gt.supp.jpy + gt.med.jpy + gt.supplies.jpy) : gt[scope].jpy;
     document.getElementById('forecastValues').innerHTML =
-      (scopedCny > 0 ? '<div>在库价值 · 人民币<p><strong>' + Utils.formatMoney(scopedCny, 'CNY') + '</strong></p><small class="forecast-value-basis">按购买币种分别统计</small></div>' : '') +
-      (scopedJpy > 0 ? '<div>在库价值 · 日元<p><strong>' + Utils.formatMoney(scopedJpy, 'JPY') + '</strong></p><small class="forecast-value-basis">按购买币种分别统计</small></div>' : '') +
-      (!scopedCny && !scopedJpy ? '<div>在库价值<p><strong>暂无金额</strong></p></div>' : '');
+      (scopedCny > 0 ? '<div>在库价值 · 人民币<p><strong>' + Utils.formatMoney(scopedCny, 'CNY') + '</strong></p></div>' : '') +
+      (scopedJpy > 0 ? '<div>在库价值 · 日元<p><strong>' + Utils.formatMoney(scopedJpy, 'JPY') + '</strong></p></div>' : '') +
+      (!scopedCny && !scopedJpy ? '<div>在库价值<p><strong>暂无金额</strong></p></div>' :
+        '<small class="forecast-value-basis">按购买币种分别统计</small>');
 
-    var scopeLabels = { all: '全部', food: '普通食品', supp: '营养品', med: '药品' };
+    var scopeLabels = { all: '全部', food: '普通食品', supp: '营养品', med: '药品', supplies: '日用品' };
     Array.prototype.forEach.call(scopeBtns, function (button) {
       var key = button.dataset.statsScope;
-      var count = key === 'all' ? gt.food.batches + gt.supp.batches + gt.med.batches : gt[key].batches;
+      var count = key === 'all' ? gt.food.batches + gt.supp.batches + gt.med.batches + gt.supplies.batches : gt[key].batches;
       button.innerHTML = '<span>' + scopeLabels[key] + '</span> <span>' + Utils.formatNumber(count) + '</span>';
       button.setAttribute('aria-pressed', String(key === scope));
     });
     var forecasts = MP.Forecast.compute(st.items, st.stockHistory, st.settings.dailyFeedGrams, Utils.getTodayStr());
+    var supplyEstimates = Domain.getSupplyUsageEstimates(st.items, st.stockHistory);
+    var supplyFastest = supplyEstimates.filter(function (entry) {
+      return entry.remainingDays !== null && Number(entry.averageCycleDays) > 0;
+    })
+      .sort(function (a, b) { return a.remainingDays - b.remainingDays; })[0] || null;
     var showFood = scope === 'all' || scope === 'food';
-    var alert = document.getElementById('forecastAlert');
     var urgent = Object.keys(forecasts).filter(function (key) { return forecasts[key].low; })
       .sort(function (a, b) { return forecasts[a].days - forecasts[b].days; })[0];
-    alert.innerHTML = !showFood ? '' : urgent
-      ? '<span>' + MP.CATEGORIES[urgent].label + '约还能吃 ' + Utils.formatDays(forecasts[urgent].days).text +
-        '，建议补货</span><button type="button" data-forecast-action="restock" data-forecast-category="' + urgent + '">去补货 ›</button>'
-      : '';
-    alert.classList.toggle('hidden-view', !alert.innerHTML);
 
     var keys = showFood ? ['can', 'dry', 'freeze', 'treat'] : [];
-    ['med', 'supp'].forEach(function (key) {
+    ['supp', 'med', 'supplies'].forEach(function (key) {
       if ((scope === 'all' || scope === key) && catStats[key].skus) keys.push(key);
     });
     var catGridHtml = keys.map(function (key) {
@@ -262,12 +323,28 @@
       var packageStatus = showsPackageStatus ? packageStatusActions(key, st.items.filter(function (item) {
         return item.category === key;
       })) : '';
-      var fullWidth = key === 'can' || (key === 'supp' && (!showFood || keys.includes('med')));
+      var fullWidth = key === 'can';
       var tone = forecastTone(data && data.days);
       var meter = '';
       var prediction = '';
       var remaining = '';
       var rate = '';
+      if (key === 'supplies') {
+        var supplyLow = supplyFastest && supplyFastest.remainingDays <= 7;
+        var supplyBadge = supplyFastest
+          ? '<span class="supply-summary-badge supply-summary-badge--' + (supplyLow ? 'warning' : 'ok') + '">' +
+            Utils.formatNumber(supplyFastest.remainingDays) + '天</span>'
+          : '';
+        return '<article class="ios-card metric-card forecast-tile forecast-tile--supplies">' +
+          '<button type="button" class="forecast-category" data-jump-cat="supplies"><strong>日用品</strong>' +
+          '<span class="forecast-category-meta"><span class="batch-count">' + Utils.formatQuantity(stock.skus, '批') +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></span></span></button>' +
+          '<div class="supply-summary-balance"><strong>' + Utils.formatQuantity(supplyEstimates.length, '种') + '</strong>' + supplyBadge + '</div>' +
+          '<div class="forecast-notices"><p class="supply-summary-first">' + (supplyFastest
+            ? Utils.escapeHtml(supplyFastest.item.name) + '最先用完' + (supplyEstimates.some(function (entry) { return entry.quantity > 0 && entry.remainingDays === null; }) ? '（仅限可估算商品）' : '')
+            : supplyEstimates.some(function (entry) { return entry.openedCount > 1; }) ? '多批次同时开封，暂不估算' : '数据不足，暂不估算') + '</p>' +
+          (supplyEstimates.some(function (entry) { return entry.sampleCount > 0; }) ? '<div class="forecast-result">示例库存未计入预测</div>' : '') + '</div></article>';
+      }
       if (data) {
         var coverage = data.days === null ? 0 : Math.min(100, data.days / 30 * 100);
         meter = '<div class="forecast-meter forecast-meter--' + tone + '" aria-hidden="true"><span style="width:' + coverage + '%"></span></div>';
@@ -280,8 +357,9 @@
           prediction += '<button type="button" class="forecast-link" data-forecast-action="settings" data-forecast-category="' + key +
             '">设置每日量，查看天数</button>';
         } else {
-          prediction += '<div class="forecast-result">暂无可换算库存</div>';
+          if (!data.samples || data.realStock) prediction += '<div class="forecast-result">暂无可换算库存</div>';
         }
+        if (data.samples) prediction += '<div class="forecast-result">示例库存未计入预测</div>';
         if (data.missing.length) {
           prediction += key === 'can' ? '<div class="forecast-missing">' + Stats.missingWeightNotice(data.missing) + '</div>'
             : '<div class="forecast-result">有 ' + Utils.formatQuantity(data.missing.length, '批') + '规格无法折算，未计入预测</div>';
@@ -291,6 +369,12 @@
           var estimateLine = data.days !== null ? '按每天' + Utils.formatQuantity(data.dailyGrams, '克') + ' · ' : '';
           rate = '<button type="button" class="forecast-rate forecast-estimate-line" data-forecast-action="estimate" title="' + estimateHint +
             '" aria-description="' + estimateHint + '">' + estimateLine + '按整件估算</button>';
+        } else if (data.estimated && key === 'can') {
+          var missingRemainder = missingWetRemainder(st.items, Utils.getTodayStr());
+          if (missingRemainder) {
+            prediction += '<button type="button" class="forecast-remainder-link" data-forecast-action="remainder" data-batch-id="' +
+              Utils.escapeHtml(missingRemainder.id) + '">有开封余量未填写，按整件估算 <span aria-hidden="true">→</span></button>';
+          }
         } else if (data.estimated) {
           prediction += '<details class="forecast-estimate"><summary>有开封余量未填写，按整件估算</summary><p>这一批未填写开封后的剩余量，预测暂按整件计算。</p></details>';
         }
@@ -299,20 +383,21 @@
         if (weightSummary) remaining = '<span class="forecast-rate">' + weightSummary + '</span>';
       }
 
-      return '<article class="ios-card metric-card forecast-tile' + (fullWidth ? ' forecast-wide' : '') + ' forecast-tile--' + key + (showsPackageStatus ? ' forecast-tile--with-package-status' : '') +
+      return '<article class="ios-card metric-card forecast-tile' + (fullWidth ? ' forecast-wide' : '') + ' forecast-tile--' + key +
+        (key === 'med' && keys.includes('supplies') ? ' forecast-tile--pair-start' : '') + (showsPackageStatus ? ' forecast-tile--with-package-status' : '') +
         (tone === 'urgent' ? ' forecast-tile--urgent' : '') + '">' +
         '<button type="button" class="forecast-category" data-jump-cat="' + key + '"><strong>' +
           category.label + '</strong><span class="forecast-category-meta"><span class="batch-count">' + Utils.formatQuantity(stock.skus, '批') +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></span>' +
           (key === 'can' ? remaining : '') + '</span></button>' +
         '<div class="forecast-balance"><div><strong class="forecast-quantity">' +
-          (key === 'can' ? Utils.formatQuantity(data.grams, '克') : Utils.escapeHtml(stockLabel)) + '</strong>' +
+          (key === 'can' ? (data.samples && !data.realStock ? '—' : Utils.formatQuantity(data.grams, '克')) : Utils.escapeHtml(stockLabel)) + '</strong>' +
           (key === 'can' ? '<small class="forecast-units">' + Utils.escapeHtml(stockLabel) + '</small>' : '') + '</div>' +
           (key === 'can' ? rate : remaining ? '<div class="forecast-remaining">' + remaining + '</div>' : '') + '</div>' +
         meter + (key === 'can' ? '' : rate) +
-        prediction +
         (history && key !== 'treat' ? '<div class="forecast-history"><span>累计核销 ' + Utils.escapeHtml(history) +
-          '</span>' + (average ? '<span>' + average + '</span>' : '') + '</div>' : '') + packageStatus + '</article>';
+          '</span>' + (average ? '<span>' + average + '</span>' : '') + '</div>' : '') + packageStatus +
+        (prediction ? '<div class="forecast-notices">' + prediction + '</div>' : '') + '</article>';
     }).join('');
     if ((scope === 'all' || scope === 'supp' || scope === 'med') && !gt.supp.batches && !gt.med.batches) {
       catGridHtml += '<div class="empty-state forecast-empty forecast-wide">营养品和药品暂无库存</div>';
@@ -324,66 +409,92 @@
     var scopedItems = st.items.filter(function (item) {
       return item.quantity > 0 && (scope === 'all' || MP.getCategoryGroup(item.category) === scope);
     });
-    var openedBatches = scopedItems.filter(Domain.isStockOpened).length;
-    var expiringBatches = scopedItems.filter(function (item) { return Domain.evaluateItem(item).status === 'expiring'; }).length;
-    var detailStatuses = Domain.summarizeStockDetailStatuses(scopedItems);
-    var quantities = Domain.summarizeStockQuantity(scopedItems);
-    var expiring = Object.values(detailStatuses).reduce(function (sum, row) { return sum + row.expiring; }, 0);
-    var opened = Object.values(quantities.units).reduce(function (sum, row) { return sum + row.opened; }, 0);
-    var expiringUnits = Object.keys(detailStatuses).filter(function (unit) { return detailStatuses[unit].expiring > 0; })
-      .map(function (unit) { return Utils.formatQuantity(detailStatuses[unit].expiring, unit); }).join(' · ');
-    var openedUnits = Object.keys(quantities.units).filter(function (unit) { return quantities.units[unit].opened > 0; })
-      .map(function (unit) { return Utils.formatQuantity(quantities.units[unit].opened, unit); }).join(' · ');
-    var healthEl = document.getElementById('stockHealthBox');
-    var healthVisible = Boolean(expiringBatches || openedBatches);
-    var healthFilter = expiringBatches && openedBatches ? 'expiring_or_opened' : expiringBatches ? 'expiring' : 'opened';
-    healthEl.classList.toggle('hidden-view', !healthVisible);
-    var expiringLabel = expiringBatches && !expiring ? Utils.formatQuantity(expiringBatches, '批') : expiringUnits;
-    var openedLabel = openedBatches && !opened ? Utils.formatQuantity(openedBatches, '批') : openedUnits;
-    healthEl.innerHTML = healthVisible ? '<span>' + expiringLabel +
-      '临期 · ' + openedLabel +
-      '已拆封</span><button type="button" data-jump-health="' + healthFilter + '" data-health-scope="' + scope + '">去查看 ›</button>' : '';
-    var taskSummary = [];
-    if (showFood && urgent) taskSummary.push(MP.CATEGORIES[urgent].label + '将断粮');
-    if (healthVisible) taskSummary.push(expiringBatches ? expiringLabel + '临期' : openedLabel + '已拆封');
-    document.getElementById('feedingTasks').classList.toggle('hidden-view', !taskSummary.length);
-    document.getElementById('feedingTaskCount').textContent = Utils.formatQuantity(taskSummary.length, '项需要处理');
-    document.getElementById('feedingTaskSummary').textContent = taskSummary.join(' · ');
+    var warningDays = Number(st.settings.warnDays) || 60;
+    var expiryTasks = scopedItems.flatMap(displayEntries).map(function (entry) {
+      var evaluation = entry.evaluation;
+      var expWarning = evaluation.expDays !== null && evaluation.expDays <= warningDays ? evaluation.expDays : null;
+      var openWarning = evaluation.openRemaining !== null && evaluation.openRemaining <= Math.min(10, warningDays)
+        ? evaluation.openRemaining : null;
+      var opening = openWarning !== null && (expWarning === null || openWarning < expWarning);
+      entry.days = opening ? openWarning : expWarning;
+      entry.kind = entry.days < 0 ? 'expired' : opening ? 'opening' : 'expiring';
+      return entry;
+    }).filter(function (entry) {
+      return entry.evaluation.status === 'expired' || entry.evaluation.status === 'expiring';
+    }).sort(function (a, b) {
+      var order = { expired: 0, expiring: 1, opening: 2 };
+      return order[a.kind] - order[b.kind] || a.days - b.days;
+    });
+    var taskBox = document.getElementById('feedingTasks');
+    taskBox.classList.toggle('hidden-view', !expiryTasks.length);
+    document.getElementById('feedingTaskCount').textContent = Utils.formatQuantity(expiryTasks.length, '项需要处理');
+    document.getElementById('feedingTaskList').innerHTML = expiryTasks.map(function (entry) {
+      var label = { expired: '已过期', expiring: '临期', opening: '开封将尽' }[entry.kind];
+      var name = displayName(entry);
+      return '<button type="button" class="feeding-task-row" data-jump-expiry-item="' + Utils.escapeHtml(entry.item.id) + '">' +
+        '<span class="feeding-task-status feeding-task-status--' + entry.kind + '">' + label + '</span>' +
+        '<strong title="' + Utils.escapeHtml(name) + '">' + Utils.escapeHtml(name) + '</strong>' +
+        '<span class="feeding-task-quantity">' + Utils.escapeHtml(Utils.formatQuantity(entry.quantity, entry.item.unit || '件')) + '</span>' +
+        '<span class="feeding-task-days">' + (entry.kind === 'expired' ? '过期' + Utils.formatNumber(Math.abs(entry.days)) :
+          (entry.kind === 'opening' ? '开封剩' : '剩') + Utils.formatNumber(entry.days)) + '天</span>' +
+        '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 18 6-6-6-6"/></svg></button>';
+    }).join('');
 
     // 1C. Priority Feeding Queue (FEFO for food and supplements only.)
     var activeFoodAndSupp = st.items.filter(function (it) {
-      return (Number(it.quantity) || 0) > 0 && MP.getCategoryGroup(it.category) !== 'med';
-    });
+      var group = MP.getCategoryGroup(it.category);
+      return (Number(it.quantity) || 0) > 0 && (group === 'food' || group === 'supp') &&
+        (scope === 'all' || scope === group);
+    }).flatMap(displayEntries).filter(function (entry) { return entry.evaluation.status !== 'expired'; });
+    document.getElementById('priorityFeedList').parentElement.classList.toggle('hidden-view', scope === 'med' || scope === 'supplies');
     activeFoodAndSupp.sort(function (a, b) {
-      return Number(Domain.isStockOpened(b)) - Number(Domain.isStockOpened(a)) ||
-        (Utils.diffDaysFromToday(a.expDate) ?? Infinity) - (Utils.diffDaysFromToday(b.expDate) ?? Infinity);
+      var openedA = a.flavor ? (Domain.hasSharedSeal(a.item) ? a.item.isOpened : Boolean(a.flavor.openedDate)) : Domain.isStockOpened(a.item);
+      var openedB = b.flavor ? (Domain.hasSharedSeal(b.item) ? b.item.isOpened : Boolean(b.flavor.openedDate)) : Domain.isStockOpened(b.item);
+      return Number(openedB) - Number(openedA) ||
+        (a.evaluation.expDays ?? Infinity) - (b.evaluation.expDays ?? Infinity);
     });
-    document.getElementById('priorityFeedList').innerHTML = activeFoodAndSupp.slice(0, 5).map(function (item, index) {
-      var ev = Domain.evaluateItem(item);
-      var opened = Domain.isStockOpened(item);
-      var reason = ev.status === 'expired' ? '已过期，请检查清理' : opened
-        ? '已拆封 · ' + (ev.openRemaining === null ? '未填写开封保鲜期' : Utils.formatDays(ev.openRemaining).text + '内吃完')
+    document.getElementById('priorityFeedList').innerHTML = activeFoodAndSupp.slice(0, 5).map(function (entry, index) {
+      var item = entry.item;
+      var ev = entry.evaluation;
+      var opened = entry.flavor ? (Domain.hasSharedSeal(item) ? item.isOpened : Boolean(entry.flavor.openedDate)) : Domain.isStockOpened(item);
+      var name = displayName(entry);
+      var reason = opened
+        ? '已开封 · ' + (ev.openRemaining === null ? '未填写开封保鲜期' : Utils.formatDays(ev.openRemaining).text + '内吃完')
         : '未拆封 · ' + (ev.expDays === null ? '未填写过期日期' : '剩 ' + Utils.formatDays(ev.expDays).text);
       return '<div class="priority-row' + (opened ? ' priority-row--opened' : '') + '">' +
         '<span class="priority-index">' + Utils.formatNumber(index + 1) + '</span>' +
         '<div class="priority-copy"><div class="priority-name"><span>' + Utils.escapeHtml(item.brand) +
-          '</span> <strong>' + Utils.escapeHtml(item.name) + '</strong></div>' +
-          '<div class="priority-reason' + (ev.status === 'expired' ? ' forecast-result--urgent' : '') + '">' + reason + '</div></div>' +
-        '<span class="priority-quantity">余 ' + Utils.escapeHtml(Utils.formatQuantity(Number(item.quantity), item.unit)) + '</span>' +
-        (ev.status !== 'expired' ? '<button type="button" class="btn-feed btn-feed--compact" aria-label="记喂食：' + Utils.escapeHtml(item.name) +
-          '" data-priority-feed="' + Utils.escapeHtml(item.id) + '">' + '<span class="btn-feed__content">' + MP.UI.feedButtonContent() + '</span></button>' : '') +
+          '</span> <strong>' + Utils.escapeHtml(name) + '</strong></div>' +
+          '<div class="priority-reason">' + reason + '</div></div>' +
+        '<span class="priority-quantity">余 ' + Utils.escapeHtml(Utils.formatQuantity(entry.quantity, item.unit)) + '</span>' +
+        '<button type="button" class="btn-feed btn-feed--compact" aria-label="记喂食：' + Utils.escapeHtml(name) +
+          '" data-priority-feed="' + Utils.escapeHtml(item.id) + '"' +
+          (entry.flavor ? ' data-priority-flavor="' + Utils.escapeHtml(entry.flavor.id) + '"' : '') +
+          '><span class="btn-feed__content">' + MP.UI.feedButtonContent() + '</span></button>' +
         '</div>';
     }).join('') || '<div class="priority-empty">暂无在库食品或营养品</div>';
 
     // 1D. Future Expiry Month Timeline (Scoped)
     var scopedActive = st.items.filter(function (it) {
-      return (Number(it.quantity) || 0) > 0 && (scope === 'all' || MP.getCategoryGroup(it.category) === scope);
+      return (Number(it.quantity) || 0) > 0 && Utils.diffDaysFromToday(it.expDate) !== null &&
+        (scope === 'all' || MP.getCategoryGroup(it.category) === scope);
+    });
+    var nearest = null;
+    var nearestDays = Infinity;
+    scopedActive.forEach(function (item) {
+      var remaining = Utils.diffDaysFromToday(item.expDate);
+      if (remaining !== null && remaining >= 0 && remaining < nearestDays) {
+        nearest = item;
+        nearestDays = remaining;
+      }
     });
     var monthBuckets = {};
-    scopedActive.forEach(function (it) {
-      var ym = (it.expDate && it.expDate.length >= 7) ? it.expDate.slice(0, 7) : '未标注月份';
+    scopedActive.filter(function (item) {
+      return displayEntries(item).some(function (entry) { return entry.evaluation.status !== 'expired'; });
+    }).forEach(function (it) {
+      var ym = it.expDate.slice(0, 7);
       if (!monthBuckets[ym]) {
-        monthBuckets[ym] = { ym: ym, items: [], minDays: 99999 };
+        monthBuckets[ym] = { ym: ym, items: [], minDays: Infinity };
       }
       monthBuckets[ym].items.push(it);
       var dLeft = Utils.diffDaysFromToday(it.expDate);
@@ -407,22 +518,17 @@
         Utils.escapeHtml(item.brand) + '</span> <strong>' + Utils.escapeHtml(item.name) +
         '</strong></span>' + medTag + '</span>';
     }
-    var nearest = null;
-    var nearestDays = Infinity;
-    var monthsHtml = sortedMonths.map(function (ym) {
+    if (timelineScope !== scope) {
+      timelineScope = scope;
+      timelineExpanded = false;
+    }
+    var visibleMonths = timelineExpanded ? sortedMonths : sortedMonths.slice(0, 5);
+    var monthsHtml = visibleMonths.map(function (ym) {
       var bucket = monthBuckets[ym];
       bucket.items.sort(function (a, b) { return (a.expDate || '9999').localeCompare(b.expDate || '9999'); });
-      bucket.items.forEach(function (item) {
-        var remaining = Utils.diffDaysFromToday(item.expDate);
-        if (remaining !== null && remaining >= 0 && remaining < nearestDays) {
-          nearest = item;
-          nearestDays = remaining;
-        }
-      });
-      var known = bucket.minDays !== 99999;
-      var tone = timelineTone(known ? bucket.minDays : null);
+      var tone = timelineTone(bucket.minDays);
       var ymTitle = Utils.formatMonthLabel(ym);
-      var days = !known ? '未填写过期日期' : bucket.minDays < 0 ? '已过期' : Utils.formatDays(bucket.minDays).text;
+      var days = Utils.formatDays(bucket.minDays).text;
       var multiple = bucket.items.length > 1;
       var heading = '<span class="feeding-month-name">' + Utils.escapeHtml(ymTitle) + '</span><span>' + Utils.formatQuantity(bucket.items.length, '批') +
         '</span><span class="forecast-days">' + days + '</span><span class="feeding-month-chevron" aria-hidden="true"></span>' +
@@ -440,8 +546,10 @@
       Utils.escapeHtml(Utils.formatListDate(nearest.expDate)) + '</time><span class="forecast-days">' + (nearestDays === 0 ? '今天到期' : '剩 ' + Utils.formatDays(nearestDays).text) +
       '</span></div>' + timelineProduct(nearest) + '</div>' : '';
     document.getElementById('expiryMonthTimelineList').innerHTML = monthsHtml
-      ? nearestHtml + '<ol class="feeding-month-track">' + monthsHtml + '</ol>'
-      : '<div class="priority-empty">当前筛选范围暂无在库批次</div>';
+      ? nearestHtml + '<ol class="feeding-month-track">' + monthsHtml + '</ol>' +
+        (sortedMonths.length > 5 ? '<button type="button" class="feeding-timeline-toggle" data-toggle-timeline aria-expanded="' +
+          String(timelineExpanded) + '">' + (timelineExpanded ? '收起' : '展开全部（共 ' + Utils.formatQuantity(sortedMonths.length, '条') + '）') + '</button>' : '')
+      : nearestHtml + '<div class="priority-empty">当前筛选范围暂无标注过期日期的未过期批次</div>';
 
     // ==================== SUB-VIEW 2: PALATABILITY & TOLERANCE ARCHIVE (Food vs Supp vs Med Separated!) ====================
     var uniqueProducts = Stats.aggregateUniqueProducts();

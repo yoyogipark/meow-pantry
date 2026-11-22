@@ -29,6 +29,7 @@
       '<path d="M12 12v4"/><path d="M10 14h4"/>',
     med: '<g transform="translate(12 12) scale(.88) translate(-12 -12)">' +
       '<path d="M4.5 12.5l8-8a4.94 4.94 0 0 1 7 7l-8 8a4.94 4.94 0 0 1-7-7"/><path d="M8.5 8.5l7 7"/></g>',
+    supplies: '<path d="m4 7 8-4 8 4-8 4z"/><path d="M4 7v10l8 4 8-4V7M12 11v10"/>',
     other: '<path d="M12 12.5c-2.5 0-5 2.2-5 4.6 0 1.6 1.3 2.4 2.7 2.4 1 0 1.5-.4 2.3-.4s1.3.4 2.3.4c1.4 0 2.7-.8 2.7-2.4 0-2.4-2.5-4.6-5-4.6z"/>' +
       '<circle cx="5.5" cy="11" r="1.5"/><circle cx="9" cy="7" r="1.5"/><circle cx="15" cy="7" r="1.5"/><circle cx="18.5" cy="11" r="1.5"/>'
   };
@@ -80,10 +81,13 @@
 
   Utils.getTodayStr = function () {
     var now = new Date();
-    var y = now.getFullYear();
-    var m = String(now.getMonth() + 1).padStart(2, '0');
-    var d = String(now.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + d;
+    var parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(now).reduce(function (result, part) {
+      if (part.type !== 'literal') result[part.type] = part.value;
+      return result;
+    }, {});
+    return parts.year + '-' + parts.month + '-' + parts.day;
   };
 
   Utils.getNowDateTimeStr = function (date) {
@@ -334,7 +338,7 @@
   };
 
   Utils.requiresUnitWeight = function (category) {
-    return category === 'dry' || category === 'can' || category === 'freeze';
+    return category === 'dry' || category === 'can' || category === 'freeze' || category === 'supplies';
   };
 
   Utils.legacyUnitWeight = function (spec, unit) {
@@ -349,6 +353,10 @@
   };
 
   Utils.formatItemSpec = function (item) {
+    var supplyValue = Number(item.unit_spec_value);
+    if (item.category === 'supplies' && supplyValue > 0 && item.unit_spec_unit) {
+      return Utils.formatNumber(supplyValue) + item.unit_spec_unit + (item.spec ? ' · ' + String(item.spec).trim() : '');
+    }
     var weight = Number(item.unit_net_weight_g);
     var note = String(item.spec || '').trim();
     if (!(weight > 0)) return note;

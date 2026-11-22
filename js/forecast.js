@@ -20,13 +20,15 @@
   Forecast.compute = function (items, history, dailyFeedGrams, today) {
     var result = {};
     categories.forEach(function (key) {
-      result[key] = { grams: 0, missing: [], estimated: false, dailyGrams: 0, days: null, source: '', low: false };
+      result[key] = { grams: 0, missing: [], estimated: false, dailyGrams: 0, days: null, source: '', low: false, samples: 0, realStock: 0 };
     });
     var batches = new Map();
     items.forEach(function (item) {
       batches.set(item.id, item);
       var category = result[item.category];
-      if (!category || item.isSample || !positive(item.quantity)) return;
+      if (!category || !positive(item.quantity)) return;
+      if (item.isSample) { category.samples++; return; }
+      category.realStock++;
       if (Utils.diffDaysFromToday(item.expDate, today) < 0) return;
       var shared = item.purchasePackaging && item.purchasePackaging.seal === 'shared';
       var openingExpired = item.isOpened &&
@@ -102,7 +104,7 @@
         return sum + event.grams * event.quantity;
       }, 0) / (span + 1) : positive(dailyFeedGrams && dailyFeedGrams[key]);
       data.source = span >= 3 ? 'actual' : data.dailyGrams > 0 ? 'default' : '';
-      if (data.dailyGrams > 0 && (data.grams > 0 || !data.missing.length)) {
+      if (data.dailyGrams > 0 && (!data.samples || data.realStock) && (data.grams > 0 || !data.missing.length)) {
         data.days = data.grams / data.dailyGrams;
         data.low = data.days < Forecast.RESTOCK_DAYS;
       }

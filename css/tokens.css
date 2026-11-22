@@ -176,6 +176,7 @@ html:has(#viewSettings:not(.hidden-view)) {
   --cat-treat: #993556;
   --cat-supp: #3B6D11;
   --cat-med: #534AB7;
+  --cat-supplies: #8A6542;
   --cat-chicken-stroke: #BA7517;
   --cat-chicken-fill: #FAC775;
 }
@@ -188,6 +189,7 @@ html:has(#viewSettings:not(.hidden-view)) {
     --cat-treat: #ED93B1;
     --cat-supp: #97C459;
     --cat-med: #AFA9EC;
+    --cat-supplies: #D1A77C;
     --cat-chicken-stroke: #FAC775;
     --cat-chicken-fill: #BA7517;
   }
