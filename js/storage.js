@@ -858,7 +858,7 @@
   }
 
   Storage.exportItemsCsv = function () {
-    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已核销', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '渠道/批次', '备注'];
+    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已核销', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '渠道/批次', '备注', '各口味库存'];
     var rows = [headers];
     MP.state.items.forEach(function (it) {
       if (it.sourceBatchId && (Number(it.quantity) || 0) <= 0) return; // avoid duplicating shadow row already counted on active batch's eatenCount
@@ -867,7 +867,10 @@
       var grpInfo = MP.CATEGORY_GROUPS[catInfo.group] || MP.CATEGORY_GROUPS.food;
       var shelfStr = it.shelfLifeValue ? (it.shelfLifeValue + (it.shelfLifeUnit === 'days' ? '天' : '个月')) : '';
       var palObj = MP.getPalatabilityBadgeInfo(it);
-      var palStr = palObj ? palObj.label : '';
+      var palStr = it.flavors && it.flavors.length ? it.flavors.map(function (flavor) {
+        var badge = MP.getPalatabilityBadgeInfo({ category: it.category, palatability: flavor.palatability });
+        return flavor.name + '：' + (badge ? badge.label : '未测');
+      }).join('；') : palObj ? palObj.label : '';
       var openedFlavors = (it.flavors || []).filter(function (flavor) {
         return flavor.quantity > 0 && flavor.openedDate;
       });
@@ -877,7 +880,7 @@
         catInfo.label,
         it.brand || '',
         it.name || '',
-        it.category === 'supplies' ? Utils.formatItemSpec(it) : (it.spec || ''),
+        Utils.formatItemSpec(it),
         String(it.quantity),
         String(eatenQty),
         it.unit || '',
@@ -896,7 +899,10 @@
         palStr,
         it.location || '',
         it.batchCode || '',
-        it.notes || ''
+        it.notes || '',
+        (it.flavors || []).map(function (flavor) {
+          return flavor.name + '：' + Utils.formatQuantity(flavor.quantity, it.unit || '件');
+        }).join('；')
       ]);
     });
     Storage.triggerFileDownload('猫咪粮仓盘点表_' + Utils.getTodayStr() + '.csv', rowsToCsv(rows), 'text/csv;charset=utf-8');

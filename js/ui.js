@@ -41,7 +41,6 @@
 
   UI.flavorStockText = function (item, plain, remainingView) {
     if (!item.flavors) return '';
-    var overallRating = remainingView ? MP.getItemPalatability(item) : '';
     return item.flavors.map(function (flavor) {
       var text = flavor.name + ' ' + Utils.formatQuantity(flavor.quantity, remainingView ? '' : item.unit);
       if (Number(flavor.quantity) > 0 && flavor.openedDate) {
@@ -60,11 +59,16 @@
       if (remainingView && Number(flavor.quantity) <= 0) {
         escaped = '<s class="flavor-stock-finished" aria-label="' + Utils.escapeHtml(flavor.name + ' 已吃完') + '">' + escaped + '</s>';
       }
-      if (!remainingView || (flavor.palatability || '') === overallRating) return escaped;
+      if (!remainingView) return escaped;
       var badge = MP.getPalatabilityBadgeInfo({ category: item.category, palatability: flavor.palatability });
-      return escaped + ' · <span class="flavor-stock-rating">' +
-        (badge ? Utils.formatPalatabilityBadge(item, badge) : '未评价') + '</span>';
-    }).join(' · ');
+      var rating = badge
+        ? '<span class="flavor-stock-rating" role="img" aria-label="' + Utils.escapeHtml(badge.label) +
+          '" title="' + Utils.escapeHtml(badge.label) + '">' +
+          '<span aria-hidden="true">' + Utils.escapeHtml(badge.emoji || MP.getPalatabilityEmoji(badge.key)) + '</span></span>'
+        : '';
+      return '<span class="flavor-stock-entry">' + rating + '<span class="flavor-stock-name">' + escaped + '</span>' +
+        (badge ? '' : '<span class="flavor-stock-unrated">未测</span>') + '</span>';
+    }).join(remainingView && !plain ? '' : ' · ');
   };
 
   UI.syncAllDateDisplays = function () {
@@ -824,7 +828,11 @@
       select.add(new Option(historical.flavorName, historical.flavorId, true, true));
     } else if (hasFlavor) {
       item.flavors.forEach(function (f) {
-        select.add(new Option(f.name + ' · 余' + Utils.formatQuantity(f.quantity, item.unit), f.id));
+        var expiredOpen = Domain.stockExpiryEntries(item).some(function (entry) {
+          return entry.flavor === f && entry.opened && entry.evaluation.openRemaining !== null && entry.evaluation.openRemaining < 0;
+        });
+        select.add(new Option(f.name + ' · 余' + Utils.formatQuantity(f.quantity, item.unit) +
+          (expiredOpen ? ' · 开封已过期，请先处理' : ''), f.id));
       });
       UI.updateFeedFlavor(item);
     } else if (!historical) {

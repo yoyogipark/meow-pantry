@@ -9,18 +9,7 @@
   var timelineScope = '';
 
   function displayEntries(item) {
-    if (!item.flavors || !item.flavors.length) {
-      return [{ item: item, flavor: null, evaluation: Domain.evaluateItem(item), quantity: Number(item.quantity) || 0 }];
-    }
-    return item.flavors.filter(function (flavor) { return Number(flavor.quantity) > 0; }).map(function (flavor) {
-      var shared = Domain.hasSharedSeal(item);
-      var openedDate = shared ? item.openedDate : flavor.openedDate;
-      var piece = Object.assign({}, item, {
-        quantity: flavor.quantity, flavors: null,
-        isOpened: shared ? item.isOpened : Boolean(openedDate), openedDate: openedDate
-      });
-      return { item: item, flavor: flavor, evaluation: Domain.evaluateItem(piece), quantity: Number(flavor.quantity) };
-    });
+    return Domain.stockExpiryEntries(item);
   }
 
   function displayName(entry) {
@@ -121,6 +110,40 @@
       }
     });
     return list;
+  };
+
+  Stats.ratingRecords = function (items) {
+    var batches = new Map();
+    var activeIds = new Set(items.filter(function (item) { return !item.sourceBatchId; }).map(function (item) { return item.id; }));
+    items.forEach(function (item) {
+      if (MP.getCategoryGroup(item.category) === 'supplies') return;
+      if (item.sourceBatchId && activeIds.has(item.sourceBatchId)) return;
+      var key = Domain.getProductGroupKey(item);
+      var group = batches.get(key) || [];
+      group.push(item);
+      batches.set(key, group);
+    });
+    var records = [];
+    batches.forEach(function (group) {
+      group.forEach(function (item, index) {
+        var flavors = item.flavors && item.flavors.length ? item.flavors : [null];
+        flavors.forEach(function (flavor) {
+          var rating = flavor ? flavor.palatability : item.palatability;
+          var badge = MP.getPalatabilityBadgeInfo({ category: item.category, palatability: rating });
+          if (!badge) return;
+          records.push({
+            rep: item, flavor: flavor, palatability: rating, badge: badge,
+            group: MP.getCategoryGroup(item.category), category: item.category,
+            brand: (item.brand || '未命名品牌').trim(), name: (item.name || '未命名').trim(),
+            spec: Utils.formatItemSpec(item), unit: item.unit || '件',
+            inStockQty: flavor ? Number(flavor.quantity) || 0 : Number(item.quantity) || 0,
+            eatenQty: Number(item.quantity) > 0 ? Number(item.eatenCount) || 0 : Number(item.consumedCount) || Number(item.lastQuantity) || 0,
+            batchLabel: group.length > 1 ? '批次 ' + (index + 1) + (item.batchCode ? ' · ' + item.batchCode : item.expDate ? ' · 到期 ' + item.expDate : '') : ''
+          });
+        });
+      });
+    });
+    return records;
   };
 
   // Pure calculation helper (testable in Node without DOM) for verifying Food vs Supp vs Med separation!
@@ -391,7 +414,7 @@
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></span>' +
           (key === 'can' ? remaining : '') + '</span></button>' +
         '<div class="forecast-balance"><div><strong class="forecast-quantity">' +
-          (key === 'can' ? (data.samples && !data.realStock ? '—' : Utils.formatQuantity(data.grams, '克')) : Utils.escapeHtml(stockLabel)) + '</strong>' +
+          (key === 'can' ? (data.samples && !data.realStock ? '—' : data.missing.length && !data.grams ? '待补填' : Utils.formatQuantity(data.grams, '克') + (data.missing.length ? '（已换算）' : '')) : Utils.escapeHtml(stockLabel)) + '</strong>' +
           (key === 'can' ? '<small class="forecast-units">' + Utils.escapeHtml(stockLabel) + '</small>' : '') + '</div>' +
           (key === 'can' ? rate : remaining ? '<div class="forecast-remaining">' + remaining + '</div>' : '') + '</div>' +
         meter + (key === 'can' ? '' : rate) +
@@ -448,36 +471,42 @@
     }).flatMap(displayEntries).filter(function (entry) { return entry.evaluation.status !== 'expired'; });
     document.getElementById('priorityFeedList').parentElement.classList.toggle('hidden-view', scope === 'med' || scope === 'supplies');
     activeFoodAndSupp.sort(function (a, b) {
-      var openedA = a.flavor ? (Domain.hasSharedSeal(a.item) ? a.item.isOpened : Boolean(a.flavor.openedDate)) : Domain.isStockOpened(a.item);
-      var openedB = b.flavor ? (Domain.hasSharedSeal(b.item) ? b.item.isOpened : Boolean(b.flavor.openedDate)) : Domain.isStockOpened(b.item);
-      return Number(openedB) - Number(openedA) ||
+      return Number(b.opened) - Number(a.opened) ||
         (a.evaluation.expDays ?? Infinity) - (b.evaluation.expDays ?? Infinity);
     });
     document.getElementById('priorityFeedList').innerHTML = activeFoodAndSupp.slice(0, 5).map(function (entry, index) {
       var item = entry.item;
       var ev = entry.evaluation;
-      var opened = entry.flavor ? (Domain.hasSharedSeal(item) ? item.isOpened : Boolean(entry.flavor.openedDate)) : Domain.isStockOpened(item);
+      var opened = entry.opened;
+      var blockedByExpiredOpen = !opened && displayEntries(item).some(function (other) {
+        return other.flavor === entry.flavor && other.opened && other.evaluation.status === 'expired';
+      });
       var name = displayName(entry);
       var reason = opened
         ? '已开封 · ' + (ev.openRemaining === null ? '未填写开封保鲜期' : Utils.formatDays(ev.openRemaining).text + '内吃完')
         : '未拆封 · ' + (ev.expDays === null ? '未填写过期日期' : '剩 ' + Utils.formatDays(ev.expDays).text);
+      if (blockedByExpiredOpen) reason += ' · 请先处理过期开封件';
       return '<div class="priority-row' + (opened ? ' priority-row--opened' : '') + '">' +
         '<span class="priority-index">' + Utils.formatNumber(index + 1) + '</span>' +
         '<div class="priority-copy"><div class="priority-name"><span>' + Utils.escapeHtml(item.brand) +
           '</span> <strong>' + Utils.escapeHtml(name) + '</strong></div>' +
           '<div class="priority-reason">' + reason + '</div></div>' +
         '<span class="priority-quantity">余 ' + Utils.escapeHtml(Utils.formatQuantity(entry.quantity, item.unit)) + '</span>' +
-        '<button type="button" class="btn-feed btn-feed--compact" aria-label="记喂食：' + Utils.escapeHtml(name) +
-          '" data-priority-feed="' + Utils.escapeHtml(item.id) + '"' +
-          (entry.flavor ? ' data-priority-flavor="' + Utils.escapeHtml(entry.flavor.id) + '"' : '') +
-          '><span class="btn-feed__content">' + MP.UI.feedButtonContent() + '</span></button>' +
+        (blockedByExpiredOpen
+          ? '<button type="button" class="btn-feed btn-feed--compact" data-priority-expired="' + Utils.escapeHtml(item.id) +
+            '"><span class="btn-feed__content">处理过期件</span></button>'
+          : '<button type="button" class="btn-feed btn-feed--compact" aria-label="记喂食：' + Utils.escapeHtml(name) +
+            '" data-priority-feed="' + Utils.escapeHtml(item.id) + '"' +
+            (entry.flavor ? ' data-priority-flavor="' + Utils.escapeHtml(entry.flavor.id) + '"' : '') +
+            '><span class="btn-feed__content">' + MP.UI.feedButtonContent() + '</span></button>') +
         '</div>';
     }).join('') || '<div class="priority-empty">暂无在库食品或营养品</div>';
 
     // 1D. Future Expiry Month Timeline (Scoped)
     var scopedActive = st.items.filter(function (it) {
       return (Number(it.quantity) || 0) > 0 && Utils.diffDaysFromToday(it.expDate) !== null &&
-        (scope === 'all' || MP.getCategoryGroup(it.category) === scope);
+        (scope === 'all' || MP.getCategoryGroup(it.category) === scope) &&
+        displayEntries(it).some(function (entry) { return entry.evaluation.status !== 'expired'; });
     });
     var nearest = null;
     var nearestDays = Infinity;
@@ -489,9 +518,7 @@
       }
     });
     var monthBuckets = {};
-    scopedActive.filter(function (item) {
-      return displayEntries(item).some(function (entry) { return entry.evaluation.status !== 'expired'; });
-    }).forEach(function (it) {
+    scopedActive.forEach(function (it) {
       var ym = it.expDate.slice(0, 7);
       if (!monthBuckets[ym]) {
         monthBuckets[ym] = { ym: ym, items: [], minDays: Infinity };
@@ -553,10 +580,10 @@
 
     // ==================== SUB-VIEW 2: PALATABILITY & TOLERANCE ARCHIVE (Food vs Supp vs Med Separated!) ====================
     var uniqueProducts = Stats.aggregateUniqueProducts();
+    var ratingRecords = Stats.ratingRecords(st.items);
     var tierCounts = { love: 0, ok: 0, coax: 0, meh: 0, supp: 0, med: 0 };
     var evaluatedTotal = 0;
-    uniqueProducts.forEach(function (prod) {
-      if (!prod.palatability) return;
+    ratingRecords.forEach(function (prod) {
       evaluatedTotal += 1;
       if (prod.group === 'med') {
         tierCounts.med += 1;
@@ -566,7 +593,7 @@
         tierCounts[prod.palatability] += 1;
       }
     });
-    document.getElementById('tierTotalEvaluatedBadge').textContent = '已评 ' + Utils.formatQuantity(evaluatedTotal, '款');
+    document.getElementById('tierTotalEvaluatedBadge').textContent = '已评 ' + Utils.formatQuantity(evaluatedTotal, '条');
     document.getElementById('tierEvaluatedBreakdown').textContent = '食品 ' +
       Utils.formatNumber(evaluatedTotal - tierCounts.supp - tierCounts.med) + ' · 营养品 ' +
       Utils.formatNumber(tierCounts.supp) + ' · 药品 ' + Utils.formatNumber(tierCounts.med);
@@ -588,7 +615,7 @@
     }).join('');
     distribution.classList.toggle('hidden-view', !ratedTiers.length);
     distribution.setAttribute('aria-label', '普通食品适口性分布：' + ratedTiers.map(function (key) {
-      return tierLabels[key] + ' ' + Utils.formatQuantity(tierCounts[key], '款');
+      return tierLabels[key] + ' ' + Utils.formatQuantity(tierCounts[key], '条');
     }).join('，'));
     for (var tIdx = 0; tIdx < tabBtns.length; tIdx++) {
       var tk = tabBtns[tIdx].getAttribute('data-tier-tab');
@@ -600,8 +627,7 @@
       tabBtns[tIdx].setAttribute('aria-pressed', String(tk === st.statsTierTab));
     }
 
-    var tierMatched = uniqueProducts.filter(function (prod) {
-      if (!prod.palatability) return false;
+    var tierMatched = ratingRecords.filter(function (prod) {
       if (st.statsTierTab === 'all') return true;
       if (st.statsTierTab === 'med') return prod.group === 'med';
       if (st.statsTierTab === 'supp') return prod.group === 'supp';
@@ -609,7 +635,7 @@
     });
 
     var filterLabel = tierLabels[st.statsTierTab] || '全部';
-    document.getElementById('palFilterSummary').textContent = '当前筛选：' + filterLabel + ' · ' + Utils.formatQuantity(tierMatched.length, '款');
+    document.getElementById('palFilterSummary').textContent = '当前筛选：' + filterLabel + ' · ' + Utils.formatQuantity(tierMatched.length, '条');
     document.getElementById('clearPalFilterBtn').classList.toggle('hidden-view', st.statsTierTab === 'all');
 
     var tierListEl = document.getElementById('palTierCardsList');
@@ -634,7 +660,7 @@
       if (tierMatched.length > tPageSize) {
         tierPagerEl.classList.remove('hidden-view');
         document.getElementById('tierPageInfoText').textContent =
-          '第 ' + Utils.formatNumber(st.tierPage) + ' / ' + Utils.formatQuantity(tTotalPages, '页') + ' (共 ' + Utils.formatQuantity(tierMatched.length, '款') + ')';
+          '第 ' + Utils.formatNumber(st.tierPage) + ' / ' + Utils.formatQuantity(tTotalPages, '页') + ' (共 ' + Utils.formatQuantity(tierMatched.length, '条') + ')';
         var tpPrev = document.getElementById('prevTierPageBtn');
         var tpNext = document.getElementById('nextTierPageBtn');
         tpPrev.disabled = (st.tierPage <= 1);
@@ -647,8 +673,7 @@
 
       tierListEl.innerHTML = pagedTierItems.map(function (prod) {
         var catInfo = MP.CATEGORIES[prod.category] || MP.CATEGORIES.dry;
-        var palBadge = MP.getPalatabilityBadgeInfo(prod.rep);
-        if (prod.group === 'food' && palBadge?.key === st.statsTierTab) palBadge = null;
+        var palBadge = prod.badge;
         var coverSrc = MP.getItemCoverSrc(prod.rep);
         var stockTag = prod.inStockQty > 0
           ? '<span style="font-size:11px;font-weight:700;color:var(--ok);background:var(--ok-soft);padding:2px 7px;border-radius:6px;">在库 ' + Utils.escapeHtml(Utils.formatQuantity(prod.inStockQty, prod.unit)) + '</span>'
@@ -660,15 +685,17 @@
               '<div class="pal-record-tags">' +
                 '<span style="font-size:11px;font-weight:700;color:var(--text-main);background:var(--border-warm);padding:1px 6px;border-radius:5px;">' + Utils.getCategoryIcon(prod.category, 20) + ' ' + catInfo.label + '</span>' +
                 '<span style="font-size:11px;font-weight:700;color:var(--accent-strong);background:var(--accent-soft);padding:1px 7px;border-radius:5px;">' + Utils.escapeHtml(prod.brand) + '</span>' +
-                (palBadge ? '<span class="palatability-label">' + Utils.formatPalatabilityBadge(prod.rep, palBadge) + '</span>' : '') +
+                '<span class="palatability-label">' + Utils.formatPalatabilityBadge({ category: prod.category, palatability: prod.palatability }, palBadge) + '</span>' +
               '</div>' +
               '<div class="pal-record-title">' +
-                Utils.escapeHtml(prod.name) + (prod.spec ? (' <span class="pal-record-spec">(' + Utils.escapeHtml(prod.spec) + ')</span>') : '') +
+                Utils.escapeHtml(prod.name) + (prod.flavor ? ' · ' + Utils.escapeHtml(prod.flavor.name) : '') +
+                (prod.spec ? (' <span class="pal-record-spec">(' + Utils.escapeHtml(prod.spec) + ')</span>') : '') +
+                (prod.batchLabel ? ' <span class="pal-record-spec">' + Utils.escapeHtml(prod.batchLabel) + '</span>' : '') +
               '</div>' +
             '</div>' +
             '<div class="pal-record-footer"><div class="pal-record-quantities">' +
                 stockTag +
-                '<span>累计已核销 ' + Utils.escapeHtml(Utils.formatQuantity(prod.eatenQty, prod.unit)) + '</span>' +
+                '<span>' + (prod.flavor ? '整批' : '') + '累计已核销 ' + Utils.escapeHtml(Utils.formatQuantity(prod.eatenQty, prod.unit)) + '</span>' +
               '</div>' +
               '<button type="button" data-tier-restock="' + Utils.escapeHtml(prod.rep.id) + '">＋复购</button>' +
             '</div>' +

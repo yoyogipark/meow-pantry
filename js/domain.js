@@ -50,7 +50,7 @@
     statsTierTab: 'love',     // 'love' | 'ok' | 'coax' | 'meh' | 'supp' | 'med'
     tierPage: 1,
     tierPageSize: 5,
-    brandScopeFilter: 'all',  // 'all' | 'food' | 'supp' | 'med'
+    brandScopeFilter: 'all',  // 'all' | 'food' | 'supp' | 'med' | 'supplies'
     brandPage: 1,
     brandPageSize: 5,
     historyTypeFilter: 'all', // 'all' | 'in' | 'consume' | 'adjust'
@@ -1073,6 +1073,45 @@
       pctRemaining: pctRemaining,
       group: MP.getCategoryGroup(item.category)
     };
+  };
+
+  Domain.stockExpiryEntries = function (item, refTodayStr) {
+    var quantity = Number(item.quantity) || 0;
+    if (quantity <= 0) return [];
+    var shared = Domain.hasSharedSeal(item);
+    var entries = [];
+    function add(flavor, count, opened, openedDate) {
+      if (!(count > 0)) return;
+      var piece = Object.assign({}, item, {
+        quantity: count, flavors: null, isOpened: opened, openedDate: openedDate || ''
+      });
+      entries.push({
+        item: item, flavor: flavor, quantity: count, opened: opened,
+        evaluation: Domain.evaluateItem(piece, refTodayStr)
+      });
+    }
+    if (item.flavors && item.flavors.length) {
+      var unknownOpening = !shared && item.isOpened && !item.flavors.some(function (flavor) {
+        return flavor.quantity > 0 && flavor.openedDate;
+      });
+      item.flavors.forEach(function (flavor) {
+        var count = Number(flavor.quantity) || 0;
+        if (shared || unknownOpening) {
+          add(flavor, count, item.isOpened, item.openedDate);
+        } else if (flavor.openedDate && count > 0) {
+          add(flavor, 1, true, flavor.openedDate);
+          add(flavor, count - 1, false, '');
+        } else {
+          add(flavor, count, false, '');
+        }
+      });
+    } else if (!shared && item.isOpened && (item.purchasePackaging || Domain.isPackageUnit(item.unit))) {
+      add(null, Math.min(1, quantity), true, item.openedDate);
+      add(null, quantity - 1, false, '');
+    } else {
+      add(null, quantity, Boolean(item.isOpened), item.openedDate);
+    }
+    return entries;
   };
 
   Domain.summarizeStockDetailStatuses = function (items, refTodayStr) {

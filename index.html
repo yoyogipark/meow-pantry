@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=295">
-  <link rel="stylesheet" href="./css/styles.css?v=295">
+  <link rel="stylesheet" href="./css/tokens.css?v=302">
+  <link rel="stylesheet" href="./css/styles.css?v=302">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -113,17 +113,17 @@
       <!-- 4 Primary Status Filter Cards -->
       <section class="status-card-grid">
         <button type="button" data-status-filter="in_stock" class="metric-card status-card selected" id="statCardStock">
-          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v12H3zM3 8l3-4h12l3 4M12 4v8"/></svg><span>在库</span></span>
+          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18v12H3zM3 8l3-4h12l3 4M12 4v8"/></svg><span>在库批次</span></span>
           <div id="countInStock" class="status-card-count is-zero">0</div>
           <div id="countStockPieces" class="stock-piece-count">共 0件</div>
         </button>
         <button type="button" data-status-filter="expiring" class="metric-card status-card" id="statCardExpiring">
-          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>临期</span></span>
+          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>临期批次</span></span>
           <div id="countExpiring" class="status-card-count is-zero">0</div>
           <div id="countExpiringPieces" class="stock-piece-count">共 0件</div>
         </button>
         <button type="button" data-status-filter="expired" class="metric-card status-card is-zero" id="statCardExpired">
-          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5m0 4h.01"/></svg><span>已过期</span></span>
+          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5m0 4h.01"/></svg><span>过期批次</span></span>
           <div id="countExpired" class="status-card-count is-zero">0</div>
           <div id="countExpiredPieces" class="stock-piece-count">共 0件</div>
         </button>
@@ -182,7 +182,7 @@
             </button>
           </div>
         </div>
-        <p id="pantryStatusHint" class="pantry-status-hint">再点一次选中的状态卡，可取消筛选，显示全部状态。</p>
+        <p id="pantryStatusHint" class="pantry-status-hint">同一批可同时有临期和过期件。再点一次选中的状态卡，可取消筛选。</p>
         <div id="activeFilterSummaryBar" class="hidden-view" style="margin-top:8px;padding-top:7px;border-top:1px solid var(--status-neutral-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;">
           <span id="filterResultCountText" role="status" style="color:var(--text-muted);font-weight:600;">显示 0 批</span>
           <button id="clearPantryFiltersBtn" type="button" style="border:none;background:var(--accent-soft);color:var(--accent-strong);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">✕ 清除筛选</button>
@@ -347,11 +347,11 @@
           <div class="pal-archive-heading">
             <h2 class="stats-panel-title"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>适口性与耐受度档案</h2>
             <details class="pal-evaluated-details">
-              <summary><span id="tierTotalEvaluatedBadge">已评 0款</span></summary>
+              <summary><span id="tierTotalEvaluatedBadge">已评 0条</span></summary>
               <p id="tierEvaluatedBreakdown"></p>
             </details>
           </div>
-          <p class="stats-panel-description pal-archive-description" title="食品适口性 · 营养品接受度 · 药品反应">食品适口性 · 营养品接受度 · 药品反应</p>
+          <p class="stats-panel-description pal-archive-description" title="食品适口性 · 营养品接受度 · 药品反应">按批次及口味分别统计评价</p>
 
           <div id="palTierDistribution" class="pal-tier-distribution hidden-view" role="img"></div>
           <div id="palTierTabBar">
@@ -401,7 +401,7 @@
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
             <div>
               <h2 class="stats-panel-title"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#ui-tag"></use></svg>品牌囤货档案</h2>
-              <p class="stats-panel-description">点击任意品牌卡片可一键回粮仓筛选</p>
+              <p class="stats-panel-description">点击品牌查看商品明细</p>
             </div>
             <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--status-neutral-bg);padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
           </div>
@@ -412,6 +412,7 @@
               <button type="button" data-brand-scope="food" class="subfilter-chip"><span>食品品牌</span></button>
               <button type="button" data-brand-scope="supp" class="subfilter-chip"><span>营养品品牌</span></button>
               <button type="button" data-brand-scope="med" class="subfilter-chip"><span>药品品牌</span></button>
+              <button type="button" data-brand-scope="supplies" class="subfilter-chip"><span>日用品品牌</span></button>
             </div>
           </div>
 
@@ -476,6 +477,7 @@
             <button id="settingsOpenHistoryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="history" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7m2-5v5l3 2"/></svg><span>查看库存操作历史流水</span><svg class="settings-icon settings-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
             <button id="clearAllDataBtn" type="button" class="ios-btn-text settings-danger-action">清空全部数据</button>
           </div>
+          <p class="daily-support">CSV 用于查看和盘点，恢复全部数据请使用 JSON 完整备份。</p>
         </section>
 
         <section class="ios-card settings-section" aria-labelledby="settingsPreferencesTitle">
@@ -515,7 +517,7 @@
                 </div>
               </div>
             </div>
-            <p>湿粮按克合并计算，有消耗记录时优先按实际用量</p>
+            <p>湿粮按克合并计算；有效核销记录至少 3 条且首尾相隔至少 3 天时使用实际用量，否则使用设置值</p>
             <div id="settingsWeightAlert" class="forecast-alert hidden-view" role="status"></div>
           </section>
 
@@ -1213,18 +1215,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=295"></script>
-  <script src="./js/constants.js?v=295"></script>
-  <script src="./js/utils.js?v=295"></script>
-  <script src="./js/forecast.js?v=295"></script>
-  <script src="./js/domain.js?v=295"></script>
-  <script src="./js/storage.js?v=295"></script>
-  <script src="./js/stats.js?v=295"></script>
-  <script src="./js/modal.js?v=295"></script>
-  <script src="./js/ui.js?v=295"></script>
-  <script src="./js/ui-pantry.js?v=295"></script>
-  <script src="./js/ui-daily.js?v=295"></script>
-  <script src="./js/ui-settings.js?v=295"></script>
-  <script src="./js/app.js?v=295"></script>
+  <script src="./js/covers.js?v=302"></script>
+  <script src="./js/constants.js?v=302"></script>
+  <script src="./js/utils.js?v=302"></script>
+  <script src="./js/forecast.js?v=302"></script>
+  <script src="./js/domain.js?v=302"></script>
+  <script src="./js/storage.js?v=302"></script>
+  <script src="./js/stats.js?v=302"></script>
+  <script src="./js/modal.js?v=302"></script>
+  <script src="./js/ui.js?v=302"></script>
+  <script src="./js/ui-pantry.js?v=302"></script>
+  <script src="./js/ui-daily.js?v=302"></script>
+  <script src="./js/ui-settings.js?v=302"></script>
+  <script src="./js/app.js?v=302"></script>
 </body>
 </html>

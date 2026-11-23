@@ -10,6 +10,12 @@
     return pieces === null ? '件数未明' : '共 ' + Utils.formatQuantity(pieces, '件');
   }
 
+  function itemHasStatus(item, status) {
+    var counts = Object.values(Domain.summarizeStockDetailStatuses([item]));
+    return counts.length ? counts.some(function (count) { return count[status] > 0; })
+      : Domain.evaluateItem(item).status === status;
+  }
+
   function summarizeArchivedPieces(items) {
     var batches = new Map();
     var total = 0;
@@ -111,8 +117,8 @@
         if (it.manualFeedArchive !== true) emptyItems.push(it);
       } else {
         cStock += 1;
-        if (ev.status === 'expiring') cExpiring += 1;
-        else if (ev.status === 'expired') cExpired += 1;
+        if (itemHasStatus(it, 'expiring')) cExpiring += 1;
+        if (itemHasStatus(it, 'expired')) cExpired += 1;
 
       }
     });
@@ -162,9 +168,11 @@
       return Object.values(Domain.summarizeStockDetailStatuses([it])).some(function (unit) { return unit.expiring > 0; });
     }
     if (st.statusFilter === 'in_stock' && ev.status === 'empty') return false;
-    if (st.statusFilter !== 'in_stock' && st.statusFilter !== 'all' && ev.status !== st.statusFilter) return false;
+    if (st.statusFilter === 'expiring' || st.statusFilter === 'expired') {
+      if (!itemHasStatus(it, st.statusFilter)) return false;
+    } else if (st.statusFilter !== 'in_stock' && st.statusFilter !== 'all' && ev.status !== st.statusFilter) return false;
     if (st.pantryHealthFilter === 'opened') return Domain.isStockOpened(it);
-    if (st.pantryHealthFilter === 'expiring_or_opened') return ev.status === 'expiring' || Domain.isStockOpened(it);
+    if (st.pantryHealthFilter === 'expiring_or_opened') return itemHasStatus(it, 'expiring') || Domain.isStockOpened(it);
     return true;
   }
 
@@ -263,6 +271,40 @@
       label + '">' + check + label + '</span>';
   }
 
+  function detailCardRatings(item, compact) {
+    var entries = item.flavors
+      ? item.flavors.map(function (flavor) {
+          return { name: flavor.name, badge: MP.getPalatabilityBadgeInfo({ category: item.category, palatability: flavor.palatability }) };
+        })
+      : (function () {
+          var badge = MP.getPalatabilityBadgeInfo(item);
+          return badge ? [{ name: '', badge: badge }] : [];
+        })();
+    var ratings = entries.filter(function (entry) { return entry.badge; });
+    if (!ratings.length) return '';
+    var label = entries.map(function (entry) {
+      return (entry.name ? entry.name + '：' : '') + (entry.badge ? entry.badge.label : '未测');
+    }).join('；');
+    var icons = ratings.slice(0, 2).map(function (rating) {
+      return '<span class="detail-card-rating-icon" aria-hidden="true">' +
+        Utils.escapeHtml(rating.badge.emoji || MP.getPalatabilityEmoji(rating.badge.key)) + '</span>';
+    }).join('');
+    var extra = ratings.length > 2
+      ? '<span class="detail-card-rating-more" aria-hidden="true">+' + (ratings.length - 2) + '</span>' : '';
+    var details = entries.map(function (entry) {
+      var badge = entry.badge;
+      var text = (entry.name ? entry.name + ' ' : '') +
+        (badge ? (badge.emoji || MP.getPalatabilityEmoji(badge.key)) + ' ' + badge.label : '未测');
+      return '<span>' + Utils.escapeHtml(text) + '</span>';
+    }).join('');
+    var tipId = (compact ? 'compact-pal-' : 'detail-pal-') + Utils.escapeHtml(item.id);
+    return '<span class="compact-tip-wrap ' + (compact ? 'compact-rating-wrap' : 'detail-card-rating-wrap') +
+      '"><button type="button" class="' + (compact ? 'compact-palatability' : 'detail-card-palatability') + '" ' +
+      'data-compact-tip="palatability" aria-label="' + Utils.escapeHtml(label) + '" aria-expanded="false" aria-describedby="' + tipId + '">' +
+      icons + extra + '</button><span id="' + tipId + '" class="compact-tip detail-card-rating-tip" role="tooltip" hidden>' +
+      details + '</span></span>';
+  }
+
   // A zero fraction is also used when an opened package has no measured remainder.
   function detailedOpenStock(item, unit) {
     var quantity = Number(item.quantity);
@@ -353,6 +395,25 @@
       '<span class="detail-card-shelf-tip hidden-view" role="status"></span></div>';
   }
 
+  function detailedWetFlavorOpenStock(item, unit, evaluated) {
+    var flavors = item.flavors.filter(function (flavor) {
+      return Number(flavor.quantity) > 0 && flavor.openedDate;
+    });
+    if (!flavors.length) return '';
+    var groups = flavors.map(function (flavor) {
+      var fraction = Utils.formatRemainFractionText(flavor.openRemainFraction, unit, true);
+      var days = Utils.openShelfDaysRemaining(flavor.openedDate, item.openDaysLimit);
+      return '<div class="detail-card-open-flavor">' +
+        '<div class="detail-card-open-summary">' +
+          '<div class="detail-card-open-flavor-stock"><strong>' + Utils.escapeHtml(flavor.name) +
+            '</strong> <span>开封余 ' + Utils.escapeHtml(fraction ? fraction.slice(1) : '未记录') + '</span></div>' +
+          '<span class="detail-card-open-date">开封日期 ' + Utils.escapeHtml(flavor.openedDate) + '</span>' +
+        '</div>' + detailedOpenedProgress(item, days) + '</div>';
+    }).join('');
+    return '<div class="detail-card-open-stock detail-card-open-stock--' +
+      Utils.formatDays(evaluated.openRemaining).tone + '">' + groups + '</div>';
+  }
+
   function stockActionIcon(path) {
     return '<svg class="stock-action-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg> ';
   }
@@ -437,7 +498,7 @@
     return '<article class="ios-card detail-card supply-detail-card" data-id="' + id + '">' + cardOverflowMenu(item) +
       '<div class="detail-card-top"><div class="detail-card-image-column">' + photo + '</div>' +
         '<div class="detail-card-information"><div class="supply-detail-identity">' + Utils.getCategoryIcon('supplies', 20) +
-          '<span>日用品</span><i>·</i><b>' + Utils.escapeHtml(item.brand) + '</b></div>' +
+          '<span>日用品</span><i>·</i><b title="' + Utils.escapeHtml(item.brand) + '">' + Utils.escapeHtml(item.brand) + '</b></div>' +
           '<h3 class="supply-detail-name">' + Utils.escapeHtml(item.name) + '</h3>' +
           (specPrice ? '<div class="detail-card-line">' + Utils.escapeHtml(specPrice) + '</div>' : '') +
           (!opened ? estimatePanel : '') +
@@ -470,7 +531,8 @@
         st.catFilter !== 'all' && it.category !== st.catFilter) return false;
       if (st.brandFilter !== 'all' && (it.brand || '').trim() !== st.brandFilter) return false;
       if (q) {
-        var hay = [it.brand, it.name, it.spec, it.category === 'supplies' ? Utils.formatItemSpec(it) : '', it.location, it.batchCode, it.notes]
+        var hay = [it.brand, it.name, it.spec, Utils.formatItemSpec(it), it.location, it.batchCode, it.notes]
+          .concat((it.flavors || []).map(function (flavor) { return flavor.name; }))
           .join(' ')
           .toLowerCase();
         if (hay.indexOf(q) === -1) return false;
@@ -841,14 +903,7 @@
 
         var unit = it.unit || '件';
         var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, unit, true) : '';
-        var palInfo = MP.getPalatabilityBadgeInfo(it);
-        var palIcon = palInfo
-          ? '<span class="compact-tip-wrap"><button type="button" class="compact-palatability" data-compact-tip="palatability" data-rating="' +
-            Utils.escapeHtml(palInfo.key) + '" aria-label="' + Utils.escapeHtml(palInfo.label) + '" aria-expanded="false" aria-describedby="compact-pal-' + id +
-            '"><span aria-hidden="true">' + Utils.escapeHtml(palInfo.emoji || MP.getPalatabilityEmoji(palInfo.key)) +
-            '</span></button><span id="compact-pal-' + id + '" class="compact-tip" role="tooltip" hidden>' +
-            Utils.escapeHtml(palInfo.label) + '</span></span>'
-          : '';
+        var palIcon = detailCardRatings(it, true);
 
         var compactStock = detailedOpenStock(it, unit);
         var compactOpened = compactStock.packageCount;
@@ -911,12 +966,7 @@
           .replace(/^[\s·・\/、_-]+|[\s·・\/、_-]+$/g, '');
       }
 
-      var palInfo = MP.getPalatabilityBadgeInfo(it);
-      var palHtml = palInfo
-        ? '<span class="detail-card-palatability" data-rating="' + Utils.escapeHtml(palInfo.key) + '">' +
-          (palInfo.emoji ? '<span class="medication-outcome-emoji" aria-hidden="true">' + Utils.escapeHtml(palInfo.emoji) + '</span>' : Utils.getPalatabilityIcon(palInfo.key)) +
-          '<span class="detail-card-palatability-label">' + Utils.escapeHtml(palInfo.label) + '</span></span>'
-        : '';
+      var palHtml = detailCardRatings(it);
       var lastFedHtml = buildLastFedTagHtml(it);
 
 
@@ -931,6 +981,9 @@
             (stock.dates.length ? '<span class="detail-card-open-date">开封日期 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
           '</div>' + openedProgress + '</div>'
         : '';
+      if (stock.opened && it.category === 'can' && it.flavors && !Domain.hasSharedSeal(it)) {
+        openedBannerHtml = detailedWetFlavorOpenStock(it, unit, ev) || openedBannerHtml;
+      }
 
       var displaySpec = Utils.formatItemSpec(it);
       var priceLine = packagedPriceText(it, unit);
@@ -983,7 +1036,7 @@
           datePanel +
 
           openedBannerHtml +
-          (it.flavors ? '<div class="flavor-stock"><strong>剩余：</strong>' + UI.flavorStockText(it, false, true) + '</div>' : '') +
+          (it.flavors && it.category !== 'can' ? '<div class="flavor-stock"><strong>剩余：</strong>' + UI.flavorStockText(it, false, true) + '</div>' : '') +
           (it.notes ? '<div style="margin-top:8px;font-size:12px;color:var(--text-muted);background:var(--status-neutral-bg);padding:6px 10px;border-radius:8px;">' + Utils.iconLabel('message-circle', it.notes) + '</div>' : '') +
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--status-neutral-bg);">' +

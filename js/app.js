@@ -1158,10 +1158,8 @@
       UI.showToast('已筛选分类：' + (MP.CATEGORIES[catKey] ? MP.CATEGORIES[catKey].label : catKey));
     });
 
-    document.getElementById('feedingTaskList').addEventListener('click', function (ev) {
-      var btn = ev.target.closest('[data-jump-expiry-item]');
-      if (!btn) return;
-      var item = st.items.find(function (entry) { return entry.id === btn.dataset.jumpExpiryItem; });
+    function jumpToExpiryItem(id) {
+      var item = st.items.find(function (entry) { return entry.id === id; });
       if (!item) return;
       clearPantryFilters();
       st.catFilter = item.category;
@@ -1169,6 +1167,10 @@
       st.statusFilter = Domain.evaluateItem(item).status;
       UI.renderAll();
       UI.switchTab('pantry');
+    }
+    document.getElementById('feedingTaskList').addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-jump-expiry-item]');
+      if (btn) jumpToExpiryItem(btn.dataset.jumpExpiryItem);
     });
 
     document.getElementById('palTierTabBar').addEventListener('click', function (ev) {
@@ -1213,6 +1215,11 @@
     });
 
     document.getElementById('priorityFeedList').addEventListener('click', function (ev) {
+      var expired = ev.target.closest('[data-priority-expired]');
+      if (expired) {
+        jumpToExpiryItem(expired.dataset.priorityExpired);
+        return;
+      }
       var btn = ev.target.closest('[data-priority-feed]');
       if (!btn) return;
       UI.openFeedModal(btn.getAttribute('data-priority-feed'), Utils.getTodayStr());
