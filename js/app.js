@@ -1366,8 +1366,11 @@
     }
 
     document.getElementById('fieldMixedFlavors').addEventListener('change', UI.syncPurchasePackaging);
-    document.getElementById('stockPackSealToggle').addEventListener('change', function () {
-      document.getElementById('fieldPackSeal').value = this.checked ? 'shared' : 'independent';
+    document.getElementById('stockPackSealMode').addEventListener('click', function (ev) {
+      var button = ev.target.closest('[data-pack-seal]');
+      if (!button || button.disabled) return;
+      document.getElementById('fieldPackSeal').value = button.dataset.packSeal;
+      UI.syncPurchasePackaging();
       UI.syncModalUnitPriceHint();
     });
     document.getElementById('flavorRows').addEventListener('input', UI.syncFlavorForm);
@@ -1664,7 +1667,7 @@
         var sizeField = document.getElementById('fieldPackSize');
         var invalidCount = !Number.isSafeInteger(Number(countField.value)) || Number(countField.value) < 1;
         var invalidSize = !Number.isSafeInteger(Number(sizeField.value)) || Number(sizeField.value) < 1;
-        showFieldError(invalidCount ? countField.id : invalidSize ? sizeField.id : 'stockPackSealToggle',
+        showFieldError(invalidCount ? countField.id : invalidSize ? sizeField.id : 'packSealIndependentBtn',
           '请核对购买数量、每包装件数、内包装单位和密封方式');
         return;
       }

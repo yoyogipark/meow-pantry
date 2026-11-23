@@ -2304,9 +2304,9 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #itemForm.validation-attempted .is-invalid,
 #itemForm.validation-attempted .ios-date-wrap:has(.is-invalid) { border-color: var(--status-danger-text); }
 
-#itemForm .purchase-packaging { padding: 12px; background: var(--card-bg); border-color: var(--border-warm); }
+#itemForm .purchase-packaging { padding: 0 12px 12px; background: var(--card-bg); border-color: var(--border-warm); }
 #itemForm .purchase-packaging:not(:has(#fieldPackagingEnabled:checked)) {
-  padding: 0; border: 0; background: transparent;
+  padding: 0 12px 12px; border: 1px solid var(--border-warm); background: var(--card-bg);
 }
 #itemForm .purchase-packaging-toggle {
   justify-content: space-between; width: 100%; margin: 0;
@@ -2326,7 +2326,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #itemForm .purchase-packaging-toggle input:checked::after, #feedForm #feedDeductStock:checked::after { left: auto; right: 2px; background: var(--text-on-accent); }
 #itemForm .purchase-packaging-toggle input:disabled, #feedForm #feedDeductStock:disabled { opacity: .55; cursor: default; }
 #stockPackGrid {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start; margin-top: var(--stock-pack-gap);
 }
 #stockPackGrid > div { min-width: 0; }
@@ -2335,32 +2335,88 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border-radius: 10px;
 }
 #stockQuantityGrid { margin-top: var(--stock-pack-gap); gap: var(--stock-pack-gap); }
-#itemForm:not(:has(#fieldPackagingEnabled:checked)) #stockQuantityGrid {
+#itemForm #stockQuantityGrid {
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.3fr) minmax(0, 0.9fr);
   gap: 8px; align-items: start;
 }
-#itemForm:not(:has(#fieldPackagingEnabled:checked)) #stockQuantityGrid label { white-space: nowrap; }
-#itemForm:not(:has(#fieldPackagingEnabled:checked)) .stock-form-price-row {
+#itemForm #stockQuantityGrid label { white-space: nowrap; }
+#itemForm .stock-form-price-row {
   grid-template-columns: minmax(0, 1fr); gap: 4px;
 }
 #itemForm .purchase-packaging {
   --stock-pack-gap: 12px;
 }
 #itemForm .stock-form-pack-label { color: var(--text-muted); font-size: 12px; font-weight: 400; }
-#itemForm .stock-form-seal { margin-top: var(--stock-pack-gap); }
+#itemForm .stock-pack-option-card {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
+  background: var(--card-bg);
+}
+#itemForm .stock-pack-seal-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#packSealHelp {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+}
+#itemForm .stock-pack-flavor-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#itemForm .stock-pack-flavor-card .stock-form-flavor-heading { min-height: 44px; }
+#itemForm .stock-pack-flavor-card .stock-form-flavor-heading label {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+}
+#itemForm .stock-pack-flavor-card #flavorFields { padding: 8px 0; }
+#itemForm #stockPackOptions:not(.hidden-view) {
+  display: grid;
+  gap: 8px;
+  margin-top: var(--stock-pack-gap);
+}
+#stockPackSealMode {
+  box-sizing: border-box;
+  display: flex;
+  gap: 3px;
+  height: 40px;
+  margin-top: 4px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--status-neutral-bg);
+}
+#itemForm #stockPackSealMode button {
+  box-sizing: border-box;
+  flex: 1;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+#itemForm #stockPackSealMode button[aria-pressed="true"] {
+  border-color: var(--border-warm);
+  background: var(--card-bg);
+  color: var(--text-main);
+  font-weight: 600;
+}
+#itemForm #stockPackSealMode button:disabled { opacity: .55; cursor: default; }
 #purchasePackagingPreview:empty { display: none; }
 #purchasePackagingPreview { color: var(--status-warning-text); font-size: 12px; }
-#packSealHelp { margin-top: 0; color: var(--text-muted); font-size: 12px; }
-#itemForm:has(#fieldPackagingEnabled:checked) #stockQuantityGrid {
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  gap: 8px; align-items: start;
-}
-#itemForm:has(#fieldPackagingEnabled:checked) #stockQuantityGrid label {
-  margin-bottom: 6px; line-height: 16px; white-space: nowrap;
-}
-#itemForm:has(#fieldPackagingEnabled:checked) .stock-form-price-row {
-  grid-template-columns: minmax(0, 1fr); gap: 4px;
-}
 #itemForm #fieldQty[readonly], #itemForm #stockLockedUnit { background: var(--secondary-bg); }
 #itemForm #fieldQty[readonly] { text-align: start; }
 #itemForm #stockLockedUnit {
@@ -2370,12 +2426,13 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #itemForm #fieldPackSize { padding-inline-end: 5px !important; }
 #itemForm .stock-form-suffix:has(#stockPackSizeUnit:not(:empty)) #fieldPackSize { padding-inline-end: 27px !important; }
 #itemForm #flavorFields { display: grid; gap: var(--stock-pack-gap); }
-#itemForm #flavorRows { display: grid; gap: 8px; }
+#itemForm #flavorRows { display: grid; gap: 6px; }
 #stockFlavorRatingTitle {
   margin: 0 0 8px; color: var(--text-muted); font-size: 12px; font-weight: 500;
 }
 #stockFlavorRatings { display: grid; gap: 8px; }
-#itemForm .flavor-row :is([data-flavor-step], [data-remove-flavor]) { min-width: 44px; min-height: 44px; }
+#itemForm .flavor-row [data-flavor-step] { min-width: 36px; min-height: 40px; }
+#itemForm .flavor-row [data-remove-flavor] { min-width: 44px; min-height: 44px; }
 #itemForm #flavorSummary { margin: 0 0 0 auto; text-align: end; }
 #itemForm #flavorSummary.is-invalid { outline: 1px solid var(--status-danger-text); }
 
@@ -2508,8 +2565,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   align-items: center;
   justify-content: space-between;
   gap: 4px;
-  border-top: var(--border-default-width) solid var(--border-warm);
-  margin-top: var(--stock-pack-gap);
+  margin: 0;
 }
 #itemForm :is(.purchase-packaging-toggle small, .flavor-ratio) { color: var(--text-muted); }
 #itemForm .stock-form-flavor-heading label { margin: 0; }
@@ -2546,6 +2602,17 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border: 0;
 }
 #itemForm .flavor-name-field { min-width: 0; }
+#itemForm .flavor-name-field [data-flavor-name] {
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  padding-inline: 10px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  background: var(--control-bg);
+}
+#itemForm :is(.flavor-name-field [data-flavor-name], .flavor-row [data-flavor-name-display],
+  #stockFlavorRatings [data-flavor-rating-name]) { font-size: 12px; }
 #itemForm .flavor-row [data-flavor-name-display] {
   display: block;
   width: 100%;
@@ -2567,16 +2634,17 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 #itemForm .flavor-quantity { gap: 4px; }
 #itemForm .flavor-stepper {
-  box-sizing: border-box; height: 36px;
+  box-sizing: border-box; height: 40px;
   border: var(--border-default-width) solid var(--border-warm);
   border-radius: var(--radius-pill);
-  background: var(--card-bg);
+  background: var(--control-bg);
 }
 #itemForm .flavor-stepper input {
-  width: 4ch; min-width: 3ch; padding: 0; border: 0;
+  width: 3ch; min-width: 2.5ch; height: 36px; min-height: 36px; max-height: 36px; padding: 0; border: 0;
   background: transparent;
-  font-variant-numeric: tabular-nums; text-align: center;
+  font-size: 13px; font-variant-numeric: tabular-nums; text-align: center;
 }
+#itemForm .flavor-stepper button { font-size: 13px; }
 #itemForm .flavor-row button { min-width: 40px; margin: 0; padding: 0 3px; }
 #itemForm .flavor-row button:disabled { opacity: 0.55; }
 #itemForm .flavor-stepper button, #itemForm .flavor-row [data-remove-flavor] {
@@ -3905,7 +3973,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .delete-log-record { --category-icon-muted: var(--delete-muted); }
 
 #itemForm .flavor-rating-field {
-  display: grid; grid-template-columns: minmax(0, 1fr) 112px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 104px;
   align-items: center; gap: 8px; margin: 0;
 }
 .flavor-rating-caption {
@@ -3914,6 +3982,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .flavor-rating-caption .flavor-dot { flex: none; }
 .flavor-rating-caption [data-flavor-rating-name] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #itemForm .flavor-rating-picker { position: relative; min-width: 0; }
+#itemForm .flavor-rating-picker :is(summary, .flavor-rating-options button) { font-size: 12px; }
 #itemForm .flavor-rating-picker summary,
 #itemForm .flavor-rating-options button {
   display: flex; align-items: center; gap: 6px; padding: 0 8px;
@@ -3922,7 +3991,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #itemForm #stockFlavorRatings .flavor-rating-picker summary {
   box-sizing: border-box;
   border: var(--border-default-width) solid var(--control-border);
-  padding-inline: var(--stock-field-inset) 24px;
+  padding-inline: 8px 20px;
   border-radius: 10px; background-color: var(--control-bg);
 }
 .flavor-rating-picker summary::-webkit-details-marker { display: none; }
@@ -3932,7 +4001,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border-radius: 10px; background: var(--card-bg);
 }
 #itemForm .flavor-rating-options button {
-  width: 100%; border: 0; border-radius: 7px; background: transparent;
+  width: 100%; min-height: 36px; border: 0; border-radius: 7px; background: transparent;
 }
 #itemForm .flavor-rating-options button[aria-pressed="true"] {
   background: var(--selection-bg); color: var(--accent-strong);

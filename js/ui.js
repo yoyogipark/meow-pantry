@@ -2041,9 +2041,12 @@
     var enabled = packaging && toggle.checked;
     if (!enabled && !editing) fields.replaceChildren();
     toggle.disabled = !packaging || editing;
-    var sealToggle = document.getElementById('stockPackSealToggle');
-    sealToggle.checked = document.getElementById('fieldPackSeal').value === 'shared';
-    sealToggle.disabled = !packaging || editing;
+    var sealMode = document.getElementById('stockPackSealMode');
+    var selectedSeal = document.getElementById('fieldPackSeal').value;
+    Array.from(sealMode.querySelectorAll('[data-pack-seal]')).forEach(function (button) {
+      button.setAttribute('aria-pressed', String(button.dataset.packSeal === selectedSeal));
+      button.disabled = !packaging || editing;
+    });
     document.getElementById('stockFormNameLabel').textContent = enabled ? '品名 / 系列' : '品名 / 口味配方';
     document.getElementById('flavorFields').classList.toggle('hidden-view', !enabled);
     document.getElementById('palatabilityGroup').parentElement.classList.toggle('hidden-view', enabled);
@@ -2176,9 +2179,6 @@
     document.getElementById('purchasePackagingFields').classList.toggle('hidden-view', !enabled);
     document.getElementById('stockPackOptions').classList.toggle('hidden-view', !enabled);
     document.getElementById('stockInnerPackageLabel').textContent = enabled ? '内包装' : '包装';
-    var unitContainer = document.getElementById('stockInnerPackage');
-    var unitParent = document.getElementById(enabled ? 'stockPackGrid' : 'stockQuantityGrid');
-    if (unitContainer.parentElement !== unitParent) unitParent.append(unitContainer);
     var locked = Boolean(MP.FOOD_SUBTYPES[MP.state.formCat]?.innerUnits &&
       !document.getElementById('fieldSubtype').value && !itemFormSource);
     var unitDisplay = document.getElementById('stockLockedUnit');
@@ -2215,8 +2215,8 @@
     }
     document.getElementById('purchasePackagingPreview').textContent = preview;
     document.getElementById('packSealHelp').textContent = document.getElementById('fieldPackSeal').value === 'shared'
-      ? '共用一个密封包装：整批一起计算开封保鲜期。'
-      : '各件独立密封：每件单独计算开封保鲜期。';
+      ? '整盒一起计算保鲜期'
+      : '每件单独计算保鲜期';
     UI.syncFlavorForm();
     UI.syncOpenedFieldsVisibility();
     UI.syncStockRequiredProgress();

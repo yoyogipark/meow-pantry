@@ -883,7 +883,19 @@ async function run() {
   }
   chooseForm('treat', '猫条');
   assert.ok(el('stockUsageConfig').classList.contains('hidden-view'));
+  const innerPackage = el('stockInnerPackage');
   el('fieldPackagingEnabled').click();
+  assert.equal(innerPackage.parentElement.id, 'stockQuantityGrid');
+  assert.equal(el('fieldPackSeal').value, 'independent');
+  assert.equal(el('packSealIndependentBtn').getAttribute('aria-pressed'), 'true');
+  el('stockPackSealMode').querySelector('[data-pack-seal="shared"]').click();
+  assert.equal(el('fieldPackSeal').value, 'shared');
+  assert.equal(el('stockPackSealMode').querySelector('[data-pack-seal="shared"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(el('packSealHelp').textContent, '整盒一起计算保鲜期');
+  el('stockPackSealMode').querySelector('[data-pack-seal="independent"]').click();
+  assert.equal(el('fieldPackSeal').value, 'independent');
+  assert.equal(el('stockPackSealMode').querySelector('[data-pack-seal="independent"]').getAttribute('aria-pressed'), 'true');
+  assert.equal(el('packSealHelp').textContent, '每件单独计算保鲜期');
   assert.equal(el('fieldUnit').value, '支');
   set('fieldPackSize', '6');
   el('fieldPackSize').dispatchEvent(new w.Event('input', { bubbles: true }));
