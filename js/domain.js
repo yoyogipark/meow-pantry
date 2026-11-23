@@ -357,6 +357,7 @@
     clean.imageData = typeof raw.imageData === 'string' ? raw.imageData : '';
     clean.isSample = Boolean(raw.isSample);
     clean.eatenCount = Utils.round2(Math.max(0, Number(raw.eatenCount) || 0));
+    clean.discardedCount = Utils.round2(Math.max(0, Number(raw.discardedCount) || 0));
     clean.consumedCount = Utils.round2(Math.max(0, Number(raw.consumedCount) || 0));
     clean.lastQuantity = Utils.round2(Math.max(0, Number(raw.lastQuantity) || 0));
     clean.lastEatenDate = Utils.normalizeDateStr(raw.lastEatenDate);
@@ -481,6 +482,7 @@
 
   Domain.copySharedMetadataToArchive = function (activeItem, archiveItem) {
     if (!activeItem || !archiveItem) return;
+    archiveItem.discardedCount = activeItem.discardedCount || 0;
     archiveItem.category = activeItem.category;
     archiveItem.brand = activeItem.brand;
     archiveItem.name = activeItem.name;
@@ -576,7 +578,7 @@
     if (used <= 0) return 0;
     var nextRem = Math.max(0, Utils.round2(curQty - used));
     var opDate = Utils.normalizeDateStr(customDateStr) || Utils.getTodayStr();
-    var unitOpenedDate = target.openedDate || target.archivedOpenedDate || opDate;
+    var unitOpenedDate = target.openedDate || target.archivedOpenedDate || (adjustment === 'discard' ? '' : opDate);
 
     target.eatenCount = Utils.round2((Number(target.eatenCount) || 0) + used);
     if (!adjustment) target.lastEatenDate = opDate;
@@ -623,7 +625,8 @@
         state.items.push(archiveCopy);
       }
     } else {
-      var finalOpenDate = unitOpenedDate || (linkedArchive && (linkedArchive.archivedOpenedDate || linkedArchive.openedDate)) || opDate;
+      var finalOpenDate = unitOpenedDate || (linkedArchive && (linkedArchive.archivedOpenedDate || linkedArchive.openedDate)) ||
+        (adjustment === 'discard' ? '' : opDate);
       if (linkedArchive) {
         state.items = state.items.filter(function (x) { return x.id !== linkedArchive.id; });
       }
@@ -639,7 +642,7 @@
 
     Domain.appendStockHistory({
       date: opDate,
-      action: adjustment ? 'adjust' : 'consume',
+      action: adjustment === 'discard' ? 'discard' : adjustment ? 'adjust' : 'consume',
       itemId: target.id,
       category: target.category,
       brand: target.brand,
@@ -1114,6 +1117,54 @@
     return entries;
   };
 
+  Domain.discardExpiredStock = function (item, flavorId, opened, amount, refTodayStr) {
+    if (!item || !state.items.includes(item)) return { error: '库存批次已不存在，请刷新后重试。' };
+    var shared = Domain.hasSharedSeal(item);
+    var flavor = flavorId ? Domain.findFlavor(item, flavorId) : null;
+    if (!shared && item.flavors && (!flavor || (item.isOpened && !item.flavors.some(function (entry) {
+      return entry.quantity > 0 && entry.openedDate;
+    })))) return { error: '无法确认开封口味，请先在库存中核对。' };
+    var entries = Domain.stockExpiryEntries(item, refTodayStr);
+    var entry = shared ? entries.find(function (row) { return row.evaluation.status === 'expired'; })
+      : entries.find(function (row) { return row.flavor === flavor && row.opened === opened && row.evaluation.status === 'expired'; });
+    if (!entry || (shared && entries.some(function (row) { return row.evaluation.status !== 'expired'; }))) {
+      return { error: '库存或效期已变化，请刷新后重试。' };
+    }
+    var max = shared ? Number(item.quantity) : entry.quantity;
+    var quantity = Number(amount);
+    var wholeUnits = shared || flavor || (Number.isInteger(max) && (item.purchasePackaging || Domain.isPackageUnit(item.unit)));
+    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > max || Utils.round2(quantity) !== quantity ||
+        (wholeUnits && !Number.isInteger(quantity)) || ((shared || opened) && quantity !== max)) {
+      return { error: '丢弃数量无效，请重新选择。' };
+    }
+    var previousOpen = { isOpened: item.isOpened, openedDate: item.openedDate, fraction: item.openRemainFraction };
+    if (shared && item.flavors) {
+      item.flavors.forEach(function (row) {
+        row.quantity = 0;
+        row.openedDate = '';
+        row.openRemainFraction = 0;
+        row.revision = nextFlavorRevision();
+      });
+    } else if (flavor) {
+      flavor.quantity -= quantity;
+      if (opened) {
+        flavor.openedDate = '';
+        flavor.openRemainFraction = 0;
+      }
+      flavor.revision = nextFlavorRevision();
+    }
+    var note = '过期丢弃' + (shared ? ' · 共用密封整盒' : flavor ? ' · 口味：' + flavor.name : '') +
+      (opened ? ' · 已开封' : ' · 未开封');
+    item.discardedCount = Utils.round2((Number(item.discardedCount) || 0) + quantity);
+    Domain.recordConsumedUnits(item, quantity, refTodayStr || Utils.getTodayStr(), note, 'discard');
+    if (!shared && !opened && item.quantity > 0 && previousOpen.isOpened) {
+      item.isOpened = previousOpen.isOpened;
+      item.openedDate = previousOpen.openedDate;
+      item.openRemainFraction = previousOpen.fraction;
+    }
+    return { quantity: quantity };
+  };
+
   Domain.summarizeStockDetailStatuses = function (items, refTodayStr) {
     var today = refTodayStr || Utils.getTodayStr();
     var totals = Object.create(null);
@@ -1207,7 +1258,7 @@
       var key = Domain.getProductGroupKey(item);
       var group = groups.get(key) || {
         key: key, item: item, quantity: 0, unit: item.unit || '件', dates: [], arrivalDatesByItem: new Map(),
-        usageDurations: [], openedCount: 0, currentOpenDate: '', usedCount: 0, missingOpenDate: false, sampleCount: 0
+        usageDurations: [], openedCount: 0, currentOpenDate: '', usedCount: 0, discardedCount: 0, missingOpenDate: false, sampleCount: 0
       };
       if (sampleIds.has(item.id)) {
         group.sampleCount += 1;
@@ -1215,6 +1266,7 @@
         if (!group.quantity) group.item = item;
         group.quantity = Utils.round2(group.quantity + (Number(item.quantity) || 0));
         group.usedCount = Utils.round2(group.usedCount + (Number(item.eatenCount) || 0));
+        group.discardedCount = Utils.round2(group.discardedCount + (Number(item.discardedCount) || 0));
         if (item.isOpened) {
           group.openedCount += 1;
           if (!item.openedDate) group.missingOpenDate = true;
@@ -1226,7 +1278,7 @@
     });
     var eventsByItem = new Map();
     (stockHistory || []).forEach(function (entry, index) {
-      if (entry.category !== 'supplies' || !['create', 'restock', 'open', 'unopen', 'adjust', 'consume', 'revert'].includes(entry.action)) return;
+      if (entry.category !== 'supplies' || !['create', 'restock', 'open', 'unopen', 'adjust', 'discard', 'consume', 'revert'].includes(entry.action)) return;
       var key = itemKeys.get(entry.itemId);
       if (!key || !groups.has(key)) return;
       var date = Utils.normalizeDateStr(entry.date);
@@ -1263,6 +1315,8 @@
           if (entry.supplyEvent === 'opening_changed' || (!entry.supplyEvent && entry.deltaText === '开封状态变更')) openDate = recordedOpening;
           else if (entry.supplyEvent === 'history_dates_changed' || (!entry.supplyEvent && entry.deltaText === '历史批次日期变更')) samples = [];
           else if (Number(entry.beforeQty) !== Number(entry.afterQty)) openDate = '';
+        } else if (entry.action === 'discard') {
+          if (note.includes(' · 已开封')) openDate = '';
         } else if (entry.action === 'consume') {
           var used = Utils.round2(Number(entry.beforeQty) - Number(entry.afterQty));
           var days = openDate && Utils.diffDaysBetween(openDate, event.date);
@@ -1306,7 +1360,7 @@
     ));
     return {
       item: item, quantity: quantity, unit: item.unit || '件', openedCount: Number(opened),
-      usedCount: Number(item.eatenCount) || 0, currentUsedDays: usedDays,
+      usedCount: Number(item.eatenCount) || 0, discardedCount: Number(item.discardedCount) || 0, currentUsedDays: usedDays,
       averageCycleDays: average, remainingDays: remaining,
       latestArrivalDate: group ? group.arrivalDatesByItem.get(item.id) || '' : ''
     };

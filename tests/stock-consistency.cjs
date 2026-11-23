@@ -1787,7 +1787,7 @@ async function run() {
   const packagedCard = card(packagedCardItem.id);
   assert.match(packagedCard.textContent, /3\.50元\/杯 · 14\.00元\/盒（4杯）/);
   assert.ok(Array.from(packagedCard.querySelectorAll('.detail-card-line')).some(
-    line => line.textContent === '拼多多 · 购入 1盒装，共4杯'));
+    line => line.textContent === '购入渠道 拼多多 · 购入 1盒装，共4杯'));
   assert.equal(packagedCard.querySelector('.flavor-stock'), null);
   assert.equal(packagedCard.querySelector('.detail-card-open-stock'), null);
   packagedCardItem.category = 'treat';
@@ -3731,9 +3731,10 @@ async function run() {
   });
   reset(staleOpen);
   assert.match(el('feedingTaskList').textContent, /已过期.*过期7天/);
-  el('feedingTaskList').querySelector('[data-jump-expiry-item="stale-open"]').click();
-  assert.equal(state.statusFilter, 'expired');
-  assert.ok(el('pantryList').querySelector('[data-id="stale-open"]'));
+  el('feedingTaskList').querySelector('[data-discard-item="stale-open"]').click();
+  assert.match(el('confirmMessage').textContent, /丢弃.*不记录喂食/);
+  el('confirmCancelBtn').click();
+  assert.equal(staleOpen.quantity, 1);
 
   state.statsScopeFilter = 'med';
   ui.renderAll();
@@ -3825,7 +3826,7 @@ async function run() {
   assert.match(expiredRow.textContent, /已过期.*草莓鸡.*1杯/);
   const safeRow = Array.from(el('priorityFeedList').children).find(row => row.textContent.includes('草莓鸡'));
   assert.match(safeRow.textContent, /未拆封.*先处理过期开封件.*余 1杯/);
-  assert.ok(safeRow.querySelector('[data-priority-expired="analysis-batch-a"]'));
+  assert.ok(safeRow.querySelector('[data-discard-item="analysis-batch-a"]'));
   assert.doesNotMatch(safeRow.textContent, /记喂食/);
   const quickButtons = Array.from(el('dailyQuickFeedBox').querySelectorAll('[data-quick-feed-item]'));
   assert.equal(quickButtons.length, 2);
@@ -3887,6 +3888,143 @@ async function run() {
   assert.match(el('brandStatsList').textContent, /喵洁/);
   assert.doesNotMatch(el('brandStatsList').textContent, /测试牌/);
   console.log('Cross-page inventory and rating consistency pass');
+
+  state.statsScopeFilter = 'all';
+  state.brandScopeFilter = 'all';
+  const expiredFlavor = make('discard-mixed', 4, '杯', {
+    unit_net_weight_g: 50, openDaysLimit: 2,
+    purchasePackaging: { count: 1, outerUnit: '盒', size: 4 },
+    flavors: [
+      { id: 'old', name: '旧口味', perPack: 3, quantity: 3, openedDate: utils.shiftDaysFromToday(-5), openRemainFraction: 0.5 },
+      { id: 'fresh', name: '新口味', perPack: 1, quantity: 1, openedDate: today, openRemainFraction: 0.5 }
+    ]
+  });
+  reset(expiredFlavor);
+  assert.match(el('dailyQuickFeedBox').textContent, /快捷投喂/);
+  const forecastBeforeDiscard = w.MeowPantry.Forecast.compute(state.items, state.stockHistory, state.settings.dailyFeedGrams, today).can;
+  el('priorityFeedList').querySelector('[data-discard-item="discard-mixed"]').click();
+  assert.match(el('confirmMessage').textContent, /旧口味.*已开封/);
+  assert.equal(el('confirmDiscardQuantity').readOnly, true);
+  el('confirmOkBtn').click();
+  await settle();
+  assert.equal(expiredFlavor.quantity, 3);
+  assert.equal(expiredFlavor.flavors[0].quantity, 2);
+  assert.equal(expiredFlavor.flavors[0].openedDate, '');
+  assert.equal(expiredFlavor.flavors[1].openedDate, today);
+  assert.equal(expiredFlavor.flavors[1].openRemainFraction, 0.5);
+  assert.equal(expiredFlavor.discardedCount, 1);
+  assert.equal(state.logs.length, 0);
+  assert.equal(state.stockHistory[0].action, 'discard');
+  assert.equal(state.stockHistory[0].note, '过期丢弃 · 口味：旧口味 · 已开封');
+  const forecastAfterDiscard = w.MeowPantry.Forecast.compute(state.items, state.stockHistory, state.settings.dailyFeedGrams, today).can;
+  assert.equal(forecastAfterDiscard.dailyGrams, forecastBeforeDiscard.dailyGrams);
+  assert.equal(forecastAfterDiscard.grams, forecastBeforeDiscard.grams);
+  assert.equal(byId('empty_discard-mixed').discardedCount, 1);
+  await persisted(s => {
+    assert.equal(s.items.find(row => row.id === 'discard-mixed').discardedCount, 1);
+    assert.equal(s.stockHistory[0].action, 'discard');
+    assert.equal(s.logs.length, 0);
+  });
+  const discardedBackup = backup();
+  assert.equal(discardedBackup.items.find(row => row.id === 'discard-mixed').discardedCount, 1);
+  assert.equal(discardedBackup.stockHistory[0].action, 'discard');
+  assert.ok((await restore(discardedBackup)).ok);
+
+  const expiredSealed = make('discard-sealed', 5, '罐', {
+    expDate: yesterday, isOpened: true, openedDate: today, openRemainFraction: 0.5
+  });
+  reset(expiredSealed);
+  const sealedButton = el('feedingTaskList').querySelector('[data-discard-item="discard-sealed"][data-discard-opened="false"]');
+  assert.ok(sealedButton);
+  sealedButton.click();
+  el('confirmDiscardQuantity').value = '3';
+  el('confirmOkBtn').click();
+  await settle();
+  assert.equal(expiredSealed.quantity, 2);
+  assert.equal(expiredSealed.isOpened, true);
+  assert.equal(expiredSealed.openedDate, today);
+  assert.equal(expiredSealed.openRemainFraction, 0.5);
+  assert.equal(state.logs.length, 0);
+  assert.equal(state.stockHistory[0].action, 'discard');
+  assert.match(el('pantryList').textContent, /核销/);
+  ui.openEditModal(expiredSealed.id);
+  set('fieldNotes', '保留丢弃记录');
+  el('itemForm').requestSubmit();
+  await settle();
+  assert.equal(byId('discard-sealed').discardedCount, 3);
+  assert.equal(byId('empty_discard-sealed').discardedCount, 3);
+
+  const sharedDiscard = make('discard-shared', 3, '杯', {
+    isOpened: true, openedDate: utils.shiftDaysFromToday(-5), openDaysLimit: 2,
+    purchasePackaging: { count: 1, outerUnit: '盒', size: 3, seal: 'shared' },
+    flavors: [
+      { id: 'shared-a', name: '甲', perPack: 2, quantity: 2 },
+      { id: 'shared-b', name: '乙', perPack: 1, quantity: 1 }
+    ]
+  });
+  reset(sharedDiscard);
+  assert.equal(el('feedingTaskList').querySelectorAll('[data-discard-item="discard-shared"]').length, 1);
+  el('feedingTaskList').querySelector('[data-discard-item="discard-shared"]').click();
+  assert.match(el('confirmMessage').textContent, /整盒丢弃.*甲 2杯、乙 1杯/);
+  assert.equal(el('confirmDiscardQuantity').readOnly, true);
+  el('confirmOkBtn').click();
+  await settle();
+  assert.equal(sharedDiscard.quantity, 0);
+  assert.deepEqual(Array.from(sharedDiscard.flavors, flavor => flavor.quantity), [0, 0]);
+  assert.equal(state.logs.length, 0);
+  assert.equal(state.stockHistory[0].action, 'discard');
+  assert.equal(w.MeowPantry.Stats.computeOverviewMetrics(state.items, state.logs).catStats.can.durationByUnit['杯'], undefined);
+
+  const unopenedDiscard = make('discard-unopened', 1, '罐', { expDate: yesterday });
+  reset(unopenedDiscard);
+  assert.equal(domain.discardExpiredStock(unopenedDiscard, '', false, 1, today).quantity, 1);
+  assert.equal(unopenedDiscard.openedDate, '');
+  assert.equal(unopenedDiscard.archivedOpenedDate, '');
+
+  const changedDiscard = make('discard-changed', 2, '罐', { expDate: yesterday });
+  reset(changedDiscard);
+  el('feedingTaskList').querySelector('[data-discard-item="discard-changed"]').click();
+  changedDiscard.quantity = 1;
+  el('confirmOkBtn').click();
+  assert.equal(changedDiscard.quantity, 1);
+  assert.equal(state.stockHistory.length, 0);
+  assert.match(el('toastEl').textContent, /库存已变化/);
+  assert.ok(domain.discardExpiredStock(changedDiscard, '', false, 1, utils.shiftDaysFromToday(-10)).error);
+
+  const imported = make('restore-imported', 1);
+  reset(imported);
+  const importContent = JSON.stringify(backup());
+  const existing = make('restore-existing', 1);
+  reset(existing);
+  assert.ok(await save());
+  async function chooseBackup() {
+    const input = el('importJsonInput');
+    Object.defineProperty(input, 'files', { configurable: true, value: [new w.File([importContent], 'backup.json', { type: 'application/json' })] });
+    input.dispatchEvent(new w.Event('change', { bubbles: true }));
+    await settle();
+    assert.ok(!el('confirmRestoreModeWrap').classList.contains('hidden-view'));
+  }
+  await chooseBackup();
+  el('confirmCancelBtn').click();
+  assert.ok(byId('restore-existing'));
+  assert.equal(byId('restore-imported'), undefined);
+  await chooseBackup();
+  assert.ok(w.document.querySelector('[name="confirmRestoreMode"][value="merge"]').checked);
+  el('confirmOkBtn').click();
+  await settle();
+  assert.ok(byId('restore-existing'));
+  assert.ok(byId('restore-imported'));
+  reset(existing);
+  assert.ok(await save());
+  await chooseBackup();
+  w.document.querySelector('[name="confirmRestoreMode"][value="replace"]').checked = true;
+  el('confirmOkBtn').click();
+  await settle();
+  assert.equal(byId('restore-existing'), undefined);
+  assert.ok(byId('restore-imported'));
+  assert.ok(await new Promise(resolve => storage.restorePreRestoreSnapshot(resolve)));
+  assert.ok(byId('restore-existing'));
+  console.log('Expired discard and explicit backup restore pass');
   console.log('Stock consistency suite complete');
   w.close();
 }

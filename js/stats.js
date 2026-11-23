@@ -87,6 +87,7 @@
           palatability: palatability,
           inStockQty: 0,
           eatenQty: 0,
+          discardedCount: 0,
           batchCount: 0,
           totalDays: 0,
           daysUnits: 0
@@ -99,10 +100,11 @@
       }
       entry.inStockQty = Utils.round2(entry.inStockQty + q);
       entry.eatenQty = Utils.round2(entry.eatenQty + eaten);
+      if (!it.sourceBatchId) entry.discardedCount += Number(it.discardedCount) || 0;
       if (palatability) entry.palatability = palatability;
       if (it.imageData && !entry.rep.imageData) entry.rep = it;
       if (q <= 0) {
-        var cDays = Utils.calcConsumeDays(it.archivedOpenedDate || it.openedDate, it.finishedDate);
+        var cDays = it.discardedCount ? null : Utils.calcConsumeDays(it.archivedOpenedDate || it.openedDate, it.finishedDate);
         if (cDays !== null && eaten > 0) {
           entry.totalDays += cDays;
           entry.daysUnits += eaten;
@@ -138,7 +140,7 @@
             spec: Utils.formatItemSpec(item), unit: item.unit || '件',
             inStockQty: flavor ? Number(flavor.quantity) || 0 : Number(item.quantity) || 0,
             eatenQty: Number(item.quantity) > 0 ? Number(item.eatenCount) || 0 : Number(item.consumedCount) || Number(item.lastQuantity) || 0,
-            batchLabel: group.length > 1 ? '批次 ' + (index + 1) + (item.batchCode ? ' · ' + item.batchCode : item.expDate ? ' · 到期 ' + item.expDate : '') : ''
+            batchLabel: group.length > 1 ? '批次 ' + (index + 1) + (item.batchCode ? ' · 购入渠道 ' + item.batchCode : item.expDate ? ' · 到期 ' + item.expDate : '') : ''
           });
         });
       });
@@ -183,7 +185,7 @@
         var used = Number(it.consumedCount) || Number(it.lastQuantity) || 1;
         groupTotals[grp].eatenBatches += 1;
         addUnitQuantity(category.eatenByUnit, unit, used);
-        var cd = Utils.calcConsumeDays(it.archivedOpenedDate || it.openedDate, it.finishedDate);
+        var cd = it.discardedCount ? null : Utils.calcConsumeDays(it.archivedOpenedDate || it.openedDate, it.finishedDate);
         if (cd !== null) {
           var duration = category.durationByUnit[unit] || (category.durationByUnit[unit] = { days: 0, quantity: 0 });
           duration.days += cd;
@@ -433,7 +435,15 @@
       return item.quantity > 0 && (scope === 'all' || MP.getCategoryGroup(item.category) === scope);
     });
     var warningDays = Number(st.settings.warnDays) || 60;
-    var expiryTasks = scopedItems.flatMap(displayEntries).map(function (entry) {
+    var expiryTasks = scopedItems.flatMap(function (item) {
+      var entries = displayEntries(item);
+      if (Domain.hasSharedSeal(item) && entries.length &&
+          entries.every(function (entry) { return entry.evaluation.status === 'expired'; })) {
+        return [{ item: item, flavor: null, opened: Boolean(item.isOpened), quantity: item.quantity,
+          evaluation: Domain.evaluateItem(item), shared: true }];
+      }
+      return entries;
+    }).map(function (entry) {
       var evaluation = entry.evaluation;
       var expWarning = evaluation.expDays !== null && evaluation.expDays <= warningDays ? evaluation.expDays : null;
       var openWarning = evaluation.openRemaining !== null && evaluation.openRemaining <= Math.min(10, warningDays)
@@ -453,8 +463,12 @@
     document.getElementById('feedingTaskCount').textContent = Utils.formatQuantity(expiryTasks.length, '项需要处理');
     document.getElementById('feedingTaskList').innerHTML = expiryTasks.map(function (entry) {
       var label = { expired: '已过期', expiring: '临期', opening: '开封将尽' }[entry.kind];
-      var name = displayName(entry);
-      return '<button type="button" class="feeding-task-row" data-jump-expiry-item="' + Utils.escapeHtml(entry.item.id) + '">' +
+      var name = displayName(entry) + (entry.shared ? ' · 共用密封整盒' : '');
+      var action = entry.kind === 'expired'
+        ? 'data-discard-item="' + Utils.escapeHtml(entry.item.id) + '" data-discard-opened="' + String(entry.opened) + '"' +
+          (entry.flavor ? ' data-discard-flavor="' + Utils.escapeHtml(entry.flavor.id) + '"' : '')
+        : 'data-jump-expiry-item="' + Utils.escapeHtml(entry.item.id) + '"';
+      return '<button type="button" class="feeding-task-row" ' + action + '>' +
         '<span class="feeding-task-status feeding-task-status--' + entry.kind + '">' + label + '</span>' +
         '<strong title="' + Utils.escapeHtml(name) + '">' + Utils.escapeHtml(name) + '</strong>' +
         '<span class="feeding-task-quantity">' + Utils.escapeHtml(Utils.formatQuantity(entry.quantity, entry.item.unit || '件')) + '</span>' +
@@ -493,8 +507,9 @@
           '<div class="priority-reason">' + reason + '</div></div>' +
         '<span class="priority-quantity">余 ' + Utils.escapeHtml(Utils.formatQuantity(entry.quantity, item.unit)) + '</span>' +
         (blockedByExpiredOpen
-          ? '<button type="button" class="btn-feed btn-feed--compact" data-priority-expired="' + Utils.escapeHtml(item.id) +
-            '"><span class="btn-feed__content">处理过期件</span></button>'
+          ? '<button type="button" class="btn-feed btn-feed--compact" data-discard-item="' + Utils.escapeHtml(item.id) +
+            '" data-discard-opened="true"' + (entry.flavor ? ' data-discard-flavor="' + Utils.escapeHtml(entry.flavor.id) + '"' : '') +
+            '><span class="btn-feed__content">处理过期件</span></button>'
           : '<button type="button" class="btn-feed btn-feed--compact" aria-label="记喂食：' + Utils.escapeHtml(name) +
             '" data-priority-feed="' + Utils.escapeHtml(item.id) + '"' +
             (entry.flavor ? ' data-priority-flavor="' + Utils.escapeHtml(entry.flavor.id) + '"' : '') +
@@ -677,7 +692,8 @@
         var coverSrc = MP.getItemCoverSrc(prod.rep);
         var stockTag = prod.inStockQty > 0
           ? '<span style="font-size:11px;font-weight:700;color:var(--ok);background:var(--ok-soft);padding:2px 7px;border-radius:6px;">在库 ' + Utils.escapeHtml(Utils.formatQuantity(prod.inStockQty, prod.unit)) + '</span>'
-          : '<span style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--border-warm);padding:2px 7px;border-radius:6px;">已用完/断货</span>';
+          : '<span style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--border-warm);padding:2px 7px;border-radius:6px;">' +
+            (prod.rep.discardedCount ? '已核销/断货' : '已用完/断货') + '</span>';
         return (
           '<div class="pal-record-card">' +
             '<img class="pal-record-cover" src="' + coverSrc + '" alt="' + Utils.escapeHtml(prod.name) + '">' +
@@ -839,7 +855,7 @@
             Utils.getCategoryIcon(product.category) +
             '<span class="brand-product-name">' + Utils.escapeHtml(product.name) + '</span>' +
             '<span class="brand-product-stock' + (inStock ? ' has-stock' : '') + '">' +
-              (inStock ? '余 ' + Utils.escapeHtml(Utils.formatQuantity(product.inStockQty, product.unit)) : '已用完') +
+              (inStock ? '余 ' + Utils.escapeHtml(Utils.formatQuantity(product.inStockQty, product.unit)) : product.discardedCount ? '已核销' : '已用完') +
             '</span></li>';
         }).join('');
         return '<details class="brand-list-entry"><summary class="brand-list-summary">' +

@@ -612,7 +612,7 @@
 
   function stockSignature(item) {
     return JSON.stringify([item.quantity, item.unit, item.feedUsageUnit || '', item.feedUsagePerItem || null, item.isOpened, item.openedDate, item.openRemainFraction,
-      item.eatenCount, item.consumedCount, item.finishedDate, item.purchasePackaging || null,
+      item.eatenCount, item.consumedCount, item.discardedCount || 0, item.finishedDate, item.purchasePackaging || null,
       item.portionRevision || '', (item.flavors || []).map(function (flavor) {
         return [flavor.id, flavor.perPack, flavor.quantity, flavor.openedDate, flavor.openRemainFraction, flavor.revision];
       }).sort()]);
@@ -858,7 +858,7 @@
   }
 
   Storage.exportItemsCsv = function () {
-    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已核销', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '渠道/批次', '备注', '各口味库存'];
+    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已核销', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '购入渠道', '备注', '各口味库存'];
     var rows = [headers];
     MP.state.items.forEach(function (it) {
       if (it.sourceBatchId && (Number(it.quantity) || 0) <= 0) return; // avoid duplicating shadow row already counted on active batch's eatenCount

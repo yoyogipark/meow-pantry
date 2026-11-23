@@ -2702,7 +2702,7 @@
     document.getElementById('lightboxTitle').textContent = (item.brand || '') + ' · ' + (item.name || '');
     document.getElementById('lightboxImg').src = MP.getItemCoverSrc(item);
     document.getElementById('lightboxMeta').textContent =
-      '生产日期：' + Utils.formatListDate(item.prodDate, '未填写') + ' ｜ 过期日期：' + Utils.formatListDate(item.expDate) + (item.batchCode ? (' ｜ ' + item.batchCode) : '');
+      '生产日期：' + Utils.formatListDate(item.prodDate, '未填写') + ' ｜ 过期日期：' + Utils.formatListDate(item.expDate) + (item.batchCode ? (' ｜ 购入渠道：' + item.batchCode) : '');
     UI.showModal('photoPreviewBackdrop', 'closeLightboxBtn');
   };
 

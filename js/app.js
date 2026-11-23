@@ -1168,7 +1168,58 @@
       UI.renderAll();
       UI.switchTab('pantry');
     }
+    function openExpiredDiscard(btn) {
+      var id = btn.dataset.discardItem;
+      var flavorId = btn.dataset.discardFlavor || '';
+      var opened = btn.dataset.discardOpened === 'true';
+      var item = st.items.find(function (entry) { return entry.id === id; });
+      if (!item) { UI.showToast('库存批次已不存在，请刷新后重试'); return; }
+      var shared = Domain.hasSharedSeal(item);
+      var flavor = flavorId ? Domain.findFlavor(item, flavorId) : null;
+      var entries = Domain.stockExpiryEntries(item);
+      var entry = shared ? entries.find(function (row) { return row.evaluation.status === 'expired'; })
+        : entries.find(function (row) {
+          return row.flavor === flavor && row.opened === opened && row.evaluation.status === 'expired';
+        });
+      if (!entry || (shared && entries.some(function (row) { return row.evaluation.status !== 'expired'; }))) {
+        UI.showToast('库存或效期已变化，请刷新后重试');
+        return;
+      }
+      var max = shared ? Number(item.quantity) : entry.quantity;
+      var unit = item.unit || '件';
+      var description = (item.brand ? item.brand + ' · ' : '') + item.name +
+        (flavor ? ' · ' + flavor.name : '') + (opened ? '（已开封）' : '（未开封）');
+      if (opened && !shared) {
+        var remainder = Utils.formatRemainFractionText(flavor ? flavor.openRemainFraction : item.openRemainFraction, unit, true);
+        description += remainder ? '，开封' + remainder : '，开封余量未记录';
+      }
+      if (shared) {
+        description += '。共用密封包装将整盒丢弃，包含：' + (item.flavors
+          ? item.flavors.filter(function (row) { return row.quantity > 0; }).map(function (row) {
+            return row.name + ' ' + Utils.formatQuantity(row.quantity, unit);
+          }).join('、') : Utils.formatQuantity(max, unit));
+      }
+      var snapshot = JSON.stringify(item);
+      UI.openConfirm('丢弃过期库存？', description + '。此操作扣减库存并记录丢弃，不记录喂食，也不计入消耗预测。',
+        '确认丢弃', function (_checked, quantity) {
+          var current = st.items.find(function (row) { return row.id === id; });
+          if (!current || JSON.stringify(current) !== snapshot) {
+            UI.showToast('库存已变化，请重新选择要丢弃的库存');
+            UI.renderAll();
+            return;
+          }
+          var result = Domain.discardExpiredStock(current, flavorId, opened, quantity);
+          if (result.error) { UI.showToast(result.error); UI.renderAll(); return; }
+          UI.renderAll();
+          Storage.saveToStorage(false, function (ok) {
+            UI.showToast(ok ? '已丢弃 ' + Utils.formatQuantity(result.quantity, unit) : '丢弃记录未能保存，请导出备份');
+          });
+        }, { discard: { quantity: max, unit: unit, fixed: shared || opened,
+          whole: shared || Boolean(flavor) || (Number.isInteger(max) && Boolean(item.purchasePackaging || Domain.isPackageUnit(unit))) } });
+    }
     document.getElementById('feedingTaskList').addEventListener('click', function (ev) {
+      var discard = ev.target.closest('[data-discard-item]');
+      if (discard) { openExpiredDiscard(discard); return; }
       var btn = ev.target.closest('[data-jump-expiry-item]');
       if (btn) jumpToExpiryItem(btn.dataset.jumpExpiryItem);
     });
@@ -1215,9 +1266,9 @@
     });
 
     document.getElementById('priorityFeedList').addEventListener('click', function (ev) {
-      var expired = ev.target.closest('[data-priority-expired]');
+      var expired = ev.target.closest('[data-discard-item]');
       if (expired) {
-        jumpToExpiryItem(expired.dataset.priorityExpired);
+        openExpiredDiscard(expired);
         return;
       }
       var btn = ev.target.closest('[data-priority-feed]');
@@ -1847,6 +1898,7 @@
         if (prevIt) {
           var prevQty = Utils.round2(Number(prevIt.quantity) || 0);
           if (prevIt.eatenCount) record.eatenCount = prevIt.eatenCount;
+          if (prevIt.discardedCount) record.discardedCount = prevIt.discardedCount;
           if (prevIt.openRemainFraction && record.isOpened) record.openRemainFraction = prevIt.openRemainFraction;
           if (prevQty === newQty && prevIt.isOpened === record.isOpened && prevIt.openedDate === record.openedDate) {
             record.portionRevision = prevIt.portionRevision;
@@ -2092,7 +2144,7 @@
               UI.showToast(useSmartMerge ? '已智能合并备份数据' : ('已恢复 ' + Utils.formatQuantity(check.items.length, '条') + '记录（需要可点设置页撤回）'));
             });
           },
-          { icon: 'circle-check', label: '智能合并模式（保留手机现有记录并去重合并；取消勾选则为全量覆盖）', defaultChecked: true }
+          { restoreMode: true }
         );
         ev.target.value = '';
       };

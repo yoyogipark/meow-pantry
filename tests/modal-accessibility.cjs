@@ -52,6 +52,32 @@ async function run() {
   UI.consumePendingConfirm();
   assert.deepEqual(confirmation, [true, 3, 2], 'Confirmation should return the selected stock and meal quantities');
   assert.ok(backdrop.classList.contains('hidden-view'));
+
+  let restoreChoice = null;
+  UI.openConfirm('恢复备份', '选择方式', '确认', choice => { restoreChoice = choice; }, { restoreMode: true });
+  await settle();
+  assert.equal(window.document.activeElement, first);
+  assert.ok(window.document.querySelector('[name="confirmRestoreMode"][value="merge"]').checked);
+  window.document.querySelector('[name="confirmRestoreMode"][value="replace"]').checked = true;
+  UI.consumePendingConfirm();
+  assert.equal(restoreChoice, false);
+  UI.openConfirm('恢复备份', '选择方式', '确认', choice => { restoreChoice = choice; }, { restoreMode: true });
+  assert.ok(window.document.querySelector('[name="confirmRestoreMode"][value="merge"]').checked);
+  UI.closeConfirm();
+  assert.equal(restoreChoice, false, 'Cancel must not run the restore callback');
+
+  let discarded = null;
+  UI.openConfirm('丢弃', '选择数量', '确认', (_checked, quantity) => { discarded = quantity; }, {
+    discard: { quantity: 5, unit: '罐', whole: true }
+  });
+  const discardInput = window.document.getElementById('confirmDiscardQuantity');
+  discardInput.value = '2.5';
+  UI.consumePendingConfirm();
+  assert.equal(discarded, null);
+  assert.ok(!backdrop.classList.contains('hidden-view'));
+  discardInput.value = '3';
+  UI.consumePendingConfirm();
+  assert.equal(discarded, 3);
   console.log('Modal accessibility pass');
   dom.window.close();
 }

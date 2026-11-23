@@ -75,7 +75,7 @@
     var unit = item.unit || '件';
     var used = Number(item.eatenCount);
     var stock = detailedOpenStock(item, item.unit || '件');
-    var note = used > 0 ? '已用 ' + Utils.formatQuantity(used, unit)
+    var note = used > 0 ? (item.discardedCount ? '核销 ' : '已用 ') + Utils.formatQuantity(used, unit)
       : stock.packageCount > 0 ? '开封 ' + Utils.formatQuantity(stock.packageCount, unit) : '';
     return '<span class="stock-quantity-pill"><span>在库 ' + Utils.escapeHtml(Utils.formatQuantity(Number(item.quantity) || 0, unit)) + '</span>' +
       (note ? ' <span class="stock-quantity-used' + (used > 0 ? '' : ' stock-quantity-open') + '">' + Utils.escapeHtml(note) + '</span>' : '') +
@@ -89,7 +89,7 @@
     return '<span class="stock-quantity-pill detail-card-stock-pill">' +
       '<span class="stock-quantity-main">在库 ' + Utils.escapeHtml(Utils.formatQuantity(Number(item.quantity) || 0, unit)) + '</span>' +
       (opened > 0 ? '<span class="stock-quantity-open"><i aria-hidden="true"></i>开封 ' + Utils.escapeHtml(Utils.formatNumber(opened)) + '</span>' : '') +
-      (used > 0 ? '<span class="stock-quantity-used">已用 ' + Utils.escapeHtml(Utils.formatNumber(used)) + '</span>' : '') +
+      (used > 0 ? '<span class="stock-quantity-used">' + (item.discardedCount ? '核销 ' : '已用 ') + Utils.escapeHtml(Utils.formatNumber(used)) + '</span>' : '') +
       '</span>';
   }
 
@@ -446,7 +446,7 @@
     var tone = opened ? 'ok' : 'neutral';
     var actionContent = UI.feedButtonContent('记用完');
     if (compact) {
-      var batchInfo = [item.batchCode && '批次 ' + item.batchCode, item.location, item.expDate && '到期 ' + item.expDate,
+      var batchInfo = [item.batchCode && '购入渠道 ' + item.batchCode, item.location, item.expDate && '到期 ' + item.expDate,
         Utils.formatMoney(item.price, item.currency, group.unit)].filter(Boolean).join(' · ');
       return '<article class="ios-card supply-inventory-card supply-inventory-card--compact" data-id="' + id + '">' +
         cardOverflowMenu(item) +
@@ -471,7 +471,7 @@
     var specPrice = [spec ? spec + '/' + group.unit : '', unitPrice].filter(Boolean).join(' · ');
     var purchased = Number(item.lastQuantity) || (Number(item.quantity) || 0) + (Number(item.eatenCount) || 0);
     var locationPurchase = [item.location ? Utils.uiIcon('map-pin', 14) + Utils.escapeHtml(item.location) : '',
-      item.batchCode ? '批次 ' + Utils.escapeHtml(item.batchCode) : '',
+      item.batchCode ? '购入渠道 ' + Utils.escapeHtml(item.batchCode) : '',
       purchased > 0 ? '购入 ' + Utils.escapeHtml(Utils.formatNumber(purchased) + group.unit) : ''].filter(Boolean).join(' · ');
     var ev = Domain.evaluateItem(item);
     var datePanel = renderDetailedDatePanel(item, ev, opened);
@@ -506,7 +506,7 @@
       datePanel + freshPanel + (opened ? estimatePanel : '') +
       '<div class="supply-inventory-footer"><div class="supply-detail-stats"><strong>在库 ' + Utils.escapeHtml(Utils.formatNumber(group.quantity) + group.unit) + '</strong>' +
         (opened ? '<span><i></i>开封 ' + Utils.formatNumber(group.openedCount || 1) + '</span>' : '') +
-        (group.usedCount > 0 ? '<span>已用 ' + Utils.escapeHtml(Utils.formatNumber(group.usedCount) + group.unit) + '</span>' : '') + '</div>' +
+        (group.usedCount > 0 ? '<span>' + (group.discardedCount ? '核销 ' : '已用 ') + Utils.escapeHtml(Utils.formatNumber(group.usedCount) + group.unit) + '</span>' : '') + '</div>' +
         '<div class="detail-card-action-buttons"><button type="button" data-action="item-history" data-id="' + id + '" aria-label="历史记录" title="历史记录" class="detail-card-history-btn">' + historyIcon + '</button>' +
           (opened ? '<button type="button" data-action="consume-one" data-id="' + id + '" class="btn-feed inventory-primary-action">' + actionContent + '</button>' : '') + '</div></div></article>';
   }
@@ -611,9 +611,10 @@
       st.items.forEach(function (item) {
         if (!(Number(item.quantity) > 0)) return;
         var key = Domain.getProductGroupKey(item);
-        var totals = liveTotals.get(key) || { quantity: 0, eatenCount: 0 };
+        var totals = liveTotals.get(key) || { quantity: 0, eatenCount: 0, discardedCount: 0 };
         totals.quantity += Number(item.quantity);
         totals.eatenCount += Number(item.eatenCount) || 0;
+        totals.discardedCount += Number(item.discardedCount) || 0;
         liveTotals.set(key, totals);
       });
     }
@@ -631,7 +632,7 @@
         return '<button type="button" data-action="' + action + '" data-id="' + esc(item.id) + '"' + (extra || '') + '>' + label + '</button>';
       }
       function batchDuration(item) {
-        return Utils.calcConsumeDays(item.archivedOpenedDate || item.openedDate, item.finishedDate);
+        return item.discardedCount ? null : Utils.calcConsumeDays(item.archivedOpenedDate || item.openedDate, item.finishedDate);
       }
       function archiveBody(group, batches, total, unit) {
         var days = 0, datedUnits = 0;
@@ -652,12 +653,13 @@
           }
           var opening = dateText(item.archivedOpenedDate || item.openedDate);
           var finished = dateText(item.finishedDate);
-          var dates = [opening && opening + (item.category === 'med' ? ' 使用' : ' 开封'), finished && finished + ' 用完'].filter(Boolean).join(' → ');
+          var dates = [opening && opening + (item.category === 'med' ? ' 使用' : ' 开封'),
+            finished && finished + (item.discardedCount ? ' 核销（含丢弃 ' + Utils.formatQuantity(item.discardedCount, unit) + '）' : ' 用完')].filter(Boolean).join(' → ');
           var pack = item.purchasePackaging;
           var purchase = [
             pack && '购入 ' + UI.purchasePackagingLabel(pack, item.unit),
             Utils.formatMoney(pack ? item.price * pack.size * pack.count : item.price, item.currency, pack ? '' : unit),
-            item.batchCode
+            item.batchCode && '购入渠道 ' + item.batchCode
           ].filter(Boolean).join(' · ');
           var shelf = [item.prodDate && '产 ' + item.prodDate, item.expDate && '期 ' + item.expDate].filter(Boolean).join(' · ');
           return '<div class="redeemed-batch"><div class="redeemed-batch-main"><span class="redeemed-batch-id">' +
@@ -743,7 +745,7 @@
       var item = group.latestItem;
       var totals = liveTotals.get(group.groupKey) || { quantity: 0, eatenCount: 0 };
       return '<div class="archive-footer">' +
-        stockQuantityPill({ unit: item.unit, quantity: Utils.round2(totals.quantity), eatenCount: Utils.round2(totals.eatenCount) }) +
+        stockQuantityPill({ unit: item.unit, quantity: Utils.round2(totals.quantity), eatenCount: Utils.round2(totals.eatenCount), discardedCount: totals.discardedCount }) +
         '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(item.sourceBatchId || item.id) + '">流水</button>' +
         '<button type="button" data-action="restock-new" data-id="' + Utils.escapeHtml(item.id) + '">复购入库</button>' +
         '</div>';
@@ -804,7 +806,7 @@
         var priceTxt = bItem.price ? (' · ' + Utils.formatMoney(bItem.price, bItem.currency)) : '';
         var bOpen = bItem.archivedOpenedDate || bItem.openedDate || '';
         var bFin = bItem.finishedDate || '';
-        var cDays = Utils.calcConsumeDays(bOpen, bFin);
+        var cDays = bItem.discardedCount ? null : Utils.calcConsumeDays(bOpen, bFin);
         if (cDays !== null && (bItem.category !== 'supplies' || bUsed === 1)) {
           totalDaysSum += cDays;
           totalUnitsWithDays += bUsed;
@@ -814,7 +816,9 @@
           : '';
 
         var openFinishLine = '';
-        if (bOpen && bFin) {
+        if (bItem.discardedCount && bFin) {
+          openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:var(--text-muted);">核销日期 ' + Utils.escapeHtml(bFin) + ' · 含丢弃 ' + Utils.escapeHtml(Utils.formatQuantity(bItem.discardedCount, bItem.unit || '件')) + '</div>';
+        } else if (bOpen && bFin) {
           openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:var(--text-main);font-weight:600;">' + Utils.uiIcon('lock-open') + '开封日期 ' + Utils.escapeHtml(bOpen) + ' → ' + Utils.uiIcon('circle-check') + '用完日期 ' + Utils.escapeHtml(bFin) + '</div>';
         } else if (bFin) {
           openFinishLine = '<div style="margin-top:3px;font-size:11.5px;color:var(--text-muted);">✓ 用完日期 ' + Utils.escapeHtml(bFin) + '</div>';
@@ -835,7 +839,7 @@
               openFinishLine +
               '<div style="margin-top:2px;font-size:11px;color:var(--text-muted);">' +
                 '生产日期 ' + Utils.escapeHtml(Utils.formatListDate(bItem.prodDate, '未填写')) + ' · 过期日期 ' + Utils.escapeHtml(Utils.formatListDate(bItem.expDate, '—')) +
-                (bItem.batchCode ? (' · ' + Utils.escapeHtml(bItem.batchCode)) : '') +
+                (bItem.batchCode ? (' · 购入渠道 ' + Utils.escapeHtml(bItem.batchCode)) : '') +
               '</div>' +
             '</div>' +
             '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
@@ -912,7 +916,7 @@
           Utils.escapeHtml(Utils.formatQuantity(Number(it.quantity) || 0, unit)) + '</span>' +
           (compactOpened > 0 ? '<span class="compact-stock-divider">·</span><span class="compact-stock-open"><i aria-hidden="true"></i>开封 ' +
             Utils.escapeHtml(Utils.formatNumber(compactOpened)) + '</span>' : '') +
-          (compactUsed > 0 ? '<span class="compact-stock-divider">·</span><span class="compact-stock-used">已用 ' +
+          (compactUsed > 0 ? '<span class="compact-stock-divider">·</span><span class="compact-stock-used">' + (it.discardedCount ? '核销 ' : '已用 ') +
             Utils.escapeHtml(Utils.formatNumber(compactUsed)) + '</span>' : '');
 
         var displaySpec = Utils.formatItemSpec(it);
@@ -994,7 +998,7 @@
       }
       var locationParts = [];
       if (it.location) locationParts.push(Utils.iconLabel('map-pin', it.location));
-      if (it.batchCode) locationParts.push(Utils.escapeHtml(it.batchCode));
+      if (it.batchCode) locationParts.push('购入渠道 ' + Utils.escapeHtml(it.batchCode));
       if (it.purchasePackaging) locationParts.push(purchasePackagingText(it));
 
       var datePanel = renderDetailedDatePanel(it, ev, stock.opened);
@@ -1028,7 +1032,7 @@
                 (displaySpec ? '<span class="product-title-spec">' + Utils.escapeHtml(displaySpec) + '</span>' : '') + '</h3>' +
               (priceLine ? '<div class="detail-card-line detail-card-price">' + priceLine + '</div>' : '') +
               (locationParts.length ? '<div class="detail-card-line detail-card-location" title="' +
-                Utils.escapeHtml([it.location, it.batchCode, it.purchasePackaging && UI.purchasePackagingLabel(it.purchasePackaging, unit)].filter(Boolean).join(' · ')) +
+                Utils.escapeHtml([it.location, it.batchCode && '购入渠道 ' + it.batchCode, it.purchasePackaging && UI.purchasePackagingLabel(it.purchasePackaging, unit)].filter(Boolean).join(' · ')) +
                 '">' + locationParts.join(' · ') + '</div>' : '') +
             '</div>' +
           '</div>' +

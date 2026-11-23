@@ -128,6 +128,22 @@
       stock.add(new Option('剩余全部 ' + redemption.quantity + redemption.unit, redemption.quantity));
     }
     document.getElementById('confirmStockQuantityWrap').classList.toggle('hidden-view', !redemption || stock.options.length < 2);
+    var discard = extraOpt && extraOpt.discard;
+    var discardWrap = document.getElementById('confirmDiscardQuantityWrap');
+    var discardInput = document.getElementById('confirmDiscardQuantity');
+    discardWrap.classList.toggle('hidden-view', !discard);
+    if (discard) {
+      document.getElementById('confirmDiscardQuantityLabel').textContent = '丢弃数量（最多 ' +
+        MP.Utils.formatQuantity(discard.quantity, discard.unit) + '）';
+      discardInput.value = String(discard.quantity);
+      discardInput.max = String(discard.quantity);
+      discardInput.min = discard.whole ? '1' : '0.01';
+      discardInput.step = discard.whole ? '1' : '0.01';
+      discardInput.readOnly = Boolean(discard.fixed);
+    }
+    var restoreWrap = document.getElementById('confirmRestoreModeWrap');
+    restoreWrap.classList.toggle('hidden-view', !(extraOpt && extraOpt.restoreMode));
+    if (extraOpt && extraOpt.restoreMode) restoreWrap.querySelector('[value="merge"]').checked = true;
     var openDateWrap = document.getElementById('confirmOpenDateWrap');
     if (extraOpt && extraOpt.openDateItem) {
       openDateWrap.classList.remove('hidden-view');
@@ -140,7 +156,7 @@
     pendingConfirmFn = onConfirm;
     pendingAlternativeFn = extraOpt && extraOpt.onAlternative;
     document.getElementById('confirmCancelBtn').textContent = (extraOpt && extraOpt.alternativeLabel) || '取消';
-    UI.showModal('confirmModalBackdrop', 'confirmOkBtn');
+    UI.showModal('confirmModalBackdrop', (discard || (extraOpt && extraOpt.restoreMode)) ? 'confirmCancelBtn' : 'confirmOkBtn');
   };
 
   UI.closeConfirm = function () {
@@ -160,6 +176,20 @@
     if (!fn) return;
     var checked = document.getElementById('confirmExtraCheckbox').checked;
     var quantity = Number(document.getElementById('confirmStockQuantity').value);
+    var discardWrap = document.getElementById('confirmDiscardQuantityWrap');
+    if (!discardWrap.classList.contains('hidden-view')) {
+      var discardInput = document.getElementById('confirmDiscardQuantity');
+      quantity = Number(discardInput.value);
+      if (!discardInput.checkValidity() || !Number.isFinite(quantity) || quantity <= 0) {
+        UI.showToast('请填写有效的丢弃数量');
+        discardInput.focus();
+        return;
+      }
+    }
+    var restoreWrap = document.getElementById('confirmRestoreModeWrap');
+    if (!restoreWrap.classList.contains('hidden-view')) {
+      checked = restoreWrap.querySelector('[name="confirmRestoreMode"]:checked').value === 'merge';
+    }
     var mealInput = document.getElementById('confirmMealQuantity');
     var mealQuantity = checked && quantity > 1 ? Number(mealInput.value) : quantity;
     var openDateWrap = document.getElementById('confirmOpenDateWrap');
@@ -173,7 +203,9 @@
       }
       openDate = result.date;
     }
-    if (checked && quantity > 1 && (!Number.isInteger(mealQuantity) || mealQuantity < 1 || mealQuantity > quantity)) {
+    if (!discardWrap.classList.contains('hidden-view')) mealQuantity = quantity;
+    if (checked && !document.getElementById('confirmExtraOptionWrap').classList.contains('hidden-view') &&
+        quantity > 1 && (!Number.isInteger(mealQuantity) || mealQuantity < 1 || mealQuantity > quantity)) {
       UI.showToast('请填写实际补记件数，不能超过核销数量');
       mealInput.focus();
       return;

@@ -24,6 +24,9 @@ const history = ['2026-11-19', '2026-11-17', '2026-11-16'].map(date => ({
 const measured = Forecast.compute([wet], history, defaults, today).can;
 assert.equal(measured.dailyGrams, 75);
 assert.equal(measured.source, 'actual');
+const discarded = { ...history[0], action: 'discard', beforeQty: 4, afterQty: 0 };
+assert.equal(Forecast.compute([wet], [discarded, ...history], defaults, today).can.dailyGrams, measured.dailyGrams);
+assert.equal(Forecast.compute([wet], [discarded, ...history.slice(0, 2)], defaults, today).can.source, 'default');
 assert.equal(Forecast.compute([wet], history.slice(0, 2), defaults, today).can.source, 'default');
 assert.equal(Forecast.compute([wet], history.map(row => ({ ...row, date: today })), defaults, today).can.source, 'default');
 const undo = { ...history[0], action: 'revert', beforeQty: 1, afterQty: 2 };

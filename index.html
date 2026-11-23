@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=302">
-  <link rel="stylesheet" href="./css/styles.css?v=302">
+  <link rel="stylesheet" href="./css/tokens.css?v=303">
+  <link rel="stylesheet" href="./css/styles.css?v=303">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -1185,6 +1185,15 @@
         核销数量
         <select id="confirmStockQuantity" class="ios-input" style="margin-top:4px;"></select>
       </label>
+      <label id="confirmDiscardQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
+        <span id="confirmDiscardQuantityLabel">丢弃数量</span>
+        <input id="confirmDiscardQuantity" type="number" min="0.01" step="1" inputmode="decimal" class="ios-input" style="margin-top:4px;">
+      </label>
+      <fieldset id="confirmRestoreModeWrap" class="restore-mode-choices hidden-view">
+        <legend>选择恢复方式</legend>
+        <label><input type="radio" name="confirmRestoreMode" value="merge" checked><span><strong>智能合并</strong><small>保留本机记录，尝试去重合并；遇到冲突会取消。</small></span></label>
+        <label><input type="radio" name="confirmRestoreMode" value="replace"><span><strong>全量覆盖</strong><small>替换本机库存和记录；覆盖前会保存本地快照。</small></span></label>
+      </fieldset>
       <label id="confirmExtraOptionWrap" class="hidden-view" style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:14px;border-radius:11px;background:var(--accent-soft);border:1px solid var(--accent-edge);cursor:pointer;">
         <input id="confirmExtraCheckbox" type="checkbox" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;">
         <span class="confirm-extra-copy"><span id="confirmExtraLabel" style="font-size:12px;font-weight:700;color:var(--accent-strong);line-height:1.35;">同时记入今天的每日记录</span><span class="delete-log-revert-hint"><span id="deleteLogRestoreAmount"></span><span>只删记录，库存和余量保持不变</span></span></span>
@@ -1215,18 +1224,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=302"></script>
-  <script src="./js/constants.js?v=302"></script>
-  <script src="./js/utils.js?v=302"></script>
-  <script src="./js/forecast.js?v=302"></script>
-  <script src="./js/domain.js?v=302"></script>
-  <script src="./js/storage.js?v=302"></script>
-  <script src="./js/stats.js?v=302"></script>
-  <script src="./js/modal.js?v=302"></script>
-  <script src="./js/ui.js?v=302"></script>
-  <script src="./js/ui-pantry.js?v=302"></script>
-  <script src="./js/ui-daily.js?v=302"></script>
-  <script src="./js/ui-settings.js?v=302"></script>
-  <script src="./js/app.js?v=302"></script>
+  <script src="./js/covers.js?v=303"></script>
+  <script src="./js/constants.js?v=303"></script>
+  <script src="./js/utils.js?v=303"></script>
+  <script src="./js/forecast.js?v=303"></script>
+  <script src="./js/domain.js?v=303"></script>
+  <script src="./js/storage.js?v=303"></script>
+  <script src="./js/stats.js?v=303"></script>
+  <script src="./js/modal.js?v=303"></script>
+  <script src="./js/ui.js?v=303"></script>
+  <script src="./js/ui-pantry.js?v=303"></script>
+  <script src="./js/ui-daily.js?v=303"></script>
+  <script src="./js/ui-settings.js?v=303"></script>
+  <script src="./js/app.js?v=303"></script>
 </body>
 </html>

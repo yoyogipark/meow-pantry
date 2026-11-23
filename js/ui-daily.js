@@ -195,12 +195,12 @@
     });
     var priorTrack = el('dailyQuickFeedTrack');
     var scrollLeft = priorTrack ? priorTrack.scrollLeft : 0;
-    el('dailyQuickFeedBox').innerHTML = candidates.length ? '<p class="daily-support">常用</p>' +
+    el('dailyQuickFeedBox').innerHTML = candidates.length ? '<p class="daily-support">快捷投喂</p>' +
       '<div class="daily-quick-feed-strip"><div id="dailyQuickFeedTrack" class="filter-chips no-scrollbar">' +
       candidates.slice(0, 5).map(function (item) {
         var sameName = candidates.filter(function (candidate) { return candidate.name === item.name; });
         var suffix = sameName.length > 1
-          ? ' · 批次 ' + (sameName.indexOf(item) + 1) + (item.batchCode ? ' · ' + item.batchCode : item.expDate ? ' · 到期 ' + item.expDate : item.location ? ' · ' + item.location : '')
+          ? ' · 批次 ' + (sameName.indexOf(item) + 1) + (item.batchCode ? ' · 购入渠道 ' + item.batchCode : item.expDate ? ' · 到期 ' + item.expDate : item.location ? ' · ' + item.location : '')
           : '';
         if (Domain.stockExpiryEntries(item).some(function (entry) { return entry.evaluation.status === 'expired'; })) {
           suffix += ' · 含过期开封件';

@@ -195,6 +195,7 @@
     unopen:  { label: '取消拆封', icon: 'lock', bg: 'var(--status-neutral-bg)', text: 'var(--text-muted)', group: 'adjust' },
     partial: { label: '分顿投喂', icon: 'utensils', bg: 'var(--warn-soft)', text: 'var(--status-warning-text)', group: 'consume' },
     consume: { label: '吃完核销', icon: 'circle-check', bg: 'var(--ok-soft)', text: 'var(--ok)', group: 'consume' },
+    discard: { label: '过期丢弃', icon: 'trash-2', bg: 'var(--danger-soft)', text: 'var(--status-danger-text)', group: 'adjust' },
     revert:  { label: '撤回退库', icon: 'refresh-cw', bg: 'var(--purple-bg)', text: 'var(--purple-text)', group: 'adjust' },
     adjust:  { label: '手动改库存', icon: 'pencil', bg: 'var(--status-neutral-bg)', text: 'var(--text-main)', group: 'adjust' },
     delete:  { label: '删除批次', icon: 'trash-2', bg: 'var(--danger-soft)', text: 'var(--status-danger-text)', group: 'adjust' }
