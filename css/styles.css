@@ -4352,12 +4352,14 @@ input[type="checkbox"] { accent-color: var(--accent); }
   align-items: stretch;
   gap: 10px;
 }
-.detail-card-image-column { display: flex; flex: 0 0 92px; min-width: 0; }
+.detail-card-image-column { display: flex; flex: 0 0 92px; min-width: 0; align-self: flex-start; }
 .detail-card-photo {
   position: relative;
   width: 92px;
-  min-height: 92px;
-  flex: 1;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1;
+  flex: none;
   padding: 0;
   border: 1px solid var(--border-warm);
   border-radius: 14px;
@@ -4571,7 +4573,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 @media (max-width: 374px) {
   .detail-card:not(.supply-detail-card) .detail-card-image-column { flex-basis: 84px; }
-  .detail-card:not(.supply-detail-card) .detail-card-photo { width: 84px; min-height: 84px; }
+  .detail-card:not(.supply-detail-card) .detail-card-photo { width: 84px; }
 }
 .detail-card-actions { gap: 8px; }
 .detail-card-actions .detail-card-action-buttons { flex: none; gap: 8px; margin-inline-start: 0; }
