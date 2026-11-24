@@ -102,7 +102,7 @@
       entry.eatenQty = Utils.round2(entry.eatenQty + eaten);
       if (!it.sourceBatchId) entry.discardedCount += Number(it.discardedCount) || 0;
       if (palatability) entry.palatability = palatability;
-      if (it.imageData && !entry.rep.imageData) entry.rep = it;
+      if (MP.getItemImages(it).length && !MP.getItemImages(entry.rep).length) entry.rep = it;
       if (q <= 0) {
         var cDays = it.discardedCount ? null : Utils.calcConsumeDays(it.archivedOpenedDate || it.openedDate, it.finishedDate);
         if (cDays !== null && eaten > 0) {

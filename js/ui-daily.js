@@ -7,7 +7,7 @@
   var UI = MP.UI;
   var PAGE_SIZE = 20;
   var categories = ['dry', 'freeze', 'can'];
-  var slots = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
+  var slots = Utils.mealSlotOptions().map(function (slot) { return slot.id; }).filter(function (id) { return id !== 'care'; }).concat('other');
   var recordTypes = { food: ['喂食', '顿'], medication: ['用药', '次'], nursing: ['护理', '次'] };
   var weekEnd = Utils.getTodayStr();
   var showingHistory = false;
@@ -332,7 +332,7 @@
   }
 
   function renderDetails(rows, isToday) {
-    var detailOrder = ['breakfast', 'lunch', 'dinner', 'snack', 'other', 'medication', 'nursing'];
+    var detailOrder = slots.concat('medication', 'nursing');
     var counts = { food: 0, medication: 0, nursing: 0 };
     rows.forEach(function (row) {
       var type = recordType(row.log);

@@ -61,7 +61,9 @@
     backupBannerDismissedCount: -1,
     formCat: 'dry',
     formPal: '',
-    formImage: '',
+    formImages: [],
+    photoUploadToken: 0,
+    photoUploadPending: false,
     formCurrency: 'CNY'
   };
 
@@ -302,7 +304,8 @@
     var usagePerItem = Number(raw.feedUsagePerItem);
     clean.feedUsagePerItem = clean.feedUsageUnit && Number.isFinite(usagePerItem) && usagePerItem > 0 ? usagePerItem : null;
     var specValue = Number(raw.unit_spec_value);
-    if (cat === 'supplies' && specValue > 0 && MP.SUPPLY_SPEC_UNITS.concat(MP.LEGACY_SUPPLY_SPEC_UNITS || []).includes(raw.unit_spec_unit)) {
+    if (specValue > 0 && ((cat === 'supplies' && MP.SUPPLY_SPEC_UNITS.concat(MP.LEGACY_SUPPLY_SPEC_UNITS || []).includes(raw.unit_spec_unit)) ||
+        (['supp', 'med'].includes(cat) && raw.unit_spec_unit === '毫升'))) {
       clean.unit_spec_value = specValue;
       clean.unit_spec_unit = raw.unit_spec_unit;
     } else {
@@ -354,7 +357,9 @@
       if (!clean.notes.includes(legacyNote)) clean.notes += (clean.notes ? '；' : '') + legacyNote;
       clean.legacySpecInNotes = true;
     }
-    clean.imageData = typeof raw.imageData === 'string' ? raw.imageData : '';
+    clean.images = MP.getItemImages(raw);
+    delete clean.imageData;
+    delete clean.image;
     clean.isSample = Boolean(raw.isSample);
     clean.eatenCount = Utils.round2(Math.max(0, Number(raw.eatenCount) || 0));
     clean.discardedCount = Utils.round2(Math.max(0, Number(raw.discardedCount) || 0));
@@ -510,9 +515,9 @@
     else archiveItem.palatability = activeItem.palatability;
     archiveItem.location = activeItem.location;
     archiveItem.batchCode = activeItem.batchCode;
-    if (activeItem.imageData) {
-      archiveItem.imageData = activeItem.imageData;
-    }
+    archiveItem.images = MP.getItemImages(activeItem);
+    delete archiveItem.imageData;
+    delete archiveItem.image;
   };
 
   Domain.syncLinkedArchiveForActiveItem = function (activeItem) {
@@ -859,6 +864,10 @@
     var remaining = stock.openRemainFraction || 1;
     var used = portion.finish ? remaining : portion.fraction;
     if (!Number.isFinite(used) || used <= 0) return { error: '无法换算份量，请输入如「1' + unit + '」或「半' + unit + '」。' };
+    if (item.category === 'treat' && unit === '支' && remaining === 1 && Number.isSafeInteger(used) && used > 1) {
+      if (used > Number(stock.quantity)) return { error: '所选口味或批次库存不足，请调整份量。' };
+      return { used: used, after: 0, sealedUnits: used, consumeOpened: true };
+    }
     if (used - remaining > 1e-12) {
       var isOpened = flavor ? (Domain.hasSharedSeal(item) ? item.isOpened : Boolean(flavor.openedDate)) : item.isOpened;
       if (!isOpened || !(stock.openRemainFraction > 0)) return { error: '本次份量超过单件容量，请调整份量。' };
@@ -892,9 +901,11 @@
     }
     if (plan.sealedUnits) {
       units = Domain.recordConsumedUnits(item, plan.sealedUnits, date, '记喂食（' + amount + '），核销 ' + plan.sealedUnits + item.unit);
-      item.isOpened = before.opened;
-      item.openedDate = before.openedDate;
-      item.openRemainFraction = before.fraction;
+      if (!plan.consumeOpened) {
+        item.isOpened = before.opened;
+        item.openedDate = before.openedDate;
+        item.openRemainFraction = before.fraction;
+      }
       return { units: units, fraction: 1, before: before, revision: item.portionRevision };
     }
     if (!plan.after) {
@@ -975,6 +986,10 @@
     if (plan.sealedUnits) {
       flavor.revision = nextFlavorRevision();
       flavor.quantity -= plan.sealedUnits;
+      if (plan.consumeOpened) {
+        flavor.openedDate = '';
+        flavor.openRemainFraction = 0;
+      }
       Domain.recordConsumedUnits(item, plan.sealedUnits, date, '喂食并核销 ' + plan.sealedUnits + item.unit + ' · ' + flavor.name);
       return { revision: flavor.revision, before: before, units: plan.sealedUnits, fraction: 1 };
     }
@@ -1237,7 +1252,8 @@
       var supplySpec = supplySpecGroup(it.unit_spec_value, it.unit_spec_unit) || supplySpecGroup(weight, '克');
       return JSON.stringify([c, b, n, supplySpec, u, textSpec]);
     }
-    var s = weight > 0 ? weight + 'g' : textSpec;
+    var s = weight > 0 ? weight + 'g' : Number(it.unit_spec_value) > 0 && it.unit_spec_unit === '毫升'
+      ? Number(it.unit_spec_value) + 'ml' : textSpec;
     return c + '||' + b + '||' + n + '||' + s + '||' + u;
   };
 
@@ -1384,7 +1400,7 @@
       map[key].totalConsumed = Utils.round2(map[key].totalConsumed + batchUsed);
       map[key].batches.push(it);
       var curRep = map[key].latestItem;
-      if ((!curRep.imageData && it.imageData) || String(it.finishedDate || it.prodDate || '') > String(curRep.finishedDate || curRep.prodDate || '')) {
+      if ((!MP.getItemImages(curRep).length && MP.getItemImages(it).length) || String(it.finishedDate || it.prodDate || '') > String(curRep.finishedDate || curRep.prodDate || '')) {
         map[key].latestItem = it;
       }
     });

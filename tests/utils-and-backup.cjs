@@ -51,16 +51,23 @@ assert.equal(bomBackup.version, 3);
 const mealBackup = Storage.validateAndParseBackup(JSON.stringify({
   version: 3,
   items: [],
-  logs: ['🌙 晚饭', '晚饭', 'dinner', '☀ 午饭', '自定义餐次'].map((mealSlot, i) => ({
+  logs: ['🌙 晚饭', '晚饭', 'dinner', '☀ 午饭', '自定义餐次', '夜宵', 'late_night', 'snack'].map((mealSlot, i) => ({
     id: 'meal-' + i, date: '2026-11-20', mealSlot
   }))
 }));
 assert.equal(mealBackup.ok, true);
 assert.deepEqual(Array.from(mealBackup.logs, log => log.mealSlot),
-  ['dinner', 'dinner', 'dinner', 'lunch', '自定义餐次']);
+  ['dinner', 'dinner', 'dinner', 'lunch', '自定义餐次', 'late_night', 'late_night', 'snack']);
 assert.equal(Utils.formatMealSlot('dinner'), '晚饭');
 assert.deepEqual(Array.from(Utils.mealSlotOptions(), slot => slot.label),
-  ['早上', '中午', '晚上', '零食加餐', '用药／护理']);
+  ['早上', '中午', '晚上', '夜宵', '零食加餐', '用药／护理']);
+assert.equal(Utils.formatMealSlotDisplay('late_night'), '夜宵');
+for (const [hour, expected] of [[0, 'late_night'], [4, 'late_night'], [5, 'breakfast'], [9, 'breakfast'],
+  [10, 'lunch'], [14, 'lunch'], [15, 'dinner'], [20, 'dinner'], [21, 'late_night'], [23, 'late_night']]) {
+  sandbox.Date = class extends Date { getHours() { return hour; } };
+  assert.equal(Utils.getCurrentMealSlot(), expected);
+}
+sandbox.Date = Date;
 assert.equal(Utils.formatMealSlotDisplay('🌙 晚饭'), '晚上');
 assert.equal(Utils.formatMealSlotDisplay('自定义餐次'), '自定义餐次');
 assert.equal(Utils.formatMealSlot('自定义餐次'), '自定义餐次');
@@ -110,4 +117,66 @@ for (const unknown of [undefined, '', 'wet-food', '罐头', 'constructor']) {
 assert.match(Utils.getCategoryIcon('dry', 20), /width="20" height="20".*stroke-width="2"/);
 assert.match(Utils.getCategoryIcon('can'), /width="28" height="28"/);
 
-console.log('Utility date, escaping, and backup validation pass');
+const photoA = 'data:image/jpeg;base64,photo-a';
+const photoB = 'data:image/jpeg;base64,photo-b';
+for (const legacyField of ['imageData', 'image']) {
+  const legacy = Storage.validateAndParseBackup(JSON.stringify([{ id: 'legacy-photo', [legacyField]: photoA }]));
+  assert.equal(legacy.ok, true);
+  assert.deepEqual(Array.from(legacy.items[0].images), [photoA]);
+  assert.equal(legacy.items[0][legacyField], undefined);
+}
+const photoBackup = Storage.validateAndParseBackup(JSON.stringify({
+  version: 4, items: [{ id: 'gallery', images: [photoB, photoA], imageData: photoA }]
+}));
+assert.equal(photoBackup.ok, true);
+assert.deepEqual(Array.from(photoBackup.items[0].images), [photoB, photoA]);
+assert.equal(sandbox.MeowPantry.getItemCoverSrc(photoBackup.items[0]), photoB);
+assert.deepEqual(Array.from(Domain.sanitizeItem({ images: [], imageData: photoA }).images), []);
+for (const images of [[photoA, null], [42], 'not-an-array', Array(7).fill(photoA)]) {
+  const invalid = Storage.validateAndParseBackup(JSON.stringify({ items: [{ id: 'invalid-photos', images }] }));
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.error, /照片.*最多 6 张/);
+}
+const sixPhotos = Array.from({ length: 6 }, (_, index) => photoA + index);
+const fullGallery = Storage.validateAndParseBackup(JSON.stringify({ items: [{ id: 'six', images: sixPhotos }] }));
+assert.equal(fullGallery.ok, true);
+assert.deepEqual(Array.from(fullGallery.items[0].images), sixPhotos);
+const archivePhoto = { imageData: photoB };
+Domain.copySharedMetadataToArchive(fullGallery.items[0], archivePhoto);
+assert.deepEqual(Array.from(archivePhoto.images), sixPhotos);
+assert.notEqual(archivePhoto.images, fullGallery.items[0].images);
+Domain.copySharedMetadataToArchive({ images: [] }, archivePhoto);
+assert.deepEqual(Array.from(archivePhoto.images), []);
+assert.equal(archivePhoto.imageData, undefined);
+
+let originalWidth = 2560;
+let originalHeight = 1600;
+let compressedCanvas;
+let jpegQuality;
+sandbox.FileReader = class {
+  readAsDataURL() { this.onload({ target: { result: photoA } }); }
+};
+sandbox.Image = class {
+  set src(value) { this.width = originalWidth; this.height = originalHeight; this.onload(); }
+};
+sandbox.document = {
+  createElement() {
+    compressedCanvas = {
+      getContext: () => ({ fillRect() {}, drawImage() {} }),
+      toDataURL(type, quality) { assert.equal(type, 'image/jpeg'); jpegQuality = quality; return photoB; }
+    };
+    return compressedCanvas;
+  }
+};
+let compressedPhoto;
+Utils.compressImageFile({}, result => { compressedPhoto = result; });
+assert.deepEqual([compressedCanvas.width, compressedCanvas.height, jpegQuality], [1280, 800, 0.8]);
+assert.equal(compressedPhoto.dataUrl, photoB);
+originalWidth = 400;
+originalHeight = 800;
+Utils.compressImageFile({}, () => {});
+assert.deepEqual([compressedCanvas.width, compressedCanvas.height], [400, 800], 'Small photos must not be upscaled');
+sandbox.document.createElement = () => ({ getContext() { throw new Error('Canvas unavailable'); } });
+Utils.compressImageFile({}, result => assert.equal(result, null));
+
+console.log('Utility date, escaping, backup validation and photo migration/compression pass');

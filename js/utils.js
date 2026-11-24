@@ -218,7 +218,8 @@
   var mealSlots = [
     { id: 'breakfast', label: '早饭', display: '早上', icon: 'sunrise', legacy: ['早饭', '🌅 早饭'] },
     { id: 'lunch', label: '午饭', display: '中午', icon: 'sun', legacy: ['午饭', '☀️ 午饭'] },
-    { id: 'dinner', label: '晚饭', display: '晚上', icon: 'moon', legacy: ['晚饭', '🌙 晚饭'] },
+    { id: 'dinner', label: '晚饭', display: '晚上', icon: 'sunset', legacy: ['晚饭', '🌙 晚饭'] },
+    { id: 'late_night', label: '夜宵', display: '夜宵', icon: 'moon', legacy: ['夜宵'] },
     { id: 'snack', label: '加餐/零食', display: '零食加餐', icon: 'cookie', legacy: ['加餐/零食', '🍪 加餐/零食'] },
     { id: 'care', label: '用药/护理', display: '用药／护理', icon: 'stethoscope', legacy: ['用药/护理', '🩺 用药/护理'] },
     { id: 'other', label: '其他', display: '其他', icon: '', legacy: ['其他', '投喂', '🍽️ 投喂'] }
@@ -255,10 +256,11 @@
 
   Utils.getCurrentMealSlot = function () {
     var hr = new Date().getHours();
+    if (hr < 5 || hr >= 21) return 'late_night';
     if (hr < 10) return 'breakfast';
     if (hr < 15) return 'lunch';
     if (hr < 21) return 'dinner';
-    return 'snack';
+    return 'late_night';
   };
 
   Utils.formatNumber = function (value, digits) {
@@ -354,7 +356,8 @@
 
   Utils.formatItemSpec = function (item) {
     var supplyValue = Number(item.unit_spec_value);
-    if (item.category === 'supplies' && supplyValue > 0 && item.unit_spec_unit) {
+    if (supplyValue > 0 && item.unit_spec_unit && (item.category === 'supplies' ||
+        (['supp', 'med'].includes(item.category) && item.unit_spec_unit === '毫升'))) {
       return Utils.formatNumber(supplyValue) + item.unit_spec_unit + (item.spec ? ' · ' + String(item.spec).trim() : '');
     }
     var weight = Number(item.unit_net_weight_g);
@@ -404,7 +407,7 @@
     reader.onload = function (ev) {
       var img = new Image();
       img.onload = function () {
-        var maxSide = 480;
+        var maxSide = 1280;
         var w = img.width || 480;
         var h = img.height || 480;
         if (w > maxSide || h > maxSide) {
@@ -419,11 +422,18 @@
         var canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, w, h);
-        ctx.drawImage(img, 0, 0, w, h);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+        var dataUrl;
+        try {
+          var ctx = canvas.getContext('2d');
+          if (!ctx) { callback(null); return; }
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        } catch (error) {
+          callback(null);
+          return;
+        }
         var approxKb = Math.max(1, Math.round((dataUrl.length * 0.75) / 1024));
         callback({ dataUrl: dataUrl, kb: approxKb });
       };

@@ -71,15 +71,9 @@
     return Utils.escapeHtml(unitPrice + ' · ' + packPrice + '（' + Utils.formatQuantity(pack.size, unit) + '）');
   }
 
-  function stockQuantityPill(item) {
-    var unit = item.unit || '件';
-    var used = Number(item.eatenCount);
-    var stock = detailedOpenStock(item, item.unit || '件');
-    var note = used > 0 ? (item.discardedCount ? '核销 ' : '已用 ') + Utils.formatQuantity(used, unit)
-      : stock.packageCount > 0 ? '开封 ' + Utils.formatQuantity(stock.packageCount, unit) : '';
-    return '<span class="stock-quantity-pill"><span>在库 ' + Utils.escapeHtml(Utils.formatQuantity(Number(item.quantity) || 0, unit)) + '</span>' +
-      (note ? ' <span class="stock-quantity-used' + (used > 0 ? '' : ' stock-quantity-open') + '">' + Utils.escapeHtml(note) + '</span>' : '') +
-      '</span>';
+  function archiveLiveStockPill(quantity, unit) {
+    return quantity > 0 ? '<span class="stock-quantity-pill">同款在库 ' +
+      Utils.escapeHtml(Utils.formatQuantity(Utils.round2(quantity), unit)) + '</span>' : '';
   }
 
   function detailedStockQuantityPill(item) {
@@ -395,7 +389,7 @@
       '<span class="detail-card-shelf-tip hidden-view" role="status"></span></div>';
   }
 
-  function detailedWetFlavorOpenStock(item, unit, evaluated) {
+  function detailedFlavorOpenStock(item, unit, evaluated) {
     var flavors = item.flavors.filter(function (flavor) {
       return Number(flavor.quantity) > 0 && flavor.openedDate;
     });
@@ -418,54 +412,32 @@
     return '<svg class="stock-action-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg> ';
   }
 
-  function cardOverflowMenu(item) {
+  function cardOverflowMenu(item, showHistory) {
     var id = Utils.escapeHtml(item.id);
-    var canOpen = item.flavors
+    var canOpen = Number(item.quantity) > 0 && (item.flavors
       ? item.flavors.some(function (flavor) {
           return Number(flavor.quantity) > 0 && (Domain.hasSharedSeal(item) ? !item.isOpened : !flavor.openedDate);
         })
-      : !item.isOpened && (MP.isFoodCategory(item.category) || item.category === 'med' || item.category === 'supplies');
+      : !item.isOpened && (MP.isFoodCategory(item.category) || item.category === 'med' || item.category === 'supplies'));
     return '<div class="card-overflow">' +
       '<button type="button" class="card-overflow-trigger" data-action="card-menu" data-id="' + id + '" aria-label="更多操作" aria-expanded="false">' + Utils.uiIcon('more-vertical', 20) + '</button>' +
       '<div class="card-overflow-menu hidden-view" role="menu">' +
         (canOpen ? '<button type="button" data-action="toggle-open" data-menu-action data-id="' + id + '" role="menuitem">' + Utils.uiIcon('lock-open') + '<span>' + (item.category === 'supplies' ? '开封' : '记开封') + '</span></button>' : '') +
         '<button type="button" data-action="edit" data-menu-action data-id="' + id + '" role="menuitem">' + Utils.uiIcon('pencil') + '<span>编辑</span></button>' +
+        (showHistory ? '<button type="button" data-action="item-history" data-menu-action data-id="' + id + '" role="menuitem">' + Utils.uiIcon('refresh-cw') + '<span>历史记录</span></button>' : '') +
         '<hr><button type="button" class="card-overflow-delete" data-action="delete" data-menu-action data-id="' + id + '" role="menuitem">' + Utils.uiIcon('trash-2') + '<span>删除</span></button>' +
       '</div></div>';
   }
 
-  function renderSupplyInventoryCard(group, historyIcon, compact) {
+  function renderSupplyInventoryCard(group, historyIcon) {
     var item = group.item;
     var enoughData = Number.isFinite(Number(group.averageCycleDays)) && Number(group.averageCycleDays) > 0 && group.remainingDays !== null;
-    var detail = enoughData
-      ? '本批剩 ' + Utils.formatNumber(group.quantity) + ' ' + group.unit + ' · 预计还能用 ' + Utils.formatNumber(group.remainingDays) + ' 天'
-      : item.isSample ? '示例库存未计入预测' : '数据不足，暂不估算';
     var id = Utils.escapeHtml(item.id);
     var opened = Boolean(item.isOpened && item.openedDate);
-    var badge = opened ? '使用中' : '未开封';
-    var tone = opened ? 'ok' : 'neutral';
     var actionContent = UI.feedButtonContent('记用完');
-    if (compact) {
-      var batchInfo = [item.batchCode && '购入渠道 ' + item.batchCode, item.location, item.expDate && '到期 ' + item.expDate,
-        Utils.formatMoney(item.price, item.currency, group.unit)].filter(Boolean).join(' · ');
-      return '<article class="ios-card supply-inventory-card supply-inventory-card--compact" data-id="' + id + '">' +
-        cardOverflowMenu(item) +
-        '<span class="supply-usage-icon">' + Utils.getCategoryIcon('supplies', 20) + '</span>' +
-        '<div class="supply-inventory-copy"><small>' + Utils.escapeHtml(item.brand) + '</small><strong>' + Utils.escapeHtml(item.name) +
-          '</strong><span>在库 ' + Utils.escapeHtml(Utils.formatNumber(group.quantity) + ' ' + group.unit) + '</span>' +
-          (batchInfo ? '<span>' + Utils.escapeHtml(batchInfo) + '</span>' : '') + '</div>' +
-        '<div class="supply-compact-actions">' +
-          (group.quantity > 0 ? '<span class="supply-usage-badge supply-usage-badge--' + tone + '">' + badge + '</span>' : '') +
-          '<button type="button" data-action="item-history" data-id="' + id + '" aria-label="历史记录" title="历史记录" class="detail-card-history-btn">' + historyIcon + '</button>' +
-          (opened ? '<button type="button" data-action="consume-one" data-id="' + id + '" class="btn-feed inventory-primary-action">' + actionContent + '</button>' : '') +
-        '</div></article>';
-    }
     var cover = MP.getItemCoverSrc(item);
-    var arrivalDays = group.latestArrivalDate ? Utils.diffDaysBetween(group.latestArrivalDate, Utils.getTodayStr()) : null;
-    var arrivalLabel = arrivalDays === null || arrivalDays < 0 ? '' : arrivalDays === 0 ? '今天' : Utils.formatNumber(arrivalDays) + '天前';
     var photo = '<button type="button" data-action="preview-img" data-id="' + id + '" aria-label="查看日用品图片" class="detail-card-photo">' +
-      '<img src="' + cover + '" alt="' + Utils.escapeHtml(item.name) + '">' +
-      (arrivalLabel ? '<span class="detail-card-photo-fed">' + arrivalLabel + '</span>' : '') + '</button>';
+      '<img src="' + Utils.escapeHtml(cover) + '" alt="' + Utils.escapeHtml(item.name) + '">' + UI.itemPhotoCountBadge(item) + '</button>';
     var spec = Utils.formatItemSpec(item);
     var unitPrice = Utils.formatMoney(item.price, item.currency, group.unit);
     var specPrice = [spec ? spec + '/' + group.unit : '', unitPrice].filter(Boolean).join(' · ');
@@ -481,18 +453,21 @@
       freshPanel = '<div class="supply-detail-fresh"><span>开封后保鲜期 ' + Utils.formatQuantity(item.openDaysLimit, '天') + '</span>' +
         (freshDays === null ? '' : '<strong>' + (freshDays < 0 ? '已超过 ' : '剩 ') + Utils.formatDays(freshDays).text + '</strong>') + '</div>';
     }
-    var estimatePanel = '<div class="supply-detail-estimate">' + Utils.escapeHtml(detail) + '</div>';
+    var estimatePanel = enoughData ? '<div class="supply-detail-estimate">本批剩 ' +
+      Utils.escapeHtml(Utils.formatNumber(group.quantity) + ' ' + group.unit) + ' · 预计还能用 ' +
+      Utils.formatNumber(group.remainingDays) + ' 天</div>' :
+      item.isSample ? '<div class="supply-detail-estimate">示例库存未计入预测</div>' : '';
     if (opened) {
       var usedDays = Number(group.currentUsedDays) || 0;
       var average = Number(group.averageCycleDays);
       var ratio = average > 0 ? usedDays / average * 100 : 0;
       var progressTone = ratio > 100 ? 'danger' : ratio >= 70 ? 'warning' : 'ok';
-      var estimateText = enoughData ? (ratio > 100
+      var estimateText = ratio > 100
         ? '已超过平均 ' + Utils.formatNumber(Math.max(0, usedDays - average)) + ' 天'
-        : '预计还能用 ' + Utils.formatNumber(group.remainingDays) + ' 天') : item.isSample ? '示例库存未计入预测' : '数据不足，暂不估算';
+        : '预计还能用 ' + Utils.formatNumber(group.remainingDays) + ' 天';
       estimatePanel = '<div class="supply-current-cycle supply-current-cycle--' + progressTone + '">' +
         '<div><span>当前这' + Utils.escapeHtml(group.unit) + ' · 开封 ' + Utils.escapeHtml(item.openedDate) + '</span><span>已用 ' + Utils.formatNumber(usedDays) + '天</span></div>' +
-        '<strong>' + estimateText + '</strong>' +
+        (enoughData ? '<strong>' + estimateText + '</strong>' : item.isSample ? '<strong>示例库存未计入预测</strong>' : '') +
         (enoughData ? '<span class="progress-track"><i class="progress-bar" style="width:' + Math.min(100, ratio) + '%"></i></span>' : '') + '</div>';
     }
     return '<article class="ios-card detail-card supply-detail-card" data-id="' + id + '">' + cardOverflowMenu(item) +
@@ -611,10 +586,8 @@
       st.items.forEach(function (item) {
         if (!(Number(item.quantity) > 0)) return;
         var key = Domain.getProductGroupKey(item);
-        var totals = liveTotals.get(key) || { quantity: 0, eatenCount: 0, discardedCount: 0 };
+        var totals = liveTotals.get(key) || { quantity: 0 };
         totals.quantity += Number(item.quantity);
-        totals.eatenCount += Number(item.eatenCount) || 0;
-        totals.discardedCount += Number(item.discardedCount) || 0;
         liveTotals.set(key, totals);
       });
     }
@@ -626,7 +599,7 @@
       function archiveThumb(item) {
         var photo = MP.getItemCoverSrc(item);
         return '<span class="redeemed-thumb">' +
-          (photo ? '<img src="' + esc(photo) + '" alt="">' : Utils.getCategoryIcon(item.category)) + '</span>';
+          (photo ? '<img src="' + esc(photo) + '" alt="">' : Utils.getCategoryIcon(item.category)) + UI.itemPhotoCountBadge(item) + '</span>';
       }
       function archiveAction(action, item, label, extra) {
         return '<button type="button" data-action="' + action + '" data-id="' + esc(item.id) + '"' + (extra || '') + '>' + label + '</button>';
@@ -668,8 +641,7 @@
             (duration !== null ? '<span class="redeemed-duration">用时 ' + Utils.formatQuantity(duration, '天') + '</span>' : '') +
             '</div>' + (purchase ? '<div class="redeemed-muted">' + esc(purchase) + '</div>' : '') +
             (shelf ? '<div class="redeemed-muted">' + esc(shelf) + '</div>' : '') +
-            '<div class="redeemed-batch-edit">' + archiveAction('edit', item, '编辑') +
-            archiveAction('delete', item, '删除') + '</div></div>';
+            cardOverflowMenu(item, false) + '</div>';
         });
         var metrics = datedUnits ? ['均每' + unit + ' ' + Utils.formatQuantity(Math.max(1, Math.round(days / datedUnits)), '天')] : [];
         costs.forEach(function (cost, currency) {
@@ -685,8 +657,7 @@
         return {
           summary: summary,
           batches: '<div class="redeemed-batches">' + rows.slice(0, 3).join('') + folded + '</div>',
-          footer: '<div class="archive-footer redeemed-footer"><span class="stock-quantity-pill">在库 ' +
-            esc(Utils.formatQuantity(Utils.round2(stock), unit)) + '</span>' +
+          footer: '<div class="archive-footer redeemed-footer">' + archiveLiveStockPill(stock, unit) +
             archiveAction('archive-history', rep, historyIcon, ' aria-label="流水" title="流水"') +
             archiveAction('restock-new', rep, '复购入库') + '</div>'
         };
@@ -705,15 +676,13 @@
             '<span class="redeemed-compact-copy"><span class="redeemed-compact-name"><strong>' + esc(item.name) + '</strong> ' + esc(item.brand) +
             '</span><span class="redeemed-muted">' + esc(meta.join(' · ')) + '</span></span><span class="redeemed-chevron" aria-hidden="true">›</span></summary>' +
             '<div class="redeemed-expanded">' + content.batches + content.footer + '</div></details>' +
-            archiveAction('restock-new', item, '复购', ' class="redeemed-quick-buy"') + '</article>';
+            detailCardRatings(item, true) + '</article>';
         }
-        var pal = MP.getPalatabilityBadgeInfo(item);
         var spec = Utils.formatItemSpec(item);
         return '<article class="ios-card archive-card redeemed-card"><div class="redeemed-heading">' +
           archiveAction('preview-img', item, thumbnail, ' class="redeemed-photo" aria-label="查看商品图片"') +
-          '<div class="redeemed-copy"><div class="redeemed-tags"><span>' + esc(MP.CATEGORIES[item.category].label) +
-          '</span><span>' + esc(item.brand) + '</span>' + (pal ? '<span class="palatability-label">' +
-            Utils.formatPalatabilityBadge(item, pal) + '</span>' : '') +
+          '<div class="redeemed-copy"><div class="redeemed-tags"><span class="redeemed-category">' + esc(MP.CATEGORIES[item.category].label) +
+          '</span>' + (item.brand ? '<span class="redeemed-brand">' + esc(item.brand) + '</span>' : '') + detailCardRatings(item) +
           '</div><h3>' + esc(item.name) + (spec ? ' <small>' + esc(spec) + '</small>' : '') + '</h3>' +
           content.summary + '</div></div>' + content.batches + content.footer + '</article>';
       }
@@ -743,9 +712,9 @@
 
     function archiveFooter(group) {
       var item = group.latestItem;
-      var totals = liveTotals.get(group.groupKey) || { quantity: 0, eatenCount: 0 };
+      var totals = liveTotals.get(group.groupKey) || { quantity: 0 };
       return '<div class="archive-footer">' +
-        stockQuantityPill({ unit: item.unit, quantity: Utils.round2(totals.quantity), eatenCount: Utils.round2(totals.eatenCount), discardedCount: totals.discardedCount }) +
+        archiveLiveStockPill(totals.quantity, item.unit || '件') +
         '<button type="button" data-action="item-history" data-id="' + Utils.escapeHtml(item.sourceBatchId || item.id) + '">流水</button>' +
         '<button type="button" data-action="restock-new" data-id="' + Utils.escapeHtml(item.id) + '">复购入库</button>' +
         '</div>';
@@ -757,8 +726,7 @@
     }
     function renderCompactArchive(grp) {
       var rep = grp.latestItem;
-      var archivePal = MP.getPalatabilityBadgeInfo(rep);
-      var palIcon = archivePal ? Utils.formatPalatabilityBadge(rep, archivePal) : '';
+      var palIcon = detailCardRatings(rep, true);
       return (
         '<div class="ios-card archive-card" style="padding:10px 12px;border-radius:14px;">' +
           '<div data-action="edit" data-id="' + Utils.escapeHtml(rep.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
@@ -766,7 +734,7 @@
               Utils.getCategoryIcon(rep.category) +
               '<span style="font-size:11px;font-weight:700;color:var(--accent-strong);background:var(--accent-soft);padding:1px 6px;border-radius:6px;flex-shrink:0;">' + Utils.escapeHtml(rep.brand) + '</span>' +
               '<strong style="font-size:13.5px;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(rep.name) + '</strong>' +
-              (palIcon ? '<span style="font-size:12px;flex-shrink:0;">' + palIcon + '</span>' : '') +
+              palIcon +
               archiveBadge(grp) +
             '</div>' +
             '<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">' +
@@ -783,18 +751,15 @@
       var rep = grp.latestItem;
       var catInfo = MP.CATEGORIES[rep.category] || MP.CATEGORIES.dry;
       var unitStr = Utils.escapeHtml(rep.unit || '件');
-      var palInfoRep = MP.getPalatabilityBadgeInfo(rep);
-      var palHtml = palInfoRep
-        ? '<span class="palatability-label">' + Utils.formatPalatabilityBadge(rep, palInfoRep) + '</span>'
-        : '';
+      var palHtml = detailCardRatings(rep);
       var coverSrc = MP.getItemCoverSrc(rep);
-      var realTag = rep.imageData
+      var realTag = MP.getItemImages(rep).length
         ? '<span style="position:absolute;bottom:3px;right:3px;background:var(--photo-badge-bg);color:var(--text-on-accent);font-size:11px;font-weight:700;padding:1px 5px;border-radius:6px;">实拍</span>'
         : '';
       var thumbHtml =
         '<button type="button" data-action="preview-img" data-id="' + Utils.escapeHtml(rep.id) + '" aria-label="查看口粮图片" style="position:relative;width:64px;height:64px;padding:0;border:1px solid var(--border-warm);border-radius:14px;overflow:hidden;background:var(--control-bg);flex-shrink:0;cursor:pointer;">' +
-          '<img src="' + coverSrc + '" alt="' + Utils.escapeHtml(rep.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
-          realTag +
+          '<img src="' + Utils.escapeHtml(coverSrc) + '" alt="' + Utils.escapeHtml(rep.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+          realTag + UI.itemPhotoCountBadge(rep) +
         '</button>';
 
       var totalDaysSum = 0;
@@ -827,7 +792,7 @@
         }
 
         return (
-          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;background:var(--card-bg);border:1px solid var(--border-warm);">' +
+          '<div class="archive-batch-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 44px 8px 10px;border-radius:10px;background:var(--card-bg);border:1px solid var(--border-warm);">' +
             '<div style="min-width:0;flex:1;">' +
               '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
                 '<span style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--status-neutral-bg);padding:1px 6px;border-radius:5px;">批次 #' + (grp.batches.length - bIdx) + '</span>' +
@@ -842,10 +807,7 @@
                 (bItem.batchCode ? (' · 购入渠道 ' + Utils.escapeHtml(bItem.batchCode)) : '') +
               '</div>' +
             '</div>' +
-            '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">' +
-              '<button type="button" data-action="edit" data-id="' + Utils.escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-main);font-size:11px;font-weight:600;cursor:pointer;">编辑</button>' +
-              '<button type="button" data-action="delete" data-id="' + Utils.escapeHtml(bItem.id) + '" style="padding:4px 8px;border-radius:7px;border:1px solid var(--danger-soft);background:var(--danger-soft);color:var(--status-danger-text);font-size:11px;font-weight:600;cursor:pointer;">删除</button>' +
-            '</div>' +
+            cardOverflowMenu(bItem, false) +
           '</div>'
         );
       }).join('');
@@ -887,16 +849,13 @@
       listEl.innerHTML = pagedItems.map(function (entry) {
         if (entry.archive) return renderCompactArchive(entry.archive);
         var it = entry.item;
-        if (it.category === 'supplies') {
-          return renderSupplyInventoryCard(supplyBatchEstimate(it), historyIcon, true);
-        }
         var ev = Domain.evaluateItem(it);
         var catInfo = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
         var expiryDays = ev.expDays;
         var expiryLabel = expiryDays === null ? '未填写过期日期'
           : expiryDays < 0 ? '已过期 ' + Utils.formatDays(expiryDays).text
           : '剩 ' + Utils.formatDays(expiryDays).text;
-        var opened = Domain.isStockOpened(it);
+        var opened = it.category === 'supplies' ? Boolean(it.isOpened && it.openedDate) : Domain.isStockOpened(it);
         var openDays = opened ? ev.openRemaining : null;
         var openLabel = !opened ? '未开封' : openDays === null ? '未填写开封保鲜期'
           : openDays < 0 ? '开封超期 ' + Utils.formatDays(openDays).text : '开封剩 ' + Utils.formatDays(openDays).text;
@@ -910,7 +869,7 @@
         var palIcon = detailCardRatings(it, true);
 
         var compactStock = detailedOpenStock(it, unit);
-        var compactOpened = compactStock.packageCount;
+        var compactOpened = it.category === 'supplies' ? (opened ? 1 : 0) : compactStock.packageCount;
         var compactUsed = Number(it.eatenCount) || 0;
         var compactStockHtml = '<span class="compact-stock-main">在库 ' +
           Utils.escapeHtml(Utils.formatQuantity(Number(it.quantity) || 0, unit)) + '</span>' +
@@ -923,7 +882,7 @@
         var identity = Utils.escapeHtml([it.name, displaySpec, fracTxtCompact].filter(Boolean).join(' · '));
 
         return (
-          '<div class="ios-card compact-stock-card" data-id="' + id + '">' + cardOverflowMenu(it) +
+          '<div class="ios-card compact-stock-card" data-id="' + id + '">' + cardOverflowMenu(it, it.category === 'supplies') +
             '<div class="compact-brand-row">' +
               '<span class="compact-category-icon">' + Utils.getCategoryIcon(it.category, 20) + '</span>' +
               '<span class="compact-brand" title="' + Utils.escapeHtml(it.brand) + '">' + Utils.escapeHtml(it.brand) + '</span>' +
@@ -939,8 +898,9 @@
               ((displaySpec || fracTxtCompact) ? '<span class="compact-product-spec">' +
                 Utils.escapeHtml([displaySpec, fracTxtCompact].filter(Boolean).join(' · ')) + '</span>' : '') +
             '</div>' +
-            '<button type="button" data-action="' + (catInfo.group === 'supplies' ? 'consume-one' : 'log-feed') + '" data-id="' + id + '" class="btn-feed inventory-primary-action compact-card-action">' +
-              UI.feedButtonContent(catInfo.group === 'supplies' ? '记用完' : catInfo.group === 'med' ? '记用药' : '记喂食') + '</button>' +
+            (catInfo.group !== 'supplies' || opened
+              ? '<button type="button" data-action="' + (catInfo.group === 'supplies' ? 'consume-one' : 'log-feed') + '" data-id="' + id + '" class="btn-feed inventory-primary-action compact-card-action">' +
+                UI.feedButtonContent(catInfo.group === 'supplies' ? '记用完' : catInfo.group === 'med' ? '记用药' : '记喂食') + '</button>' : '') +
             '<div class="compact-stock-row"><span class="compact-stock-copy">' + compactStockHtml + '</span>' +
               '<span class="compact-location"' + (it.location ? ' title="' + Utils.escapeHtml(it.location) + '"' : '') + '>' +
                 (it.location ? Utils.uiIcon('map-pin', 14) + '<span>' + Utils.escapeHtml(it.location) + '</span>' : '') + '</span>' +
@@ -957,7 +917,7 @@
       if (entry.archive) return renderDetailedArchive(entry.archive);
       var it = entry.item;
       if (it.category === 'supplies') {
-        return renderSupplyInventoryCard(supplyBatchEstimate(it), historyIcon, false);
+        return renderSupplyInventoryCard(supplyBatchEstimate(it), historyIcon);
       }
       var ev = Domain.evaluateItem(it);
       var catInfo = MP.CATEGORIES[it.category] || MP.CATEGORIES.dry;
@@ -985,8 +945,8 @@
             (stock.dates.length ? '<span class="detail-card-open-date">开封日期 ' + Utils.escapeHtml(stock.dates.join(' · ')) + '</span>' : '') +
           '</div>' + openedProgress + '</div>'
         : '';
-      if (stock.opened && it.category === 'can' && it.flavors && !Domain.hasSharedSeal(it)) {
-        openedBannerHtml = detailedWetFlavorOpenStock(it, unit, ev) || openedBannerHtml;
+      if (stock.opened && ['can', 'treat'].includes(it.category) && it.flavors && !Domain.hasSharedSeal(it)) {
+        openedBannerHtml = detailedFlavorOpenStock(it, unit, ev) || openedBannerHtml;
       }
 
       var displaySpec = Utils.formatItemSpec(it);
@@ -1006,8 +966,8 @@
       var coverSrc = MP.getItemCoverSrc(it);
       var thumbHtml =
         '<button type="button" data-action="preview-img" data-id="' + Utils.escapeHtml(it.id) + '" aria-label="查看口粮图片" class="detail-card-photo">' +
-          '<img src="' + coverSrc + '" alt="' + Utils.escapeHtml(it.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
-          lastFedHtml +
+          '<img src="' + Utils.escapeHtml(coverSrc) + '" alt="' + Utils.escapeHtml(it.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+          lastFedHtml + UI.itemPhotoCountBadge(it) +
         '</button>';
 
       var feedBtnLabel = catInfo.group === 'supplies' ? '记用完' : catInfo.group === 'med' ? '记用药' : '记喂食';
@@ -1040,7 +1000,7 @@
           datePanel +
 
           openedBannerHtml +
-          (it.flavors && it.category !== 'can' ? '<div class="flavor-stock"><strong>剩余：</strong>' + UI.flavorStockText(it, false, true) + '</div>' : '') +
+          (it.flavors && !['can', 'treat'].includes(it.category) ? '<div class="flavor-stock"><strong>剩余：</strong>' + UI.flavorStockText(it, false, true) + '</div>' : '') +
           (it.notes ? '<div style="margin-top:8px;font-size:12px;color:var(--text-muted);background:var(--status-neutral-bg);padding:6px 10px;border-radius:8px;">' + Utils.iconLabel('message-circle', it.notes) + '</div>' : '') +
 
           '<div style="margin-top:11px;padding-top:10px;border-top:1px solid var(--status-neutral-bg);">' +

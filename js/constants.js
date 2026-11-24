@@ -4,7 +4,8 @@
   var MP = global.MeowPantry = global.MeowPantry || {};
 
   MP.APP_VERSION = '3.0.0';
-  MP.SCHEMA_VERSION = 3;
+  MP.SCHEMA_VERSION = 4;
+  MP.MAX_ITEM_IMAGES = 6;
 
   // Storage keys strictly preserved for 100% backward compatibility with existing user data
   MP.STORAGE_KEYS = {
@@ -244,10 +245,15 @@
     };
   };
 
+  MP.getItemImages = function (item) {
+    if (!item) return [];
+    var images = Array.isArray(item.images) ? item.images : [item.imageData || item.image];
+    return images.filter(function (src) { return typeof src === 'string' && src.length > 20; });
+  };
+
   MP.getItemCoverSrc = function (item) {
-    if (item && item.imageData && typeof item.imageData === 'string' && item.imageData.length > 20) {
-      return item.imageData;
-    }
+    var images = MP.getItemImages(item);
+    if (images.length) return images[0];
     var cat = (item && item.category && MP.CATEGORIES[item.category]) ? item.category : 'dry';
     var covers = MP.COVERS || {};
     return covers[cat] || covers.dry || '';

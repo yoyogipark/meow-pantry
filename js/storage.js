@@ -169,7 +169,12 @@
         st.storageHealth.lsAvailable = true;
         return true;
       } catch (quotaErr) {
-        items.forEach(function (item) { delete item.imageData; });
+        items.forEach(function (item) {
+          // Keep an explicit empty array so deleted photos cannot reappear from older IDB data.
+          if (MP.getItemImages(item).length) delete item.images;
+          delete item.imageData;
+          delete item.image;
+        });
         try {
           writeLocalState(items, true);
           st.storageHealth.lsAvailable = true;
@@ -232,18 +237,18 @@
     }
   }
 
-  // Rehydrate imageData from IDB items when LocalStorage had newer data saved in 5MB slim mode
+  // Recover photos only for photo-stripped rows, not explicit empty galleries.
   function rehydrateImagesFromIdb(primaryItems, idbItems) {
     if (!Array.isArray(primaryItems) || !Array.isArray(idbItems)) return primaryItems;
     var imgMap = {};
     for (var i = 0; i < idbItems.length; i++) {
       var x = idbItems[i];
-      if (x && x.id && x.imageData) imgMap[x.id] = x.imageData;
+      if (x && x.id && MP.getItemImages(x).length) imgMap[x.id] = MP.getItemImages(x);
     }
     for (var j = 0; j < primaryItems.length; j++) {
       var p = primaryItems[j];
-      if (p && !p.imageData && imgMap[p.id]) {
-        p.imageData = imgMap[p.id];
+      if (p && !Array.isArray(p.images) && !p.imageData && !p.image && imgMap[p.id]) {
+        p.images = imgMap[p.id].slice();
       }
     }
     return primaryItems;
@@ -317,7 +322,10 @@
         var migratedSpec = chosenItems.some(function (item) {
           return item && item.category !== 'supplies' && String(item.spec || '').trim() && !item.legacySpecInNotes;
         });
-        if (migratedWeight || migratedSpec) Storage.saveToStorage(true);
+        var migratedImages = chosenItems.some(function (item) {
+          return item && !Array.isArray(item.images) && (item.imageData || item.image);
+        });
+        if (migratedWeight || migratedSpec || migratedImages) Storage.saveToStorage(true);
       } else {
         // Brand-new user first visit: initialize sample items & logs without touching any existing records
         st.items = Domain.buildSampleItems();
@@ -527,6 +535,10 @@
     var batchIds = new Map();
     for (var item of rawItems) {
       if (!item || typeof item !== 'object') continue;
+      if (item.images !== undefined && (!Array.isArray(item.images) || item.images.length > MP.MAX_ITEM_IMAGES ||
+          item.images.some(function (src) { return typeof src !== 'string' || src.length <= 20; }))) {
+        return { ok: false, error: '备份中的商品照片无效，每个商品最多 6 张照片' };
+      }
       if (item.effectTags !== undefined && (!Array.isArray(item.effectTags) ||
           item.effectTags.some(function (tag) { return typeof tag !== 'string' || !tag.trim(); }))) {
         return { ok: false, error: '备份中存在无效的功效标签' };
@@ -611,7 +623,7 @@
   }
 
   function stockSignature(item) {
-    return JSON.stringify([item.quantity, item.unit, item.feedUsageUnit || '', item.feedUsagePerItem || null, item.isOpened, item.openedDate, item.openRemainFraction,
+    return JSON.stringify([item.quantity, item.unit, item.unit_net_weight_g, item.unit_spec_value || null, item.unit_spec_unit || '', item.feedUsageUnit || '', item.feedUsagePerItem || null, item.isOpened, item.openedDate, item.openRemainFraction,
       item.eatenCount, item.consumedCount, item.discardedCount || 0, item.finishedDate, item.purchasePackaging || null,
       item.portionRevision || '', (item.flavors || []).map(function (flavor) {
         return [flavor.id, flavor.perPack, flavor.quantity, flavor.openedDate, flavor.openRemainFraction, flavor.revision];
@@ -789,7 +801,7 @@
     delete settings.lastJsonExportAt;
     return {
       app: '喵喵粮仓',
-      version: 3,
+      version: 4,
       schemaVersion: MP.SCHEMA_VERSION,
       exportedAt: (date || new Date()).toISOString(),
       settings: settings,

@@ -192,18 +192,18 @@
     var mode = feedStockMode();
     var items = MP.state.items;
     var batches = items.filter(function (item) {
-      return isFeedStockMatch(item, mode) &&
+      return item.quantity > 0 && isFeedStockMatch(item, mode) &&
         (!item.sourceBatchId || !items.some(function (batch) { return batch.id === item.sourceBatchId; }));
     });
+    var requested = items.find(function (item) { return item.id === selectedItemId; });
     var sections = mode === 'medication'
       ? [{ label: '药品', group: 'med' }, { label: '营养品', group: 'supp' }]
       : [{ label: '', group: 'food' }];
-    var current = items.find(function (item) { return item.id === selectedItemId; });
-    var prompt = batches.length ? '请选择仓库商品' : '暂无仓库商品';
+    var prompt = batches.length ? '请选择在库商品' : '暂无在库商品';
     var safe = Utils.escapeHtml;
-    var options = '<option value="">手动输入商品…</option>' +
-      (mode === 'food' ? '<option value="__unstocked__">自制/无商品</option>' : '');
-    var choices = { active: '', archived: '' };
+    var options = '<option value="">记录未入库商品</option>' +
+      (mode === 'food' ? '<option value="__unstocked__">记录自制 / 无品牌食物</option>' : '');
+    var choices = '';
     function thumbnail(item) {
       var cover = MP.getItemCoverSrc(item);
       return '<span class="feed-batch-thumb" aria-hidden="true">' +
@@ -214,36 +214,62 @@
     function balanceLabel(item) {
       return item.quantity > 0 ? '余' + Utils.formatQuantity(item.quantity, item.unit) : '已核销';
     }
-    function label(item) { return displayName(item) + ' · ' + balanceLabel(item); }
-    [false, true].forEach(function (archived) {
-      sections.forEach(function (section) {
-        var group = batches.filter(function (item) {
-          return MP.getCategoryGroup(item.category) === section.group && (item.quantity <= 0) === archived;
-        });
-        if (!group.length) return;
-        var heading = archived ? (section.label ? section.label + ' · 已核销' : '已核销') : section.label;
-        var optionRows = '';
-        var sectionKey = archived ? 'archived' : 'active';
-        if (section.label) choices[sectionKey] += '<div class="feed-stock-group-label">' + safe(section.label) + '</div>';
-        group.forEach(function (item) {
-          var id = safe(item.id);
-          var text = safe(label(item));
-          optionRows += '<option value="' + id + '">' + text + '</option>';
-          choices[sectionKey] += '<button type="button" data-feed-stock-id="' + id + '"' + (archived ? ' class="feed-stock-archived"' : '') +
-            ' title="' + text + '">' + thumbnail(item) + '<span class="feed-stock-option-text">' + safe(displayName(item)) +
-            '</span><span class="feed-stock-balance"> · ' + safe(balanceLabel(item)) +
-            '</span><span class="feed-stock-check" aria-hidden="true">✓</span></button>';
-        });
-        options += heading ? '<optgroup label="' + safe(heading) + '">' + optionRows + '</optgroup>' : optionRows;
+    function states(item) {
+      if (item.quantity <= 0) return [];
+      var opened = Domain.isStockOpened(item);
+      var badges = [{ label: opened ? '已开封' : '未开封', tone: opened ? 'opened' : 'neutral' }];
+      var status = Domain.evaluateItem(item).status;
+      if (status === 'expired') badges.push({ label: '已过期', tone: 'danger' });
+      else if (status === 'expiring') badges.push({ label: '临期', tone: 'warning' });
+      return badges;
+    }
+    function balanceSummary(item) {
+      return [MP.CATEGORIES[item.category]?.label, balanceLabel(item)].filter(Boolean).join(' · ');
+    }
+    function summary(item) {
+      return [balanceSummary(item)].concat(states(item).map(function (badge) { return badge.label; })).join(' · ');
+    }
+    function copy(item) {
+      return '<span class="feed-batch-copy"><strong>' + safe(displayName(item)) + '</strong>' +
+        '<span class="feed-batch-meta"><span class="feed-batch-balance">' + safe(balanceSummary(item)) + '</span>' +
+        states(item).map(function (badge) {
+          return '<span class="feed-batch-status feed-batch-status--' + badge.tone + '">' + badge.label + '</span>';
+        }).join('') + '</span></span>';
+    }
+    function batchDetail(item) {
+      return [Utils.formatItemSpec(item), item.batchCode,
+        item.expDate ? Utils.formatListDate(item.expDate) + '到期' : '',
+        item.location].filter(Boolean).join(' · ');
+    }
+    function label(item) { return [displayName(item), summary(item), batchDetail(item)].filter(Boolean).join(' · '); }
+    sections.forEach(function (section) {
+      var group = batches.filter(function (item) {
+        return MP.getCategoryGroup(item.category) === section.group;
       });
+      if (!group.length) return;
+      var optionRows = '';
+      choices += '<div data-feed-stock-section>' +
+        (section.label ? '<div class="feed-stock-group-label">' + safe(section.label) + '</div>' : '');
+      group.forEach(function (item) {
+        var id = safe(item.id);
+        var text = safe(label(item));
+        optionRows += '<option value="' + id + '">' + text + '</option>';
+        var search = [label(item), item.spec].concat((item.flavors || []).map(function (flavor) { return flavor.name; })).join(' ');
+        choices += '<button type="button" data-feed-stock-id="' + id + '" data-feed-stock-search="' + safe(search.toLowerCase()) + '"' +
+          ' title="' + text + '">' + thumbnail(item) + copy(item) +
+          '<span class="feed-stock-check" aria-hidden="true">✓</span></button>';
+      });
+      choices += '</div>';
+      options += section.label ? '<optgroup label="' + safe(section.label) + '">' + optionRows + '</optgroup>' : optionRows;
     });
-    // Historical records with a deduction keep the original batch reference.
-    if (select.disabled && selectedItemId && !batches.some(function (item) { return item.id === selectedItemId; })) {
-      options += '<option value="' + safe(selectedItemId) + '">' + safe(current ? label(current) : '原记录批次') + '</option>';
+    // Keep an existing record's batch reference without offering archived batches as choices.
+    if (selectedItemId && (requested || select.disabled) && !batches.some(function (item) { return item.id === selectedItemId; })) {
+      options += '<option hidden value="' + safe(selectedItemId) + '">' + safe(requested ? label(requested) : '原记录批次') + '</option>';
     }
     select.innerHTML = options;
     select.value = selectedItemId || '';
     if (select.selectedIndex < 0) select.value = '';
+    var current = items.find(function (item) { return item.id === select.value; });
     var picker = document.getElementById('feedStockPicker');
     if (select.disabled) picker.open = false;
     var trigger = document.getElementById('feedStockPickerTrigger');
@@ -252,23 +278,22 @@
     var selection = document.getElementById('feedStockSelection');
     trigger.classList.toggle('has-stock-selection', Boolean(current));
     if (current) {
-      selection.innerHTML = thumbnail(current) + '<span class="feed-batch-copy"><strong>' + safe(displayName(current)) +
-        '</strong><small>' + safe((MP.CATEGORIES[current.category]?.label || '') + ' · ' + balanceLabel(current)) +
-        '</small></span>';
+      selection.innerHTML = thumbnail(current) + copy(current);
     } else {
       selection.textContent = selectedItemId && select.disabled ? '原记录批次' : prompt;
     }
     selection.title = current ? label(current) : selection.textContent;
     var list = document.getElementById('feedStockChoices');
-    var selectedArchived = current && current.quantity <= 0;
-    list.innerHTML = (choices.active ? '<div class="feed-stock-group-label">在库</div>' + choices.active : '') +
-      (choices.archived ? '<details class="feed-stock-archive-group"' + (selectedArchived ? ' open' : '') +
-        '><summary>已用完 / 已归档</summary>' + choices.archived + '</details>' : '') +
-      '<button type="button" class="feed-stock-manual-option" data-feed-stock-id=""><span aria-hidden="true">＋</span>手动输入商品…</button>' +
-      (mode === 'food' ? '<button type="button" class="feed-stock-manual-option" data-feed-stock-id="__unstocked__"><span aria-hidden="true">＋</span>自制/无商品</button>' : '');
+    document.getElementById('feedStockResults').innerHTML = choices;
+    document.getElementById('feedStockManualChoices').innerHTML =
+      '<button type="button" class="feed-stock-manual-option" data-feed-stock-id=""><span aria-hidden="true">＋</span>' +
+        '<span><strong>记录未入库商品</strong><small>' + (mode === 'food' ? '填写品牌、品名 · 不扣库存' : '填写名称、用量 · 不扣库存') + '</small></span></button>' +
+      (mode === 'food' ? '<button type="button" class="feed-stock-manual-option" data-feed-stock-id="__unstocked__"><span aria-hidden="true">＋</span>' +
+        '<span><strong>记录自制 / 无品牌食物</strong><small>只填食物名 · 不扣库存</small></span></button>' : '');
     list.querySelectorAll('button').forEach(function (button) {
       button.setAttribute('aria-pressed', String(button.dataset.feedStockId === select.value));
     });
+    UI.filterFeedStockChoices();
     picker.querySelectorAll('.feed-batch-thumb img').forEach(function (image) {
       function showFallback() {
         image.nextElementSibling.hidden = false;
@@ -277,6 +302,22 @@
       image.addEventListener('error', showFallback, { once: true });
       if (image.complete && !image.naturalWidth) showFallback();
     });
+  };
+
+  UI.filterFeedStockChoices = function () {
+    var query = document.getElementById('feedStockSearch').value.trim().toLowerCase();
+    var list = document.getElementById('feedStockResults');
+    var count = 0;
+    list.querySelectorAll('[data-feed-stock-search]').forEach(function (button) {
+      button.hidden = !button.dataset.feedStockSearch.includes(query);
+      if (!button.hidden) count++;
+    });
+    list.querySelectorAll('[data-feed-stock-section]').forEach(function (section) {
+      section.hidden = !section.querySelector('[data-feed-stock-search]:not([hidden])');
+    });
+    document.getElementById('feedStockSearchStatus').textContent = count
+      ? count + ' 个在库批次'
+      : query ? '暂无匹配的在库批次' : '暂无在库批次';
   };
 
   UI.returnToFeedStock = function () {
@@ -511,10 +552,17 @@
       amount.placeholder = '如：半' + unit + '、1' + unit;
     }
     document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel(care ? 'stethoscope' : editing ? 'pencil' : 'paw-print',
-      nursing ? (editing ? '编辑护理记录' : '记录护理') : care ? (editing ? '编辑用药记录' : '记录用药') : (editing ? '编辑每日记录' : form.dataset.productEntry === 'true' ? '记录喂食' : form.dataset.dailyEntry === 'true' ? '新增记录' : '记录饮食 / 营养 / 用药'), 20);
+      nursing ? (editing ? '编辑护理记录' : '记录护理') : care ? (editing ? '编辑用药记录' : '记录用药') : (editing ? '编辑每日记录' : '记录喂食'), 20);
     document.getElementById('feedPalatabilityField').classList.toggle('hidden-view', care);
+    Array.from(document.getElementById('feedFlavorPal').options).forEach(function (option) {
+      var badge = MP.getPalatabilityBadgeInfo({
+        category: target?.category || document.getElementById('feedCategorySelect').value,
+        palatability: option.value
+      });
+      option.textContent = badge ? MP.getPalatabilityEmoji(option.value) + ' ' + badge.label : '未评价';
+    });
     document.getElementById('feedMedicationOutcomeField').classList.toggle('hidden-view', !care || nursing);
-    document.getElementById('feedManualTitle').textContent = unstocked ? '自制/无商品' : '手动输入商品';
+    document.getElementById('feedManualTitle').textContent = unstocked ? '记录自制 / 无品牌食物' : '记录未入库商品';
     document.getElementById('feedManualBrandField').classList.toggle('hidden-view', unstocked);
     document.getElementById('feedCategorySelect').querySelector('[value="med"]').disabled = unstocked;
     document.getElementById('feedNameLabel').textContent = care ? '药品名称' : unstocked ? '食物名称' : '商品名';
@@ -592,6 +640,7 @@
   }
 
   function feedPortionDetail(item, fraction) {
+    if (UI.usesStickPortions(item)) return feedFractionLabel(fraction, item.unit);
     var usageUnit = UI.feedUsageUnit(item);
     if (usageUnit && Number(item.feedUsagePerItem) > 0) {
       return Utils.formatNumber(Number(item.feedUsagePerItem) * fraction, 3) + usageUnit;
@@ -615,7 +664,12 @@
     document.getElementById('feedDeductBox').classList.toggle('hidden-view', !target || editing);
     var weight = target ? Number(target.unit_net_weight_g) || Utils.legacyUnitWeight(target.spec, unit) : 0;
     var currentFraction = target && (flavor || target).quantity >= 1 && (!target.flavors || flavor) ? Number(remaining) || 1 : 0;
-    hint.textContent = target && currentFraction > 0 && !care
+    var stickPortions = !care && UI.usesStickPortions(target);
+    hint.textContent = stickPortions && currentFraction > 0
+      ? '剩余 ' + Utils.formatQuantity(currentFraction, unit) +
+        (weight > 0 ? '约' + Utils.formatNumber(weight * currentFraction, 3) + 'g' : '') +
+        '（' + Utils.formatNumber(currentFraction * 100, 1) + '%）'
+      : target && currentFraction > 0 && !care
       ? '剩余约 ' + (weight > 0 ? Math.round(weight * currentFraction) + 'g（' +
         Utils.formatNumber(currentFraction * 100, 1) + '%）' : feedFractionLabel(currentFraction, unit))
       : '';
@@ -640,7 +694,9 @@
     var plan = convertible ? Domain.planFeedingPortion(target, flavor, portion, { sealedOnly: sealedOnly }) : null;
     var pendingUnit = target && UI.feedUsageUnit(target);
     var reason = !target ? (care ? '选择药品批次后可扣减' : '请选择库存商品')
-      : editing ? '' : !convertible ? (pendingUnit && pendingUnit !== target.unit && dose.endsWith(pendingUnit) && !(Number(target.feedUsagePerItem) > 0)
+      : editing ? '' : target.flavors && !flavor ? '请先选择实际喂食的口味'
+      : !dose ? '请填写份量或选择快捷份量'
+      : !convertible ? (pendingUnit && pendingUnit !== target.unit && dose.endsWith(pendingUnit) && !(Number(target.feedUsagePerItem) > 0)
         ? '份量无法换算，请先填写每' + unit + '的' + pendingUnit + '数；不会扣减库存'
         : '份量无法换算，不会扣减库存')
       : plan.error || (rollover && !openingToggle.checked ? '请先打开开封开关，再扣减库存。' : '');
@@ -649,7 +705,18 @@
     else if (!care && amountChanged && document.getElementById('feedDateInput').value === Utils.getTodayStr()) deduct.checked = true;
     var choice = amount.dataset.doseChoice;
     var chips = Array.from(document.querySelectorAll('#feedPortionChips button:not(.hidden-view)'));
-    var selected = dose && (care || !amount.dataset.automaticPortion) && (chips.find(function (button) {
+    chips.forEach(function (button) {
+      if (!stickPortions || editing) { button.disabled = false; return; }
+      var value = UI.parseFeedPortion(button.dataset.portion, target, flavor);
+      button.disabled = Boolean(target.flavors && !flavor) || !value.valid || !(value.fraction > 0) ||
+        Boolean(Domain.planFeedingPortion(target, flavor, value).error);
+    });
+    var portionError = stickPortions && !editing && dose && (!target.flavors || flavor) &&
+      (!convertible ? '请输入有效份量，如半支、1支；克数需填写每支净含量后才能换算。'
+        : Number((flavor || target).quantity) > 0 ? plan?.error || '' : '');
+    amount.setCustomValidity(portionError || '');
+    UI.showFeedAmountError(portionError || '');
+    var selected = dose && (care || stickPortions || !amount.dataset.automaticPortion) && (chips.find(function (button) {
       return choice && (button.id || button.dataset.portion) === choice;
     }) || chips.find(function (button) {
       if (!button.dataset.portion) return false;
@@ -660,6 +727,10 @@
         var fraction = button.dataset.frac === '0.34' ? 1 / 3 : Number(button.dataset.frac);
         return dose === UI.portionLabel(button.dataset.portion, fraction, target, flavor) ||
           (UI.parseFeedPortion(dose, target, flavor).valid && Math.abs(UI.parseFeedPortion(dose, target, flavor).fraction - fraction) < 1e-6);
+      }
+      if (stickPortions && convertible) {
+        var chipPortion = UI.parseFeedPortion(button.dataset.portion, target, flavor);
+        return chipPortion.valid && Math.abs(portion.fraction - chipPortion.fraction) < 1e-6;
       }
       return /^\d+(?:\.\d+)?g$/i.test(button.dataset.portion) &&
         dose.toLowerCase().replace(/\s+/g, '').replace(/克$/, 'g') === button.dataset.portion.toLowerCase();
@@ -682,8 +753,10 @@
       if (usageUnit && usageUnit !== unit && dose.endsWith(usageUnit)) {
         usedText = dose + '（约' + Utils.formatNumber(plan.used, 3) + unit + '）';
       }
-      var before = (flavor || target).quantity - 1 + (plan.after + plan.used);
-      message = opening ? '将从新开封的这份扣 ' + usedText
+      var before = (flavor || target).quantity - 1 + (Number((flavor || target).openRemainFraction) || 1);
+      message = stickPortions && plan.sealedUnits > 1 ? '将从' + prefix + '在库扣 ' + usedText +
+        '（余 ' + Utils.formatNumber(before, 3) + ' ' + unit + ' → ' + Utils.formatNumber(before - plan.used, 3) + ' ' + unit + '）'
+        : opening ? '将从新开封的这份扣 ' + usedText
         : opened ? '将从' + prefix + '开封余量扣 ' + usedText + '（余 ' + Utils.formatNumber(before, 3) + ' ' + unit +
           ' → ' + Utils.formatNumber(before - plan.used, 3) + ' ' + unit + '）'
         : '将从' + prefix + '在库扣 ' + usedText;
@@ -701,6 +774,19 @@
   UI.feedUsageUnit = function (item) {
     if (!item) return '';
     return item.feedUsageUnit || MP.ITEM_FORM_RULES[item.category]?.[item.subtype]?.feedUnit || '';
+  };
+
+  UI.usesStickPortions = function (item) {
+    return Boolean(item && item.category === 'treat' && item.unit === '支');
+  };
+
+  UI.showFeedAmountError = function (message) {
+    var input = document.getElementById('feedAmountInput');
+    input.classList.toggle('is-invalid', Boolean(message));
+    input.setAttribute('aria-invalid', String(Boolean(message)));
+    var error = document.getElementById('feedAmountError');
+    error.textContent = message;
+    error.classList.toggle('hidden-view', !message);
   };
 
   UI.parseFeedPortion = function (amount, item, flavor) {
@@ -759,6 +845,8 @@
       (category === 'treat' && Boolean(item.subtype)) ||
       (category === 'freeze' && Boolean(item.subtype)));
     if (customChoices) configured = usageUnit === 'g' ? MP.FEED_PORTION_PRESETS.dry : [];
+    var stickPortions = !care && UI.usesStickPortions(item);
+    if (stickPortions) configured = ['半支', '1支', '2支'];
     if (category === 'supp') configured = [];
     if (!care && document.getElementById('feedForm').dataset.unstocked === 'true') configured = [];
     var natural = care || /^(杯|罐|包|盒|支|粒|瓶|袋)$/.test(unit);
@@ -776,7 +864,7 @@
       button.classList.toggle('hidden-view', hidden);
     });
     var quickChips = document.getElementById('feedPortionChips');
-    var order = care ? ['0.25', '0.34', '0.5', '1'] : ['0.5', '0.34', '0.25', '1'];
+    var order = ['0.25', '0.34', '0.5', '1'];
     order.forEach(function (fraction) {
       quickChips.append(quickChips.querySelector('[data-frac="' + fraction + '"][data-package-portion]'));
     });
@@ -789,7 +877,7 @@
       button.textContent = preset;
       quickChips.append(button);
     });
-    if (customChoices && usageUnit && usageUnit !== 'g' && usageUnit !== 'ml') ['半' + usageUnit, '1' + usageUnit].forEach(function (portion) {
+    if (!stickPortions && customChoices && usageUnit && usageUnit !== 'g' && usageUnit !== 'ml') ['半' + usageUnit, '1' + usageUnit].forEach(function (portion) {
       var button = document.createElement('button');
       button.type = 'button';
       button.dataset.configuredPortion = '';
@@ -816,8 +904,8 @@
     var hasFlavor = Boolean(historical && historical.flavorId || item && item.flavors);
     wrap.classList.toggle('hidden-view', !hasFlavor);
     select.disabled = Boolean(historical);
+    select.required = hasFlavor && !historical;
     wrap.classList.toggle('has-selected-flavor', Boolean(historical && hasFlavor));
-    document.getElementById('discardFlavorBtn').disabled = Boolean(historical);
     select.innerHTML = '<option value="">请选择口味</option>';
     if (historical) {
       var palField = document.getElementById('feedFlavorPal');
@@ -831,7 +919,9 @@
         var expiredOpen = Domain.stockExpiryEntries(item).some(function (entry) {
           return entry.flavor === f && entry.opened && entry.evaluation.openRemaining !== null && entry.evaluation.openRemaining < 0;
         });
-        select.add(new Option(f.name + ' · 余' + Utils.formatQuantity(f.quantity, item.unit) +
+        var quantity = UI.usesStickPortions(item) && f.quantity > 0
+          ? f.quantity - 1 + (Number(f.openRemainFraction) || 1) : f.quantity;
+        select.add(new Option(f.name + ' · 余' + Utils.formatQuantity(quantity, item.unit) +
           (expiredOpen ? ' · 开封已过期，请先处理' : ''), f.id));
       });
       UI.updateFeedFlavor(item);
@@ -843,12 +933,17 @@
   UI.updateFeedFlavor = function (item) {
     var flavor = UI.getFeedFlavor(item);
     syncFeedPalatability(item, flavor);
-    var discard = document.getElementById('discardFlavorBtn');
-    discard.disabled = !flavor || flavor.quantity <= 0;
+    var amount = document.getElementById('feedAmountInput');
+    var defaulted = Boolean(UI.usesStickPortions(item) && flavor && (!amount.value.trim() || amount.dataset.automaticPortion));
+    if (defaulted) {
+      amount.value = flavor.quantity > 0 ? feedFractionLabel(Number(flavor.openRemainFraction) || 1, item.unit) : '';
+      amount.dataset.automaticPortion = '1';
+    }
     document.getElementById('feedFlavorFields').classList.toggle('has-selected-flavor', Boolean(flavor));
     UI.syncFeedAutoOpen(item);
     syncLastPortionChip(item, document.getElementById('feedForm').classList.contains('feed-care-mode'),
       Boolean(document.getElementById('feedLogEditId').value));
+    return defaulted;
   };
 
   function syncLastPortionChip(item, care, editing) {
@@ -865,7 +960,7 @@
     if (last?.amount) {
       chip.dataset.portion = last.amount;
       var label = last.amount;
-      if (!care && ['dry', 'freeze', 'treat'].includes(item?.category)) {
+      if (!care && !UI.usesStickPortions(item) && ['dry', 'freeze', 'treat'].includes(item?.category)) {
         var weight = Number(item.unit_net_weight_g) || Utils.legacyUnitWeight(item.spec, item.unit);
         var fraction = UI.parseFeedPortion(last.amount, item).fraction;
         if (weight > 0 && fraction > 0) label = Utils.formatNumber(weight * fraction, 1) + 'g';
@@ -889,8 +984,9 @@
       if (!document.getElementById('feedLogEditId').value) {
         if (target.category === 'med') {
           document.getElementById('feedMealSlot').value = 'care';
-        } else if (target.category === 'treat' || target.category === 'freeze') {
-          document.getElementById('feedMealSlot').value = 'snack';
+        } else if (!document.getElementById('feedForm').dataset.mealSlotManual && MP.isFoodCategory(target.category)) {
+          document.getElementById('feedMealSlot').value =
+            target.category === 'treat' || target.category === 'freeze' ? 'snack' : Utils.getCurrentMealSlot();
         }
       }
       document.getElementById('feedBrandInput').value = target.brand || '';
@@ -923,9 +1019,11 @@
       } else if (target.category === 'med') {
         defaultPortion = '1' + (target.unit || '支');
       }
+      if (UI.usesStickPortions(target)) defaultPortion = feedFractionLabel(curRemFrac || 1, target.unit);
 
       document.getElementById('feedAmountInput').value = defaultPortion;
-      document.getElementById('feedAmountInput').placeholder = '如 25g、半' + target.unit + '、1' + target.unit;
+      document.getElementById('feedAmountInput').placeholder = UI.usesStickPortions(target)
+        ? '如 半支、1支、2支' : '如 25g、半' + target.unit + '、1' + target.unit;
       if (target.flavors) {
         document.getElementById('feedAmountInput').value = '';
       }
@@ -1005,8 +1103,10 @@
     feedForm.dataset.dailyEntry = String(Boolean(dailyEntry));
     feedForm.dataset.manualProduct = 'false';
     delete feedForm.dataset.unstocked;
+    delete feedForm.dataset.mealSlotManual;
+    document.getElementById('feedStockSearch').value = '';
     document.getElementById('feedManualFlavor').value = '';
-    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel('paw-print', '记录饮食 / 营养 / 用药', 20);
+    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel('paw-print', '记录喂食', 20);
     document.getElementById('feedStockSelect').disabled = false;
     document.getElementById('feedLogEditId').value = '';
     document.getElementById('feedForm').dataset.careType = 'medication';
@@ -1037,13 +1137,15 @@
       UI.applyFeedStockSelection(itemId);
     } else {
       var foodBatches = MP.state.items.filter(function (it) {
-        return isFeedStockMatch(it, 'food') && (!it.sourceBatchId || !MP.state.items.some(function (batch) { return batch.id === it.sourceBatchId; }));
+        return it.quantity > 0 && isFeedStockMatch(it, 'food') && (!it.sourceBatchId || !MP.state.items.some(function (batch) { return batch.id === it.sourceBatchId; }));
       });
       var lastLog = MP.state.logs.filter(function (log) {
         return foodBatches.some(function (batch) { return batch.id === log.itemId; }) && !Domain.getCareType(log);
-      }).sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); })[0];
+      }).sort(function (a, b) {
+        return String(b.date).localeCompare(String(a.date)) || String(b.time || '').localeCompare(String(a.time || ''));
+      })[0];
       var firstActive = !manualEntry && (foodBatches.find(function (item) { return item.id === lastLog?.itemId; }) ||
-        foodBatches.find(function (item) { return item.quantity > 0; }) || foodBatches[0]);
+        foodBatches[0]);
       if (firstActive) {
         UI.applyFeedStockSelection(firstActive.id);
       } else {
@@ -1324,31 +1426,64 @@
       return '<button type="button" data-pick-brand="' + Utils.escapeHtml(b) + '" style="white-space:nowrap;padding:4px 9px;border-radius:999px;border:1px solid var(--border-warm);background:var(--control-bg);color:var(--text-muted);font-size:11px;cursor:pointer;">' + Utils.escapeHtml(b) + '</button>';
     }).join('');
     box.classList.toggle('hidden-view', !visibleBrands.length);
+    UI.syncQuickBrandFade();
+  };
+
+  UI.syncQuickBrandFade = function () {
+    var box = document.getElementById('quickBrandChips');
+    box.parentElement.classList.toggle('has-more', box.scrollWidth - box.clientWidth - box.scrollLeft > 1);
   };
 
   UI.scrollModalCategoryIntoView = function () {
     var strip = document.getElementById('modalCatSelector');
     var selected = document.querySelector('#modalCatSelector [data-form-cat].active');
     if (!strip || !selected) return;
-    var gap = 16;
-    var left = selected.offsetLeft;
-    var right = left + selected.offsetWidth;
-    var target = strip.scrollLeft;
-    if (left < strip.scrollLeft) target = left;
-    else if (right + gap > strip.scrollLeft + strip.clientWidth) {
-      target = right + gap - strip.clientWidth;
-    }
+    var left = selected.getBoundingClientRect().left - strip.getBoundingClientRect().left + strip.scrollLeft;
+    var target = left + selected.offsetWidth / 2 - strip.clientWidth / 2;
     target = Math.max(0, Math.min(target, Math.max(0, strip.scrollWidth - strip.clientWidth)));
     if (typeof strip.scrollTo === 'function') strip.scrollTo({ left: target, behavior: 'auto' });
     else strip.scrollLeft = target;
+    UI.syncModalCategoryFade();
+  };
+
+  UI.syncModalCategoryFade = function () {
+    var strip = document.getElementById('modalCatSelector');
+    strip.parentElement.classList.toggle('has-before', strip.scrollLeft > 1);
+    strip.parentElement.classList.toggle('has-more', strip.scrollWidth - strip.clientWidth - strip.scrollLeft > 1);
+  };
+
+  UI.resetFormPhotos = function (images) {
+    MP.state.photoUploadToken++;
+    MP.state.photoUploadPending = false;
+    MP.state.formImages = (images || []).slice();
+    UI.syncModalPhotoUI();
+  };
+
+  UI.itemPhotoCountBadge = function (item) {
+    var count = MP.getItemImages(item).length;
+    return count > 1 ? '<span class="item-photo-count" aria-label="' + count + ' 张照片">' +
+      Utils.uiIcon('camera') + '<span>' + count + '</span></span>' : '';
   };
 
   UI.syncModalPhotoUI = function () {
     var st = MP.state;
-    var covers = MP.COVERS || {};
-    document.getElementById('formPhotoPreview').src = st.formImage || covers[st.formCat] || covers.dry || '';
-    document.getElementById('clearPhotoBtn').classList.toggle('hidden-view', !st.formImage);
-    document.getElementById('photoCompressHint').textContent = st.formImage ? '已绑定实拍图' : '使用默认插画';
+    var images = st.formImages;
+    var disabled = st.photoUploadPending ? ' disabled' : '';
+    document.getElementById('formPhotoPreview').src = MP.getItemCoverSrc({ category: st.formCat, images: images });
+    document.getElementById('formPhotoCount').textContent = images.length + '/' + MP.MAX_ITEM_IMAGES;
+    document.getElementById('formPhotoThumbs').innerHTML = images.map(function (src, index) {
+      return '<div class="stock-photo-thumb' + (index === 0 ? ' is-cover' : '') + '">' +
+        '<button type="button" data-photo-cover="' + index + '" aria-label="' +
+        (index === 0 ? '当前封面，第 1 张照片' : '将第 ' + (index + 1) + ' 张照片设为封面') +
+        '" aria-pressed="' + (index === 0) + '"' + disabled + '><img src="' + Utils.escapeHtml(src) + '" alt="商品照片 ' + (index + 1) + '">' +
+        (index === 0 ? '<span class="stock-photo-cover-label">封面</span>' : '') + '</button>' +
+        '<button type="button" class="stock-photo-remove" data-photo-remove="' + index +
+        '" aria-label="删除第 ' + (index + 1) + ' 张照片"' + disabled + '>✕</button></div>';
+    }).join('');
+    document.getElementById('pickPhotoBtn').disabled = st.photoUploadPending || images.length >= MP.MAX_ITEM_IMAGES;
+    document.getElementById('saveItemBtn').disabled = st.photoUploadPending;
+    document.getElementById('photoCompressHint').textContent = st.photoUploadPending ? '正在压缩照片，请稍候…' :
+      images.length ? '首张为封面 · 点击缩略图可更换' : '使用默认插画';
   };
 
   // Distinct palatability/tolerance labels for Ordinary Food vs Supplements vs Medicine!
@@ -1552,6 +1687,10 @@
     UI.syncItemUnits(!document.getElementById('fieldId').value);
     UI.syncItemUsageConfig();
     UI.renderFormEffectTags();
+    UI.syncNetWeightUnitOptions();
+    UI.syncNetWeight();
+    renderStockWeightPresets(MP.state.formCat);
+    UI.syncStockRequiredProgress();
   };
 
   UI.markItemUnitManual = function () {
@@ -1578,7 +1717,8 @@
     });
     if (!product.brand || !product.name) return null;
     var weight = useEnteredWeight ? Number(document.getElementById('fieldNetWeight').value) : 0;
-    if (weight > 0 && MP.state.formCat === 'supplies') {
+    if (weight > 0 && (MP.state.formCat === 'supplies' ||
+        (['supp', 'med'].includes(MP.state.formCat) && document.getElementById('fieldNetWeightUnit').value === '毫升'))) {
       product.unit_spec_value = weight;
       product.unit_spec_unit = document.getElementById('fieldNetWeightUnit').value;
     } else if (weight > 0) product.unit_net_weight_g = weight;
@@ -1589,7 +1729,7 @@
       });
       return predicate(item) && Domain.getProductGroupKey(match) === key;
     });
-    if (!weight && MP.state.formCat === 'supplies' && matches.some(function (item) {
+    if (!weight && ['supplies', 'supp', 'med'].includes(MP.state.formCat) && matches.some(function (item) {
       return Domain.getProductGroupKey(item) !== Domain.getProductGroupKey(matches[0]);
     })) return null;
     return matches[0] || null;
@@ -1612,6 +1752,11 @@
       return;
     }
     document.getElementById('stockWeightPresetLabel').textContent = '常用规格';
+    if (['supp', 'med'].includes(category) && document.getElementById('fieldNetWeightUnit').value === '毫升') {
+      document.getElementById('stockWeightPresets').classList.add('hidden-view');
+      document.getElementById('stockWeightPresetOptions').replaceChildren();
+      return;
+    }
     var weights = MP.STOCK_WEIGHT_PRESETS[category] || [];
     document.getElementById('stockWeightPresets').classList.toggle('hidden-view', !weights.length);
     document.getElementById('stockWeightPresetOptions').innerHTML = weights.map(function (grams) {
@@ -1619,6 +1764,27 @@
         (grams >= 1000 ? Utils.formatNumber(grams / 1000) + '千克' : grams + '克') + '</button>';
     }).join('');
   }
+
+  UI.refreshNetWeightPresets = function () {
+    renderStockWeightPresets(MP.state.formCat);
+  };
+
+  UI.syncNetWeightUnitOptions = function () {
+    var category = MP.state.formCat;
+    if (!['supp', 'med'].includes(category)) return;
+    var select = document.getElementById('fieldNetWeightUnit');
+    var previous = select.value;
+    var desired = select.dataset.manualSpecUnit && ['克', '毫升'].includes(previous) ? previous :
+      ((category === 'supp' && document.getElementById('fieldSubtype').value === '液体') ||
+       (category === 'med' && document.getElementById('fieldSubtype').value === '滴剂/液体') ? '毫升' : '克');
+    if (previous && ['克', '毫升'].includes(previous) && previous !== desired &&
+        document.getElementById('fieldNetWeight').value) {
+      document.getElementById('fieldNetWeight').value = '';
+      UI.showToast('规格单位已更改，请重新填写净含量');
+    }
+    select.replaceChildren(new Option('克', '克'), new Option('毫升', '毫升'));
+    select.value = desired;
+  };
 
   function setSupplySpecUnit(unit) {
     var select = document.getElementById('fieldNetWeightUnit');
@@ -1645,14 +1811,15 @@
     var category = MP.state.formCat;
     var wet = category === 'can';
     var supplies = category === 'supplies';
+    var specChoice = supplies || ['supp', 'med'].includes(category);
     var id = document.getElementById('fieldId').value;
     var required = Utils.requiresUnitWeight(category) || (!id && category === 'med');
     var unit = document.getElementById('fieldUnit').value;
     document.getElementById('netWeightUnit').textContent = MP.ITEM_FORM_DEFAULTS.netWeightUnit;
     document.getElementById('itemModalBackdrop').classList.toggle('is-editing-item', Boolean(id));
     document.getElementById('fieldNetWeightLabel').textContent = supplies ? '每份规格' : (unit ? '每' + unit + '净含量' : '每件净含量');
-    document.getElementById('netWeightUnit').classList.toggle('hidden-view', supplies);
-    document.getElementById('fieldNetWeightUnit').classList.toggle('hidden-view', !supplies);
+    document.getElementById('netWeightUnit').classList.toggle('hidden-view', specChoice);
+    document.getElementById('fieldNetWeightUnit').classList.toggle('hidden-view', !specChoice);
     UI.syncUnitChangeHints();
     var subtype = document.getElementById('fieldSubtype').value;
     input.required = required;
@@ -1669,12 +1836,12 @@
     if (id || input.dataset.manualWeight) return;
     var specUnit = document.getElementById('fieldNetWeightUnit');
     var match = findFormProduct(function (item) {
-      return supplies
+      return (supplies || (specChoice && specUnit.value === '毫升'))
         ? Number(item.unit_spec_value) > 0 && MP.SUPPLY_SPEC_UNITS.includes(item.unit_spec_unit) &&
           (!specUnit.dataset.manualSpecUnit || specUnit.value === item.unit_spec_unit)
         : item.unit_net_weight_g > 0;
     });
-    input.value = match ? (supplies ? match.unit_spec_value : match.unit_net_weight_g) : '';
+    input.value = match ? ((supplies || (specChoice && specUnit.value === '毫升')) ? match.unit_spec_value : match.unit_net_weight_g) : '';
     if (supplies && match && !specUnit.dataset.manualSpecUnit) specUnit.value = match.unit_spec_unit;
     if (supplies) syncStockWeightPresets();
   };
@@ -1808,6 +1975,7 @@
     UI.renderFormEffectTags();
     UI.syncItemUnits(Boolean(applyDefaults));
     UI.syncItemUsageConfig();
+    UI.syncNetWeightUnitOptions();
     renderStockWeightPresets(catKey);
     var palatabilityField = document.getElementById('palatabilityFieldWrap');
     palatabilityField.classList.toggle('hidden-view', supplies);
@@ -2418,14 +2586,31 @@
   UI.syncStockRequiredProgress = function () {
     var weight = document.getElementById('fieldNetWeight');
     var qty = document.getElementById('fieldQty');
-    var completed = [
+    var checks = [
       document.getElementById('fieldBrand').value.trim(),
       document.getElementById('fieldName').value.trim(),
-      !weight.required || Number(weight.value) > 0,
-      qty.validity.valid && Number(qty.value) > 0
-    ].filter(Boolean).length;
+      qty.validity.valid && Number(qty.value) > 0 &&
+        (!document.getElementById('fieldPackagingEnabled').checked || Boolean(UI.readPurchasePackaging()))
+    ];
+    var subtypeConfig = MP.FOOD_SUBTYPES[MP.state.formCat];
+    var subtype = document.getElementById('fieldSubtype').value;
+    if (subtypeConfig && ((!subtypeConfig.optional && !subtypeConfig.hidden) || subtype === '__custom__')) {
+      checks.push(subtype && (subtype !== '__custom__' || document.getElementById('fieldSubtypeCustom').value.trim()));
+    }
+    if (weight.required) checks.push(weight.validity.valid && Number(weight.value) > 0);
+    if (MP.state.formCat !== 'supplies') {
+      var prod = document.getElementById('fieldProdDate').value;
+      var exp = document.getElementById('fieldExpDate').value;
+      checks.push(Boolean(exp && (!prod || exp >= prod)));
+    }
+    document.getElementById('stockDateMissing').classList.toggle('hidden-view',
+      MP.state.formCat === 'supplies' || checks[checks.length - 1]);
+    var completed = checks.filter(Boolean).length;
+    document.getElementById('requiredProgress').max = checks.length;
     document.getElementById('requiredProgress').value = completed;
-    document.getElementById('requiredProgressText').textContent = '必填 ' + completed + '/4';
+    document.getElementById('requiredProgressText').textContent = '必填 ' + completed + '/' + checks.length;
+    document.getElementById('stockNameSpecHint').classList.toggle('hidden-view',
+      !/\d+(?:\.\d+)?\s*(?:ml|毫升|升|kg|千克|g|克)(?![a-z])/i.test(document.getElementById('fieldName').value));
   };
 
   UI.selectStockDateMode = function (mode) {
@@ -2545,13 +2730,13 @@
     document.getElementById('fieldNotes').value = '';
     document.getElementById('dateCalcHint').textContent = '';
 
-    st.formImage = '';
+    UI.resetFormPhotos([]);
     document.getElementById('fieldPhotoInput').value = '';
     var defaultCat = MP.CATEGORIES[st.catFilter] ? st.catFilter : 'dry';
     document.getElementById('fieldUnit').disabled = false;
     resetSubtypeForm();
     UI.syncModalCategoryUI(defaultCat, true);
-    setSupplySpecUnit('克');
+    if (defaultCat === 'supplies') setSupplySpecUnit('克');
     UI.syncNetWeight(true);
     setPurchasePackagingForm();
     UI.syncItemUsageConfig();
@@ -2563,6 +2748,8 @@
     UI.syncAllDateDisplays();
     UI.showModal('itemModalBackdrop', 'closeItemModalBtn');
     UI.scrollModalCategoryIntoView();
+    UI.syncStockRequiredProgress();
+    UI.syncQuickBrandFade();
     document.querySelector('#itemForm .stock-form-body').scrollTop = 0;
     UI.syncQuickLocationFade();
   };
@@ -2598,7 +2785,7 @@
     document.getElementById('fieldNotes').value = item.notes || '';
     document.getElementById('dateCalcHint').textContent = '';
 
-    MP.state.formImage = item.imageData || '';
+    UI.resetFormPhotos(MP.getItemImages(item));
     document.getElementById('fieldPhotoInput').value = '';
     resetSubtypeForm(item, Boolean(document.getElementById('fieldId').value));
     UI.syncModalCategoryUI(item.category || 'dry', false);
@@ -2608,6 +2795,11 @@
     var netWeightInput = document.getElementById('fieldNetWeight');
     if (item.unit_net_weight_g > 0) {
       netWeightInput.value = item.unit_net_weight_g;
+    }
+    if (['supp', 'med'].includes(item.category)) {
+      document.getElementById('fieldNetWeightUnit').value = item.unit_spec_unit === '毫升' ? '毫升' : '克';
+      netWeightInput.value = item.unit_spec_unit === '毫升' ? item.unit_spec_value : (item.unit_net_weight_g || '');
+      UI.refreshNetWeightPresets();
     }
     var legacySupplySpecUnit = false;
     if (item.category === 'supplies') {
@@ -2626,6 +2818,8 @@
     }
     UI.showModal('itemModalBackdrop', focusId || 'fieldBrand');
     UI.scrollModalCategoryIntoView();
+    UI.syncStockRequiredProgress();
+    UI.syncQuickBrandFade();
     if (legacySupplySpecUnit) UI.showToast('旧规格单位不再适用，请选择容量单位');
     UI.syncQuickLocationFade();
   };
@@ -2666,7 +2860,7 @@
     document.getElementById('fieldBatch').value = '';
     document.getElementById('fieldNotes').value = item.notes || '';
 
-    MP.state.formImage = item.imageData || '';
+    UI.resetFormPhotos(MP.getItemImages(item));
     document.getElementById('fieldPhotoInput').value = '';
     resetSubtypeForm(item, Boolean(document.getElementById('fieldId').value));
     UI.syncModalCategoryUI(item.category || 'dry', false);
@@ -2674,6 +2868,11 @@
     UI.syncItemUsageConfig();
     UI.syncNetWeight(true);
     if (item.unit_net_weight_g > 0) document.getElementById('fieldNetWeight').value = item.unit_net_weight_g;
+    if (['supp', 'med'].includes(item.category)) {
+      document.getElementById('fieldNetWeightUnit').value = item.unit_spec_unit === '毫升' ? '毫升' : '克';
+      document.getElementById('fieldNetWeight').value = item.unit_spec_unit === '毫升' ? item.unit_spec_value : (item.unit_net_weight_g || '');
+      UI.refreshNetWeightPresets();
+    }
     var legacyRestockSpecUnit = false;
     if (item.category === 'supplies') {
       document.getElementById('fieldNetWeight').value = item.unit_spec_value || '';
@@ -2687,6 +2886,8 @@
     UI.syncAllDateDisplays();
     UI.showModal('itemModalBackdrop', 'closeItemModalBtn');
     UI.scrollModalCategoryIntoView();
+    UI.syncStockRequiredProgress();
+    UI.syncQuickBrandFade();
     if (legacyRestockSpecUnit) UI.showToast('旧规格单位不再适用，请选择容量单位');
     document.querySelector('#itemForm .stock-form-body').scrollTop = 0;
     UI.syncQuickLocationFade();
@@ -2694,13 +2895,40 @@
   };
 
   UI.closeItemModal = function () {
+    UI.resetFormPhotos([]);
     UI.hideModal('itemModalBackdrop');
+  };
+
+  UI.syncLightboxPosition = function (index) {
+    var slides = document.getElementById('lightboxGallery').children;
+    if (!slides.length) return;
+    index = Math.max(0, Math.min(slides.length - 1, index));
+    document.querySelectorAll('#lightboxDots button').forEach(function (button, i) {
+      button.setAttribute('aria-current', i === index ? 'true' : 'false');
+    });
+    document.getElementById('lightboxPosition').textContent = (index + 1) + ' / ' + slides.length;
   };
 
   UI.openLightbox = function (item) {
     if (!item) return;
+    var images = MP.getItemImages(item);
+    if (!images.length) images = [MP.getItemCoverSrc(item)];
+    var gallery = document.getElementById('lightboxGallery');
     document.getElementById('lightboxTitle').textContent = (item.brand || '') + ' · ' + (item.name || '');
-    document.getElementById('lightboxImg').src = MP.getItemCoverSrc(item);
+    gallery.innerHTML = images.map(function (src, index) {
+      return '<div class="lightbox-slide" role="group" aria-label="第 ' + (index + 1) + ' 张，共 ' + images.length +
+        ' 张"><img src="' + Utils.escapeHtml(src) + '" alt="' + Utils.escapeHtml(item.name || '商品') +
+        '，照片 ' + (index + 1) + '"></div>';
+    }).join('');
+    gallery.scrollLeft = 0;
+    var dots = document.getElementById('lightboxDots');
+    dots.innerHTML = images.map(function (_, index) {
+      return '<button type="button" data-photo-index="' + index + '" aria-label="查看第 ' + (index + 1) +
+        ' 张照片" aria-current="' + (index === 0) + '"><span></span></button>';
+    }).join('');
+    dots.classList.toggle('hidden-view', images.length < 2);
+    document.getElementById('lightboxPosition').classList.toggle('hidden-view', images.length < 2);
+    UI.syncLightboxPosition(0);
     document.getElementById('lightboxMeta').textContent =
       '生产日期：' + Utils.formatListDate(item.prodDate, '未填写') + ' ｜ 过期日期：' + Utils.formatListDate(item.expDate) + (item.batchCode ? (' ｜ 购入渠道：' + item.batchCode) : '');
     UI.showModal('photoPreviewBackdrop', 'closeLightboxBtn');
@@ -2708,6 +2936,8 @@
 
   UI.closeLightbox = function () {
     UI.hideModal('photoPreviewBackdrop');
+    document.getElementById('lightboxGallery').replaceChildren();
+    document.getElementById('lightboxDots').replaceChildren();
   };
 
 })(typeof window !== 'undefined' ? window : globalThis);

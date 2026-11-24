@@ -17,6 +17,19 @@
     weightAlert.innerHTML = MP.Stats.missingWeightNotice(missing, true);
     weightAlert.classList.toggle('hidden-view', !missing.length);
     var st = MP.state;
+    var photos = st.items.flatMap(MP.getItemImages);
+    var photoBytes = photos.reduce(function (total, src) { return total + src.length; }, 0);
+    // Estimate Base64 photo bytes separately so normal renders do not copy all photos into another large Blob.
+    var metadataJson = JSON.stringify(MP.Storage.buildBackupObject(), function (key, value) {
+      return key === 'images' && Array.isArray(value) ? [] : value;
+    }, 2);
+    function sizeLabel(bytes) {
+      return bytes >= 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(1) + ' MB' : Math.ceil(bytes / 1024) + ' KB';
+    }
+    document.getElementById('backupPhotoSize').textContent = '已保存 ' + photos.length + ' 张照片（含归档），照片数据约 ' +
+      sizeLabel(photoBytes) + '；预计 JSON 备份约 ' +
+      sizeLabel(new Blob([metadataJson]).size + photoBytes) +
+      '（含照片）。照片越多，本机存储与备份越大，请定期导出。';
     var btns = document.querySelectorAll('#warnDaysGroup [data-warn-days]');
     for (var i = 0; i < btns.length; i++) {
       var d = parseInt(btns[i].getAttribute('data-warn-days'), 10);
@@ -49,7 +62,7 @@
     if (statusCard) {
       statusCard.classList.toggle('needs-backup', needBackup);
       document.getElementById('backupStatusTitle').textContent = needBackup
-        ? Utils.formatNumber(badgeCount) + ' 项未备份' : backupDate ? '已是最新备份' : '尚无备份';
+        ? Utils.formatNumber(badgeCount) + ' 次保存未备份' : backupDate ? '已是最新备份' : '尚无备份';
       var timeLabel = document.getElementById('backupStatusTime');
       timeLabel.textContent = backupDate
         ? '上次 ' + Utils.formatRelativeYearDate(backupDate) + (backupTime ? ' ' + backupTime : '') : '尚未备份过';
@@ -62,15 +75,16 @@
 
     if (needBackup) {
       if (dotEl) {
-        dotEl.textContent = badgeCount > 99 ? '99+' : Utils.formatNumber(badgeCount);
-        dotEl.setAttribute('aria-label', Utils.formatQuantity(badgeCount, '项') + '更改尚未备份');
+        dotEl.textContent = '';
+        dotEl.setAttribute('aria-label', '有尚未备份的本地更改');
+        dotEl.title = '有尚未备份的本地更改';
         dotEl.classList.remove('hidden-view');
       }
       if (topBanner) {
         if (badgeCount >= 5 && st.backupBannerDismissedCount !== badgeCount) {
           topBanner.classList.remove('hidden-view');
           if (topBannerTxt) {
-            topBannerTxt.textContent = Utils.formatNumber(badgeCount) + ' 项改动未备份';
+            topBannerTxt.textContent = Utils.formatNumber(badgeCount) + ' 次本地保存尚未备份';
           }
         } else {
           topBanner.classList.add('hidden-view');
