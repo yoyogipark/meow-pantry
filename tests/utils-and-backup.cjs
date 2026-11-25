@@ -61,6 +61,8 @@ assert.deepEqual(Array.from(mealBackup.logs, log => log.mealSlot),
 assert.equal(Utils.formatMealSlot('dinner'), '晚饭');
 assert.deepEqual(Array.from(Utils.mealSlotOptions(), slot => slot.label),
   ['早上', '中午', '晚上', '夜宵', '零食加餐', '用药／护理']);
+assert.deepEqual(Array.from(Utils.mealSlotOptions().filter(slot => ['breakfast', 'dinner', 'late_night'].includes(slot.id)), slot => slot.icon),
+  ['sunrise', 'utensils', 'moon']);
 assert.equal(Utils.formatMealSlotDisplay('late_night'), '夜宵');
 for (const [hour, expected] of [[0, 'late_night'], [4, 'late_night'], [5, 'breakfast'], [9, 'breakfast'],
   [10, 'lunch'], [14, 'lunch'], [15, 'dinner'], [20, 'dinner'], [21, 'late_night'], [23, 'late_night']]) {
@@ -86,6 +88,17 @@ assert.deepEqual(Array.from(weightBackup.items, item => item.unit_net_weight_g),
 assert.equal(Utils.formatItemSpec(weightBackup.items[0]), '1.8kg');
 assert.equal(Utils.formatItemSpec(weightBackup.items[3]), '15g · 独立包装');
 assert.equal(Utils.formatPer100gPrice(36, 'CNY', 1800), '≈2.00元/100g');
+
+for (const [item, expected] of [
+  [{ category: 'supplies', unit: '支', unit_spec_value: 150, unit_spec_unit: '克', spec: '150g' }, '150g'],
+  [{ category: 'supplies', unit: '包', unit_spec_value: 11, unit_spec_unit: '升', spec: '11000毫升/包' }, '11L'],
+  [{ category: 'supp', unit: '瓶', unit_spec_value: 100, unit_spec_unit: '毫升', spec: '100ml' }, '100mL'],
+  [{ category: 'supp', unit: '瓶', unit_spec_value: 100, unit_spec_unit: '毫升', spec: '100毫升/支' }, '100mL · 100mL/支'],
+  [{ category: 'supp', unit: '瓶', unit_spec_value: 100, unit_spec_unit: '毫升', spec: '150毫升 · 无香' }, '100mL · 150mL · 无香'],
+  [{ category: 'treat', unit: '支', unit_net_weight_g: 14, spec: '113克' }, '14g · 113g'],
+  [{ category: 'can', unit: '罐', spec: '85克' }, '85g'],
+  [{ category: 'supplies', unit: '包', unit_spec_value: 80, unit_spec_unit: '片', spec: '80片' }, '80片']
+]) assert.equal(Utils.formatInventoryItemSpec(item), expected);
 
 const supplyProduct = {
   category: 'supplies', brand: '品牌', name: '猫砂', unit: '袋',
@@ -152,9 +165,15 @@ assert.equal(archivePhoto.imageData, undefined);
 let originalWidth = 2560;
 let originalHeight = 1600;
 let compressedCanvas;
-let jpegQuality;
+let blobSize = () => 80 * 1024;
+let encodes = [];
+let revoked = 0;
+sandbox.URL = {
+  createObjectURL() { return 'blob:photo'; },
+  revokeObjectURL(url) { assert.equal(url, 'blob:photo'); revoked++; }
+};
 sandbox.FileReader = class {
-  readAsDataURL() { this.onload({ target: { result: photoA } }); }
+  readAsDataURL() { this.result = photoB; this.onload(); }
 };
 sandbox.Image = class {
   set src(value) { this.width = originalWidth; this.height = originalHeight; this.onload(); }
@@ -163,20 +182,51 @@ sandbox.document = {
   createElement() {
     compressedCanvas = {
       getContext: () => ({ fillRect() {}, drawImage() {} }),
-      toDataURL(type, quality) { assert.equal(type, 'image/jpeg'); jpegQuality = quality; return photoB; }
+      toBlob(done, type, quality) {
+        assert.equal(type, 'image/jpeg');
+        encodes.push([this.width, this.height, quality]);
+        done(blobSize(this.width, this.height, quality));
+      }
     };
     return compressedCanvas;
   }
 };
+blobSize = () => ({ size: 80 * 1024, type: 'image/jpeg' });
 let compressedPhoto;
 Utils.compressImageFile({}, result => { compressedPhoto = result; });
-assert.deepEqual([compressedCanvas.width, compressedCanvas.height, jpegQuality], [1280, 800, 0.8]);
+assert.deepEqual(encodes, [[1024, 640, 0.76]]);
 assert.equal(compressedPhoto.dataUrl, photoB);
+assert.equal(compressedPhoto.kb, 80);
+assert.equal(revoked, 1);
 originalWidth = 400;
 originalHeight = 800;
+encodes = [];
 Utils.compressImageFile({}, () => {});
-assert.deepEqual([compressedCanvas.width, compressedCanvas.height], [400, 800], 'Small photos must not be upscaled');
+assert.deepEqual(encodes, [[400, 800, 0.76]], 'Small photos must not be upscaled');
+originalWidth = 700;
+originalHeight = 700;
+encodes = [];
+blobSize = width => ({ size: (width > 576 ? 250 : 120) * 1024, type: 'image/jpeg' });
+Utils.compressImageFile({}, result => { compressedPhoto = result; });
+assert.deepEqual(encodes, [
+  [700, 700, 0.76], [700, 700, 0.64], [700, 700, 0.52], [576, 576, 0.76]
+]);
+assert.equal(compressedPhoto.kb, 120);
+originalWidth = 2560;
+originalHeight = 1600;
+encodes = [];
+blobSize = (width, height, quality) => ({ size: (width + quality * 1000) * 1024, type: 'image/jpeg' });
+Utils.compressImageFile({}, result => { compressedPhoto = result; });
+assert.equal(encodes.length, 9);
+assert.equal(compressedPhoto.kb, 1096, 'If the target cannot be reached, keep the smallest encoded image');
+encodes = [];
+blobSize = () => null;
+Utils.compressImageFile({}, result => assert.equal(result, null));
 sandbox.document.createElement = () => ({ getContext() { throw new Error('Canvas unavailable'); } });
 Utils.compressImageFile({}, result => assert.equal(result, null));
+sandbox.Image = class { set src(value) { this.onerror(); } };
+const revokedBeforeFailure = revoked;
+Utils.compressImageFile({}, result => assert.equal(result, null));
+assert.equal(revoked, revokedBeforeFailure + 1, 'Object URLs must be released when decoding fails');
 
 console.log('Utility date, escaping, backup validation and photo migration/compression pass');

@@ -12,6 +12,7 @@
       defaultCurrency: 'CNY',
       dailyFeedGrams: { dry: 50, freeze: 10, can: 80 },
       pantryPageSize: 5,
+      compactPantryPageSize: 20,
       pantryDisplayMode: 'card',
       pantryStatusHintSeen: false,
       pantryHistoryHintSeen: false,
@@ -864,7 +865,7 @@
     var remaining = stock.openRemainFraction || 1;
     var used = portion.finish ? remaining : portion.fraction;
     if (!Number.isFinite(used) || used <= 0) return { error: '无法换算份量，请输入如「1' + unit + '」或「半' + unit + '」。' };
-    if (item.category === 'treat' && unit === '支' && remaining === 1 && Number.isSafeInteger(used) && used > 1) {
+    if ((item.category === 'treat' || item.category === 'med') && unit === '支' && remaining === 1 && Number.isSafeInteger(used) && used > 1) {
       if (used > Number(stock.quantity)) return { error: '所选口味或批次库存不足，请调整份量。' };
       return { used: used, after: 0, sealedUnits: used, consumeOpened: true };
     }

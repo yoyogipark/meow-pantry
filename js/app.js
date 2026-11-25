@@ -225,6 +225,8 @@
       var btn = ev.target.closest('[data-display-mode]');
       if (!btn) return;
       st.pantryDisplayMode = btn.getAttribute('data-display-mode');
+      st.pantryPageSize = st.pantryDisplayMode === 'compact' ? st.settings.compactPantryPageSize : st.settings.pantryPageSize;
+      st.pantryPage = 1;
       st.settings.pantryDisplayMode = st.pantryDisplayMode;
       Storage.saveToStorage(true);
       UI.renderPantryList();
@@ -248,7 +250,8 @@
     bindListPageButtons('pantryPaginationBar', 'pantryList', 'pantryPage', UI.renderPantryList);
     document.getElementById('pageSizeSelect').addEventListener('change', function () {
       st.pantryPageSize = Number(this.value) || 5;
-      st.settings.pantryPageSize = st.pantryPageSize;
+      if (st.pantryDisplayMode === 'compact') st.settings.compactPantryPageSize = st.pantryPageSize;
+      else st.settings.pantryPageSize = st.pantryPageSize;
       st.pantryPage = 1;
       Storage.saveToStorage(true);
       UI.renderPantryList();
@@ -261,6 +264,130 @@
     var compactTipTimer;
     var currentCompactButton;
     var pantryList = document.getElementById('pantryList');
+    var pantryDetailBody = document.getElementById('pantryDetailBody');
+    var pantryDetailBackdrop = document.getElementById('pantryDetailBackdrop');
+    var pantryDetailSheet = pantryDetailBackdrop.querySelector('.pantry-detail-sheet');
+    var pantryDetailScroll = 0;
+    var detailDrag = null;
+    var openCompactRow = null;
+    var compactGesture = null;
+    var suppressCompactClick = false;
+    var compactHintChecked = false;
+    function setCompactRowOpen(row, open) {
+      if (openCompactRow && openCompactRow !== row) setCompactRowOpen(openCompactRow, false);
+      if (!row) return;
+      row.classList.toggle('is-open', open);
+      row.querySelector('.compact-row-main').style.transform = '';
+      var action = row.querySelector('.compact-swipe-action');
+      if (action) {
+        if (!open && document.activeElement === action) row.querySelector('.compact-row-main').focus();
+        action.tabIndex = open ? 0 : -1;
+        action.setAttribute('aria-hidden', String(!open));
+        action.toggleAttribute('inert', !open);
+      }
+      openCompactRow = open ? row : null;
+    }
+    UI.maybeShowCompactSwipeHint = function () {
+      if (compactHintChecked) return;
+      var row = pantryList.querySelector('.compact-stock-card:has(.compact-swipe-action)');
+      if (!row) return;
+      compactHintChecked = true;
+      try {
+        if (global.localStorage.getItem('meow_pantry_compact_swipe_hint_seen')) return;
+        global.localStorage.setItem('meow_pantry_compact_swipe_hint_seen', '1');
+      } catch (error) {
+        console.warn('无法保存极简模式手势提示状态', error);
+      }
+      if (global.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      row.classList.add('compact-swipe-hint');
+      row.addEventListener('animationend', function () { row.classList.remove('compact-swipe-hint'); }, { once: true });
+    };
+    UI.closePantryDetail = function () {
+      if (pantryDetailBackdrop.classList.contains('hidden-view')) return;
+      UI.hideModal('pantryDetailBackdrop');
+      pantryDetailBody.innerHTML = '';
+      document.body.classList.remove('pantry-detail-open');
+      document.body.style.removeProperty('--pantry-detail-scroll');
+      global.scrollTo(0, pantryDetailScroll);
+    };
+    document.getElementById('closePantryDetailBtn').addEventListener('click', UI.closePantryDetail);
+    document.getElementById('pantryDetailBackdrop').addEventListener('click', function (ev) {
+      if (ev.target === this) UI.closePantryDetail();
+    });
+    [pantryDetailSheet.querySelector('.pantry-detail-grip-area'), pantryDetailSheet.querySelector('.pantry-detail-header')].forEach(function (handle) {
+      handle.addEventListener('pointerdown', function (ev) {
+        if (!ev.isPrimary || ev.button !== 0 || ev.target.closest('button')) return;
+        detailDrag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, active: false };
+      });
+      handle.addEventListener('pointermove', function (ev) {
+        if (!detailDrag || ev.pointerId !== detailDrag.id) return;
+        var dx = ev.clientX - detailDrag.x;
+        var dy = ev.clientY - detailDrag.y;
+        if (!detailDrag.active) {
+          if (dy <= 8 || dy <= Math.abs(dx)) return;
+          detailDrag.active = true;
+          handle.setPointerCapture?.(ev.pointerId);
+        }
+        ev.preventDefault();
+        pantryDetailSheet.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
+      });
+      function finishDetailDrag(ev) {
+        if (!detailDrag || ev.pointerId !== detailDrag.id) return;
+        var shouldClose = ev.type !== 'pointercancel' && detailDrag.active && ev.clientY - detailDrag.y > 80;
+        detailDrag = null;
+        pantryDetailSheet.style.transform = '';
+        if (shouldClose) UI.closePantryDetail();
+      }
+      handle.addEventListener('pointerup', finishDetailDrag);
+      handle.addEventListener('pointercancel', finishDetailDrag);
+    });
+    pantryList.addEventListener('pointerdown', function (ev) {
+      var row = ev.target.closest('.compact-stock-card');
+      if (!row || !row.querySelector('.compact-swipe-action') || !ev.isPrimary || ev.button !== 0 ||
+          !ev.target.closest('.compact-row-main')) return;
+      compactGesture = { row: row, id: ev.pointerId, x: ev.clientX, y: ev.clientY, wasOpen: row.classList.contains('is-open'), horizontal: false };
+    });
+    pantryList.addEventListener('pointermove', function (ev) {
+      var gesture = compactGesture;
+      if (!gesture || gesture.id !== ev.pointerId) return;
+      var dx = ev.clientX - gesture.x;
+      var dy = ev.clientY - gesture.y;
+      if (!gesture.horizontal) {
+        if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) { compactGesture = null; return; }
+        if (Math.abs(dx) <= 8 || Math.abs(dx) <= Math.abs(dy) * 1.25) return;
+        gesture.horizontal = true;
+        if (openCompactRow && openCompactRow !== gesture.row) setCompactRowOpen(openCompactRow, false);
+        gesture.row.classList.remove('compact-swipe-hint');
+        gesture.row.classList.add('is-dragging');
+        gesture.row.setPointerCapture?.(ev.pointerId);
+      }
+      ev.preventDefault();
+      var offset = Math.max(-88, Math.min(0, (gesture.wasOpen ? -88 : 0) + dx));
+      gesture.row.querySelector('.compact-row-main').style.transform = 'translateX(' + offset + 'px)';
+    });
+    function finishCompactGesture(ev) {
+      var gesture = compactGesture;
+      if (!gesture || gesture.id !== ev.pointerId) return;
+      compactGesture = null;
+      if (!gesture.horizontal) return;
+      var dx = ev.clientX - gesture.x;
+      gesture.row.classList.remove('is-dragging');
+      var open = ev.type === 'pointercancel' ? gesture.wasOpen
+        : gesture.wasOpen ? dx <= 88 / 3 : dx < -88 / 3;
+      setCompactRowOpen(gesture.row, open);
+      suppressCompactClick = true;
+      global.setTimeout(function () { suppressCompactClick = false; }, 350);
+    }
+    pantryList.addEventListener('pointerup', finishCompactGesture);
+    pantryList.addEventListener('pointercancel', finishCompactGesture);
+    pantryList.addEventListener('keydown', function (ev) {
+      var row = ev.target.closest('.compact-stock-card');
+      if (!row || !row.querySelector('.compact-swipe-action')) return;
+      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight' || ev.key === 'Escape') {
+        ev.preventDefault();
+        setCompactRowOpen(row, ev.key === 'ArrowLeft');
+      }
+    });
     function closeCompactTip() {
       clearTimeout(compactTipTimer);
       if (!currentCompactButton) return;
@@ -296,7 +423,7 @@
     }
     pantryList.addEventListener('contextmenu', handleShelfTip);
     function closeCardMenus(except) {
-      pantryList.querySelectorAll('.card-overflow-menu:not(.hidden-view)').forEach(function (menu) {
+      document.querySelectorAll('#pantryList .card-overflow-menu:not(.hidden-view), #pantryDetailBody .card-overflow-menu:not(.hidden-view)').forEach(function (menu) {
         if (menu === except) return;
         menu.classList.add('hidden-view');
         menu.previousElementSibling?.setAttribute('aria-expanded', 'false');
@@ -334,7 +461,22 @@
       if (!silent) UI.showToast(toastText || (openedDate === Utils.getTodayStr() ? '已记录今天开封' : '已记录开封日期：' + Utils.formatCnDateText(openedDate)));
       return true;
     }
-    pantryList.addEventListener('click', function (ev) {
+    function handlePantryAction(ev) {
+      var compactDetail = ev.target.closest('[data-compact-detail]');
+      if (compactDetail) {
+        if (suppressCompactClick) { suppressCompactClick = false; return; }
+        var row = compactDetail.closest('.compact-stock-card');
+        if (row.classList.contains('is-open')) { setCompactRowOpen(row, false); return; }
+        if (openCompactRow) setCompactRowOpen(openCompactRow, false);
+        var detail = UI.renderPantryDetail(compactDetail.dataset.compactDetail);
+        if (!detail) { UI.showToast('该批次已不存在，请刷新列表'); return; }
+        pantryDetailBody.innerHTML = detail;
+        pantryDetailScroll = global.scrollY || 0;
+        document.body.style.setProperty('--pantry-detail-scroll', -pantryDetailScroll + 'px');
+        document.body.classList.add('pantry-detail-open');
+        UI.showModal('pantryDetailBackdrop', 'closePantryDetailBtn');
+        return;
+      }
       if (handleShelfTip(ev)) return;
       var compactButton = ev.target.closest('[data-compact-tip]');
       if (compactButton) {
@@ -363,6 +505,8 @@
         return;
       }
       closeCardMenus();
+      if (btn.closest('#pantryDetailBody') && action !== 'log-feed') UI.closePantryDetail();
+      if (btn.closest('.compact-swipe-action') && openCompactRow) setCompactRowOpen(openCompactRow, false);
       var id = btn.getAttribute('data-id');
       if (action === 'item-history' || action === 'archive-history') {
         UI.openStockHistoryModal(id, action === 'archive-history');
@@ -470,7 +614,9 @@
           UI.showToast('批次记录已删除');
         });
       }
-    });
+    }
+    pantryList.addEventListener('click', handlePantryAction);
+    pantryDetailBody.addEventListener('click', handlePantryAction);
     document.addEventListener('click', function (ev) {
       if (!ev.target.closest('.card-overflow')) closeCardMenus();
       if (!ev.target.closest('.compact-tip-wrap')) closeCompactTip();
@@ -572,6 +718,13 @@
     var feedPalatabilityField = document.getElementById('feedFlavorPal');
     feedPalatabilityField.addEventListener('change', function () {
       feedPalatabilityField.dataset.manual = '1';
+      UI.syncFeedPalatabilityChoices();
+    });
+    document.getElementById('feedPalatabilityChoices').addEventListener('click', function (ev) {
+      var choice = ev.target.closest('[data-feed-palatability]');
+      if (!choice) return;
+      feedPalatabilityField.value = feedPalatabilityField.value === choice.dataset.feedPalatability ? '' : choice.dataset.feedPalatability;
+      feedPalatabilityField.dispatchEvent(new Event('change'));
     });
     document.getElementById('feedFlavorSelect').addEventListener('change', function () {
       var item = selectedFeedItem();
@@ -603,8 +756,10 @@
       stockSelect.value = option.dataset.feedStockId;
       stockSelect.dispatchEvent(new Event('change'));
       stockPicker.open = false;
-      (stockSelect.value && stockSelect.value !== '__unstocked__' ? stockTrigger :
-        document.getElementById(stockSelect.value === '__unstocked__' ? 'feedNameInput' : 'feedBrandInput')).focus();
+      if (ev.detail === 0) {
+        (stockSelect.value && stockSelect.value !== '__unstocked__' ? stockTrigger :
+          document.getElementById(stockSelect.value === '__unstocked__' ? 'feedNameInput' : 'feedBrandInput')).focus();
+      }
     });
     stockPicker.addEventListener('keydown', function (ev) {
       if (!stockPicker.open || ev.key !== 'Escape') return;
@@ -634,7 +789,7 @@
       }
       field.dispatchEvent(new Event('change'));
       mealPicker.open = false;
-      mealPicker.querySelector('summary').focus();
+      if (ev.detail === 0) mealPicker.querySelector('summary').focus();
     });
     mealPicker.addEventListener('keydown', function (ev) {
       if (ev.key !== 'Escape' || !mealPicker.open) return;
@@ -659,8 +814,8 @@
     });
     document.getElementById('feedNursingOther').addEventListener('input', function () { UI.syncNursingProjects(); });
     document.getElementById('feedAddNursingNote').addEventListener('click', function () {
-      document.getElementById('feedForm').dataset.nursingNoteOpen = 'true';
-      UI.syncNursingNote();
+      document.getElementById('feedForm').dataset.feedNoteOpen = 'true';
+      UI.syncFeedNote();
       document.getElementById('feedNoteInput').focus();
     });
 
@@ -688,6 +843,13 @@
       document.getElementById('feedNextReminderDays').value = choice.dataset.nursingReminder;
       UI.syncFeedReminderInterval();
       if (choice.dataset.nursingReminder === 'custom') openCustomReminderDate();
+    });
+    document.getElementById('feedMedicationReminderChoices').addEventListener('click', function (ev) {
+      var choice = ev.target.closest('[data-medication-reminder]');
+      if (!choice) return;
+      document.getElementById('feedNextReminderDays').value = choice.dataset.medicationReminder;
+      UI.syncFeedReminderInterval();
+      if (choice.dataset.medicationReminder === 'custom') openCustomReminderDate();
     });
     var customReminderDays = document.getElementById('feedCustomReminderDays');
     customReminderDays.addEventListener('change', UI.syncFeedReminderInterval);
@@ -751,6 +913,10 @@
       refreshFeedPortion(feedAmount.value !== previousAmount);
     });
 
+    function closeSavedFeed() {
+      UI.closeFeedModal();
+      UI.closePantryDetail();
+    }
     document.getElementById('feedForm').addEventListener('submit', function (ev) {
       ev.preventDefault();
       if (document.getElementById('feedModalBackdrop').classList.contains('hidden-view')) return;
@@ -819,7 +985,7 @@
         }
         selectLogDate(fDate);
         Storage.saveToStorage(false, function (ok) { if (ok) UI.showToast('护理记录已保存'); });
-        UI.closeFeedModal();
+        closeSavedFeed();
         UI.renderAll();
         return;
       }
@@ -873,7 +1039,7 @@
         Storage.saveToStorage(false, function (ok) {
           if (ok) UI.showToast(preservesDeduction ? '份量已修改，原库存扣减仍保留' : '每日记录修改已保存');
         });
-        UI.closeFeedModal();
+        closeSavedFeed();
         UI.renderAll();
         return;
       }
@@ -1023,7 +1189,7 @@
         if (actualDeductedUnit > 0 || actualDeductedFrac > 0) showFeedDeductionToast(savedFeedLog.id, didAutoOpen);
         else UI.showToast(nextDue ? ('已记录用药，将于 ' + nextDue + ' 提醒下次护理') : ('已记入 ' + fDate + ' 每日记录' + splitToastSuffix));
       });
-      UI.closeFeedModal();
+      closeSavedFeed();
       UI.renderAll();
       if (pendingFinishPlan) {
         var finishItem = pendingFinishPlan.item;

@@ -1,26 +1,26 @@
 const CACHE_PREFIX = 'meow-pantry-pwa-';
-const CACHE_NAME = CACHE_PREFIX + 'v316';
+const CACHE_NAME = CACHE_PREFIX + 'v334';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
-  './css/tokens.css?v=316',
-  './css/styles.css?v=316',
-  './js/covers.js?v=316',
-  './js/constants.js?v=316',
-  './js/utils.js?v=316',
-  './js/forecast.js?v=316',
-  './js/domain.js?v=316',
-  './js/storage.js?v=316',
-  './js/stats.js?v=316',
-  './js/modal.js?v=316',
-  './js/ui.js?v=316',
-  './js/ui-pantry.js?v=316',
-  './js/ui-daily.js?v=316',
-  './js/ui-settings.js?v=316',
-  './js/app.js?v=316'
+  './css/tokens.css?v=334',
+  './css/styles.css?v=334',
+  './js/covers.js?v=334',
+  './js/constants.js?v=334',
+  './js/utils.js?v=334',
+  './js/forecast.js?v=334',
+  './js/domain.js?v=334',
+  './js/storage.js?v=334',
+  './js/stats.js?v=334',
+  './js/modal.js?v=334',
+  './js/ui.js?v=334',
+  './js/ui-pantry.js?v=334',
+  './js/ui-daily.js?v=334',
+  './js/ui-settings.js?v=334',
+  './js/app.js?v=334'
 ];
 
 self.addEventListener('install', (event) => {

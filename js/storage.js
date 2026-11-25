@@ -85,13 +85,17 @@
       });
     }
     if (typeof pSet.pantryPageSize === 'number') {
-      st.pantryPageSize = [5, 10, 20, 50].includes(pSet.pantryPageSize) ? pSet.pantryPageSize : 5;
-      st.settings.pantryPageSize = st.pantryPageSize;
+      st.settings.pantryPageSize = [5, 10, 20, 50].includes(pSet.pantryPageSize) ? pSet.pantryPageSize : 5;
+    }
+    if (typeof pSet.compactPantryPageSize === 'number') {
+      st.settings.compactPantryPageSize = [5, 10, 20, 50].includes(pSet.compactPantryPageSize) ? pSet.compactPantryPageSize : 20;
     }
     if (pSet.pantryDisplayMode === 'compact' || pSet.pantryDisplayMode === 'card') {
       st.pantryDisplayMode = pSet.pantryDisplayMode;
       st.settings.pantryDisplayMode = pSet.pantryDisplayMode;
     }
+    st.pantryPageSize = st.pantryDisplayMode === 'compact'
+      ? st.settings.compactPantryPageSize : st.settings.pantryPageSize;
     ['pantryStatusHintSeen', 'pantryHistoryHintSeen'].forEach(function (key) {
       if (pSet[key] === true) st.settings[key] = true;
     });

@@ -757,8 +757,32 @@ async function run() {
   const tube = make('single-use-tube', 1, '支', { category: 'med' });
   reset(tube);
   ui.openFeedModal(tube.id, today);
-  assert.deepEqual(Array.from(el('feedPortionChips').querySelectorAll('[data-package-portion]'))
-    .filter(b => !b.classList.contains('hidden-view')).map(b => b.textContent), ['1支']);
+  assert.equal(el('feedAmountInput').placeholder, '如 1/2支、1支');
+  const tubeChips = () => Array.from(el('feedPortionChips').querySelectorAll('[data-portion]'))
+    .filter(b => !b.classList.contains('hidden-view'));
+  assert.deepEqual(tubeChips().map(b => b.textContent), ['1/2支', '1支', '2支']);
+  tubeChips()[0].click();
+  assert.equal(el('feedAmountInput').value, '1/2支');
+  tubeChips()[2].click();
+  assert.equal(el('feedAmountInput').value, '2支');
+  assert.equal(el('feedDeductStock').disabled, true);
+  assert.match(el('feedCareDeductHelp').textContent, /库存不足/);
+  ui.closeFeedModal();
+
+  const twoDoseTube = make('two-dose-tube', 3, '支', { category: 'med' });
+  reset(twoDoseTube);
+  ui.openFeedModal(twoDoseTube.id, today);
+  tubeChips()[2].click();
+  assert.equal(el('feedDeductStock').checked, true);
+  el('feedForm').requestSubmit();
+  el('confirmOkBtn').click();
+  await settle();
+  assert.equal(twoDoseTube.quantity, 1);
+  assert.equal(state.logs[0].deductedUnit, 2);
+  assert.ok(storage.validateAndParseBackup(JSON.stringify(backup())).ok);
+  el('toastEl').querySelector('button').click();
+  await settle();
+  assert.equal(twoDoseTube.quantity, 3);
 
   const wetOther = make('wet-other', 1, '罐', { subtype: '其他' });
   reset(wetOther);
@@ -1867,52 +1891,24 @@ async function run() {
   ui.renderPantryList();
   const compactOpened = w.document.querySelector('.compact-stock-card[data-id="' + openedCardItem.id + '"]');
   const compactUnopened = w.document.querySelector('.compact-stock-card[data-id="' + unopenedCardItem.id + '"]');
-  assert.equal(compactOpened.querySelector('[data-action="card-menu"] use').getAttribute('href'), '#ui-more-vertical');
-  assert.deepEqual(Array.from(compactOpened.children, node => node.className), [
-    'card-overflow',
-    'compact-brand-row',
-    'compact-tip-wrap compact-expiry-wrap',
-    'compact-title',
-    'btn-feed inventory-primary-action compact-card-action',
-    'compact-stock-row'
-  ]);
-  assert.equal(compactOpened.querySelector('.stock-quantity-pill'), null);
-  assert.match(compactOpened.querySelector('.compact-stock-copy').textContent, /在库 3罐·开封 1·已用 1/);
-  assert.equal(compactOpened.querySelector('.compact-card-action').textContent, '记喂食');
-  assert.ok(compactOpened.querySelector('.compact-card-action').classList.contains('inventory-primary-action'));
-  assert.equal(compactOpened.querySelector('.compact-card-action use').getAttribute('href'), '#feed-paw');
-  assert.equal(compactOpened.querySelector('.compact-palatability').getAttribute('aria-label'), '正常吃');
-  assert.equal(compactOpened.querySelector('.compact-palatability').textContent, '😋');
-  assert.equal(compactOpened.querySelector('.compact-expiry-badge').textContent, '开封超期 1天');
-  assert.equal(compactUnopened.querySelector('.compact-expiry-wrap .compact-tip').lastElementChild.textContent, '开封后剩余：未开封');
-  assert.equal(w.document.querySelector('.compact-stock-card[data-id="' + multiCardItem.id + '"] .compact-expiry-badge').textContent, '开封剩 1天');
-  const palButton = compactOpened.querySelector('.compact-palatability');
-  palButton.click();
-  assert.equal(palButton.getAttribute('aria-expanded'), 'true');
-  assert.equal(palButton.nextElementSibling.textContent, '😋 正常吃');
-  assert.equal(palButton.nextElementSibling.hidden, false);
-  await new Promise(resolve => setTimeout(resolve, 2100));
-  assert.equal(palButton.nextElementSibling.hidden, true);
-  assert.equal(palButton.getAttribute('aria-expanded'), 'false');
-  const expiryButton = compactOpened.querySelector('.compact-expiry-badge');
-  expiryButton.click();
-  assert.equal(expiryButton.getAttribute('aria-expanded'), 'true');
-  assert.deepEqual(Array.from(expiryButton.nextElementSibling.children, node => node.textContent),
-    ['未开封保质期：剩 20天', '开封后剩余：开封超期 1天']);
-  expiryButton.click();
-  assert.equal(expiryButton.nextElementSibling.hidden, true);
-  expiryButton.click();
-  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-  assert.equal(expiryButton.nextElementSibling.hidden, true);
-  expiryButton.click();
-  w.document.body.click();
-  assert.equal(expiryButton.nextElementSibling.hidden, true);
-  compactOpened.querySelector('[data-action="card-menu"]').click();
-  assert.deepEqual(Array.from(compactOpened.querySelectorAll('.card-overflow-menu [role="menuitem"]'), button => button.textContent),
-    ['编辑', '删除']);
-  compactOpened.querySelector('.compact-card-action').click();
+  assert.equal(compactOpened.querySelector('[data-action="card-menu"]'), null);
+  assert.match(compactOpened.querySelector('.compact-summary-stock').textContent, /在库 3罐 · 开封 1 · 已用 1/);
+  assert.equal(compactOpened.querySelector('.compact-swipe-action').textContent, '记喂食');
+  assert.equal(compactOpened.querySelector('.compact-swipe-action use').getAttribute('href'), '#feed-paw');
+  assert.doesNotMatch(compactOpened.textContent, /😋/);
+  assert.equal(compactOpened.querySelector('.compact-summary-status').textContent, '开封超期 1天');
+  assert.equal(compactOpened.querySelector('.compact-summary-progress span').style.width, '100%');
+  assert.ok(compactUnopened.querySelector('.compact-summary-progress').classList.contains('is-empty'));
+  assert.equal(w.document.querySelector('.compact-stock-card[data-id="' + multiCardItem.id + '"] .compact-summary-status').textContent, '开封剩 1天');
+  compactOpened.querySelector('.compact-row-main').click();
+  assert.ok(!el('pantryDetailBackdrop').classList.contains('hidden-view'));
+  assert.equal(el('pantryDetailBody').querySelector('.detail-card-palatability').getAttribute('aria-label'), '正常吃');
+  assert.ok(el('pantryDetailBody').querySelector('[data-action="card-menu"]'));
+  el('pantryDetailBody').querySelector('[data-action="log-feed"]').click();
   assert.ok(!el('feedModalBackdrop').classList.contains('hidden-view'));
   el('feedModalBackdrop').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  assert.ok(!el('pantryDetailBackdrop').classList.contains('hidden-view'));
+  ui.closePantryDetail();
   state.pantryDisplayMode = 'card';
   openedCardItem.openedDate = '';
   ui.renderPantryList();
@@ -1924,25 +1920,15 @@ async function run() {
   console.log('Opened card layout and progress pass');
 
   state.pantryDisplayMode = 'compact';
-  for (const [expiry, opening, expected, tone, lock] of [
-    [-3, 1, '已过期 3天', 'expired', false],
-    [5, -2, '开封超期 2天', 'expired', true],
-    [-3, -1, '已过期 3天', 'expired', false],
-    [1, 2, '剩 1天', 'urgent', false],
-    [2, 1, '开封剩 1天', 'urgent', true],
-    [20, 0, '开封剩 0天', 'urgent', true],
-    [20, 3, '开封剩 3天', 'urgent', true],
-    [20, 4, '开封剩 4天', 'warning', true],
-    [20, 14, '开封剩 14天', 'warning', true],
-    [20, 15, '开封剩 15天', 'fresh', true],
-    [4, 4, '剩 4天', 'warning', false],
-    [0, null, '剩 0天', 'urgent', false],
-    [3, null, '剩 3天', 'urgent', false],
-    [4, null, '剩 4天', 'warning', false],
-    [14, null, '剩 14天', 'warning', false],
-    [15, null, '剩 15天', 'fresh', false],
-    [null, 4, '开封剩 4天', 'warning', true],
-    [null, null, '未填写过期日期', 'unknown', false]
+  for (const [expiry, opening, expected, tone] of [
+    [-3, 1, '已过期 3天', 'danger'],
+    [5, -2, '开封超期 2天', 'danger'],
+    [20, 0, '开封剩 0天', 'danger'],
+    [20, 7, '开封剩 7天', 'warning'],
+    [20, 8, '开封剩 8天', 'warning'],
+    [0, null, '剩 0天', 'danger'],
+    [null, 4, '开封剩 4天', 'warning'],
+    [null, null, '未填写过期日期', 'unknown']
   ]) {
     const entry = make('compact-case', 1, '罐', {
       expDate: expiry === null ? '' : utils.shiftDaysFromToday(expiry),
@@ -1951,26 +1937,161 @@ async function run() {
       openDaysLimit: 20
     });
     reset(entry);
-    const button = w.document.querySelector('.compact-expiry-badge');
-    assert.equal(button.textContent, expected);
-    assert.ok(button.classList.contains('detail-card-status--' + tone));
-    assert.equal(Boolean(button.querySelector('svg')), lock);
+    const row = w.document.querySelector('.compact-stock-card');
+    assert.equal(row.querySelector('.compact-summary-status').textContent, expected);
+    assert.ok(row.classList.contains('compact-tone--' + tone));
+  }
+  for (const [id, extra, expected] of [
+    ['supply-no-date', { expDate: '' }, null],
+    ['supply-opening', { expDate: '', isOpened: true, openedDate: today, openDaysLimit: 20 }, '开封剩 20天'],
+    ['supply-expiry', { expDate: utils.shiftDaysFromToday(30) }, '剩 30天']
+  ]) {
+    reset(make(id, 1, '瓶', { category: 'supplies', ...extra }));
+    const status = el('pantryList').querySelector('.compact-summary-status');
+    assert.equal(status ? status.textContent : null, expected);
+  }
+  for (const item of [
+    make('spec-food', 1, '支', { category: 'treat', unit_net_weight_g: 14, spec: '113克' }),
+    make('spec-supply', 1, '包', { category: 'supplies', unit_spec_value: 150, unit_spec_unit: '克', spec: '150g' }),
+    make('spec-supplement', 1, '瓶', { category: 'supp', unit_spec_value: 100, unit_spec_unit: '毫升', spec: '100ml' })
+  ]) {
+    reset(item);
+    const expected = utils.formatInventoryItemSpec(item);
+    assert.equal(el('pantryList').querySelector('.compact-summary-spec').textContent, expected);
+    const detail = w.document.createElement('div');
+    detail.innerHTML = ui.renderPantryDetail(item.id);
+    assert.ok(detail.textContent.includes(expected));
+    state.pantryDisplayMode = 'card';
+    ui.renderPantryList();
+    assert.ok(el('pantryList').textContent.includes(expected));
+    state.pantryDisplayMode = 'compact';
   }
   const missingDates = make('missing-dates', 1, '罐', { expDate: '', isOpened: true, openedDate: today, openDaysLimit: null });
   reset(missingDates);
-  assert.deepEqual(Array.from(w.document.querySelectorAll('.compact-tip--expiry > span'), node => node.textContent),
-    ['未开封保质期：未填写过期日期', '开封后剩余：未填写开封保鲜期']);
+  assert.ok(w.document.querySelector('.compact-summary-progress').classList.contains('is-empty'));
+  missingDates.expDate = yesterday;
+  ui.renderPantryList();
+  assert.equal(w.document.querySelector('.compact-summary-progress span').style.width, '100%');
+  for (const [remaining, tone] of [[15, 'fresh'], [4, 'warning'], [2, 'urgent']]) {
+    const item = make('progress-comparison', 2, '罐', {
+      expDate: utils.shiftDaysFromToday(200), isOpened: true,
+      openedDate: utils.shiftDaysFromToday(remaining - 20), openDaysLimit: 20
+    });
+    reset(item);
+    const row = el('pantryList').querySelector('.compact-stock-card');
+    const holder = w.document.createElement('div');
+    holder.innerHTML = ui.renderPantryDetail(item.id);
+    const detailed = holder.querySelector('.detail-card-open-progress');
+    const compactPercent = Number.parseFloat(row.querySelector('.compact-summary-progress span').style.width);
+    const detailedPercent = Number.parseFloat(detailed.querySelector('.progress-bar').style.width);
+    assert.equal(compactPercent + detailedPercent, 100);
+    assert.ok(detailed.classList.contains('detail-card-open-progress--' + tone));
+    assert.ok(row.classList.contains('compact-tone--' + (tone === 'fresh' ? 'ok' : tone === 'urgent' ? 'danger' : tone)));
+  }
+  for (const category of ['dry', 'can', 'freeze', 'treat']) {
+    const item = make('cover-' + category, 1, '包', { category });
+    reset(item);
+    const compactImg = el('pantryList').querySelector('.compact-thumb img');
+    const detail = w.document.createElement('div');
+    detail.innerHTML = ui.renderPantryDetail(item.id);
+    assert.equal(compactImg.getAttribute('src'), w.MeowPantry.getItemCoverSrc(item));
+    assert.equal(compactImg.getAttribute('src'), detail.querySelector('.detail-card-photo img').getAttribute('src'));
+  }
+  const uploaded = make('cover-uploaded', 1, '包', { images: ['data:image/jpeg;base64,' + 'A'.repeat(40)] });
+  reset(uploaded);
+  assert.equal(el('pantryList').querySelector('.compact-thumb img').getAttribute('src'), uploaded.images[0]);
+  const legacySettings = { settings: domain.createDefaultSettings() };
+  storage.applyLoadedSettings({ pantryDisplayMode: 'compact', pantryPageSize: 10 }, legacySettings);
+  assert.equal(legacySettings.pantryPageSize, 20);
+  assert.equal(legacySettings.settings.pantryPageSize, 10);
+  storage.applyLoadedSettings({ pantryDisplayMode: 'card', pantryPageSize: 50, compactPantryPageSize: 10 }, legacySettings);
+  assert.equal(legacySettings.pantryPageSize, 50);
+  assert.equal(legacySettings.settings.compactPantryPageSize, 10);
+  const feedOutcomes = [];
+  for (const entryPoint of ['swipe', 'panel']) {
+    const item = make('feed-' + entryPoint, 3, '罐', { unit_net_weight_g: 100 });
+    reset(item);
+    const row = el('pantryList').querySelector('.compact-stock-card');
+    if (entryPoint === 'swipe') {
+      row.querySelector('.compact-row-main').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+      row.querySelector('.compact-swipe-action').click();
+    } else {
+      row.querySelector('.compact-row-main').click();
+      el('pantryDetailBody').querySelector('[data-action="log-feed"]').click();
+      assert.ok(!el('pantryDetailBackdrop').classList.contains('hidden-view'));
+    }
+    set('feedAmountInput', '1罐');
+    if (!el('feedDeductStock').checked) el('feedDeductStock').click();
+    el('feedForm').requestSubmit();
+    assert.ok(!el('confirmModalBackdrop').classList.contains('hidden-view'));
+    el('confirmOkBtn').click();
+    assert.ok(el('pantryDetailBackdrop').classList.contains('hidden-view'));
+    const updatedRow = el('pantryList').querySelector('.compact-stock-card');
+    feedOutcomes.push({ quantity: item.quantity, used: item.eatenCount, amount: state.logs[0].amount,
+      summary: updatedRow.querySelector('.compact-summary-stock').textContent });
+    assert.ok(!updatedRow.classList.contains('is-open'));
+  }
+  assert.deepEqual(feedOutcomes[0], feedOutcomes[1]);
+  assert.deepEqual(feedOutcomes[0], { quantity: 2, used: 1, amount: '1罐', summary: '在库 2罐 · 开封 0 · 已用 1' });
   const mixedRating = mixed();
   mixedRating.flavors[0].palatability = 'love';
   mixedRating.flavors[1].palatability = 'meh';
   const medicationRating = make('medication-rating', 1, '粒', { category: 'med', palatability: 'ok' });
   reset(mixedRating, medicationRating);
   for (const [id, emoji, label] of [['mix', '😍😣', '鸡：超爱吃；鱼：不爱吃'], ['medication-rating', '🥹', '需哄喂']]) {
-    const button = w.document.querySelector('.compact-stock-card[data-id="' + id + '"] .compact-palatability');
-    assert.equal(button.textContent, emoji);
-    assert.equal(button.getAttribute('aria-label'), label);
+    const row = w.document.querySelector('.compact-stock-card[data-id="' + id + '"]');
+    assert.ok(!row.textContent.includes(emoji));
+    const detail = w.document.createElement('div');
+    detail.innerHTML = ui.renderPantryDetail(id);
+    assert.equal(detail.querySelector('.detail-card-palatability').getAttribute('aria-label'), label);
   }
-  console.log('Compact expiry selection and tips pass');
+  const savedSort = state.sortBy;
+  const savedSize = state.pantryPageSize;
+  state.sortBy = 'exp_asc';
+  state.catFilter = 'all';
+  state.brandFilter = 'all';
+  state.pantryPageSize = 5;
+  reset(
+    make('group-expired', 1, '罐', { expDate: utils.shiftDaysFromToday(-1), location: '测试柜' }),
+    make('group-expiring', 1, '罐', { expDate: utils.shiftDaysFromToday(2) }),
+    ...Array.from({ length: 5 }, (_, i) => make('group-fresh-' + i, 1, '罐', {
+      expDate: utils.shiftDaysFromToday(200 + i), ...(i === 0 ? { category: 'dry', brand: '另一品牌' } : {})
+    }))
+  );
+  assert.equal(el('pantryList').querySelectorAll('.compact-list > :not(.compact-stock-card)').length, 0);
+  assert.deepEqual(Array.from(el('pantryList').querySelectorAll('.compact-stock-card'), row => row.dataset.id),
+    ['group-expired', 'group-expiring', 'group-fresh-0', 'group-fresh-1', 'group-fresh-2']);
+  const keyboardRow = el('pantryList').querySelector('.compact-stock-card');
+  keyboardRow.querySelector('.compact-row-main').dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+  assert.ok(keyboardRow.classList.contains('is-open'));
+  assert.equal(keyboardRow.querySelector('.compact-swipe-action').hasAttribute('inert'), false);
+  keyboardRow.querySelector('.compact-row-main').click();
+  assert.ok(!keyboardRow.classList.contains('is-open'));
+  assert.equal(keyboardRow.querySelector('.compact-swipe-action').hasAttribute('inert'), true);
+  assert.ok(el('pantryDetailBackdrop').classList.contains('hidden-view'));
+  state.pantryPage = 2;
+  ui.renderPantryList();
+  assert.equal(el('pantryList').querySelectorAll('.compact-list > :not(.compact-stock-card)').length, 0);
+  assert.deepEqual(Array.from(el('pantryList').querySelectorAll('.compact-stock-card'), row => row.dataset.id),
+    ['group-fresh-3', 'group-fresh-4']);
+  state.pantryPage = 1;
+  state.searchQuery = '测试柜';
+  ui.renderPantryList();
+  assert.equal(el('pantryList').querySelectorAll('.compact-stock-card').length, 1);
+  assert.equal(el('pantryList').querySelector('.compact-stock-card').dataset.id, 'group-expired');
+  state.searchQuery = '';
+  state.catFilter = 'dry';
+  state.brandFilter = '另一品牌';
+  ui.renderPantryList();
+  assert.deepEqual(Array.from(el('pantryList').querySelectorAll('.compact-stock-card'), row => row.dataset.id), ['group-fresh-0']);
+  state.catFilter = 'all';
+  state.brandFilter = 'all';
+  state.sortBy = 'brand_asc';
+  ui.renderPantryList();
+  assert.equal(el('pantryList').querySelectorAll('.compact-group-heading').length, 0);
+  state.sortBy = savedSort;
+  state.pantryPageSize = savedSize;
+  console.log('Compact expiry selection and summary ratings pass');
 
   const packagedCardItem = make('packaged-card', 1, '杯', {
     price: 3.5,
@@ -2100,6 +2221,10 @@ async function run() {
       ui.renderPantryList();
       const archive = w.document.querySelector('.archive-card');
       const rating = archive.querySelector('[data-compact-tip="palatability"]');
+      if (mode === 'compact') {
+        assert.equal(rating, null);
+        continue;
+      }
       assert.equal(rating.textContent, '😍😣');
       assert.equal(rating.getAttribute('aria-label'), '草莓鸡：超爱吃；蓝莓兔：不爱吃；鱼肉：未测');
       rating.click();
@@ -2749,6 +2874,12 @@ async function run() {
   ui.closeStockHistoryModal();
   el('pantryDisplayToggle').querySelector('[data-display-mode="compact"]').click();
   assert.equal(el('pantryDisplayToggle').querySelector('[data-display-mode="compact"]').getAttribute('aria-pressed'), 'true');
+  set('pageSizeSelect', '10');
+  el('pantryDisplayToggle').querySelector('[data-display-mode="card"]').click();
+  set('pageSizeSelect', '50');
+  el('pantryDisplayToggle').querySelector('[data-display-mode="compact"]').click();
+  assert.equal(state.pantryPageSize, 10);
+  assert.equal(state.settings.pantryPageSize, 50);
   assert.ok(await save());
   const localSettings = json(state.settings);
   assert.equal(localSettings.pantryHistoryHintSeen, true);
@@ -2757,6 +2888,8 @@ async function run() {
   await settle();
   assert.equal(reopenedPantry.MeowPantry.state.statusFilter, 'in_stock');
   assert.equal(reopenedPantry.MeowPantry.state.pantryDisplayMode, 'compact');
+  assert.equal(reopenedPantry.MeowPantry.state.pantryPageSize, 10);
+  assert.equal(reopenedPantry.MeowPantry.state.settings.pantryPageSize, 50);
   assert.equal(reopenedPantry.document.getElementById('pantryHistoryHint').classList.contains('is-visible'), false);
   assert.equal(reopenedPantry.document.getElementById('pantryStatusHint').classList.contains('hidden-view'), true);
   reopenedPantry.close();
@@ -2915,6 +3048,7 @@ async function run() {
   assert.match(el('dailyFeedTimeline').querySelector('.daily-reminder').textContent, /下次用药/);
   assert.deepEqual(Array.from(el('dailyFeedTimeline').querySelectorAll('.daily-record-meta'), node => node.textContent),
     ['中午', '中午', '晚上', '零食加餐 · 测试牌', '用药 · 大宠爱✅顺利']);
+  assert.equal(el('dailyFeedTimeline').querySelectorAll('.daily-record-meta use')[2].getAttribute('href'), '#ui-utensils');
   el('dailyPrevWeek').click();
   assert.ok(!el('dailyPastWeek').classList.contains('hidden-view'));
   assert.ok(!el('dailyNextWeek').disabled);
@@ -3030,7 +3164,7 @@ async function run() {
   ui.openFeedModal(careBatch.id, today);
   assert.match(el('feedModalTitle').textContent, /记录用药/);
   assert.equal(el('saveFeedBtn').textContent, '保存用药记录');
-  assert.equal(el('feedStockLabel').textContent, '选择药品批次（或手动输入）');
+  assert.equal(el('feedStockLabel').textContent, '商品批次');
   set('feedStockSelect', '');
   assert.ok(el('feedDeductBox').classList.contains('hidden-view'));
   assert.ok(el('feedDeductStock').disabled);
@@ -3039,21 +3173,40 @@ async function run() {
   assert.ok(el('feedDeductStock').checked);
   assert.equal(el('feedMedicationOutcome').value, '');
   assert.deepEqual(Array.from(el('feedMedicationOutcomeChoices').children, button => button.textContent),
-    ['➖未记录', '✅顺利', '🥹需哄喂', '🙅抗拒', '🤮吐了']);
+    ['✅顺利', '🥹需哄喂', '🙅抗拒', '🤮吐了']);
+  const medicationChoice = el('feedMedicationOutcomeChoices').querySelector('[data-outcome="smooth"]');
+  assert.ok(Array.from(el('feedMedicationOutcomeChoices').children).every(button => button.getAttribute('aria-pressed') === 'false'));
+  medicationChoice.click();
+  assert.equal(el('feedMedicationOutcome').value, 'smooth');
+  medicationChoice.click();
+  assert.equal(el('feedMedicationOutcome').value, '');
+  const medReminders = el('feedMedicationReminderChoices');
+  assert.deepEqual(Array.from(medReminders.children, button => button.textContent),
+    ['不设', '1个月后', '2个月后', '3个月后', '自定义']);
+  medReminders.querySelector('[data-medication-reminder="60"]').click();
+  assert.equal(el('feedNextReminderDays').value, '60');
+  assert.equal(medReminders.querySelector('[data-medication-reminder="60"]').getAttribute('aria-pressed'), 'true');
+  set('feedNextReminderDays', '180');
+  assert.equal(medReminders.querySelector('[data-medication-reminder="180"]').getAttribute('aria-pressed'), 'true');
   assert.match(el('feedPortionChips').querySelector('[data-frac="0.5"]').textContent, /半片/);
   set('feedMedicationOutcome', 'coaxed');
-  set('feedNextReminderDays', 'custom');
+  medReminders.querySelector('[data-medication-reminder="custom"]').click();
+  assert.equal(el('feedNextReminderDays').value, 'custom');
   set('feedCustomReminderDays', '10');
   set('feedAmountInput', '半片');
   el('feedForm').requestSubmit();
   assert.equal(state.logs[0].medicationOutcome, 'coaxed');
   assert.equal(state.logs[0].deductedFrac, 0.5);
   assert.equal(state.logs[0].reminderDays, 10);
+  ui.openEditFeedModal(state.logs[0].id);
+  assert.equal(medReminders.querySelector('[data-medication-reminder="10"]').getAttribute('aria-pressed'), 'true');
+  ui.closeFeedModal();
   ui.openFeedModal(careBatch.id, today);
   assert.match(el('chipLastPortion').textContent, /上次用量：半片/);
   const halfTablet = el('feedPortionChips').querySelector('[data-frac="0.5"]');
   halfTablet.click();
   assert.equal(halfTablet.getAttribute('aria-pressed'), 'true');
+  assert.equal(halfTablet.querySelector('.care-chip-check'), null);
   assert.equal(el('chipLastPortion').getAttribute('aria-pressed'), 'false');
   set('feedAmountInput', '1片');
   assert.equal(el('feedDeductStock').checked, false);
@@ -3112,12 +3265,27 @@ async function run() {
   assert.equal(el('feedNameInput').value, '');
   assert.equal(el('feedNameInput').required, false);
   assert.equal(el('saveFeedBtn').textContent, '保存护理记录');
+  assert.match(el('feedNursingProjects').querySelector('legend').textContent, /可多选/);
+  assert.ok(el('feedNursingSuggestion').classList.contains('hidden-view'));
   const project = name => Array.from(el('feedNursingProjects').querySelectorAll('input[type="checkbox"]'))
     .find(input => input.value === name);
   assert.deepEqual(Array.from(el('feedNursingProjects').querySelectorAll('.care-chip-copy use'), use => use.getAttribute('href')),
     ['#ui-brush', '#ui-scissors', '#ui-ear', '#ui-sparkles', '#ui-bath', '#ui-clipboard-check']);
   assert.equal(project('清理眼屎'), undefined);
+  project('剪指甲').click();
+  assert.equal(project('剪指甲').closest('label').querySelector('.care-chip-check'), null);
+  assert.match(el('feedNursingSuggestion').textContent, /建议：2周后/);
+  assert.equal(el('feedNextReminderDays').value, '14');
+  assert.equal(el('feedNursingReminderChoices').querySelector('[data-nursing-reminder="14"] .care-chip-check'), null);
+  assert.equal(el('feedNursingReminderChoices').querySelector('small'), null);
   project('梳毛').click();
+  assert.ok(project('剪指甲').checked && project('梳毛').checked);
+  assert.match(el('feedNursingSuggestion').textContent, /建议：3天后/);
+  assert.equal(el('feedNextReminderDays').value, '3');
+  el('feedNursingReminderChoices').querySelector('[data-nursing-reminder="7"]').click();
+  project('剪指甲').click();
+  assert.equal(el('feedNextReminderDays').value, '7', 'Manual reminder choice must survive changes to projects');
+  assert.equal(el('feedNursingReminderChoices').querySelector('[data-nursing-reminder="7"]').getAttribute('aria-pressed'), 'true');
   project('其他').click();
   set('feedNursingOther', '擦脚');
   set('feedNextReminderDays', '3');
@@ -3142,8 +3310,13 @@ async function run() {
   assert.equal(w.MeowPantry.Stats.computeOverviewMetrics(state.items, state.logs).recent30.nursing.length, 1);
   ui.openEditFeedModal(nursing.id);
   assert.ok(project('梳毛').checked);
+  assert.ok(!el('feedNoteField').classList.contains('hidden-view'));
+  assert.equal(el('feedNoteInput').value, '状态配合');
   assert.equal(el('feedNursingOther').value, '擦脚');
   assert.equal(el('feedNextReminderDays').value, '3');
+  ui.closeFeedModal();
+  ui.openFeedModal(careBatch.id, today);
+  assert.ok(el('feedNursingSuggestion').classList.contains('hidden-view'), 'Suggestion must not leak into medication mode');
   ui.closeFeedModal();
 
   assert.equal(utils.formatRelativeYearDate('2026-12-20', '2026-11-20'), '12月20日');
@@ -3187,9 +3360,13 @@ async function run() {
   assert.equal(el('backupNoticeDot').textContent, '');
   assert.ok(!el('backupNoticeDot').classList.contains('hidden-view'));
   assert.match(el('backupNoticeDot').getAttribute('aria-label'), /本地更改/);
-  assert.match(w.document.querySelector('.backup-status-help').textContent, /保存次数累计.*不是错误或待办/);
+  assert.equal(w.document.querySelectorAll('#backupStatusCard .backup-status-help').length, 1);
   assert.equal(el('backupStatusTitle').textContent, '101 次保存未备份');
   assert.equal(el('unbackedBannerText').textContent, '101 次本地保存尚未备份');
+  state.settings.lastBackupDate = '2024-01-02';
+  ui.renderSettingsView();
+  assert.equal(el('backupStatusTime').textContent, '上次 2024/01/02');
+  state.settings.lastBackupDate = '';
   el('dismissBackupBannerBtn').click();
   ui.renderSettingsView();
   assert.ok(el('unbackedBanner').classList.contains('hidden-view'));
@@ -3209,7 +3386,7 @@ async function run() {
   assert.equal(state.settings.unsavedChangesCount, 0);
   assert.ok(el('backupNoticeDot').classList.contains('hidden-view'));
   assert.equal(el('backupStatusTitle').textContent, '已是最新备份');
-  assert.match(el('backupStatusTime').textContent, /上次 \d+月\d+日 \d{2}:\d{2}/);
+  assert.match(el('backupStatusTime').textContent, /上次 \d{4}\/\d{2}\/\d{2} \d{2}:\d{2}/);
   storage.triggerFileDownload = originalDownload;
   console.log('Header button variants and backup status pass');
   const dryInput = el('dailyFeedDry');
@@ -3270,6 +3447,15 @@ async function run() {
   assert.equal(backup().items.find(item => item.id === rated.id).notes, '备注🐱');
   ui.openFeedModal(rated.id, today);
   assert.equal(el('feedFlavorPal').value, 'love');
+  const palChoice = key => el('feedPalatabilityChoices').querySelector('[data-feed-palatability="' + key + '"]');
+  assert.equal(palChoice('love').getAttribute('aria-pressed'), 'true');
+  palChoice('love').click();
+  assert.equal(el('feedFlavorPal').value, '');
+  assert.ok(Array.from(el('feedPalatabilityChoices').children).every(button => button.getAttribute('aria-pressed') === 'false'));
+  palChoice('coax').click();
+  assert.equal(el('feedFlavorPal').value, 'coax');
+  assert.equal(palChoice('coax').getAttribute('aria-pressed'), 'true');
+  delete el('feedFlavorPal').dataset.manual;
   set('feedStockSelect', unrated.id);
   assert.equal(el('feedFlavorPal').value, '');
   set('feedStockSelect', ratedMix.id);
@@ -3294,10 +3480,21 @@ async function run() {
   const mixLog = state.logs.find(log => log.itemId === ratedMix.id);
   assert.equal(mixLog.flavorPalatability, 'meh');
   assert.equal(mixLog.deductedUnit, 1);
+  ui.openEditFeedModal(mixLog.id);
+  assert.equal(palChoice('meh').getAttribute('aria-pressed'), 'true');
+  ui.closeFeedModal();
   assert.ok(!Object.hasOwn(byId(ratedMix.id), 'palatability'));
   assert.equal(byId(ratedMix.id).flavors[0].palatability, 'coax');
   ui.openFeedModal('', today, true);
   assert.equal(el('feedFlavorPal').value, '');
+  assert.ok(el('feedNoteField').classList.contains('hidden-view'));
+  el('feedAddNursingNote').click();
+  set('feedNoteInput', '喂食备注');
+  assert.equal(el('feedNoteLabel').textContent, '备注');
+  assert.ok(!el('feedNoteField').classList.contains('hidden-view'));
+  el('feedMealChoices').querySelector('[data-meal-slot="care"]').click();
+  assert.equal(el('feedNoteInput').value, '喂食备注');
+  assert.ok(!el('feedNoteField').classList.contains('hidden-view'));
   ui.closeFeedModal();
 
   ui.openEditModal(ratedMix.id);
@@ -3532,19 +3729,18 @@ async function run() {
   ui.renderPantryList();
   const compactSupplyRows = Array.from(el('pantryList').querySelectorAll('.compact-stock-card'));
   assert.equal(compactSupplyRows.length, 3);
-  assert.ok(compactSupplyRows.every(row => row.querySelector('[data-action="card-menu"] use').getAttribute('href') === '#ui-more-vertical'));
+  assert.ok(compactSupplyRows.every(row => !row.querySelector('[data-action="card-menu"]')));
   const compactLitter = compactSupplyRows.find(row => row.dataset.id === supply.id);
   const compactCleaner = compactSupplyRows.find(row => row.dataset.id === supplyNew.id);
-  assert.equal(compactLitter.querySelector('.compact-brand').textContent, '喵洁');
-  assert.match(compactLitter.querySelector('.compact-title').textContent, /豆腐猫砂6升/);
-  assert.match(compactLitter.querySelector('.compact-stock-copy').textContent, /在库 2包·开封 1/);
-  assert.equal(compactLitter.querySelector('.compact-location').textContent, '日用品柜');
-  assert.equal(compactLitter.querySelector('.btn-feed').dataset.action, 'consume-one');
-  assert.equal(compactCleaner.querySelector('.btn-feed'), null);
-  assert.equal(compactLitter.querySelector('.compact-expiry-badge').textContent, '未填写过期日期');
-  assert.ok(compactSupplyRows.every(row => row.querySelector('[data-action="item-history"]')));
-  compactCleaner.querySelector('[data-action="card-menu"]').click();
-  compactCleaner.querySelector('[data-action="item-history"]').click();
+  assert.equal(compactLitter.querySelector('.compact-summary-brand').textContent, '喵洁 · 日用品');
+  assert.match(compactLitter.querySelector('.compact-summary-title').textContent, /豆腐猫砂6L/);
+  assert.match(compactLitter.querySelector('.compact-summary-stock').textContent, /在库 2包 · 开封 1/);
+  assert.doesNotMatch(compactLitter.textContent, /日用品柜/);
+  assert.equal(compactLitter.querySelector('.compact-swipe-action').dataset.action, 'consume-one');
+  assert.equal(compactCleaner.querySelector('.compact-swipe-action'), null);
+  assert.equal(compactLitter.querySelector('.compact-summary-status'), null);
+  compactCleaner.querySelector('.compact-row-main').click();
+  el('pantryDetailBody').querySelector('[data-action="item-history"]').click();
   assert.equal(state.historyItemFilter, supplyNew.id);
   ui.closeStockHistoryModal();
   el('pantryDisplayToggle').querySelector('[data-display-mode="card"]').click();
@@ -3637,11 +3833,11 @@ async function run() {
   assert.doesNotMatch(batchRows[0].textContent, /新柜|在库 3包/);
   assert.match(el('filterResultCountText').textContent, /1批商品/);
   state.statusFilter = 'in_stock';
-  for (const query of ['CODE-A', '特殊备注', '6升']) {
+  for (const query of ['CODE-A', '特殊备注', '6升', '6L']) {
     state.searchQuery = query;
     ui.renderAll();
     batchRows = Array.from(el('pantryList').querySelectorAll('.supply-detail-card'));
-    assert.equal(batchRows.length, query === '6升' ? 2 : 1);
+    assert.equal(batchRows.length, ['6升', '6L'].includes(query) ? 2 : 1);
     assert.ok(batchRows.some(row => row.dataset.id === batchA.id));
   }
   state.searchQuery = '';
@@ -3663,8 +3859,8 @@ async function run() {
   ui.renderPantryList();
   const compactBatches = Array.from(el('pantryList').querySelectorAll('.compact-stock-card'));
   assert.deepEqual(compactBatches.map(row => row.dataset.id).sort(), [batchA.id, batchB.id]);
-  assert.equal(compactBatches.find(row => row.dataset.id === batchB.id).querySelector('.compact-location').textContent, '新柜');
-  assert.match(compactBatches.find(row => row.dataset.id === batchA.id).querySelector('.compact-expiry-badge').textContent, /已过期/);
+  assert.doesNotMatch(compactBatches.find(row => row.dataset.id === batchB.id).textContent, /新柜/);
+  assert.match(compactBatches.find(row => row.dataset.id === batchA.id).querySelector('.compact-summary-status').textContent, /已过期/);
   let supplyCsv = '';
   storage.triggerFileDownload = (_name, content) => { supplyCsv = content; return true; };
   storage.exportItemsCsv();
@@ -3897,8 +4093,8 @@ async function run() {
   assert.equal(groupedEstimates.find(entry => entry.key === domain.getProductGroupKey(groupedScented)).remainingDays, null);
   ui.renderAll();
   assert.match(el('categoryStatsGrid').querySelector('.forecast-tile--supplies').textContent, /3种30天/);
-  assert.match(el('pantryList').querySelector('.supply-detail-card[data-id="grouped-liters"]').textContent, /6升.*无香/);
-  assert.match(el('pantryList').querySelector('.supply-detail-card[data-id="grouped-milliliters"]').textContent, /6,000毫升.*无香/);
+  assert.match(el('pantryList').querySelector('.supply-detail-card[data-id="grouped-liters"]').textContent, /6L.*无香/);
+  assert.match(el('pantryList').querySelector('.supply-detail-card[data-id="grouped-milliliters"]').textContent, /6,000mL.*无香/);
   ui.openAddModal();
   set('fieldUnit', '包');
   set('fieldBrand', '分组测试');
@@ -4191,11 +4387,13 @@ async function run() {
 
   state.pantryDisplayMode = 'compact';
   ui.renderPantryList();
-  const compactMixed = el('pantryList').querySelector('[data-id="analysis-batch-a"] .compact-palatability');
-  assert.equal(compactMixed.textContent, '😍😣');
-  compactMixed.click();
-  assert.match(compactMixed.nextElementSibling.textContent, /草莓鸡 😍 超爱吃/);
-  assert.match(compactMixed.nextElementSibling.textContent, /蓝莓兔 😣 不爱吃/);
+  const compactMixed = el('pantryList').querySelector('[data-id="analysis-batch-a"]');
+  assert.doesNotMatch(compactMixed.textContent, /😍|😣/);
+  const mixedDetail = w.document.createElement('div');
+  mixedDetail.innerHTML = ui.renderPantryDetail(analysisBatch.id);
+  const mixedRatingLabel = mixedDetail.querySelector('.detail-card-palatability').getAttribute('aria-label');
+  assert.match(mixedRatingLabel, /草莓鸡：超爱吃/);
+  assert.match(mixedRatingLabel, /蓝莓兔：不爱吃/);
   storage.triggerFileDownload = (_name, content) => { exportedCsv = content; return true; };
   storage.exportItemsCsv();
   storage.triggerFileDownload = originalDownload;
@@ -4462,7 +4660,7 @@ async function run() {
   assert.equal(byId(galleryItem.id).images.length, 6);
   await persisted(s => assert.deepEqual(json(s.items.find(row => row.id === galleryItem.id).images),
     galleryBackup.items.find(row => row.id === galleryItem.id).images));
-  assert.match(el('backupPhotoSize').textContent, /6 张照片.*JSON 备份约.*含照片/);
+  assert.match(el('backupPhotoSize').textContent, /照片（含归档）：6 张，约 .*\n预计 JSON 备份：约 /);
   ui.openRestockModal(byId(galleryItem.id));
   assert.deepEqual(json(state.formImages), galleryBackup.items.find(row => row.id === galleryItem.id).images);
   el('formPhotoThumbs').querySelector('[data-photo-remove="0"]').click();

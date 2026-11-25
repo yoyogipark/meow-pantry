@@ -265,7 +265,7 @@
       label + '">' + check + label + '</span>';
   }
 
-  function detailCardRatings(item, compact) {
+  function detailCardRatings(item) {
     var entries = item.flavors
       ? item.flavors.map(function (flavor) {
           return { name: flavor.name, badge: MP.getPalatabilityBadgeInfo({ category: item.category, palatability: flavor.palatability }) };
@@ -291,9 +291,9 @@
         (badge ? (badge.emoji || MP.getPalatabilityEmoji(badge.key)) + ' ' + badge.label : '未测');
       return '<span>' + Utils.escapeHtml(text) + '</span>';
     }).join('');
-    var tipId = (compact ? 'compact-pal-' : 'detail-pal-') + Utils.escapeHtml(item.id);
-    return '<span class="compact-tip-wrap ' + (compact ? 'compact-rating-wrap' : 'detail-card-rating-wrap') +
-      '"><button type="button" class="' + (compact ? 'compact-palatability' : 'detail-card-palatability') + '" ' +
+    var tipId = 'detail-pal-' + Utils.escapeHtml(item.id);
+    return '<span class="compact-tip-wrap detail-card-rating-wrap">' +
+      '<button type="button" class="detail-card-palatability" ' +
       'data-compact-tip="palatability" aria-label="' + Utils.escapeHtml(label) + '" aria-expanded="false" aria-describedby="' + tipId + '">' +
       icons + extra + '</button><span id="' + tipId + '" class="compact-tip detail-card-rating-tip" role="tooltip" hidden>' +
       details + '</span></span>';
@@ -374,12 +374,17 @@
       '<span class="detail-card-shelf-tip hidden-view" role="status"></span></div>';
   }
 
-  function detailedOpenedProgress(item, days) {
+  function openedRemainingPercentage(item, days) {
     var limit = Number(item.openDaysLimit);
-    if (!Number.isInteger(limit) || limit <= 0 || !Number.isFinite(days)) return '';
+    if (!Number.isInteger(limit) || limit <= 0 || !Number.isFinite(days)) return null;
+    return Math.min(100, Math.max(0, days) / limit * 100);
+  }
 
+  function detailedOpenedProgress(item, days) {
+    var percent = openedRemainingPercentage(item, days);
+    if (percent === null) return '';
+    var limit = Number(item.openDaysLimit);
     var remaining = Math.max(0, days);
-    var percent = Math.min(100, remaining / limit * 100);
     var tone = Utils.formatDays(days).tone;
     var label = days < 0 ? '已超开封保鲜期' : '开封保鲜期剩余 ' + Utils.formatDays(remaining).text;
     return '<div class="detail-card-open-progress detail-card-open-progress--' + tone + '">' +
@@ -438,7 +443,7 @@
     var cover = MP.getItemCoverSrc(item);
     var photo = '<button type="button" data-action="preview-img" data-id="' + id + '" aria-label="查看日用品图片" class="detail-card-photo">' +
       '<img src="' + Utils.escapeHtml(cover) + '" alt="' + Utils.escapeHtml(item.name) + '">' + UI.itemPhotoCountBadge(item) + '</button>';
-    var spec = Utils.formatItemSpec(item);
+    var spec = Utils.formatInventoryItemSpec(item);
     var unitPrice = Utils.formatMoney(item.price, item.currency, group.unit);
     var specPrice = [spec ? spec + '/' + group.unit : '', unitPrice].filter(Boolean).join(' · ');
     var purchased = Number(item.lastQuantity) || (Number(item.quantity) || 0) + (Number(item.eatenCount) || 0);
@@ -506,7 +511,7 @@
         st.catFilter !== 'all' && it.category !== st.catFilter) return false;
       if (st.brandFilter !== 'all' && (it.brand || '').trim() !== st.brandFilter) return false;
       if (q) {
-        var hay = [it.brand, it.name, it.spec, Utils.formatItemSpec(it), it.location, it.batchCode, it.notes]
+        var hay = [it.brand, it.name, it.spec, Utils.formatItemSpec(it), Utils.formatInventoryItemSpec(it), it.location, it.batchCode, it.notes]
           .concat((it.flavors || []).map(function (flavor) { return flavor.name; }))
           .join(' ')
           .toLowerCase();
@@ -558,6 +563,13 @@
         var left = supplyBatchEstimate(a.item), right = supplyBatchEstimate(b.item);
         if (sort.value === 'supply_arrival_desc') return String(right.latestArrivalDate).localeCompare(String(left.latestArrivalDate));
         return (left.remainingDays === null ? Infinity : left.remainingDays) - (right.remainingDays === null ? Infinity : right.remainingDays);
+      });
+    }
+    if (st.pantryDisplayMode === 'compact' && !archiveMode && !supplyMode && sort.value === 'exp_asc') {
+      var groupOrder = { expired: 0, expiring: 1, fresh: 2 };
+      entries.sort(function (a, b) {
+        return (a.item ? groupOrder[Domain.evaluateItem(a.item).status] : 3) -
+          (b.item ? groupOrder[Domain.evaluateItem(b.item).status] : 3);
       });
     }
     var hasExtraFilter = (st.statusFilter !== 'in_stock' || Boolean(st.pantryHealthFilter) || st.catFilter !== 'all' || st.brandFilter !== 'all' || Boolean(q));
@@ -675,10 +687,9 @@
           return '<article class="ios-card archive-card redeemed-compact"><details><summary>' + thumbnail +
             '<span class="redeemed-compact-copy"><span class="redeemed-compact-name"><strong>' + esc(item.name) + '</strong> ' + esc(item.brand) +
             '</span><span class="redeemed-muted">' + esc(meta.join(' · ')) + '</span></span><span class="redeemed-chevron" aria-hidden="true">›</span></summary>' +
-            '<div class="redeemed-expanded">' + content.batches + content.footer + '</div></details>' +
-            detailCardRatings(item, true) + '</article>';
+            '<div class="redeemed-expanded">' + content.batches + content.footer + '</div></details></article>';
         }
-        var spec = Utils.formatItemSpec(item);
+        var spec = Utils.formatInventoryItemSpec(item);
         return '<article class="ios-card archive-card redeemed-card"><div class="redeemed-heading">' +
           archiveAction('preview-img', item, thumbnail, ' class="redeemed-photo" aria-label="查看商品图片"') +
           '<div class="redeemed-copy"><div class="redeemed-tags"><span class="redeemed-category">' + esc(MP.CATEGORIES[item.category].label) +
@@ -726,7 +737,6 @@
     }
     function renderCompactArchive(grp) {
       var rep = grp.latestItem;
-      var palIcon = detailCardRatings(rep, true);
       return (
         '<div class="ios-card archive-card" style="padding:10px 12px;border-radius:14px;">' +
           '<div data-action="edit" data-id="' + Utils.escapeHtml(rep.id) + '" style="min-width:0;flex:1;cursor:pointer;">' +
@@ -734,11 +744,10 @@
               Utils.getCategoryIcon(rep.category) +
               '<span style="font-size:11px;font-weight:700;color:var(--accent-strong);background:var(--accent-soft);padding:1px 6px;border-radius:6px;flex-shrink:0;">' + Utils.escapeHtml(rep.brand) + '</span>' +
               '<strong style="font-size:13.5px;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + Utils.escapeHtml(rep.name) + '</strong>' +
-              palIcon +
               archiveBadge(grp) +
             '</div>' +
             '<div style="font-size:11px;color:var(--text-muted);margin-top:3px;">' +
-              '共 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + (Utils.formatItemSpec(rep) ? (' · 规格 ' + Utils.escapeHtml(Utils.formatItemSpec(rep))) : '') +
+              '共 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + (Utils.formatInventoryItemSpec(rep) ? (' · 规格 ' + Utils.escapeHtml(Utils.formatInventoryItemSpec(rep))) : '') +
             '</div>' +
           '</div>' +
           archiveFooter(grp) +
@@ -831,7 +840,7 @@
               '</div>' +
               '<h3 style="margin:0;font-size:15.5px;font-weight:800;color:var(--text-main);line-height:1.35;">' + Utils.escapeHtml(rep.name) + '</h3>' +
               '<div style="margin-top:4px;font-size:12px;color:var(--text-muted);">' +
-                (Utils.formatItemSpec(rep) ? ('规格 ' + Utils.escapeHtml(Utils.formatItemSpec(rep)) + ' · ') : '') + '共归档 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + avgTxt +
+                (Utils.formatInventoryItemSpec(rep) ? ('规格 ' + Utils.escapeHtml(Utils.formatInventoryItemSpec(rep)) + ' · ') : '') + '共归档 ' + Utils.formatQuantity(grp.batches.length, '个历史批次') + avgTxt +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -844,9 +853,14 @@
       );
     }
 
+    UI.renderPantryDetail = function (id) {
+      var item = st.items.find(function (candidate) { return candidate.id === id && Number(candidate.quantity) > 0; });
+      return item ? renderDetailedItem({ item: item }) : '';
+    };
+
     if (st.pantryDisplayMode === 'compact') {
       listEl.style.gap = '8px';
-      listEl.innerHTML = pagedItems.map(function (entry) {
+      var compactRows = pagedItems.map(function (entry) {
         if (entry.archive) return renderCompactArchive(entry.archive);
         var it = entry.item;
         var ev = Domain.evaluateItem(it);
@@ -856,64 +870,54 @@
           : expiryDays < 0 ? '已过期 ' + Utils.formatDays(expiryDays).text
           : '剩 ' + Utils.formatDays(expiryDays).text;
         var opened = it.category === 'supplies' ? Boolean(it.isOpened && it.openedDate) : Domain.isStockOpened(it);
-        var openDays = opened ? ev.openRemaining : null;
+        var openDays = ev.openRemaining;
         var openLabel = !opened ? '未开封' : openDays === null ? '未填写开封保鲜期'
           : openDays < 0 ? '开封超期 ' + Utils.formatDays(openDays).text : '开封剩 ' + Utils.formatDays(openDays).text;
         var showOpening = openDays !== null && (expiryDays === null || openDays < expiryDays);
         var statusDays = showOpening ? openDays : expiryDays;
         var statusLabel = showOpening ? openLabel : expiryLabel;
+        if (it.category === 'supplies' && !it.expDate && !showOpening) statusLabel = '';
         var id = Utils.escapeHtml(it.id);
-
         var unit = it.unit || '件';
-        var fracTxtCompact = (it.isOpened && it.openRemainFraction > 0) ? Utils.formatRemainFractionText(it.openRemainFraction, unit, true) : '';
-        var palIcon = detailCardRatings(it, true);
-
         var compactStock = detailedOpenStock(it, unit);
-        var compactOpened = it.category === 'supplies' ? (opened ? 1 : 0) : compactStock.packageCount;
+        var compactOpened = opened ? Math.max(1, compactStock.openCount) : 0;
         var compactUsed = Number(it.eatenCount) || 0;
-        var compactStockHtml = '<span class="compact-stock-main">在库 ' +
-          Utils.escapeHtml(Utils.formatQuantity(Number(it.quantity) || 0, unit)) + '</span>' +
-          (compactOpened > 0 ? '<span class="compact-stock-divider">·</span><span class="compact-stock-open"><i aria-hidden="true"></i>开封 ' +
-            Utils.escapeHtml(Utils.formatNumber(compactOpened)) + '</span>' : '') +
-          (compactUsed > 0 ? '<span class="compact-stock-divider">·</span><span class="compact-stock-used">' + (it.discardedCount ? '核销 ' : '已用 ') +
-            Utils.escapeHtml(Utils.formatNumber(compactUsed)) + '</span>' : '');
-
-        var displaySpec = Utils.formatItemSpec(it);
-        var identity = Utils.escapeHtml([it.name, displaySpec, fracTxtCompact].filter(Boolean).join(' · '));
-
-        return (
-          '<div class="ios-card compact-stock-card" data-id="' + id + '">' + cardOverflowMenu(it, it.category === 'supplies') +
-            '<div class="compact-brand-row">' +
-              '<span class="compact-category-icon">' + Utils.getCategoryIcon(it.category, 20) + '</span>' +
-              '<span class="compact-brand" title="' + Utils.escapeHtml(it.brand) + '">' + Utils.escapeHtml(it.brand) + '</span>' +
-              palIcon +
-            '</div>' +
-            '<span class="compact-tip-wrap compact-expiry-wrap"><button type="button" data-compact-tip="expiry" aria-expanded="false" aria-describedby="compact-expiry-' + id +
-              '" class="detail-card-status compact-status-badge compact-expiry-badge detail-card-status--' + Utils.formatDays(statusDays).tone + '">' +
-              (showOpening ? '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2M12 15v2"/></svg>' : '') +
-              Utils.escapeHtml(statusLabel) + '</button><span id="compact-expiry-' + id + '" class="compact-tip compact-tip--expiry" role="tooltip" hidden>' +
-              '<span>未开封保质期：' + Utils.escapeHtml(expiryLabel) + '</span><span>开封后剩余：' + Utils.escapeHtml(openLabel) + '</span></span></span>' +
-            '<div class="compact-title" title="' + identity + '">' +
-              '<span class="compact-product-name">' + Utils.escapeHtml(it.name) + '</span>' +
-              ((displaySpec || fracTxtCompact) ? '<span class="compact-product-spec">' +
-                Utils.escapeHtml([displaySpec, fracTxtCompact].filter(Boolean).join(' · ')) + '</span>' : '') +
-            '</div>' +
-            (catInfo.group !== 'supplies' || opened
-              ? '<button type="button" data-action="' + (catInfo.group === 'supplies' ? 'consume-one' : 'log-feed') + '" data-id="' + id + '" class="btn-feed inventory-primary-action compact-card-action">' +
-                UI.feedButtonContent(catInfo.group === 'supplies' ? '记用完' : catInfo.group === 'med' ? '记用药' : '记喂食') + '</button>' : '') +
-            '<div class="compact-stock-row"><span class="compact-stock-copy">' + compactStockHtml + '</span>' +
-              '<span class="compact-location"' + (it.location ? ' title="' + Utils.escapeHtml(it.location) + '"' : '') + '>' +
-                (it.location ? Utils.uiIcon('map-pin', 14) + '<span>' + Utils.escapeHtml(it.location) + '</span>' : '') + '</span>' +
-            '</div>' +
-          '</div>'
-        );
+        var stockText = '在库 ' + Utils.formatQuantity(Number(it.quantity) || 0, unit) +
+          ' · 开封 ' + Utils.formatNumber(compactOpened) +
+          (compactUsed > 0 ? ' · ' + (it.discardedCount ? '核销 ' : '已用 ') + Utils.formatNumber(compactUsed) : '');
+        var displaySpec = Utils.formatInventoryItemSpec(it);
+        var daysTone = Utils.formatDays(statusDays).tone;
+        var tone = daysTone === 'unknown' ? 'unknown' : ['expired', 'urgent'].includes(daysTone) ? 'danger'
+          : daysTone === 'warning' ? 'warning' : 'ok';
+        var thumb = '<img src="' + Utils.escapeHtml(MP.getItemCoverSrc(it)) + '" alt="">';
+        var remainingPercent = compactOpened > 0 ? openedRemainingPercentage(it, openDays) : null;
+        var percent = remainingPercent === null ? null : 100 - remainingPercent;
+        if (compactOpened > 0 && ev.status === 'expired') percent = 100;
+        var action = catInfo.group === 'supplies' ? 'consume-one' : 'log-feed';
+        var actionLabel = catInfo.group === 'supplies' ? '记用完' : catInfo.group === 'med' ? '记用药' : '记喂食';
+        return '<div class="compact-stock-card compact-tone--' + tone + '" data-id="' + id + '">' +
+          ((catInfo.group !== 'supplies' || opened) ? '<button type="button" class="compact-swipe-action" data-action="' + action +
+            '" data-id="' + id + '" tabindex="-1" aria-hidden="true" inert>' + Utils.uiIcon('paw-print', 20) + '<span>' + actionLabel + '</span></button>' : '') +
+          '<button type="button" class="compact-row-main" data-compact-detail="' + id + '" aria-label="查看批次详情：' +
+            Utils.escapeHtml([it.brand, catInfo.label, it.name, displaySpec, statusLabel, stockText].filter(Boolean).join('，') +
+              (catInfo.group !== 'supplies' || opened ? '。左滑或按左方向键显示' + actionLabel : '')) + '">' +
+            '<span class="compact-thumb">' + thumb + '</span><span class="compact-summary">' +
+              '<span class="compact-summary-top"><span class="compact-summary-brand">' + Utils.escapeHtml([it.brand, catInfo.label].filter(Boolean).join(' · ')) +
+                '</span>' + (statusLabel ? '<span class="compact-summary-status">' + Utils.escapeHtml(statusLabel) + '</span>' : '') + '</span>' +
+              '<span class="compact-summary-title"><span class="compact-summary-name">' + Utils.escapeHtml(it.name) + '</span>' +
+                (displaySpec ? '<span class="compact-summary-spec">' + Utils.escapeHtml(displaySpec) + '</span>' : '') + '</span>' +
+              '<span class="compact-summary-stock">' + Utils.escapeHtml(stockText) + '</span>' +
+              '<span class="compact-summary-progress' + (percent === null ? ' is-empty' : '') + '">' +
+                (percent === null ? '' : '<span style="width:' + percent + '%"></span>') + '</span></span></button></div>';
       }).join('');
+      listEl.innerHTML = '<div class="compact-list">' + compactRows + '</div>';
+      if (UI.maybeShowCompactSwipeHint) UI.maybeShowCompactSwipeHint();
       return;
     }
 
     // Detailed Product Card Mode (Enhanced with Group Styling, Per-100g Price, Last-Fed Tag & History Button)
     listEl.style.gap = supplyMode ? '8px' : '12px';
-    listEl.innerHTML = pagedItems.map(function (entry) {
+    function renderDetailedItem(entry) {
       if (entry.archive) return renderDetailedArchive(entry.archive);
       var it = entry.item;
       if (it.category === 'supplies') {
@@ -949,7 +953,7 @@
         openedBannerHtml = detailedFlavorOpenStock(it, unit, ev) || openedBannerHtml;
       }
 
-      var displaySpec = Utils.formatItemSpec(it);
+      var displaySpec = Utils.formatInventoryItemSpec(it);
       var priceLine = packagedPriceText(it, unit);
       var price = Utils.formatMoney(it.price, it.currency, unit);
       if (!priceLine && price) {
@@ -1014,6 +1018,7 @@
           '</div>' +
         '</article>'
       );
-    }).join('');
+    }
+    listEl.innerHTML = pagedItems.map(renderDetailedItem).join('');
   };
 })(typeof window !== 'undefined' ? window : globalThis);

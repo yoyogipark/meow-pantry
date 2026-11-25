@@ -218,7 +218,7 @@
   var mealSlots = [
     { id: 'breakfast', label: '早饭', display: '早上', icon: 'sunrise', legacy: ['早饭', '🌅 早饭'] },
     { id: 'lunch', label: '午饭', display: '中午', icon: 'sun', legacy: ['午饭', '☀️ 午饭'] },
-    { id: 'dinner', label: '晚饭', display: '晚上', icon: 'sunset', legacy: ['晚饭', '🌙 晚饭'] },
+    { id: 'dinner', label: '晚饭', display: '晚上', icon: 'utensils', legacy: ['晚饭', '🌙 晚饭'] },
     { id: 'late_night', label: '夜宵', display: '夜宵', icon: 'moon', legacy: ['夜宵'] },
     { id: 'snack', label: '加餐/零食', display: '零食加餐', icon: 'cookie', legacy: ['加餐/零食', '🍪 加餐/零食'] },
     { id: 'care', label: '用药/护理', display: '用药／护理', icon: 'stethoscope', legacy: ['用药/护理', '🩺 用药/护理'] },
@@ -369,6 +369,45 @@
     return note && Utils.legacyUnitWeight(note, item.unit) !== weight ? spec + ' · ' + note : spec;
   };
 
+  Utils.formatInventoryItemSpec = function (item) {
+    function measure(value, unit) {
+      var units = {
+        '克': ['g', 1], 'g': ['g', 1], '千克': ['kg', 1000], 'kg': ['kg', 1000],
+        '毫升': ['mL', 1], 'ml': ['mL', 1], '升': ['L', 1000], 'l': ['L', 1000],
+        '片': ['片', 1], '张': ['张', 1]
+      };
+      var info = units[String(unit || '').toLowerCase()];
+      if (!info || !(Number(value) > 0)) return null;
+      return {
+        text: Utils.formatNumber(Number(value)) + info[0],
+        dimension: info[0] === 'kg' ? 'g' : info[0] === 'L' ? 'mL' : info[0],
+        baseValue: Number(value) * info[1]
+      };
+    }
+
+    var structured = null;
+    var supplyValue = Number(item.unit_spec_value);
+    if (supplyValue > 0 && item.unit_spec_unit && (item.category === 'supplies' ||
+        (['supp', 'med'].includes(item.category) && item.unit_spec_unit === '毫升'))) {
+      structured = measure(supplyValue, item.unit_spec_unit);
+      if (!structured) structured = { text: Utils.formatNumber(supplyValue) + item.unit_spec_unit };
+    } else {
+      var weight = Number(item.unit_net_weight_g);
+      if (weight > 0) structured = measure(weight >= 1000 ? weight / 1000 : weight, weight >= 1000 ? 'kg' : 'g');
+    }
+    var parts = String(item.spec || '').trim().split(/\s*·\s*/).filter(Boolean).map(function (part) {
+      var match = /^(\d+(?:\.\d+)?)\s*(千克|kg|克|g|毫升|ml|升|l|片|张)(?:\s*\/\s*(.+))?$/i.exec(part);
+      var parsed = match && measure(match[1], match[2]);
+      if (!parsed) return part;
+      if (structured && parsed.dimension === structured.dimension &&
+          Math.abs(parsed.baseValue - structured.baseValue) <= Math.max(parsed.baseValue, structured.baseValue) * 1e-12 &&
+          (!match[3] || match[3].trim() === item.unit)) return '';
+      return parsed.text + (match[3] ? '/' + match[3].trim() : '');
+    }).filter(Boolean);
+    if (structured) parts.unshift(structured.text);
+    return parts.join(' · ');
+  };
+
   Utils.formatPer100gPrice = function (price, currency, unitWeightGrams) {
     var p = Number(price);
     if (!isFinite(p) || p <= 0) return '';
@@ -403,44 +442,64 @@
 
   Utils.compressImageFile = function (file, callback) {
     if (!file) { callback(null); return; }
-    var reader = new FileReader();
-    reader.onload = function (ev) {
-      var img = new Image();
-      img.onload = function () {
-        var maxSide = 1280;
-        var w = img.width || 480;
-        var h = img.height || 480;
-        if (w > maxSide || h > maxSide) {
-          if (w >= h) {
-            h = Math.max(1, Math.round((h * maxSide) / w));
-            w = maxSide;
-          } else {
-            w = Math.max(1, Math.round((w * maxSide) / h));
-            h = maxSide;
-          }
+    var imageUrl;
+    try { imageUrl = URL.createObjectURL(file); } catch (error) { callback(null); return; }
+    var img = new Image();
+    img.onload = function () {
+      URL.revokeObjectURL(imageUrl);
+      var width = img.naturalWidth || img.width;
+      var height = img.naturalHeight || img.height;
+      if (!(width > 0 && height > 0)) { callback(null); return; }
+      var canvas = document.createElement('canvas');
+      var sides = [1024, 768, 576];
+      var qualities = [0.76, 0.64, 0.52];
+      var targetBytes = 150 * 1024;
+      var best = null;
+      var previousSide = 0;
+      function finish(blob) {
+        var reader = new FileReader();
+        reader.onload = function () {
+          if (typeof reader.result !== 'string' || !reader.result) { callback(null); return; }
+          callback({ dataUrl: reader.result, kb: Math.max(1, Math.round(blob.size / 1024)) });
+        };
+        reader.onerror = function () { callback(null); };
+        try { reader.readAsDataURL(blob); } catch (error) { callback(null); }
+      }
+      function resize(index) {
+        var side = Math.min(Math.max(width, height), sides[index]);
+        if (side === previousSide) {
+          if (index + 1 < sides.length) resize(index + 1);
+          else finish(best);
+          return;
         }
-        var canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        var dataUrl;
+        previousSide = side;
+        var scale = side / Math.max(width, height);
+        canvas.width = Math.max(1, Math.round(width * scale));
+        canvas.height = Math.max(1, Math.round(height * scale));
         try {
           var ctx = canvas.getContext('2d');
           if (!ctx) { callback(null); return; }
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, w, h);
-          ctx.drawImage(img, 0, 0, w, h);
-          dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        } catch (error) {
-          callback(null);
-          return;
-        }
-        var approxKb = Math.max(1, Math.round((dataUrl.length * 0.75) / 1024));
-        callback({ dataUrl: dataUrl, kb: approxKb });
-      };
-      img.onerror = function () { callback(null); };
-      img.src = String(ev.target.result || '');
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          encode(index, 0);
+        } catch (error) { callback(null); }
+      }
+      function encode(sideIndex, qualityIndex) {
+        try {
+          canvas.toBlob(function (blob) {
+            if (!blob || !blob.size || blob.type !== 'image/jpeg') { callback(null); return; }
+            if (!best || blob.size < best.size) best = blob;
+            if (blob.size <= targetBytes) { finish(blob); return; }
+            if (qualityIndex + 1 < qualities.length) encode(sideIndex, qualityIndex + 1);
+            else if (sideIndex + 1 < sides.length) resize(sideIndex + 1);
+            else finish(best);
+          }, 'image/jpeg', qualities[qualityIndex]);
+        } catch (error) { callback(null); }
+      }
+      resize(0);
     };
-    reader.onerror = function () { callback(null); };
-    reader.readAsDataURL(file);
+    img.onerror = function () { URL.revokeObjectURL(imageUrl); callback(null); };
+    try { img.src = imageUrl; } catch (error) { URL.revokeObjectURL(imageUrl); callback(null); }
   };
 })(typeof window !== 'undefined' ? window : globalThis);

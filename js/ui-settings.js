@@ -26,10 +26,9 @@
     function sizeLabel(bytes) {
       return bytes >= 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(1) + ' MB' : Math.ceil(bytes / 1024) + ' KB';
     }
-    document.getElementById('backupPhotoSize').textContent = '已保存 ' + photos.length + ' 张照片（含归档），照片数据约 ' +
-      sizeLabel(photoBytes) + '；预计 JSON 备份约 ' +
-      sizeLabel(new Blob([metadataJson]).size + photoBytes) +
-      '（含照片）。照片越多，本机存储与备份越大，请定期导出。';
+    document.getElementById('backupPhotoSize').textContent = '照片（含归档）：' + photos.length + ' 张，约 ' +
+      sizeLabel(photoBytes) + '\n预计 JSON 备份：约 ' +
+      sizeLabel(new Blob([metadataJson]).size + photoBytes);
     var btns = document.querySelectorAll('#warnDaysGroup [data-warn-days]');
     for (var i = 0; i < btns.length; i++) {
       var d = parseInt(btns[i].getAttribute('data-warn-days'), 10);
@@ -65,7 +64,7 @@
         ? Utils.formatNumber(badgeCount) + ' 次保存未备份' : backupDate ? '已是最新备份' : '尚无备份';
       var timeLabel = document.getElementById('backupStatusTime');
       timeLabel.textContent = backupDate
-        ? '上次 ' + Utils.formatRelativeYearDate(backupDate) + (backupTime ? ' ' + backupTime : '') : '尚未备份过';
+        ? '上次 ' + Utils.formatListDate(backupDate, backupDate).replace(/-/g, '/') + (backupTime ? ' ' + backupTime : '') : '尚未备份过';
       timeLabel.title = backupDate ? '上次备份：' + backupDate + (backupTime ? ' ' + backupTime : '（时间未记录）') : '';
     }
 

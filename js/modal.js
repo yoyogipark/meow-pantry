@@ -16,7 +16,7 @@
 
   function getFocusableElements(modal) {
     return Array.prototype.filter.call(modal.querySelectorAll(
-      'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]):not([hidden]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     ), function (el) {
       return !el.closest('.hidden-view');
     });
@@ -56,6 +56,7 @@
       if (event.key === 'Escape') {
         event.preventDefault();
         var closers = {
+          pantryDetailBackdrop: UI.closePantryDetail,
           confirmModalBackdrop: UI.closeConfirm,
           flavorOpenModalBackdrop: UI.closeFlavorOpenModal,
           itemModalBackdrop: UI.closeItemModal,

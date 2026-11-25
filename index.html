@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=316">
-  <link rel="stylesheet" href="./css/styles.css?v=316">
+  <link rel="stylesheet" href="./css/tokens.css?v=334">
+  <link rel="stylesheet" href="./css/styles.css?v=334">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -60,7 +60,6 @@
     <symbol id="ui-droplet" viewBox="0 0 24 24"><path d="M12 3c3 5 7 8 7 12a7 7 0 0 1-14 0c0-4 4-7 7-12z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-triangle-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20z M12 9v4m0 4h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-sunrise" viewBox="0 0 24 24"><path d="M3 17h18M5 21h14M7 17a5 5 0 1 1 10 0M12 9V3m-3 3 3-3 3 3M4 10l2 2m14-2-2 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="ui-sunset" viewBox="0 0 24 24"><path d="M3 17h18M5 21h14M7 17a5 5 0 1 1 10 0M12 3v6m-3-3 3 3 3-3M4 10l2 2m14-2-2 2" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-sun" viewBox="0 0 24 24"><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1m-2 6a5 5 0 1 1-10 0 5 5 0 1 1 10 0z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-moon" viewBox="0 0 24 24"><path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-cookie" viewBox="0 0 24 24"><path d="M21 12a4 4 0 0 1-4-4 4 4 0 0 1-4-5 9 9 0 1 0 8 9z M8 9h.01M8 15h.01m5 2h.01m2-5h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -454,7 +453,6 @@
               <p id="backupStatusTitle"></p>
               <p id="backupStatusTime"></p>
             </div>
-            <p class="backup-status-help">小红点表示有尚未导出 JSON 备份的本地更改。计数按保存次数累计，不是错误或待办数量；数据仍保存在本机。</p>
             <p id="backupPhotoSize" class="backup-status-help"></p>
             <div class="settings-backup-actions">
               <button id="settingsBackupNowBtn" type="button" class="ios-btn ios-btn-primary"><svg class="settings-icon " data-lucide="download" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg><span>立即备份</span></button>
@@ -480,8 +478,8 @@
             <button id="copySummaryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="clipboard-copy" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v3M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4m2-7h8m-3-3 3 3-3 3"/></svg><span>复制在库清单</span></button>
             <button id="settingsOpenHistoryBtn" type="button" class="ios-btn ios-btn-secondary"><svg class="settings-icon " data-lucide="history" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7m2-5v5l3 2"/></svg><span>查看库存操作历史流水</span><svg class="settings-icon settings-chevron" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
             <button id="clearAllDataBtn" type="button" class="ios-btn-text settings-danger-action">清空全部数据</button>
+            <p class="daily-support">CSV 用于查看和盘点，恢复全部数据请使用 JSON 完整备份。</p>
           </div>
-          <p class="daily-support">CSV 用于查看和盘点，恢复全部数据请使用 JSON 完整备份。</p>
         </section>
 
         <section class="ios-card settings-section" aria-labelledby="settingsPreferencesTitle">
@@ -576,6 +574,17 @@
   </nav>
 
   <!-- ==================== ADD / EDIT ITEM MODAL ==================== -->
+  <div id="pantryDetailBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="pantryDetailTitle">
+    <div class="modal-sheet pantry-detail-sheet">
+      <div class="pantry-detail-grip-area" aria-hidden="true"><div class="pantry-detail-grip"></div></div>
+      <div class="pantry-detail-header">
+        <h2 id="pantryDetailTitle">批次详情</h2>
+        <button id="closePantryDetailBtn" type="button" aria-label="关闭批次详情">×</button>
+      </div>
+      <div id="pantryDetailBody"></div>
+    </div>
+  </div>
+
   <div id="itemModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-sheet stock-form-sheet">
       <div class="stock-form-header">
@@ -606,7 +615,7 @@
           <button id="pickPhotoBtn" type="button" class="stock-photo-add"><span aria-hidden="true">＋</span>添加</button>
         </div>
         <input id="fieldPhotoInput" type="file" accept="image/*" multiple class="hidden-view">
-        <p class="stock-form-note">最多 6 张；照片压缩至长边 1280px 后保存在本机。</p>
+        <p class="stock-form-note">最多 6 张；新照片将压缩后保存在本机。</p>
 
         <div>
           <div class="stock-form-category-strip"><div id="modalCatSelector" class="stock-form-chips no-scrollbar" aria-label="商品分类，可横向滑动">
@@ -922,9 +931,9 @@
   <!-- ==================== QUICK FEED LOG MODAL (记喂食弹窗) ==================== -->
   <div id="feedModalBackdrop" class="modal-backdrop hidden-view" role="dialog" aria-modal="true" aria-labelledby="feedModalTitle">
     <div class="modal-sheet feed-form-sheet">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div class="feed-form-header">
         <h3 id="feedModalTitle" style="margin:0;font-size:17px;font-weight:800;color:var(--text-main);"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#feed-paw"></use></svg>记录喂食</h3>
-        <button id="closeFeedModalBtn" type="button" aria-label="关闭记喂食弹窗" class="feed-modal-close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        <button id="closeFeedModalBtn" type="button" aria-label="关闭记录弹窗" class="feed-modal-close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
       </div>
 
       <form id="feedForm" style="display:flex;flex-direction:column;gap:12px;">
@@ -955,7 +964,7 @@
           <button type="button" class="ios-btn ios-btn-secondary" data-feed-care-type="nursing" aria-pressed="false">护理</button>
         </div>
         <fieldset id="feedNursingProjects" class="feed-nursing-projects hidden-view">
-          <legend>护理项目</legend>
+          <legend>护理项目 <span class="feed-nursing-multiselect">（可多选）</span></legend>
           <div class="feed-nursing-options"></div>
           <p id="feedNursingHint" class="daily-support hidden-view" aria-live="polite"></p>
           <label id="feedNursingOtherField" class="feed-care-field hidden-view">
@@ -1053,11 +1062,12 @@
         </div>
 
         <div id="feedPalatabilityField">
-            <label for="feedFlavorPal">适口性</label>
-            <select id="feedFlavorPal" class="ios-input">
+            <span id="feedPalatabilityLabel" class="feed-meal-label">适口性</span>
+            <select id="feedFlavorPal" hidden>
               <option value="">未评价</option><option value="love">超爱吃</option><option value="ok">一般</option>
               <option value="coax">需哄喂</option><option value="meh">不爱吃</option>
             </select>
+            <div id="feedPalatabilityChoices" class="feed-outcome-choices" role="group" aria-labelledby="feedPalatabilityLabel"></div>
         </div>
 
         <div id="feedMedicationOutcomeField" class="hidden-view">
@@ -1073,6 +1083,7 @@
           <div class="feed-reminder-fields" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <label for="feedNextReminderDays" style="font-size:12px;font-weight:700;color:var(--ok);"><span data-category-icon="med"></span> <span id="feedReminderTitle">下次用药/驱虫提醒</span><span class="feed-reminder-inline-note">（低频可选）</span></label>
             <small class="feed-reminder-note">低频可选</small>
+            <p id="feedNursingSuggestion" class="hidden-view" aria-live="polite"></p>
             <select id="feedNextReminderDays" class="ios-input" style="width:auto;background-color:var(--card-bg);">
               <option value="0">不设提醒</option>
               <option value="3" data-nursing-interval hidden>3 天后</option>
@@ -1086,6 +1097,7 @@
               <option value="custom" data-care-interval hidden>自定义</option>
             </select>
             <div id="feedNursingReminderChoices" class="feed-outcome-choices hidden-view" role="group" aria-labelledby="feedReminderTitle"></div>
+            <div id="feedMedicationReminderChoices" class="feed-outcome-choices hidden-view" role="group" aria-labelledby="feedReminderTitle"></div>
             <label id="feedCustomReminderField" class="hidden-view feed-care-field">
               <span>自定义间隔（天）</span>
               <input id="feedCustomReminderDays" class="ios-input" type="number" inputmode="numeric" min="1" max="3650" step="1">
@@ -1098,7 +1110,7 @@
           </div>
         </div>
 
-        <button id="feedAddNursingNote" class="hidden-view" type="button" aria-controls="feedNoteField">
+        <button id="feedAddNursingNote" class="hidden-view" type="button" aria-controls="feedNoteField" aria-expanded="false">
           <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>添加备注
         </button>
         <div id="feedNoteField">
@@ -1237,18 +1249,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=316"></script>
-  <script src="./js/constants.js?v=316"></script>
-  <script src="./js/utils.js?v=316"></script>
-  <script src="./js/forecast.js?v=316"></script>
-  <script src="./js/domain.js?v=316"></script>
-  <script src="./js/storage.js?v=316"></script>
-  <script src="./js/stats.js?v=316"></script>
-  <script src="./js/modal.js?v=316"></script>
-  <script src="./js/ui.js?v=316"></script>
-  <script src="./js/ui-pantry.js?v=316"></script>
-  <script src="./js/ui-daily.js?v=316"></script>
-  <script src="./js/ui-settings.js?v=316"></script>
-  <script src="./js/app.js?v=316"></script>
+  <script src="./js/covers.js?v=334"></script>
+  <script src="./js/constants.js?v=334"></script>
+  <script src="./js/utils.js?v=334"></script>
+  <script src="./js/forecast.js?v=334"></script>
+  <script src="./js/domain.js?v=334"></script>
+  <script src="./js/storage.js?v=334"></script>
+  <script src="./js/stats.js?v=334"></script>
+  <script src="./js/modal.js?v=334"></script>
+  <script src="./js/ui.js?v=334"></script>
+  <script src="./js/ui-pantry.js?v=334"></script>
+  <script src="./js/ui-daily.js?v=334"></script>
+  <script src="./js/ui-settings.js?v=334"></script>
+  <script src="./js/app.js?v=334"></script>
 </body>
 </html>

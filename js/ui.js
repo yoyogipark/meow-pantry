@@ -420,34 +420,38 @@
     var preview = document.getElementById('feedReminderPreview');
     preview.textContent = care && due ? '将在 ' + due + ' 提醒你再次' + (nursing ? '护理' : '用药') : '';
     preview.classList.toggle('hidden-view', !preview.textContent);
-    if (nursing) renderNursingReminders(select.value, Number(form.dataset.nursingSuggestion));
+    if (care) renderCareReminders(select.value, nursing, Number(form.dataset.nursingSuggestion));
   };
 
   function careChipContent(label) {
     var text = Utils.escapeHtml(label);
-    return '<svg class="care-chip-check" width="14" height="14" aria-hidden="true"><use href="#ui-check"></use></svg>' +
-      '<span class="care-chip-copy" data-label="' + text + '"><span>' + text + '</span></span>';
+    return '<span class="care-chip-copy" data-label="' + text + '"><span>' + text + '</span></span>';
   }
 
-  function renderNursingReminders(selected, suggestion) {
-    var choices = document.getElementById('feedNursingReminderChoices');
-    var options = [['0', '不设'], ['7', '1周后'], ['14', '2周后'], ['30', '1个月后'], ['custom', '自定义']];
-    [Number(selected), suggestion].forEach(function (days) {
+  function renderCareReminders(selected, nursing, suggestion) {
+    var choices = document.getElementById(nursing ? 'feedNursingReminderChoices' : 'feedMedicationReminderChoices');
+    var options = nursing
+      ? [['0', '不设'], ['7', '1周后'], ['14', '2周后'], ['30', '1个月后'], ['custom', '自定义']]
+      : [['0', '不设'], ['30', '1个月后'], ['60', '2个月后'], ['90', '3个月后'], ['custom', '自定义']];
+    [Number(selected), nursing ? suggestion : 0].forEach(function (days) {
       if (days > 0 && !options.some(function (option) { return option[0] === String(days); })) {
         options.splice(1, 0, [String(days), days + '天后']);
       }
     });
     var signature = JSON.stringify([options, suggestion]);
+    var suggestionHint = document.getElementById('feedNursingSuggestion');
+    var recommended = options.find(function (option) { return Number(option[0]) === suggestion && suggestion > 0; });
+    suggestionHint.textContent = nursing && recommended ? '建议：' + recommended[1] + '（多项护理按最短间隔）' : '';
+    suggestionHint.classList.toggle('hidden-view', !nursing || !recommended);
     if (choices.dataset.rendered !== signature) {
       choices.dataset.rendered = signature;
       choices.innerHTML = options.map(function (option) {
-        return '<button type="button" class="care-chip" data-nursing-reminder="' + option[0] + '">' +
-          careChipContent(option[1]) + (Number(option[0]) === suggestion && suggestion > 0 ? '<small>建议</small>' : '') +
-          '</button>';
+        return '<button type="button" class="care-chip" data-' + (nursing ? 'nursing' : 'medication') + '-reminder="' + option[0] + '">' +
+          careChipContent(option[1]) + '</button>';
       }).join('');
     }
     Array.from(choices.children).forEach(function (button) {
-      button.setAttribute('aria-pressed', String(button.dataset.nursingReminder === selected));
+      button.setAttribute('aria-pressed', String(button.dataset[nursing ? 'nursingReminder' : 'medicationReminder'] === selected));
     });
   }
 
@@ -493,21 +497,41 @@
     }).join('');
   };
 
-  UI.syncNursingNote = function () {
+  UI.syncFeedNote = function () {
     var form = document.getElementById('feedForm');
-    var nursing = form.classList.contains('feed-nursing-mode');
-    var collapsed = nursing && !form.dataset.nursingNoteOpen && !document.getElementById('feedNoteInput').value;
+    var collapsed = !form.dataset.feedNoteOpen && !document.getElementById('feedNoteInput').value;
     document.getElementById('feedAddNursingNote').classList.toggle('hidden-view', !collapsed);
+    document.getElementById('feedAddNursingNote').setAttribute('aria-expanded', String(!collapsed));
     document.getElementById('feedNoteField').classList.toggle('hidden-view', collapsed);
+  };
+
+  UI.syncFeedPalatabilityChoices = function () {
+    var select = document.getElementById('feedFlavorPal');
+    var choices = document.getElementById('feedPalatabilityChoices');
+    var options = Array.from(select.options).filter(function (option) { return option.value; });
+    var signature = JSON.stringify(options.map(function (option) { return [option.value, option.textContent]; }));
+    if (choices.dataset.rendered !== signature) {
+      choices.dataset.rendered = signature;
+      choices.innerHTML = options.map(function (option) {
+        var emoji = MP.getPalatabilityEmoji(option.value);
+        var label = option.textContent.replace(emoji, '').trim();
+        return '<button type="button" class="care-chip" data-feed-palatability="' + Utils.escapeHtml(option.value) + '">' +
+          '<span class="care-chip-copy feed-rating-copy">' + Utils.getPalatabilityIcon(option.value) +
+          '<span>' + Utils.escapeHtml(label) + '</span></span></button>';
+      }).join('');
+    }
+    Array.from(choices.children).forEach(function (button) {
+      button.setAttribute('aria-pressed', String(button.dataset.feedPalatability === select.value));
+    });
   };
 
   UI.syncMedicationOutcome = function () {
     var select = document.getElementById('feedMedicationOutcome');
     var choices = document.getElementById('feedMedicationOutcomeChoices');
     if (!choices.childElementCount) {
-      choices.innerHTML = Array.from(select.options, function (option) {
+      choices.innerHTML = Array.from(select.options).filter(function (option) { return option.value; }).map(function (option) {
         return '<button type="button" class="care-chip" data-outcome="' + Utils.escapeHtml(option.value) + '">' +
-          '<span class="care-chip-copy medication-outcome-copy">' + Utils.formatMedicationOutcome(option.value) + '</span></button>';
+          '<span class="care-chip-copy feed-rating-copy">' + Utils.formatMedicationOutcome(option.value) + '</span></button>';
       }).join('');
     }
     Array.from(choices.children).forEach(function (button) {
@@ -527,7 +551,9 @@
     form.classList.toggle('feed-nursing-mode', nursing);
     document.getElementById('feedNursingProjects').classList.toggle('hidden-view', !nursing);
     document.getElementById('feedNursingReminderChoices').classList.toggle('hidden-view', !nursing);
-    UI.syncNursingNote();
+    document.getElementById('feedMedicationReminderChoices').classList.toggle('hidden-view', !care || nursing);
+    if (!nursing) document.getElementById('feedNursingSuggestion').classList.add('hidden-view');
+    UI.syncFeedNote();
     ['feedNameInput', 'feedAmountInput'].forEach(function (id) { document.getElementById(id).required = !nursing; });
     document.getElementById('feedMealSlotLabel').textContent = care ? '记录类型' : '餐次时段';
     document.getElementById('feedReminderTitle').textContent = nursing ? '下次护理提醒' : care ? '下次提醒' : '下次用药/驱虫提醒';
@@ -549,9 +575,9 @@
     }
     if (care) {
       var unit = target?.unit || '支';
-      amount.placeholder = '如：半' + unit + '、1' + unit;
+      amount.placeholder = unit === '支' ? '如 1/2支、1支' : '如 半' + unit + '、1' + unit;
     }
-    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel(care ? 'stethoscope' : editing ? 'pencil' : 'paw-print',
+    document.getElementById('feedModalTitle').innerHTML = Utils.iconLabel(nursing ? 'stethoscope' : care ? 'pill' : editing ? 'pencil' : 'paw-print',
       nursing ? (editing ? '编辑护理记录' : '记录护理') : care ? (editing ? '编辑用药记录' : '记录用药') : (editing ? '编辑每日记录' : '记录喂食'), 20);
     document.getElementById('feedPalatabilityField').classList.toggle('hidden-view', care);
     Array.from(document.getElementById('feedFlavorPal').options).forEach(function (option) {
@@ -561,6 +587,7 @@
       });
       option.textContent = badge ? MP.getPalatabilityEmoji(option.value) + ' ' + badge.label : '未评价';
     });
+    UI.syncFeedPalatabilityChoices();
     document.getElementById('feedMedicationOutcomeField').classList.toggle('hidden-view', !care || nursing);
     document.getElementById('feedManualTitle').textContent = unstocked ? '记录自制 / 无品牌食物' : '记录未入库商品';
     document.getElementById('feedManualBrandField').classList.toggle('hidden-view', unstocked);
@@ -568,10 +595,10 @@
     document.getElementById('feedNameLabel').textContent = care ? '药品名称' : unstocked ? '食物名称' : '商品名';
     document.getElementById('feedNameInput').placeholder = care ? '如：大宠爱 / 福来恩 / 拜宠清' : unstocked ? '如 自制鸡肉鲜食' : '如 小灶猫饭';
     document.getElementById('feedBrandInput').placeholder = care ? '如：辉瑞 / 勃林格殷格翰' : '如 喵梵思';
-    document.getElementById('feedStockLabel').textContent = care ? '选择药品批次（或手动输入）' : '商品批次';
+    document.getElementById('feedStockLabel').textContent = '商品批次';
     document.getElementById('saveFeedBtn').textContent = nursing ? '保存护理记录' : care ? '保存用药记录' : '保存喂食记录';
     document.getElementById('feedAmountLabel').textContent = care ? '用量' : '投喂份量';
-    document.getElementById('feedNoteLabel').textContent = nursing ? '备注' : care ? '反应 / 备注' : '光盘情况 / 反应备注';
+    document.getElementById('feedNoteLabel').textContent = '备注';
     document.getElementById('feedNoteInput').placeholder = nursing ? '如：状态是否配合、有无异常' : care ? '如：有无呕吐、精神状态' : '如：秒光盘、兑了40ml温水、便便正常';
     document.getElementById('feedBrandInput').required = !care && !unstocked;
     document.querySelectorAll('[data-care-interval]').forEach(function (option) {
@@ -850,7 +877,8 @@
     if (category === 'supp') configured = [];
     if (!care && document.getElementById('feedForm').dataset.unstocked === 'true') configured = [];
     var natural = care || /^(杯|罐|包|盒|支|粒|瓶|袋)$/.test(unit);
-    var presets = { '0.5': natural ? '半' + unit : '1/2',
+    var medStick = care && category === 'med' && unit === '支';
+    var presets = { '0.5': medStick ? '1/2支' : natural ? '半' + unit : '1/2',
       '0.34': natural ? '1/3' + unit : '1/3',
       '0.25': natural ? '1/4' + unit : '1/4', '1': '1' + unit };
     document.querySelectorAll('#feedPortionChips [data-package-portion]').forEach(function (button) {
@@ -859,7 +887,7 @@
       button.classList.toggle('care-chip', care);
       if (care) button.innerHTML = careChipContent(portion);
       else button.textContent = portion;
-      var hidden = care ? category === 'supp' || (category === 'med' && unit === '支' && button.dataset.frac !== '1')
+      var hidden = care ? category === 'supp' || (medStick && !['0.5', '1'].includes(button.dataset.frac))
         : !configured.includes(button.dataset.frac);
       button.classList.toggle('hidden-view', hidden);
     });
@@ -869,6 +897,16 @@
       quickChips.append(quickChips.querySelector('[data-frac="' + fraction + '"][data-package-portion]'));
     });
     quickChips.querySelectorAll('[data-configured-portion]').forEach(function (button) { button.remove(); });
+    if (medStick) {
+      var twoSticks = document.createElement('button');
+      twoSticks.type = 'button';
+      twoSticks.className = 'care-chip';
+      twoSticks.dataset.configuredPortion = '';
+      twoSticks.dataset.medicationStickPortion = '';
+      twoSticks.dataset.portion = '2支';
+      twoSticks.innerHTML = careChipContent('2支');
+      quickChips.append(twoSticks);
+    }
     if (!care) configured.filter(function (preset) { return !Object.hasOwn(presets, preset); }).forEach(function (preset) {
       var button = document.createElement('button');
       button.type = 'button';
@@ -896,6 +934,7 @@
     if (!field.dataset.manual) {
       field.value = (item?.flavors ? flavor?.palatability : item?.palatability) || '';
     }
+    UI.syncFeedPalatabilityChoices();
   }
 
   UI.syncFeedFlavor = function (item, historical) {
@@ -911,6 +950,7 @@
       var palField = document.getElementById('feedFlavorPal');
       palField.value = historical.flavorPalatability || '';
       palField.dataset.manual = '1';
+      UI.syncFeedPalatabilityChoices();
     }
     if (historical && hasFlavor) {
       select.add(new Option(historical.flavorName, historical.flavorId, true, true));
@@ -1098,7 +1138,7 @@
     manualFeedDrafts = Object.create(null);
     var feedForm = document.getElementById('feedForm');
     delete feedForm.dataset.nursingReminderManual;
-    delete feedForm.dataset.nursingNoteOpen;
+    delete feedForm.dataset.feedNoteOpen;
     feedForm.dataset.productEntry = String(Boolean(productEntry));
     feedForm.dataset.dailyEntry = String(Boolean(dailyEntry));
     feedForm.dataset.manualProduct = 'false';
@@ -1164,7 +1204,9 @@
       UI.syncFeedSplitCanUI(MP.state.items.find(function (item) { return item.id === document.getElementById('feedItemId').value; }), true);
     }
     UI.syncAllDateDisplays();
-    UI.showModal('feedModalBackdrop', productEntry || feedForm.dataset.manualProduct === 'true' ? 'closeFeedModalBtn' : 'feedStockPickerTrigger');
+    document.querySelector('.feed-form-fields').scrollTop = 0;
+    document.querySelector('.feed-form-sheet').scrollTop = 0;
+    UI.showModal('feedModalBackdrop', 'closeFeedModalBtn');
   };
 
   UI.openFeedFromReminder = function (log) {
@@ -1187,11 +1229,6 @@
     document.getElementById('feedAmountInput').value = log.amount || '';
     setFeedReminderDays(log.reminderDays || Math.max(0, Utils.diffDaysBetween(log.date, log.nextDueDate)));
     UI.syncMedReminderVisibility();
-    if (nursing) setTimeout(function () {
-      if (!document.getElementById('feedModalBackdrop').classList.contains('hidden-view')) {
-        document.querySelector('[data-feed-care-type="nursing"]').focus();
-      }
-    }, 0);
   };
 
   UI.openEditFeedModal = function (logId) {
@@ -1200,7 +1237,7 @@
     manualFeedDrafts = Object.create(null);
     var feedForm = document.getElementById('feedForm');
     feedForm.dataset.nursingReminderManual = 'true';
-    delete feedForm.dataset.nursingNoteOpen;
+    delete feedForm.dataset.feedNoteOpen;
     delete feedForm.dataset.productEntry;
     delete feedForm.dataset.dailyEntry;
     feedForm.dataset.manualProduct = String(!lg.itemId);
@@ -1235,8 +1272,9 @@
     document.getElementById('feedDeductBox').classList.add('hidden-view');
     UI.syncMedReminderVisibility();
     UI.syncAllDateDisplays();
-    UI.showModal('feedModalBackdrop', Domain.getCareType(lg) === 'nursing'
-      ? (lg.note ? 'feedNoteInput' : 'feedAddNursingNote') : 'feedAmountInput');
+    document.querySelector('.feed-form-fields').scrollTop = 0;
+    document.querySelector('.feed-form-sheet').scrollTop = 0;
+    UI.showModal('feedModalBackdrop', 'closeFeedModalBtn');
   };
 
   UI.closeFeedModal = function () {
