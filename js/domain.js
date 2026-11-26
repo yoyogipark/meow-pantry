@@ -48,12 +48,15 @@
     pantryPageSize: 5,
     statsSubTab: 'stock',     // 'stock' | 'pal' | 'brand'
     statsScopeFilter: 'all',  // 'all' | 'food' | 'supp' | 'med'
-    statsTierTab: 'love',     // 'love' | 'ok' | 'coax' | 'meh' | 'supp' | 'med'
+    statsPalGroup: 'food',    // 'food' | 'supp' | 'med'
+    statsTierTab: 'all',      // 'all' | 'love' | 'ok' | 'coax' | 'meh' (within statsPalGroup)
     tierPage: 1,
-    tierPageSize: 5,
+    tierPageSize: 20,
     brandScopeFilter: 'all',  // 'all' | 'food' | 'supp' | 'med' | 'supplies'
-    brandPage: 1,
-    brandPageSize: 5,
+    brandCurrency: '',
+    brandSort: 'spend',
+    brandShowAll: false,
+    brandOpen: '',
     historyTypeFilter: 'all', // 'all' | 'in' | 'consume' | 'adjust'
     historyItemFilter: '',    // itemId or ''
     historySearchQuery: '',
@@ -306,7 +309,9 @@
     clean.feedUsagePerItem = clean.feedUsageUnit && Number.isFinite(usagePerItem) && usagePerItem > 0 ? usagePerItem : null;
     var specValue = Number(raw.unit_spec_value);
     if (specValue > 0 && ((cat === 'supplies' && MP.SUPPLY_SPEC_UNITS.concat(MP.LEGACY_SUPPLY_SPEC_UNITS || []).includes(raw.unit_spec_unit)) ||
-        (['supp', 'med'].includes(cat) && raw.unit_spec_unit === '毫升'))) {
+        (['supp', 'med'].includes(cat) && raw.unit_spec_unit === '毫升') ||
+        (cat === 'med' && raw.unit_spec_unit === '毫克' && clean.unit_net_weight_g > 0 &&
+          Math.abs(specValue / 1000 - clean.unit_net_weight_g) <= clean.unit_net_weight_g * 1e-12))) {
       clean.unit_spec_value = specValue;
       clean.unit_spec_unit = raw.unit_spec_unit;
     } else {

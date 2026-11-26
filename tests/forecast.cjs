@@ -70,4 +70,51 @@ assert.equal(sampleOnly.samples, 1);
 const sampleAndReal = Forecast.compute([sampleWet, wet], [], defaults, today).can;
 assert.equal(sampleAndReal.days, 4);
 assert.equal(sampleAndReal.samples, 1);
+const riskBatch = { ...dry, quantity: 1, unit_net_weight_g: 1900, expDate: '2026-12-03' };
+const risk = Forecast.expiryRisk(riskBatch, 50, today);
+assert.deepEqual(risk, {
+  daysRemaining: 14, deadline: 'expiry', dailyGrams: 50, remainingGrams: 1900, neededDays: 38,
+  leftoverGrams: 1200, atRisk: true, estimated: false
+});
+const openedRiskBatch = { ...riskBatch, isOpened: true, openedDate: '2026-11-01', openDaysLimit: 24, openRemainFraction: 0.5 };
+const openDaysLeft = globalThis.MeowPantry.Utils.openShelfDaysRemaining('2026-11-01', 24, today);
+assert.ok(openDaysLeft > 0 && openDaysLeft < 14);
+const openedRisk = Forecast.expiryRisk(openedRiskBatch, 50, today);
+assert.equal(openedRisk.deadline, 'opened');
+assert.equal(openedRisk.daysRemaining, openDaysLeft);
+assert.equal(openedRisk.leftoverGrams, 950 - 50 * openDaysLeft);
+const mixedRisk = Forecast.expiryRisk({ ...openedRiskBatch, quantity: 3 }, 50, today);
+assert.equal(mixedRisk.leftoverGrams, (950 - 50 * openDaysLeft) + (3800 - 50 * (14 - openDaysLeft)));
+const openedEnough = Forecast.expiryRisk({ ...openedRiskBatch, openRemainFraction: 0.1 }, 50, today);
+assert.equal(openedEnough.atRisk, false);
+assert.equal(openedEnough.deadline, 'expiry');
+const staggeredFlavors = Forecast.expiryRisk({
+  ...dry, quantity: 2, unit_net_weight_g: 1000, openDaysLimit: 45, expDate: '2027-06-01', isOpened: true,
+  flavors: [
+    { id: 'old', quantity: 1, openedDate: '2026-10-15', openRemainFraction: 0.1 },
+    { id: 'new', quantity: 1, openedDate: today, openRemainFraction: 0.9 }
+  ]
+}, 60, today);
+assert.equal(staggeredFlavors.atRisk, false);
+assert.equal(staggeredFlavors.deadline, 'expiry');
+const sharedOpenDays = globalThis.MeowPantry.Utils.openShelfDaysRemaining('2026-11-17', 5, today);
+const sharedFlavorBox = Forecast.expiryRisk({
+  ...freeze, quantity: 6, unit_net_weight_g: 100, openDaysLimit: 5, expDate: '2027-06-01',
+  isOpened: true, openedDate: '2026-11-17', purchasePackaging: { count: 1, outerUnit: '盒', size: 6, seal: 'shared' },
+  flavors: [{ id: 'a', quantity: 3 }, { id: 'b', quantity: 3 }]
+}, 20, today);
+assert.equal(sharedFlavorBox.deadline, 'opened');
+assert.equal(sharedFlavorBox.daysRemaining, sharedOpenDays);
+assert.equal(sharedFlavorBox.leftoverGrams, 600 - 20 * sharedOpenDays);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, unit_net_weight_g: 700 }, 50, today).atRisk, false);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, expDate: today }, 50, today).leftoverGrams, 1900);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, expDate: '2026-11-18' }, 50, today), null);
+assert.equal(Forecast.expiryRisk(riskBatch, 0, today), null);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, unit_net_weight_g: null }, 50, today), null);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, expDate: '' }, 50, today), null);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, category: 'supp' }, 50, today), null);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, isSample: true }, 50, today), null);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, isOpened: true, openRemainFraction: 0.5 }, 50, today).remainingGrams, 950);
+assert.equal(Forecast.expiryRisk({ ...riskBatch, isOpened: true, openRemainFraction: 0 }, 50, today).estimated, true);
+assert.equal(Forecast.expiryRisk({ ...staleWet, expDate: '2026-12-03' }, 50, today).remainingGrams, 50);
 console.log('Feeding forecast calculations pass');

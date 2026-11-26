@@ -782,10 +782,12 @@
         return;
       }
       document.getElementById('feedForm').dataset.mealSlotManual = 'true';
+      if (typeChanged) document.getElementById('feedNextReminderDays').value = '0';
       field.value = nextSlot;
       var category = document.getElementById('feedCategorySelect');
       if (typeChanged && !selectedFeedItem()) {
-        category.value = nextSlot === 'care' ? 'med' : 'dry';
+        category.value = nextSlot === 'care'
+          ? (document.getElementById('feedForm').dataset.careType === 'supplement' ? 'supp' : 'med') : 'dry';
       }
       field.dispatchEvent(new Event('change'));
       mealPicker.open = false;
@@ -930,6 +932,7 @@
       var fAmount = document.getElementById('feedAmountInput').value.trim();
       var fNote = document.getElementById('feedNoteInput').value.trim();
       var isNursing = fSlot === 'care' && document.getElementById('feedForm').dataset.careType === 'nursing';
+      var isSupplement = fSlot === 'care' && document.getElementById('feedForm').dataset.careType === 'supplement';
       var isMedication = fSlot === 'care' && !isNursing;
       var medicationOutcome = isMedication ? document.getElementById('feedMedicationOutcome').value : undefined;
       var reminderValue = document.getElementById('feedNextReminderDays').value;
@@ -992,7 +995,7 @@
 
       var isUnstocked = !isMedication && document.getElementById('feedForm').dataset.unstocked === 'true';
       if ((!isMedication && !isUnstocked && !fBrand) || !fName || !fAmount) {
-        UI.showToast(isMedication ? '请填写药品名称和用量' : isUnstocked ? '请填写食物名称和投喂份量' : '请填写品牌、品名和投喂份量');
+        UI.showToast(isMedication ? '请填写' + (isSupplement ? '营养品' : '药品') + '名称和用量' : isUnstocked ? '请填写食物名称和投喂份量' : '请填写品牌、品名和投喂份量');
         return;
       }
 
@@ -1099,7 +1102,7 @@
             : Domain.planFeedingPortion(stItem, flavor, portion, { sealedOnly: sealedOnly });
           if (plan.error) {
             if (isMedication) {
-              UI.openConfirm('本次无法扣减库存', plan.error + ' 可以继续保存用药记录。', '仅记录用药', function () {
+              UI.openConfirm('本次无法扣减库存', plan.error + ' 可以继续保存' + (isSupplement ? '营养品' : '用药') + '记录。', '仅记录' + (isSupplement ? '营养品' : '用药'), function () {
                 deductionSwitch.checked = false;
                 document.getElementById('feedForm').requestSubmit();
               });
@@ -1314,16 +1317,6 @@
       UI.showToast('已筛选分类：' + (MP.CATEGORIES[catKey] ? MP.CATEGORIES[catKey].label : catKey));
     });
 
-    function jumpToExpiryItem(id) {
-      var item = st.items.find(function (entry) { return entry.id === id; });
-      if (!item) return;
-      clearPantryFilters();
-      st.catFilter = item.category;
-      st.searchQuery = item.name;
-      st.statusFilter = Domain.evaluateItem(item).status;
-      UI.renderAll();
-      UI.switchTab('pantry');
-    }
     function openExpiredDiscard(btn) {
       var id = btn.dataset.discardItem;
       var flavorId = btn.dataset.discardFlavor || '';
@@ -1373,17 +1366,24 @@
         }, { discard: { quantity: max, unit: unit, fixed: shared || opened,
           whole: shared || Boolean(flavor) || (Number.isInteger(max) && Boolean(item.purchasePackaging || Domain.isPackageUnit(unit))) } });
     }
-    document.getElementById('feedingTaskList').addEventListener('click', function (ev) {
+    document.getElementById('feedingExpiredList').addEventListener('click', function (ev) {
       var discard = ev.target.closest('[data-discard-item]');
       if (discard) { openExpiredDiscard(discard); return; }
-      var btn = ev.target.closest('[data-jump-expiry-item]');
-      if (btn) jumpToExpiryItem(btn.dataset.jumpExpiryItem);
     });
 
+    document.getElementById('palGroupSwitch').addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-pal-group]');
+      if (!btn || btn.getAttribute('data-pal-group') === st.statsPalGroup) return;
+      st.statsPalGroup = btn.getAttribute('data-pal-group');
+      st.statsTierTab = 'all';
+      st.tierPage = 1;
+      Stats.renderStatsView();
+    });
     document.getElementById('palTierTabBar').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-tier-tab]');
       if (!btn) return;
-      st.statsTierTab = btn.getAttribute('data-tier-tab');
+      var tier = btn.getAttribute('data-tier-tab');
+      st.statsTierTab = st.statsTierTab === tier ? 'all' : tier;
       st.tierPage = 1;
       Stats.renderStatsView();
     });
@@ -1404,14 +1404,41 @@
       var btn = ev.target.closest('[data-brand-scope]');
       if (!btn) return;
       st.brandScopeFilter = btn.getAttribute('data-brand-scope');
-      st.brandPage = 1;
+      st.brandShowAll = false;
+      st.brandOpen = '';
       Stats.renderStatsView();
     });
-    bindListPageButtons('brandPaginationBar', 'brandStatsList', 'brandPage', Stats.renderStatsView);
-    document.getElementById('brandPageSizeSelect').addEventListener('change', function () {
-      st.brandPageSize = Number(this.value) || 5;
-      st.brandPage = 1;
+    document.getElementById('brandCurrencyBar').addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-brand-currency]');
+      if (!btn || btn.getAttribute('aria-pressed') === 'true') return;
+      st.brandCurrency = btn.getAttribute('data-brand-currency');
+      st.brandShowAll = false;
+      st.brandOpen = '';
       Stats.renderStatsView();
+    });
+    document.getElementById('brandSortBtn').addEventListener('click', function () {
+      st.brandSort = st.brandSort === 'spend' ? 'stock' : 'spend';
+      st.brandShowAll = false;
+      st.brandOpen = '';
+      Stats.renderStatsView();
+    });
+    document.getElementById('brandShowAllBtn').addEventListener('click', function () {
+      st.brandShowAll = !st.brandShowAll;
+      if (!st.brandShowAll) st.brandOpen = '';
+      Stats.renderStatsView();
+    });
+    document.getElementById('brandStatsList').addEventListener('click', function (ev) {
+      var btn = ev.target.closest('[data-brand-toggle]');
+      if (!btn) return;
+      var brand = btn.getAttribute('data-brand-toggle');
+      st.brandOpen = st.brandOpen === brand ? '' : brand;
+      this.querySelectorAll('[data-brand-toggle]').forEach(function (toggle) {
+        var open = toggle.getAttribute('data-brand-toggle') === st.brandOpen;
+        var panel = toggle.nextElementSibling;
+        toggle.setAttribute('aria-expanded', String(open));
+        panel.setAttribute('aria-hidden', String(!open));
+        panel.toggleAttribute('inert', !open);
+      });
     });
 
     document.getElementById('palTierCardsList').addEventListener('click', function (ev) {
@@ -1421,7 +1448,7 @@
       if (target) UI.openRestockModal(target);
     });
 
-    document.getElementById('priorityFeedList').addEventListener('click', function (ev) {
+    function handlePriorityFeed(ev) {
       var expired = ev.target.closest('[data-discard-item]');
       if (expired) {
         openExpiredDiscard(expired);
@@ -1435,7 +1462,9 @@
         select.value = btn.dataset.priorityFlavor;
         select.dispatchEvent(new Event('change', { bubbles: true }));
       }
-    });
+    }
+    document.getElementById('priorityFeedList').addEventListener('click', handlePriorityFeed);
+    document.getElementById('feedingTaskList').addEventListener('click', handlePriorityFeed);
 
 
     document.getElementById('dailyMedReminders').addEventListener('click', function (ev) {
@@ -1936,7 +1965,9 @@
         showFieldError('fieldUsagePerItem', '投喂单位与库存单位相同时，每件数量应为 1'); return;
       }
       var isVolumeSpec = ['supp', 'med'].includes(st.formCat) && document.getElementById('fieldNetWeightUnit').value === '毫升';
-      if (usagePerItem !== null && usageUnit === 'g' && !isVolumeSpec && netWeight > 0 && Math.abs(usagePerItem - netWeight) > 1e-9) {
+      var isMilligramSpec = st.formCat === 'med' && document.getElementById('fieldNetWeightUnit').value === '毫克';
+      var netWeightGrams = isMilligramSpec ? netWeight / 1000 : netWeight;
+      if (usagePerItem !== null && usageUnit === 'g' && !isVolumeSpec && netWeight > 0 && Math.abs(usagePerItem - netWeightGrams) > 1e-9) {
         showFieldError('fieldUsagePerItem', '克数换算须与单件净含量一致'); return;
       }
       var unitChanged = Boolean(original && selectedUnit !== original.unit);
@@ -2032,9 +2063,9 @@
       var record = Domain.sanitizeItem({
         id: id || ('item_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
         category: st.formCat,
-        unit_net_weight_g: st.formCat === 'supplies' || isVolumeSpec ? null : netWeight,
-        unit_spec_value: st.formCat === 'supplies' || isVolumeSpec ? netWeight : null,
-        unit_spec_unit: st.formCat === 'supplies' || isVolumeSpec ? document.getElementById('fieldNetWeightUnit').value : '',
+        unit_net_weight_g: st.formCat === 'supplies' || isVolumeSpec ? null : netWeightGrams,
+        unit_spec_value: st.formCat === 'supplies' || isVolumeSpec || isMilligramSpec ? netWeight : null,
+        unit_spec_unit: st.formCat === 'supplies' || isVolumeSpec || isMilligramSpec ? document.getElementById('fieldNetWeightUnit').value : '',
         subtype: subtype,
         feedUsageUnit: usageUnit,
         feedUsagePerItem: usagePerItem,

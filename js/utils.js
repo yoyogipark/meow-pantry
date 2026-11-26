@@ -357,8 +357,9 @@
   Utils.formatItemSpec = function (item) {
     var supplyValue = Number(item.unit_spec_value);
     if (supplyValue > 0 && item.unit_spec_unit && (item.category === 'supplies' ||
-        (['supp', 'med'].includes(item.category) && item.unit_spec_unit === '毫升'))) {
-      return Utils.formatNumber(supplyValue) + item.unit_spec_unit + (item.spec ? ' · ' + String(item.spec).trim() : '');
+        (['supp', 'med'].includes(item.category) && item.unit_spec_unit === '毫升') ||
+        (item.category === 'med' && item.unit_spec_unit === '毫克'))) {
+      return Utils.formatNumber(supplyValue, item.unit_spec_unit === '毫克' ? 10 : undefined) + item.unit_spec_unit + (item.spec ? ' · ' + String(item.spec).trim() : '');
     }
     var weight = Number(item.unit_net_weight_g);
     var note = String(item.spec || '').trim();
@@ -372,15 +373,15 @@
   Utils.formatInventoryItemSpec = function (item) {
     function measure(value, unit) {
       var units = {
-        '克': ['g', 1], 'g': ['g', 1], '千克': ['kg', 1000], 'kg': ['kg', 1000],
+        '克': ['g', 1], 'g': ['g', 1], '千克': ['kg', 1000], 'kg': ['kg', 1000], '毫克': ['mg', 0.001], 'mg': ['mg', 0.001],
         '毫升': ['mL', 1], 'ml': ['mL', 1], '升': ['L', 1000], 'l': ['L', 1000],
         '片': ['片', 1], '张': ['张', 1]
       };
       var info = units[String(unit || '').toLowerCase()];
       if (!info || !(Number(value) > 0)) return null;
       return {
-        text: Utils.formatNumber(Number(value)) + info[0],
-        dimension: info[0] === 'kg' ? 'g' : info[0] === 'L' ? 'mL' : info[0],
+        text: Utils.formatNumber(Number(value), info[0] === 'mg' ? 10 : undefined) + info[0],
+        dimension: info[0] === 'kg' || info[0] === 'mg' ? 'g' : info[0] === 'L' ? 'mL' : info[0],
         baseValue: Number(value) * info[1]
       };
     }
@@ -388,7 +389,8 @@
     var structured = null;
     var supplyValue = Number(item.unit_spec_value);
     if (supplyValue > 0 && item.unit_spec_unit && (item.category === 'supplies' ||
-        (['supp', 'med'].includes(item.category) && item.unit_spec_unit === '毫升'))) {
+        (['supp', 'med'].includes(item.category) && item.unit_spec_unit === '毫升') ||
+        (item.category === 'med' && item.unit_spec_unit === '毫克'))) {
       structured = measure(supplyValue, item.unit_spec_unit);
       if (!structured) structured = { text: Utils.formatNumber(supplyValue) + item.unit_spec_unit };
     } else {
@@ -396,7 +398,7 @@
       if (weight > 0) structured = measure(weight >= 1000 ? weight / 1000 : weight, weight >= 1000 ? 'kg' : 'g');
     }
     var parts = String(item.spec || '').trim().split(/\s*·\s*/).filter(Boolean).map(function (part) {
-      var match = /^(\d+(?:\.\d+)?)\s*(千克|kg|克|g|毫升|ml|升|l|片|张)(?:\s*\/\s*(.+))?$/i.exec(part);
+      var match = /^(\d+(?:\.\d+)?)\s*(千克|kg|毫克|mg|克|g|毫升|ml|升|l|片|张)(?:\s*\/\s*(.+))?$/i.exec(part);
       var parsed = match && measure(match[1], match[2]);
       if (!parsed) return part;
       if (structured && parsed.dimension === structured.dimension &&

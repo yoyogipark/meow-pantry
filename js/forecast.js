@@ -17,6 +17,93 @@
     return Number.isFinite(number) && number > 0 ? number : 0;
   }
 
+  Forecast.batchStock = function (item, today) {
+    if (!item || item.isSample || !categories.includes(item.category) || !positive(item.quantity) ||
+        Utils.diffDaysFromToday(item.expDate, today) < 0) return null;
+    var shared = item.purchasePackaging && item.purchasePackaging.seal === 'shared';
+    var openingExpired = item.isOpened &&
+      Utils.openShelfDaysRemaining(item.openedDate, item.openDaysLimit, today) < 0;
+    if (shared && openingExpired) return null;
+    var alreadyUsed = 0;
+    var estimated = false;
+    var openedPackages = [];
+    function accountForOpenPackage(fraction, openedDate) {
+      if (fraction > 0 && fraction < 1) alreadyUsed += 1 - fraction;
+      else estimated = true;
+      openedPackages.push({
+        units: fraction > 0 && fraction < 1 ? fraction : 1,
+        days: Utils.openShelfDaysRemaining(openedDate, item.openDaysLimit, today)
+      });
+    }
+    if (item.flavors && item.flavors.length) {
+      item.flavors.forEach(function (flavor) {
+        if (flavor.quantity <= 0 || !flavor.openedDate) return;
+        if (!shared && Utils.openShelfDaysRemaining(flavor.openedDate, item.openDaysLimit, today) < 0) {
+          alreadyUsed += 1;
+        } else {
+          accountForOpenPackage(flavor.openRemainFraction, flavor.openedDate);
+        }
+      });
+      if (item.isOpened && !item.flavors.some(function (flavor) {
+        return flavor.quantity > 0 && flavor.openedDate;
+      })) estimated = true;
+    } else if (openingExpired) {
+      alreadyUsed += 1;
+    } else if (item.isOpened) {
+      accountForOpenPackage(item.openRemainFraction, item.openedDate);
+    }
+    var edible = positive(item.quantity) - alreadyUsed;
+    if (edible <= 0) return null;
+    var weight = Forecast.unitGrams(item);
+    if (shared && item.isOpened) {
+      // A shared seal starts one freshness window for every remaining unit, recorded on the batch.
+      var sharedDays = Utils.openShelfDaysRemaining(item.openedDate, item.openDaysLimit, today);
+      openedPackages = sharedDays === null ? [] : [{ units: edible, days: sharedDays }];
+    }
+    var remainingUnits = edible;
+    return {
+      grams: weight ? edible * weight : null, estimated: estimated,
+      openedPackages: weight ? openedPackages.filter(function (entry) { return entry.days !== null; })
+        .map(function (entry) {
+          var units = Math.min(entry.units, remainingUnits);
+          remainingUnits -= units;
+          return { grams: units * weight, days: entry.days };
+        }).filter(function (entry) { return entry.grams > 0; }) : []
+    };
+  };
+
+  Forecast.expiryRisk = function (item, dailyGrams, today) {
+    var stock = Forecast.batchStock(item, today);
+    var days = item && Utils.diffDaysFromToday(item.expDate, today);
+    var rate = positive(dailyGrams);
+    if (!stock || !stock.grams || !rate || days === null || days < 0) return null;
+    // Opened packages are eaten first, earliest freshness deadline first, and each must be
+    // finished within its own window; sealed stock then has until the printed expiry date.
+    var elapsed = 0;
+    var leftoverGrams = 0;
+    var openedGrams = 0;
+    var bindingDays = null;
+    stock.openedPackages.slice().sort(function (a, b) { return a.days - b.days; }).forEach(function (entry) {
+      var deadline = Math.min(days, Math.max(0, entry.days));
+      var waste = Math.max(0, entry.grams - rate * Math.max(0, deadline - elapsed));
+      openedGrams += entry.grams;
+      if (waste > 0) {
+        leftoverGrams += waste;
+        if (bindingDays === null && deadline < days) bindingDays = deadline;
+        elapsed = Math.max(elapsed, deadline);
+      } else {
+        elapsed += entry.grams / rate;
+      }
+    });
+    leftoverGrams += Math.max(0, stock.grams - openedGrams - rate * Math.max(0, days - elapsed));
+    return {
+      daysRemaining: bindingDays === null ? days : bindingDays, deadline: bindingDays === null ? 'expiry' : 'opened',
+      dailyGrams: rate, remainingGrams: stock.grams,
+      neededDays: stock.grams / rate, leftoverGrams: leftoverGrams,
+      atRisk: leftoverGrams > 0, estimated: stock.estimated
+    };
+  };
+
   Forecast.compute = function (items, history, dailyFeedGrams, today) {
     var result = {};
     categories.forEach(function (key) {
@@ -29,41 +116,11 @@
       if (!category || !positive(item.quantity)) return;
       if (item.isSample) { category.samples++; return; }
       category.realStock++;
-      if (Utils.diffDaysFromToday(item.expDate, today) < 0) return;
-      var shared = item.purchasePackaging && item.purchasePackaging.seal === 'shared';
-      var openingExpired = item.isOpened &&
-        Utils.openShelfDaysRemaining(item.openedDate, item.openDaysLimit, today) < 0;
-      if (shared && openingExpired) return;
-
-      var alreadyUsed = 0;
-      var estimated = false;
-      function accountForOpenPackage(fraction) {
-        if (fraction > 0 && fraction < 1) alreadyUsed += 1 - fraction;
-        else estimated = true;
-      }
-      if (item.flavors && item.flavors.length) {
-        item.flavors.forEach(function (flavor) {
-          if (flavor.quantity <= 0 || !flavor.openedDate) return;
-          if (!shared && Utils.openShelfDaysRemaining(flavor.openedDate, item.openDaysLimit, today) < 0) {
-            alreadyUsed += 1;
-          } else {
-            accountForOpenPackage(flavor.openRemainFraction);
-          }
-        });
-        if (item.isOpened && !item.flavors.some(function (flavor) {
-          return flavor.quantity > 0 && flavor.openedDate;
-        })) estimated = true;
-      } else if (openingExpired) {
-        alreadyUsed += 1;
-      } else if (item.isOpened) {
-        accountForOpenPackage(item.openRemainFraction);
-      }
-      var edible = positive(item.quantity) - alreadyUsed;
-      if (edible <= 0) return;
-      var weight = Forecast.unitGrams(item);
-      if (!weight) { category.missing.push(item.id); return; }
-      category.estimated = category.estimated || estimated;
-      category.grams += edible * weight;
+      var stock = Forecast.batchStock(item, today);
+      if (!stock) return;
+      if (stock.grams === null) { category.missing.push(item.id); return; }
+      category.estimated = category.estimated || stock.estimated;
+      category.grams += stock.grams;
     });
 
     var eventsByBatch = new Map();

@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=334">
-  <link rel="stylesheet" href="./css/styles.css?v=334">
+  <link rel="stylesheet" href="./css/tokens.css?v=347">
+  <link rel="stylesheet" href="./css/styles.css?v=347">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -51,6 +51,7 @@
     <symbol id="ui-shopping-cart" viewBox="0 0 24 24"><path d="M2 3h3l3 12h11l2-8H6m4 13h.01m8 0h.01" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-trash-2" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-pill" viewBox="0 0 24 24"><path d="m5 12 7-7a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7z M8 9l7 7" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="ui-bottle" viewBox="0 0 24 24"><path d="M9 3h6v4l2 2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9l2-2V3zm0 2h6M7 12h10" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="ui-clipboard-copy" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a2 2 0 0 0-2-2h-3M9 15l2 2 4-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
     <symbol id="ui-clipboard-check" viewBox="0 0 24 24"><path d="M9 5H6a2 2 0 0 0-2 2v13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V7a2 2 0 0 0-2-2h-3M9 14l2 2 4-5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><rect x="9" y="3" width="6" height="4" rx="1" fill="none" stroke="currentColor" stroke-width="1.75"/></symbol>
     <symbol id="ui-brush" viewBox="0 0 24 24"><path d="m9 11 8-8a2.8 2.8 0 0 1 4 4l-8 8M8 12l4 4M3 21c3 0 6-1 6-5a3 3 0 0 0-6 0c0 2-1 3-1 3s0 2 1 2Z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -301,24 +302,37 @@
 
       <!-- SUB-VIEW 1: 库存与效期 (Separated Food / Supp / Med) -->
       <div id="statsSubViewStock">
-        <div class="ios-card stats-panel feeding-overview">
-          <div id="forecastValues" class="forecast-grid"></div>
-          <details id="feedingTasks" class="feeding-alerts hidden-view">
+        <section id="feedingAttention" class="ios-card feeding-attention hidden-view" aria-labelledby="feedingAttentionTitle">
+          <h2 id="feedingAttentionTitle" class="feeding-attention-title">需要处理 <span id="feedingAttentionCount" class="feeding-attention-badge"></span></h2>
+          <section id="feedingTasks" class="hidden-view" aria-label="吃不完风险与临期">
+            <div id="feedingTaskList" class="feeding-risk-list"></div>
+          </section>
+          <details id="feedingExpiredTasks" class="feeding-expired hidden-view">
             <summary>
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M10.5 4.5 3 18a1.4 1.4 0 0 0 1.2 2h15.6a1.4 1.4 0 0 0 1.2-2l-7.5-13.5a1.7 1.7 0 0 0-3 0ZM12 9v4m0 3h.01"/></svg>
-              <strong id="feedingTaskCount"></strong>
+              <span class="feeding-expired-copy"><strong id="feedingExpiredCount"></strong><small id="feedingExpiredSummary"></small></span>
+              <span class="feeding-expired-action" aria-hidden="true">去处理</span>
             </summary>
-            <div id="feedingTaskList" class="feeding-task-list"></div>
+            <div id="feedingExpiredList" class="feeding-task-list"></div>
           </details>
+        </section>
+
+        <section class="ios-card feeding-extra feeding-priority">
+          <div class="feeding-section-heading"><h2>接下来先喂</h2><span>开封优先 · 早到期优先</span></div>
+          <div id="priorityFeedList"></div>
+        </section>
+
+        <div class="ios-card stats-panel feeding-overview">
+          <h2 class="feeding-section-title">库存还能吃多久</h2>
+          <div id="forecastValues" class="forecast-values"></div>
 
           <!-- Scope Filter Pills -->
           <div class="stats-scope-wrap">
-            <div id="statsScopeBar" class="filter-chips no-scrollbar" role="group" aria-label="分析分类">
+            <div id="statsScopeBar" class="filter-chips no-scrollbar" role="group" aria-label="库存分类">
               <button type="button" data-stats-scope="all" class="subfilter-chip active">全部</button>
-              <button type="button" data-stats-scope="food" class="subfilter-chip">普通食品</button>
-              <button type="button" data-stats-scope="supp" class="subfilter-chip">营养品</button>
+              <button type="button" data-stats-scope="food" class="subfilter-chip">食品</button>
+              <button type="button" data-stats-scope="supp" class="subfilter-chip">营养</button>
               <button type="button" data-stats-scope="med" class="subfilter-chip">药品</button>
-              <button type="button" data-stats-scope="supplies" class="subfilter-chip">日用品</button>
+              <button type="button" data-stats-scope="supplies" class="subfilter-chip">日用</button>
             </div>
           </div>
 
@@ -327,16 +341,10 @@
 
         </div>
 
-        <section class="ios-card feeding-extra feeding-priority">
-          <h2>近期优先投喂</h2>
-          <p>已开封优先，其次按过期日期排序，已排除药品和已过期商品</p>
-          <div id="priorityFeedList"></div>
-        </section>
-
-        <details class="ios-card feeding-extra feeding-timeline" open>
+        <details class="ios-card feeding-extra feeding-timeline">
           <summary>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>
-            <span>未来到期时间轴 <small id="expiryTimelineCountBadge">· 0 个月份</small></span>
+            <span>未来到期时间轴</span><small id="expiryTimelineCountBadge">0 个月份</small>
           </summary>
           <div id="expiryMonthTimelineList"></div>
         </details>
@@ -354,18 +362,19 @@
           </div>
           <p class="stats-panel-description pal-archive-description" title="食品适口性 · 营养品接受度 · 药品反应">按批次及口味分别统计评价</p>
 
+          <div id="palGroupSwitch" class="pal-group-switch" role="group" aria-label="评价类别">
+            <button type="button" data-pal-group="food" class="active" aria-pressed="true">食品 <b data-pal-group-count>0</b></button>
+            <button type="button" data-pal-group="supp" aria-pressed="false">营养品 <b data-pal-group-count>0</b></button>
+            <button type="button" data-pal-group="med" aria-pressed="false">药品 <b data-pal-group-count>0</b></button>
+          </div>
+
           <div id="palTierDistribution" class="pal-tier-distribution hidden-view" role="img"></div>
           <div id="palTierTabBar">
             <div class="pal-tier-grid">
-              <button type="button" data-tier-tab="love" class="pill-chip pal-tier-button active"><span class="palatability-emoji" aria-hidden="true">😍</span><span>超爱吃</span><strong data-tier-count>0</strong></button>
-              <button type="button" data-tier-tab="ok" class="pill-chip pal-tier-button"><span class="palatability-emoji" aria-hidden="true">😋</span><span>正常吃</span><strong data-tier-count>0</strong></button>
-              <button type="button" data-tier-tab="coax" class="pill-chip pal-tier-button"><span class="palatability-emoji" aria-hidden="true">😐</span><span>需哄吃</span><strong data-tier-count>0</strong></button>
-              <button type="button" data-tier-tab="meh" class="pill-chip pal-tier-button"><span class="palatability-emoji" aria-hidden="true">😣</span><span>不爱吃</span><strong data-tier-count>0</strong></button>
-            </div>
-            <div class="pal-other-heading">其他类别</div>
-            <div class="pal-other-filters">
-              <button type="button" data-tier-tab="supp" class="pill-chip">营养品接受度</button>
-              <button type="button" data-tier-tab="med" class="pill-chip">药品耐受反应</button>
+              <button type="button" data-tier-tab="love" class="pill-chip pal-tier-button"><span class="palatability-emoji" data-tier-emoji aria-hidden="true">😍</span><span class="pal-tier-label"><i class="pal-tier-dot" aria-hidden="true"></i><span data-tier-label>超爱吃</span></span><strong data-tier-count>0</strong></button>
+              <button type="button" data-tier-tab="ok" class="pill-chip pal-tier-button"><span class="palatability-emoji" data-tier-emoji aria-hidden="true">😋</span><span class="pal-tier-label"><i class="pal-tier-dot" aria-hidden="true"></i><span data-tier-label>正常吃</span></span><strong data-tier-count>0</strong></button>
+              <button type="button" data-tier-tab="coax" class="pill-chip pal-tier-button"><span class="palatability-emoji" data-tier-emoji aria-hidden="true">😐</span><span class="pal-tier-label"><i class="pal-tier-dot" aria-hidden="true"></i><span data-tier-label>需哄吃</span></span><strong data-tier-count>0</strong></button>
+              <button type="button" data-tier-tab="meh" class="pill-chip pal-tier-button"><span class="palatability-emoji" data-tier-emoji aria-hidden="true">😣</span><span class="pal-tier-label"><i class="pal-tier-dot" aria-hidden="true"></i><span data-tier-label>不爱吃</span></span><strong data-tier-count>0</strong></button>
             </div>
           </div>
 
@@ -386,7 +395,7 @@
 
       <!-- SUB-VIEW 3: 品牌与偏好 -->
       <div id="statsSubViewBrand" class="hidden-view">
-        <!-- 30-Day Feeding Preferences & Separate Care Stats -->
+        <!-- 30-Day Feeding Preferences -->
         <div class="ios-card stats-panel" style="margin-bottom:14px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
             <div>
@@ -396,6 +405,11 @@
           </div>
           <div id="recent30PrefBox"></div>
         </div>
+
+        <section class="ios-card stats-panel feeding-care-panel" aria-labelledby="recentCareTitle">
+          <h2 id="recentCareTitle" class="stats-panel-title">近30天营养、用药与护理</h2>
+          <div id="recent30CareBox" class="feeding-care-summary"></div>
+        </section>
 
         <!-- Brand Deep Archive Directory -->
         <div class="ios-card stats-panel">
@@ -408,32 +422,32 @@
           </div>
 
           <div class="brand-scope-wrap">
-            <div id="brandScopeBar" class="filter-chips no-scrollbar">
-              <button type="button" data-brand-scope="all" class="subfilter-chip active"><span>全部品牌</span></button>
-              <button type="button" data-brand-scope="food" class="subfilter-chip"><span>食品品牌</span></button>
-              <button type="button" data-brand-scope="supp" class="subfilter-chip"><span>营养品品牌</span></button>
-              <button type="button" data-brand-scope="med" class="subfilter-chip"><span>药品品牌</span></button>
-              <button type="button" data-brand-scope="supplies" class="subfilter-chip"><span>日用品品牌</span></button>
+            <div id="brandScopeBar" class="filter-chips no-scrollbar" role="group" aria-label="品牌分类">
+              <button type="button" data-brand-scope="all" class="subfilter-chip active"><span>全部 <small data-brand-count>0</small></span></button>
+              <button type="button" data-brand-scope="food" class="subfilter-chip"><span>食品 <small data-brand-count>0</small></span></button>
+              <button type="button" data-brand-scope="supp" class="subfilter-chip"><span>营养品 <small data-brand-count>0</small></span></button>
+              <button type="button" data-brand-scope="med" class="subfilter-chip"><span>药品 <small data-brand-count>0</small></span></button>
+              <button type="button" data-brand-scope="supplies" class="subfilter-chip"><span>日用品 <small data-brand-count>0</small></span></button>
             </div>
           </div>
 
-          <div id="brandStatsList" class="brand-list"></div>
-
-          <nav id="brandPaginationBar" class="list-pagination hidden-view" aria-label="品牌档案分页">
-            <label class="list-pagination-size"><span>每页</span>
-              <select id="brandPageSizeSelect" aria-label="品牌档案分页每页数量">
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-              </select>
-            </label>
-            <span id="brandPageInfoText" class="list-pagination-count" role="status">1 / 1</span>
-            <div class="list-pagination-buttons">
-              <button id="prevBrandPageBtn" type="button" aria-label="上一页" disabled><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-left"></use></svg></button>
-              <button id="nextBrandPageBtn" type="button" aria-label="下一页" disabled><svg class="ui-icon" width="16" height="16" aria-hidden="true"><use href="#ui-chevron-right"></use></svg></button>
+          <div class="brand-currency-row">
+            <span>币种</span>
+            <div id="brandCurrencyBar" class="brand-currency-bar" role="group" aria-label="品牌金额币种">
+              <button type="button" data-brand-currency="CNY" aria-pressed="false">人民币</button>
+              <button type="button" data-brand-currency="JPY" aria-pressed="false">日元</button>
             </div>
-          </nav>
+          </div>
+          <div class="brand-sort-row">
+            <span id="brandSortLabel">按累计购入排序</span>
+            <button id="brandSortBtn" type="button" aria-label="切换品牌排序方式">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h12M4 10h8M4 14h5M18 10v10m-3-3 3 3 3-3"/></svg>
+              <span>累计购入</span>
+            </button>
+          </div>
+          <p id="brandCurrencyNote" class="brand-currency-note"></p>
+          <div id="brandStatsList" class="brand-list"></div>
+          <button id="brandShowAllBtn" type="button" class="brand-show-all hidden-view" aria-expanded="false" aria-controls="brandStatsList"></button>
         </div>
       </div>
     </section>
@@ -959,8 +973,9 @@
           </div>
         </div>
 
-        <div id="feedCareTypeGroup" class="feed-care-segments hidden-view" role="group" aria-label="用药或护理">
+        <div id="feedCareTypeGroup" class="feed-care-segments hidden-view" role="group" aria-label="用药、营养品或护理">
           <button type="button" class="ios-btn ios-btn-secondary" data-feed-care-type="medication" aria-pressed="true">用药</button>
+          <button type="button" class="ios-btn ios-btn-secondary" data-feed-care-type="supplement" aria-pressed="false">营养品</button>
           <button type="button" class="ios-btn ios-btn-secondary" data-feed-care-type="nursing" aria-pressed="false">护理</button>
         </div>
         <fieldset id="feedNursingProjects" class="feed-nursing-projects hidden-view">
@@ -1012,7 +1027,7 @@
             <label for="feedNameInput"><span id="feedNameLabel">商品名</span> <span style="color:var(--accent-strong);">*</span></label>
             <input id="feedNameInput" type="text" required placeholder="如 小灶猫饭" class="ios-input">
           </div>
-          <div>
+          <div id="feedCategoryField">
             <label for="feedCategorySelect">品类</label>
             <select id="feedCategorySelect" class="ios-input" style="background-color:var(--card-bg);">
               <option value="dry">猫粮</option>
@@ -1249,18 +1264,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=334"></script>
-  <script src="./js/constants.js?v=334"></script>
-  <script src="./js/utils.js?v=334"></script>
-  <script src="./js/forecast.js?v=334"></script>
-  <script src="./js/domain.js?v=334"></script>
-  <script src="./js/storage.js?v=334"></script>
-  <script src="./js/stats.js?v=334"></script>
-  <script src="./js/modal.js?v=334"></script>
-  <script src="./js/ui.js?v=334"></script>
-  <script src="./js/ui-pantry.js?v=334"></script>
-  <script src="./js/ui-daily.js?v=334"></script>
-  <script src="./js/ui-settings.js?v=334"></script>
-  <script src="./js/app.js?v=334"></script>
+  <script src="./js/covers.js?v=347"></script>
+  <script src="./js/constants.js?v=347"></script>
+  <script src="./js/utils.js?v=347"></script>
+  <script src="./js/forecast.js?v=347"></script>
+  <script src="./js/domain.js?v=347"></script>
+  <script src="./js/storage.js?v=347"></script>
+  <script src="./js/stats.js?v=347"></script>
+  <script src="./js/modal.js?v=347"></script>
+  <script src="./js/ui.js?v=347"></script>
+  <script src="./js/ui-pantry.js?v=347"></script>
+  <script src="./js/ui-daily.js?v=347"></script>
+  <script src="./js/ui-settings.js?v=347"></script>
+  <script src="./js/app.js?v=347"></script>
 </body>
 </html>
