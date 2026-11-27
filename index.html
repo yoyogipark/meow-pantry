@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=347">
-  <link rel="stylesheet" href="./css/styles.css?v=347">
+  <link rel="stylesheet" href="./css/tokens.css?v=351">
+  <link rel="stylesheet" href="./css/styles.css?v=351">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -396,18 +396,16 @@
       <!-- SUB-VIEW 3: 品牌与偏好 -->
       <div id="statsSubViewBrand" class="hidden-view">
         <!-- 30-Day Feeding Preferences -->
-        <div class="ios-card stats-panel" style="margin-bottom:14px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-            <div>
-              <h2 class="stats-panel-title">近30天喂食统计</h2>
-            </div>
-            <span id="recent30CountBadge" style="font-size:11px;font-weight:700;color:var(--accent-strong);background:var(--accent-soft);padding:3px 9px;border-radius:999px;white-space:nowrap;">0 顿</span>
+        <div class="ios-card stats-panel recent-analysis-panel recent-food-panel">
+          <div class="recent-analysis-heading">
+            <h2 class="stats-panel-title">近30天喂食统计</h2>
+            <span id="recent30CountBadge" class="recent-analysis-badge">0顿</span>
           </div>
           <div id="recent30PrefBox"></div>
         </div>
 
-        <section class="ios-card stats-panel feeding-care-panel" aria-labelledby="recentCareTitle">
-          <h2 id="recentCareTitle" class="stats-panel-title">近30天营养、用药与护理</h2>
+        <section class="ios-card stats-panel recent-analysis-panel feeding-care-panel" aria-labelledby="recentCareTitle">
+          <h2 id="recentCareTitle" class="stats-panel-title">近30天健康与护理</h2>
           <div id="recent30CareBox" class="feeding-care-summary"></div>
         </section>
 
@@ -431,19 +429,15 @@
             </div>
           </div>
 
-          <div class="brand-currency-row">
-            <span>币种</span>
+          <div class="brand-controls-row">
+            <button id="brandSortBtn" type="button" aria-label="切换品牌排序方式">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h12M4 10h8M4 14h5M18 10v10m-3-3 3 3 3-3"/></svg>
+              <span>排序：累计购入</span>
+            </button>
             <div id="brandCurrencyBar" class="brand-currency-bar" role="group" aria-label="品牌金额币种">
               <button type="button" data-brand-currency="CNY" aria-pressed="false">人民币</button>
               <button type="button" data-brand-currency="JPY" aria-pressed="false">日元</button>
             </div>
-          </div>
-          <div class="brand-sort-row">
-            <span id="brandSortLabel">按累计购入排序</span>
-            <button id="brandSortBtn" type="button" aria-label="切换品牌排序方式">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h12M4 10h8M4 14h5M18 10v10m-3-3 3 3 3-3"/></svg>
-              <span>累计购入</span>
-            </button>
           </div>
           <p id="brandCurrencyNote" class="brand-currency-note"></p>
           <div id="brandStatsList" class="brand-list"></div>
@@ -1264,18 +1258,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=347"></script>
-  <script src="./js/constants.js?v=347"></script>
-  <script src="./js/utils.js?v=347"></script>
-  <script src="./js/forecast.js?v=347"></script>
-  <script src="./js/domain.js?v=347"></script>
-  <script src="./js/storage.js?v=347"></script>
-  <script src="./js/stats.js?v=347"></script>
-  <script src="./js/modal.js?v=347"></script>
-  <script src="./js/ui.js?v=347"></script>
-  <script src="./js/ui-pantry.js?v=347"></script>
-  <script src="./js/ui-daily.js?v=347"></script>
-  <script src="./js/ui-settings.js?v=347"></script>
-  <script src="./js/app.js?v=347"></script>
+  <script src="./js/covers.js?v=351"></script>
+  <script src="./js/constants.js?v=351"></script>
+  <script src="./js/utils.js?v=351"></script>
+  <script src="./js/forecast.js?v=351"></script>
+  <script src="./js/domain.js?v=351"></script>
+  <script src="./js/storage.js?v=351"></script>
+  <script src="./js/stats.js?v=351"></script>
+  <script src="./js/modal.js?v=351"></script>
+  <script src="./js/ui.js?v=351"></script>
+  <script src="./js/ui-pantry.js?v=351"></script>
+  <script src="./js/ui-daily.js?v=351"></script>
+  <script src="./js/ui-settings.js?v=351"></script>
+  <script src="./js/app.js?v=351"></script>
 </body>
 </html>

@@ -1400,6 +1400,14 @@
       st.tierPage += 1; Stats.renderStatsView();
     });
 
+    document.getElementById('recent30PrefBox').addEventListener('click', function (ev) {
+      var summary = ev.target.closest('.feeding-rank-detail > summary');
+      if (!summary || summary.parentElement.open) return;
+      var truncated = Array.from(summary.querySelectorAll('.feeding-rank-brand, .feeding-rank-name, .feeding-rank-spec'))
+        .some(function (text) { return text.scrollWidth > text.clientWidth; });
+      if (!truncated) ev.preventDefault();
+    });
+
     document.getElementById('brandScopeBar').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-brand-scope]');
       if (!btn) return;

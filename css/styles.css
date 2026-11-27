@@ -2120,7 +2120,7 @@ body.pantry-detail-open { position: fixed; top: var(--pantry-detail-scroll); wid
   border: 0; background: transparent; font-size: var(--font-support); scroll-snap-align: start;
 }
 #brandScopeBar > button > span {
-  display: flex; align-items: center; justify-content: center; gap: 3px; height: 36px; padding-inline: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 3px; height: 28px; padding-inline: 8px;
   border: var(--border-default-width) solid var(--border-warm);
   border-radius: var(--radius-pill); background: var(--card-bg);
 }
@@ -2128,11 +2128,10 @@ body.pantry-detail-open { position: fixed; top: var(--pantry-detail-scroll); wid
 #brandScopeBar > button.is-empty { opacity: .5; }
 #brandScopeBar small { color: var(--text-weak); font-size: 11px; font-weight: 400; }
 #brandScopeBar .active small { color: inherit; opacity: .75; }
-.brand-currency-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--text-muted); font-size: 12px; }
+.brand-controls-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; color: var(--text-muted); font-size: 12px; }
 .brand-currency-bar { display: inline-flex; gap: 2px; padding: 3px; border-radius: var(--radius-pill); background: var(--bg-cream); }
 .brand-currency-bar button { position: relative; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--text-muted); font: inherit; cursor: pointer; white-space: nowrap; }
 .brand-currency-bar button[aria-pressed="true"] { background: var(--card-bg); color: var(--accent-strong); }
-.brand-sort-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; color: var(--text-muted); font-size: 12px; }
 #brandSortBtn {
   position: relative; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 10px;
   border: 0; border-radius: var(--radius-pill); background: var(--bg-cream); color: var(--text-muted);
@@ -2200,58 +2199,95 @@ body.pantry-detail-open { position: fixed; top: var(--pantry-detail-scroll); wid
   .brand-products-wrap, .brand-list-arrow { transition: none; }
 }
 #forecastValues > div:only-of-type { grid-column: 1 / -1; }
-.feeding-ratio-legend {
-  display: flex; align-items: center; justify-content: space-between; gap: 4px;
-  margin-top: 6px; font-size: 11px; color: var(--text-muted); white-space: nowrap;
+@media (prefers-color-scheme: light) {
+  html:has(#viewStats:not(.hidden-view) #statsSubViewBrand:not(.hidden-view)),
+  body:has(#viewStats:not(.hidden-view) #statsSubViewBrand:not(.hidden-view)) { background-color: #F6F2ED; }
 }
-.feeding-ratio-dry { --ratio-color: var(--color-primary); }
-.feeding-ratio-can { --ratio-color: #7FB5C9; }
-.feeding-ratio-other { --ratio-color: #D9CFC2; }
+#viewStats .recent-analysis-panel {
+  --recent-ink: #2B2521;
+  --recent-muted: #5F544B;
+  --recent-badge-bg: #FCEBDF;
+  --recent-badge-ink: #A9461C;
+  --care-med-bg: #F2ECFA;
+  --care-med-icon: #6A4BA8;
+  --care-nursing-bg: #E8F2F6;
+  --care-nursing-icon: #24677F;
+  --care-supp-bg: #EEF3E7;
+  --care-supp-icon: #4C7326;
+  margin-bottom: 12px; padding: 14px; border: 0; border-radius: 18px;
+  background: var(--card-bg); color: var(--recent-ink); font-size: 14px; font-weight: 400;
+}
+.recent-analysis-panel .stats-panel-title { color: var(--recent-ink); font-size: 16px; font-weight: 500; }
+#viewStats #statsSubViewBrand > .stats-panel.recent-food-panel { padding: 12px; }
+.recent-food-panel .recent-analysis-heading { margin-bottom: 8px; }
+.recent-analysis-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.recent-analysis-badge { flex: none; padding: 4px 10px; border-radius: var(--radius-pill); background: var(--recent-badge-bg); color: var(--recent-badge-ink); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.feeding-ratio-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+  margin-top: 8px; font-size: 12px; color: var(--recent-muted);
+}
+.feeding-ratio-legend > span { white-space: nowrap; }
+.feeding-ratio-dry { --ratio-color: #E58B69; }
+.feeding-ratio-can { --ratio-color: #8AAA85; }
+.feeding-ratio-freeze { --ratio-color: #D4AF78; }
+.feeding-ratio-other { --ratio-color: #B8ADA2; }
 .feeding-ratio-legend span::before {
-  content: ""; display: inline-block; width: 7px; height: 7px; margin-inline-end: 4px;
+  content: ""; display: inline-block; width: 8px; height: 8px; margin-inline-end: 4px;
   border-radius: 50%; background: var(--ratio-color);
 }
-.feeding-ratio-bar { display: flex; gap: 2px; height: 10px; border-radius: var(--radius-pill); }
-.feeding-ratio-bar span { flex-basis: 0; border-radius: inherit; background: var(--ratio-color); }
-.feeding-rank-title { margin: 9px 0 2px; font-size: 12px; }
+.feeding-ratio-bar { display: flex; height: 8px; overflow: hidden; border-radius: var(--radius-pill); }
+.feeding-ratio-bar span { flex-basis: 0; min-width: 0; background: var(--ratio-color); }
+.feeding-rank-group { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--border-warm); }
+.feeding-rank-group h3 { margin: 0; font-size: 12px; font-weight: 500; }
+.feeding-rank-group h3::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-inline-end: 5px; border-radius: 50%; background: var(--ratio-color); vertical-align: middle; }
 .feeding-rank-list { margin: 0; padding: 0; list-style: none; }
-.feeding-rank-list li {
-  display: grid; grid-template-columns: 22px auto minmax(0, 1fr) auto;
-  align-items: center; gap: 6px; min-height: 56px; padding: 5px 0;
+.feeding-rank-detail > summary { display: flex; flex-direction: column; justify-content: center; min-height: 44px; padding: 5px 0; cursor: pointer; list-style: none; }
+.feeding-rank-detail > summary::-webkit-details-marker { display: none; }
+.feeding-rank-line { display: flex; align-items: baseline; gap: 4px; width: 100%; min-width: 0; }
+.feeding-rank-product { display: flex; flex: 1 1 auto; align-items: baseline; gap: 4px; min-width: 0; }
+.feeding-rank-brand { flex: 0 20 auto; min-width: 0; max-width: 35%; overflow: hidden; color: var(--recent-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.feeding-rank-name { flex: 0 1 auto; min-width: 0; max-width: 60%; overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.feeding-rank-spec { flex: none; max-width: calc(100% - 8px); overflow: hidden; color: var(--recent-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.feeding-rank-count { flex: none; white-space: nowrap; }
+.feeding-rank-count { margin-inline-start: auto; }
+.feeding-rank-full { padding: 2px 0 7px; color: var(--recent-muted); font-size: 12px; overflow-wrap: anywhere; }
+.feeding-rank-meter { display: block; width: 100%; height: 4px; margin-top: 4px; overflow: hidden; border-radius: 4px; background: var(--progress-track-bg); }
+.feeding-rank-meter span { display: block; height: 100%; background: var(--ratio-color); }
+.feeding-rank-more summary { min-height: 44px; display: flex; align-items: center; color: var(--recent-muted); font-size: 12px; cursor: pointer; list-style: none; }
+.feeding-rank-more summary::-webkit-details-marker, .feeding-care-heading::-webkit-details-marker { display: none; }
+.feeding-more-close, .feeding-rank-more[open] .feeding-more-open { display: none; }
+.feeding-rank-more[open] .feeding-more-close { display: inline; }
+.feeding-care-summary { display: grid; gap: 8px; margin-top: 12px; }
+.feeding-care-row { min-width: 0; border-radius: 12px; background: var(--care-bg); }
+.feeding-care-med { --care-bg: var(--care-med-bg); --care-icon: var(--care-med-icon); }
+.feeding-care-nursing { --care-bg: var(--care-nursing-bg); --care-icon: var(--care-nursing-icon); }
+.feeding-care-supp { --care-bg: var(--care-supp-bg); --care-icon: var(--care-supp-icon); }
+.feeding-care-heading { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 12px; list-style: none; }
+summary.feeding-care-heading { cursor: pointer; }
+.feeding-care-icon { flex: none; align-self: flex-start; color: var(--care-icon); }
+.feeding-care-icon .ui-icon { display: block; margin: 2px 0 0; }
+.feeding-care-main { flex: 1; min-width: 0; }
+.feeding-care-label { display: block; font-weight: 500; }
+.feeding-care-summary-line { display: flex; min-width: 0; margin-top: 2px; color: var(--recent-muted); font-size: 12px; }
+.feeding-care-preview { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feeding-care-extra { flex: none; white-space: pre; }
+.feeding-care-count { flex: none; white-space: nowrap; }
+.feeding-care-arrow { flex: none; width: 7px; height: 7px; margin: 0 2px 3px; border-right: 1.5px solid var(--recent-muted); border-bottom: 1.5px solid var(--recent-muted); transform: rotate(45deg); transition: transform 150ms ease; }
+.feeding-care-row[open] .feeding-care-arrow { margin-bottom: -3px; transform: rotate(225deg); }
+.feeding-care-items { display: grid; gap: 8px; margin: 0; padding: 0 12px 12px 36px; list-style: none; }
+.feeding-care-items li { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.feeding-care-items li span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.feeding-care-items li span:last-child { flex: none; white-space: nowrap; }
+@media (prefers-color-scheme: dark) {
+  #viewStats .recent-analysis-panel {
+    --recent-ink: var(--text-main); --recent-muted: var(--text-muted);
+    --recent-badge-bg: var(--accent-soft); --recent-badge-ink: var(--accent-strong);
+    --care-med-bg: #3B3047; --care-med-icon: #D5B8F4;
+    --care-nursing-bg: #263D46; --care-nursing-icon: #A3D2E3;
+    --care-supp-bg: #303D29; --care-supp-icon: #B9D99B;
+  }
 }
-.feeding-rank-list li + li { border-top: 0.5px solid var(--border-warm); }
-.feeding-rank {
-  display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--color-primary); color: var(--text-on-accent); font-size: 12px; font-weight: 600;
-}
-.feeding-rank-list li:nth-child(2) .feeding-rank { background: #F2C66D; color: var(--feeding-rank-ink); }
-.feeding-rank-list li:nth-child(3) .feeding-rank { background: #D9CFC2; color: var(--feeding-rank-ink); }
-.feeding-rank-list { --feeding-rank-ink: #503520; }
-.feeding-rank-thumb { display: grid; place-items: center; }
-.feeding-rank-thumb .record-category-icon[width="28"] { margin: 0; }
-.feeding-rank-product { display: flex; align-items: baseline; gap: 4px; min-width: 0; font-size: 12px; }
-.feeding-rank-brand { flex: 0 1 auto; min-width: 0; max-width: 40%; color: var(--text-muted); font-size: 11px; }
-.feeding-rank-name, .feeding-rank-brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.feeding-rank-count {
-  display: grid; justify-items: end; gap: 4px; color: var(--text-muted); font-size: 12px; white-space: nowrap;
-}
-.feeding-rank-meter { display: block; width: 40px; height: 4px; border-radius: 4px; background: var(--progress-track-bg); }
-.feeding-rank-meter span { display: block; height: 100%; border-radius: inherit; background: var(--color-primary); }
-.feeding-care-panel { margin-bottom: 14px; }
-.feeding-care-summary { margin-top: 8px; }
-.feeding-care-row { padding: 8px 0; font-size: 13px; }
-.feeding-care-row + .feeding-care-row { border-top: 0.5px solid var(--border-warm); }
-.feeding-care-row:last-child { padding-bottom: 0; }
-.feeding-care-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.feeding-care-row.is-empty { color: var(--text-muted); }
-.feeding-care-label { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-.feeding-care-label .ui-icon { margin: 0; }
-.feeding-care-count { flex: none; font-weight: var(--weight-semibold); white-space: nowrap; }
-.feeding-care-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.feeding-care-tags span {
-  padding: 2px 8px; border-radius: var(--radius-pill); background: var(--status-neutral-bg);
-  color: var(--text-main); font-size: 12px; overflow-wrap: anywhere;
-}
+@media (prefers-reduced-motion: reduce) { .feeding-care-arrow { transition: none; } }
 
 /* Stock entry sheet */
 #itemModalBackdrop .stock-form-sheet {

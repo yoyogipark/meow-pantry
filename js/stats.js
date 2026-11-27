@@ -766,69 +766,101 @@
         foodHtml = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">近 30 天暂无普通食品记录</div>';
       } else {
         var foods = new Map();
-        var counts = { dry: 0, can: 0, other: 0 };
+        var counts = { dry: 0, can: 0, freeze: 0, other: 0 };
+        var labels = { dry: '猫粮', can: '湿粮', freeze: '冻干', other: '其他' };
         r30.food.forEach(function (log) {
-          counts[Object.hasOwn(counts, log.category) ? log.category : 'other'] += 1;
+          var category = Object.hasOwn(counts, log.category) ? log.category : 'other';
+          counts[category] += 1;
           var product = Domain.resolveLogProduct(log, true);
-          var key = Domain.getProductGroupKey(product);
+          var key = category + ':' + Domain.getProductGroupKey(product);
           if (product === log && log.itemId) key = JSON.stringify([key, log.itemId]);
           var row = foods.get(key);
           if (!row) {
-            row = { brand: product.brand, name: product.name, spec: Utils.formatItemSpec(product), category: product.category, count: 0 };
+            row = { brand: product.brand, name: product.name, spec: Utils.formatItemSpec(product), category: category, count: 0 };
             foods.set(key, row);
           }
           row.count += 1;
         });
-        var total = r30.food.length;
-        var ratioKeys = ['dry', 'can', 'other'];
+        var total = Object.values(counts).reduce(function (sum, count) { return sum + count; }, 0);
+        var countUnit = total === r30.food.length ? '顿' : '次喂食';
+        var ratioKeys = ['dry', 'can', 'freeze', 'other'].filter(function (key) { return counts[key] > 0; });
         var legend = ratioKeys.map(function (key) {
-          var label = key === 'other' ? '其他' : MP.CATEGORIES[key].label;
           var percent = (counts[key] / total * 100).toLocaleString('zh-CN', { maximumFractionDigits: 1 });
-          return '<span class="feeding-ratio-' + key + '">' + label + ' ' +
-            Utils.formatQuantity(counts[key], '顿') + ' · ' + percent + '%</span>';
+          return '<span class="feeding-ratio-' + key + '">' + labels[key] + ' ' +
+            Utils.formatQuantity(counts[key], countUnit) + ' · ' + percent + '%</span>';
         }).join('');
         var segments = ratioKeys.map(function (key) {
-          return counts[key] ? '<span class="feeding-ratio-' + key + '" style="flex-grow:' + counts[key] + '"></span>' : '';
+          return '<span class="feeding-ratio-' + key + '" style="flex-grow:' + counts[key] + '"></span>';
         }).join('');
-        var rankedFoods = Array.from(foods.values()).sort(function (a, b) { return b.count - a.count; }).slice(0, 3);
-        var rows = rankedFoods.map(function (food, index) {
-          var title = Utils.escapeHtml(food.name + (food.spec ? ' (' + food.spec + ')' : ''));
-          return '<li><span class="feeding-rank">' + Utils.formatNumber(index + 1) + '</span>' +
-            '<span class="feeding-rank-thumb" aria-hidden="true">' + Utils.getCategoryIcon(food.category) + '</span>' +
-            '<span class="feeding-rank-product">' +
-            (food.brand ? '<span class="feeding-rank-brand">' + Utils.escapeHtml(food.brand) + '</span>' : '') +
-            '<span class="feeding-rank-name" title="' + title + '">' + title + '</span></span>' +
-            '<span class="feeding-rank-count">' + Utils.formatQuantity(food.count, '顿') +
-            '<span class="feeding-rank-meter" aria-hidden="true"><span style="width:' +
-            food.count / rankedFoods[0].count * 100 + '%"></span></span></span></li>';
+        var rankedFoods = Array.from(foods.values());
+        var groups = ratioKeys.map(function (key) {
+          var rows = rankedFoods.filter(function (food) { return food.category === key; })
+            .sort(function (a, b) { return b.count - a.count; });
+          function renderFood(food) {
+            var brand = food.brand && !['未命名', '未命名品牌'].includes(food.brand) ? food.brand : '';
+            var full = [brand, food.name, food.spec].filter(Boolean).join(' · ');
+            return '<li><details class="feeding-rank-detail"><summary><span class="feeding-rank-line"><span class="feeding-rank-product">' +
+              (brand ? '<span class="feeding-rank-brand">' + Utils.escapeHtml(brand) + '</span>' : '') +
+              '<span class="feeding-rank-name">' + Utils.escapeHtml(food.name) + '</span>' +
+              (food.spec ? '<span class="feeding-rank-spec">' + Utils.escapeHtml(food.spec) + '</span>' : '') +
+              '</span><span class="feeding-rank-count">' + Utils.formatQuantity(food.count, countUnit) + '</span></span>' +
+              '<span class="feeding-rank-meter" aria-hidden="true"><span style="width:' +
+              food.count / counts[key] * 100 + '%"></span></span></summary>' +
+              '<div class="feeding-rank-full">' + Utils.escapeHtml(full) + '</div></details></li>';
+          }
+          return '<section class="feeding-rank-group feeding-ratio-' + key + '"><h3>' + labels[key] + '常喂</h3>' +
+            '<ul class="feeding-rank-list">' + rows.slice(0, 2).map(renderFood).join('') + '</ul>' +
+            (rows.length > 2 ? '<details class="feeding-rank-more"><summary><span class="feeding-more-open">查看全部</span><span class="feeding-more-close">收起</span></summary>' +
+              '<ul class="feeding-rank-list">' + rows.slice(2).map(renderFood).join('') + '</ul></details>' : '') + '</section>';
         }).join('');
         foodHtml = '<div class="feeding-ratio-bar" aria-hidden="true">' + segments + '</div>' +
-          '<div class="feeding-ratio-legend">' + legend + '</div>' +
-          '<h3 class="feeding-rank-title">喂食频次 TOP 3</h3><ol class="feeding-rank-list">' + rows + '</ol>';
+          '<div class="feeding-ratio-legend">' + legend + '</div>' + groups;
       }
     }
 
-    function renderCareSummary(logs, label, icon) {
+    function renderCareSummary(logs, label, kind, icon) {
       var counts = new Map();
       logs.forEach(function (log) {
-        var product = Domain.resolveLogProduct(log);
-        var name = [product.brand, product.name].filter(Boolean).join(' · ');
-        counts.set(name, (counts.get(name) || 0) + 1);
+        var product = kind === 'nursing' ? null : Domain.resolveLogProduct(log);
+        var names = kind === 'nursing'
+          ? (log.careProjects && log.careProjects.length ? log.careProjects : [log.careOther || '护理'])
+          : [product.name];
+        names.forEach(function (name) {
+          var entry = counts.get(name);
+          if (!entry) {
+            var brand = product && product.brand;
+            if (!brand || ['未命名', '未命名品牌'].includes(brand)) brand = log.brand;
+            if (!brand || ['未命名', '未命名品牌'].includes(brand)) brand = '';
+            entry = { name: name, summary: kind === 'med' && brand ? brand + ' ' + name : name, count: 0 };
+            counts.set(name, entry);
+          }
+          entry.count += 1;
+        });
       });
-      var tags = Array.from(counts, function (entry) {
-        return '<span>' + Utils.escapeHtml(entry[0]) + ' ×' + Utils.formatNumber(entry[1]) + '</span>';
+      var entries = Array.from(counts.values()).sort(function (a, b) { return b.count - a.count; });
+      var count = entries.reduce(function (sum, entry) { return sum + entry.count; }, 0);
+      var summary = entries.slice(0, 2).map(function (entry) {
+        return Utils.escapeHtml(entry.summary) + ' ' + Utils.formatNumber(entry.count);
+      }).join(' · ') || '暂无记录';
+      var heading = '<span class="feeding-care-icon">' + icon + '</span><span class="feeding-care-main">' +
+        '<span class="feeding-care-label">' + label + '</span><span class="feeding-care-summary-line"><span class="feeding-care-preview">' +
+        summary + '</span>' + (entries.length > 2 ? '<span class="feeding-care-extra"> · 另' + Utils.formatQuantity(entries.length - 2, '项') + '</span>' : '') +
+        '</span></span><span class="feeding-care-count">' + Utils.formatQuantity(count, '次') + '</span>' +
+        (count ? '<span class="feeding-care-arrow" aria-hidden="true"></span>' : '');
+      var className = 'feeding-care-row feeding-care-' + kind;
+      if (!count) return '<div class="' + className + '"><div class="feeding-care-heading">' + heading + '</div></div>';
+      var rows = entries.map(function (entry) {
+        return '<li><span>' + Utils.escapeHtml(entry.name) + '</span><span>' + Utils.formatQuantity(entry.count, '次') + '</span></li>';
       }).join('');
-      return '<div class="feeding-care-row' + (logs.length ? '' : ' is-empty') + '">' +
-        '<div class="feeding-care-heading"><span class="feeding-care-label">' + icon + label + '</span>' +
-        '<span class="feeding-care-count">' + Utils.formatQuantity(logs.length, '次') + '</span></div>' +
-        (tags ? '<div class="feeding-care-tags">' + tags + '</div>' : '') + '</div>';
+      return '<details class="' + className + '"><summary class="feeding-care-heading">' + heading +
+        '</summary><ul class="feeding-care-items">' + rows + '</ul></details>';
     }
 
     prefBox.innerHTML = foodHtml;
     document.getElementById('recent30CareBox').innerHTML =
-      renderCareSummary(r30.supp, '营养品', Utils.getCategoryIcon('supp', 20)) +
-      renderCareSummary(r30.med, '用药', Utils.uiIcon('stethoscope', 20)) +
-      renderCareSummary(r30.nursing, '护理', Utils.uiIcon('clipboard-copy', 20));
+      renderCareSummary(r30.med, '用药', 'med', Utils.uiIcon('pill', 16)) +
+      renderCareSummary(r30.nursing, '护理', 'nursing', Utils.uiIcon('sparkles', 16)) +
+      renderCareSummary(r30.supp, '营养品', 'supp', Utils.uiIcon('bottle', 16));
 
     // ==================== SUB-VIEW 3B: BRAND DEEP ARCHIVE (Filterable by Food / Supp / Med) ====================
     var bScope = st.brandScopeFilter || 'all';
@@ -895,12 +927,12 @@
     document.querySelectorAll('#brandCurrencyBar [data-brand-currency]').forEach(function (button) {
       button.setAttribute('aria-pressed', String(button.getAttribute('data-brand-currency') === primaryCurrency));
     });
-    document.getElementById('brandSortLabel').textContent = sortingStock ? '按在库款数排序' : '按累计购入排序';
-    document.querySelector('#brandSortBtn span').textContent = sortingStock ? '在库款数' : '累计购入';
+    document.querySelector('#brandSortBtn span').textContent = sortingStock ? '排序：在库款数' : '排序：累计购入';
     document.getElementById('brandSortBtn').setAttribute('aria-label', sortingStock
       ? '当前按在库款数排序，点击切换至累计购入' : '当前按累计购入排序，点击切换至在库款数');
     document.getElementById('brandCurrencyNote').textContent =
-      '占比按全部品牌' + (primaryCurrency === 'JPY' ? '日元' : '人民币') + '累计购入计算，不含其他币种';
+      '进度条表示' + (bScope === 'all' ? '' : '当前分类购入额') + '占全部' +
+      (primaryCurrency === 'JPY' ? '日元' : '人民币') + '购入额的比例';
     document.getElementById('brandTotalCountBadge').textContent = '共 ' + Utils.formatQuantity(brandNames.length, '个品牌');
     var brandEl = document.getElementById('brandStatsList');
     var showAllBtn = document.getElementById('brandShowAllBtn');
@@ -915,7 +947,7 @@
     }
     function brandAmount(amount, currency) {
       return (currency === 'JPY' ? 'JP¥' : '¥') +
-        amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\.00$/, '');
+        amount.toLocaleString('en-US', { minimumFractionDigits: currency === 'JPY' ? 0 : 2, maximumFractionDigits: currency === 'JPY' ? 0 : 2 });
     }
     if (brandNames.length === 0) {
       brandEl.innerHTML = '<div class="brand-list-empty">' +

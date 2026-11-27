@@ -2621,20 +2621,20 @@ async function run() {
   brandScope('all');
   assert.equal(el('recent30CountBadge').textContent, '3顿');
   assert.match(el('recent30PrefBox').querySelector('.feeding-ratio-legend').textContent, /湿粮 2顿 · 66.7%/);
-  assert.equal(el('recent30PrefBox').querySelector('.feeding-rank-name').textContent, '湿粮甲');
-  assert.equal(el('recent30PrefBox').querySelector('.feeding-rank-brand').textContent, '测试牌');
+  assert.equal(el('recent30PrefBox').querySelector('.feeding-ratio-can .feeding-rank-name').textContent, '湿粮甲');
+  assert.equal(el('recent30PrefBox').querySelector('.feeding-ratio-can .feeding-rank-brand').textContent, '测试牌');
   assert.equal(el('recent30PrefBox').querySelector('.feeding-care-summary'), null);
   assert.deepEqual(Array.from(el('recent30CareBox').querySelectorAll('.feeding-care-count'), node => node.textContent),
-    ['0次', '1次', '0次']);
+    ['1次', '0次', '0次']);
   const recentFoodAndMed = state.logs.slice();
   state.logs.push(domain.sanitizeLog({ id: 'recent-supp', date: today, category: 'supp', brand: '营养牌', name: '营养粉' }),
     domain.sanitizeLog({ id: 'recent-nursing', date: today, category: 'med', careType: 'nursing', careProjects: ['梳毛', '剪指甲'] }),
     domain.sanitizeLog({ id: 'old-nursing', date: utils.shiftDaysFromDate(today, -30), category: 'med', careType: 'nursing', careProjects: ['洗澡'] }));
   ui.renderAll();
   assert.deepEqual(Array.from(el('recent30CareBox').querySelectorAll('.feeding-care-count'), node => node.textContent),
-    ['1次', '1次', '1次']);
-  assert.match(el('recent30CareBox').textContent, /营养牌 · 营养粉 ×1/);
-  assert.match(el('recent30CareBox').textContent, /梳毛、剪指甲 ×1/);
+    ['1次', '2次', '1次']);
+  assert.match(el('recent30CareBox').textContent, /营养粉 1/);
+  assert.match(el('recent30CareBox').textContent, /梳毛 1 · 剪指甲 1/);
   assert.doesNotMatch(el('recent30CareBox').textContent, /洗澡/);
   assert.equal(el('recent30CountBadge').textContent, '3顿');
   state.logs = state.logs.filter(entry => entry.id === 'recent-nursing');
@@ -2642,14 +2642,16 @@ async function run() {
   assert.equal(el('recent30CountBadge').textContent, '0顿');
   assert.match(el('recent30PrefBox').textContent, /暂无普通食品记录/);
   assert.deepEqual(Array.from(el('recent30CareBox').querySelectorAll('.feeding-care-count'), node => node.textContent),
-    ['0次', '0次', '1次']);
+    ['0次', '2次', '0次']);
   state.logs = recentFoodAndMed;
   ui.renderAll();
   assert.equal(el('brandStatsList').querySelector('.brand-list-spend').textContent, '¥128.50');
+  assert.equal(el('brandCurrencyNote').textContent, '进度条表示占全部人民币购入额的比例');
   const brandCurrency = currency => el('brandCurrencyBar').querySelector('[data-brand-currency="' + currency + '"]').click();
   assert.equal(el('brandCurrencyBar').querySelector('[data-brand-currency="CNY"]').getAttribute('aria-pressed'), 'true');
   brandCurrency('JPY');
   assert.equal(el('brandStatsList').querySelector('.brand-list-spend').textContent, 'JP¥5,754');
+  assert.equal(el('brandCurrencyNote').textContent, '进度条表示占全部日元购入额的比例');
   assert.equal(el('brandCurrencyBar').querySelector('[data-brand-currency="JPY"]').getAttribute('aria-pressed'), 'true');
   assert.doesNotMatch(el('brandStatsList').textContent, /128\.50/);
   brandCurrency('CNY');
@@ -2657,7 +2659,7 @@ async function run() {
   const rankingBrands = Array.from({ length: 7 }, (_, index) =>
     make('ranking-' + index, 1, '杯', { brand: '品牌' + index, name: '食品' + index, price: (index + 1) * 10, currency: 'CNY' }));
   rankingBrands.push(make('ranking-med', 1, '片', { brand: '品牌0', category: 'med', name: '药品', price: 20, currency: 'CNY' }),
-    make('ranking-jpy', 1, '杯', { brand: '日元品牌', price: 9000, currency: 'JPY' }));
+    make('ranking-jpy', 1, '杯', { brand: '日元品牌', price: 9000.6, currency: 'JPY' }));
   reset(...rankingBrands);
   state.settings.defaultCurrency = 'CNY';
   state.brandSort = 'spend';
@@ -2665,7 +2667,7 @@ async function run() {
   let brandButtons = Array.from(el('brandStatsList').querySelectorAll('[data-brand-toggle]'));
   assert.equal(brandButtons.length, 6);
   assert.equal(brandButtons[0].dataset.brandToggle, '品牌6');
-  assert.equal(brandButtons[0].querySelector('.brand-list-spend').textContent, '¥70');
+  assert.equal(brandButtons[0].querySelector('.brand-list-spend').textContent, '¥70.00');
   assert.match(brandButtons[0].querySelector('.brand-spend-track').getAttribute('aria-label'), /23\.33%/);
   assert.equal(el('brandShowAllBtn').textContent, '显示全部 7个品牌');
   brandButtons[0].click();
@@ -2680,19 +2682,22 @@ async function run() {
   brandCurrency('JPY');
   assert.equal(el('brandStatsList').querySelectorAll('[data-brand-toggle]').length, 1);
   assert.equal(el('brandStatsList').querySelector('[data-brand-toggle]').dataset.brandToggle, '日元品牌');
-  assert.equal(el('brandStatsList').querySelector('.brand-list-spend').textContent, 'JP¥9,000');
+  assert.equal(el('brandStatsList').querySelector('.brand-list-spend').textContent, 'JP¥9,001');
   assert.match(el('brandStatsList').querySelector('.brand-spend-track').getAttribute('aria-label'), /100%/);
   assert.equal(el('brandShowAllBtn').getAttribute('aria-expanded'), 'false');
   assert.ok(el('brandShowAllBtn').classList.contains('hidden-view'));
   brandCurrency('CNY');
   el('brandSortBtn').click();
-  assert.equal(el('brandSortLabel').textContent, '按在库款数排序');
+  assert.equal(el('brandSortBtn').textContent.trim(), '排序：在库款数');
+  assert.equal(el('brandCurrencyNote').textContent, '进度条表示占全部人民币购入额的比例');
   assert.match(el('brandSortBtn').getAttribute('aria-label'), /当前按在库款数排序/);
   assert.equal(el('brandStatsList').querySelector('[data-brand-toggle]').dataset.brandToggle, '品牌0');
   assert.equal(el('brandStatsList').querySelectorAll('[data-brand-toggle]').length, 6);
   assert.equal(el('brandShowAllBtn').getAttribute('aria-expanded'), 'false');
   brandScope('med');
   assert.equal(el('brandStatsList').querySelectorAll('[data-brand-toggle]').length, 1);
+  assert.equal(el('brandCurrencyNote').textContent, '进度条表示当前分类购入额占全部人民币购入额的比例');
+  assert.match(el('brandStatsList').querySelector('.brand-spend-track').getAttribute('aria-label'), /6\.67%/);
   assert.ok(el('brandShowAllBtn').classList.contains('hidden-view'));
   state.settings.defaultCurrency = 'JPY';
   state.brandCurrency = '';
@@ -2712,7 +2717,7 @@ async function run() {
   assert.deepEqual(Array.from(el('brandScopeBar').querySelectorAll('button'), button => button.textContent.trim()),
     ['全部 2', '食品 2', '营养品 0', '药品 0', '日用品 0']);
   let mixedBrand = el('brandStatsList').querySelector('[data-brand-toggle="双币品牌"]');
-  assert.equal(mixedBrand.querySelector('.brand-list-spend').textContent, '¥20');
+  assert.equal(mixedBrand.querySelector('.brand-list-spend').textContent, '¥20.00');
   mixedBrand.click();
   assert.match(mixedBrand.nextElementSibling.textContent, /余 2袋/);
   assert.equal(el('brandStatsList').querySelector('[data-brand-toggle="无价格品牌"] .brand-list-spend').textContent, '暂无金额');
@@ -2743,6 +2748,68 @@ async function run() {
   ui.syncModalCurrencyUI('CNY');
   assert.equal(el('priceCurrencyUnit').value, 'CNY');
   assert.equal(el('fieldPrice').step, '0.01');
+  reset();
+  state.logs = [];
+  ui.renderAll();
+  assert.equal(el('recent30CountBadge').textContent, '0顿');
+  assert.match(el('recent30PrefBox').textContent, /暂无喂食记录/);
+  assert.deepEqual(Array.from(el('recent30CareBox').querySelectorAll('.feeding-care-count'), node => node.textContent),
+    ['0次', '0次', '0次']);
+  assert.equal(el('recent30CareBox').querySelectorAll('details, .feeding-care-arrow').length, 0);
+
+  const longCareName = '很长的药品名称'.repeat(12);
+  state.logs = [
+    ...['干粮一', '干粮二', '干粮三'].map((name, index) =>
+      domain.sanitizeLog({ id: 'rank-dry-' + index, date: today, category: 'dry', name, brand: '品牌' })),
+    domain.sanitizeLog({ id: 'rank-freeze', date: today, category: 'freeze', name: '冻干' }),
+    ...[longCareName, '药品二', '药品三'].map((name, index) =>
+      domain.sanitizeLog({ id: 'care-med-' + index, date: today, category: 'med', name, brand: index === 1 ? '药品牌' : '' })),
+    domain.sanitizeLog({ id: 'care-med-repeat', date: today, category: 'med', name: '药品二', brand: '药品牌' }),
+    domain.sanitizeLog({ id: 'care-projects', date: today, category: 'med', careType: 'nursing', careProjects: ['梳毛', '刷牙', '剪指甲'] })
+  ];
+  ui.renderAll();
+  const foodBox = el('recent30PrefBox');
+  assert.equal(el('recent30CountBadge').textContent, '4顿');
+  assert.equal(foodBox.querySelectorAll('.feeding-ratio-bar span').length, 2);
+  assert.match(foodBox.querySelector('.feeding-ratio-legend').textContent, /猫粮 3顿 · 75%/);
+  assert.match(foodBox.querySelector('.feeding-ratio-legend').textContent, /冻干 1顿 · 25%/);
+  assert.equal(foodBox.querySelector('.feeding-ratio-can'), null);
+  assert.equal(foodBox.querySelector('.feeding-rank-group.feeding-ratio-freeze .feeding-rank-spec'), null);
+  const dryGroup = foodBox.querySelector('.feeding-rank-group.feeding-ratio-dry');
+  assert.equal(dryGroup.querySelectorAll(':scope > .feeding-rank-list li').length, 2);
+  assert.equal(dryGroup.querySelector('.feeding-rank-meter span').style.width, '33.33333333333333%');
+  const foodDetail = dryGroup.querySelector('.feeding-rank-detail');
+  assert.equal(foodDetail.open, false);
+  foodDetail.querySelector('summary').click();
+  assert.equal(foodDetail.open, false);
+  const truncatedName = foodDetail.querySelector('.feeding-rank-name');
+  Object.defineProperties(truncatedName, {
+    clientWidth: { configurable: true, value: 40 },
+    scrollWidth: { configurable: true, value: 80 }
+  });
+  foodDetail.querySelector('summary').click();
+  assert.equal(foodDetail.open, true);
+  assert.equal(foodDetail.querySelector('.feeding-rank-full').textContent, '品牌 · 干粮一');
+  foodDetail.querySelector('summary').click();
+  assert.equal(foodDetail.open, false);
+  const moreFoods = dryGroup.querySelector('.feeding-rank-more');
+  assert.equal(moreFoods.open, false);
+  moreFoods.querySelector('summary').click();
+  assert.equal(moreFoods.open, true);
+  assert.match(moreFoods.textContent, /干粮三/);
+  const medication = el('recent30CareBox').querySelector('.feeding-care-med');
+  assert.equal(medication.open, false);
+  assert.match(medication.querySelector('.feeding-care-preview').textContent, /^药品牌 药品二 2/);
+  assert.doesNotMatch(medication.querySelector('.feeding-care-preview').textContent, /未命名/);
+  assert.equal(medication.querySelector('.feeding-care-count').textContent, '4次');
+  assert.match(medication.querySelector('.feeding-care-extra').textContent, /另1项/);
+  medication.querySelector('summary').click();
+  assert.equal(medication.open, true);
+  assert.equal(medication.querySelectorAll('.feeding-care-items li')[1].firstElementChild.textContent, longCareName);
+  assert.equal(el('recent30CareBox').querySelector('.feeding-care-nursing .feeding-care-count').textContent, '3次');
+  assert.equal(el('recent30CareBox').querySelector('.feeding-care-nursing .feeding-care-summary-line').textContent,
+    '梳毛 1 · 刷牙 1 · 另1项');
+
   const nearDate = utils.shiftDaysFromToday(1);
   reset(make('near-wet-a', 2, '杯', { name: '同名湿粮', spec: '50g', expDate: nearDate }),
     make('near-wet-b', 1, '杯', { name: '同名湿粮', spec: '50g', expDate: nearDate }),
@@ -2761,7 +2828,9 @@ async function run() {
   state.items = state.items.filter(item => item.id !== 'near-wet-b');
   ui.renderAll();
   assert.deepEqual(Array.from(el('recent30PrefBox').querySelectorAll('.feeding-rank-name'), node => node.textContent),
-    ['同名湿粮 (50g)', '同名湿粮 (85g)']);
+    ['同名湿粮', '同名湿粮']);
+  assert.deepEqual(Array.from(el('recent30PrefBox').querySelectorAll('.feeding-rank-spec'), node => node.textContent),
+    ['50g', '85g']);
   assert.match(el('recent30PrefBox').querySelector('.feeding-rank-name').closest('li').textContent, /2顿/);
 
   const oldBundle = make('old-bundle', 3, '罐', {
