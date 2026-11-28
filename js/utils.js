@@ -302,6 +302,37 @@
     return { text: Utils.formatQuantity(Math.abs(rounded), '天'), tone: tone };
   };
 
+  Utils.formatExpiryCountdown = function (days) {
+    if (!Number.isFinite(days)) return '—';
+    var rounded = Math.round(days);
+    if (days < 0) return '已过期 ' + Utils.formatNumber(Math.abs(rounded)) + ' 天';
+    return rounded === 0 ? '今天到期' : '还有 ' + Utils.formatNumber(rounded) + ' 天到期';
+  };
+
+  Utils.formatExpiryShort = function (days, opening) {
+    if (!Number.isFinite(days)) return '—';
+    var prefix = opening ? '开封' : '';
+    var rounded = Math.round(days);
+    if (days < 0) return prefix + '过期 ' + Utils.formatNumber(Math.abs(rounded)) + ' 天';
+    return rounded === 0 ? prefix + '今天到期' : prefix + '剩 ' + Utils.formatNumber(rounded) + ' 天';
+  };
+
+  Utils.formatOpeningExpiry = function (days) {
+    if (!Number.isFinite(days)) return '—';
+    var rounded = Math.round(days);
+    if (days < 0) return '开封保鲜期已过 ' + Utils.formatNumber(Math.abs(rounded)) + ' 天';
+    return rounded === 0 ? '开封保鲜期今天到期' : '开封保鲜期剩 ' + Utils.formatNumber(rounded) + ' 天';
+  };
+
+  Utils.formatStockHistoryNote = function (action, note) {
+    if (typeof note !== 'string') return '';
+    if ((action === 'create' || action === 'restock') &&
+        /^(新录入库存批次|同款复购新建批次) · 到期 \d{4}-\d{2}-\d{2}(?= · |$)/.test(note)) {
+      return note.replace(' · 到期 ', ' · 到期日期 ');
+    }
+    return note;
+  };
+
   Utils.formatListDate = function (value, fallback) {
     return Utils.normalizeDateStr(value) || (fallback || '—');
   };

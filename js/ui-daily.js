@@ -200,10 +200,10 @@
       candidates.slice(0, 5).map(function (item) {
         var sameName = candidates.filter(function (candidate) { return candidate.name === item.name; });
         var suffix = sameName.length > 1
-          ? ' · 批次 ' + (sameName.indexOf(item) + 1) + (item.batchCode ? ' · 购入渠道 ' + item.batchCode : item.expDate ? ' · 到期 ' + item.expDate : item.location ? ' · ' + item.location : '')
+          ? ' · 批次 ' + (sameName.indexOf(item) + 1) + (item.batchCode ? ' · 购入渠道 ' + item.batchCode : item.expDate ? ' · 到期日期 ' + item.expDate : item.location ? ' · ' + item.location : '')
           : '';
         if (Domain.stockExpiryEntries(item).some(function (entry) { return entry.evaluation.status === 'expired'; })) {
-          suffix += ' · 含过期开封件';
+          suffix += ' · 含已过期开封件';
         }
         return '<button type="button" class="pill-chip" data-quick-feed-item="' + esc(item.id) + '">' + esc(item.name + suffix) + '</button>';
       }).join('') + '</div></div>' : '';

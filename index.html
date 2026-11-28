@@ -13,8 +13,8 @@
   <link rel="manifest" href="./manifest.json">
   <link id="appleTouchIconLink" data-keep-file="1" rel="apple-touch-icon" href="./icon-192.png">
   <link rel="icon" type="image/png" href="./icon-192.png">
-  <link rel="stylesheet" href="./css/tokens.css?v=351">
-  <link rel="stylesheet" href="./css/styles.css?v=351">
+  <link rel="stylesheet" href="./css/tokens.css?v=370">
+  <link rel="stylesheet" href="./css/styles.css?v=370">
 </head>
 <body>
   <svg class="icon-definitions" width="0" height="0" aria-hidden="true">
@@ -125,7 +125,7 @@
           <div id="countExpiringPieces" class="stock-piece-count">共 0件</div>
         </button>
         <button type="button" data-status-filter="expired" class="metric-card status-card is-zero" id="statCardExpired">
-          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5m0 4h.01"/></svg><span>过期批次</span></span>
+          <span class="status-card-label"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5m0 4h.01"/></svg><span>已过期批次</span></span>
           <div id="countExpired" class="status-card-count is-zero">0</div>
           <div id="countExpiredPieces" class="stock-piece-count">共 0件</div>
         </button>
@@ -169,8 +169,8 @@
             <option value="finished_desc" hidden>最近核销</option>
             <option value="supply_days_asc" hidden>最快用完</option>
             <option value="supply_arrival_desc" hidden>最近入库</option>
-            <option value="exp_asc">先到期先吃</option>
-            <option value="exp_desc">保质期最长</option>
+            <option value="exp_asc">最早到期优先</option>
+            <option value="exp_desc">最晚到期优先</option>
             <option value="prod_desc">生产日期最新</option>
             <option value="qty_desc">库存量最多</option>
             <option value="brand_asc">按品牌排序</option>
@@ -184,7 +184,7 @@
             </button>
           </div>
         </div>
-        <p id="pantryStatusHint" class="pantry-status-hint">同一批可同时有临期和过期件。再点一次选中的状态卡，可取消筛选。</p>
+        <p id="pantryStatusHint" class="pantry-status-hint">同一批可同时有临期和已过期件。再点一次选中的状态卡，可取消筛选。</p>
         <div id="activeFilterSummaryBar" class="hidden-view" style="margin-top:8px;padding-top:7px;border-top:1px solid var(--status-neutral-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px;">
           <span id="filterResultCountText" role="status" style="color:var(--text-muted);font-weight:600;">显示 0 批</span>
           <button id="clearPantryFiltersBtn" type="button" style="border:none;background:var(--accent-soft);color:var(--accent-strong);padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">✕ 清除筛选</button>
@@ -410,11 +410,10 @@
         </section>
 
         <!-- Brand Deep Archive Directory -->
-        <div class="ios-card stats-panel">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;">
+        <div class="ios-card stats-panel brand-archive-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
             <div>
               <h2 class="stats-panel-title"><svg class="ui-icon" width="20" height="20" aria-hidden="true"><use href="#ui-tag"></use></svg>品牌囤货档案</h2>
-              <p class="stats-panel-description">点击品牌查看商品明细</p>
             </div>
             <span id="brandTotalCountBadge" style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--status-neutral-bg);padding:3px 9px;border-radius:999px;white-space:nowrap;">共 0 个品牌</span>
           </div>
@@ -792,11 +791,11 @@
         <div id="stockFormDates" class="stock-form-dates">
           <div id="stockDateHeading" class="stock-form-date-heading">
             <span class="stock-form-date-label">日期 <span id="stockDateRequired" class="stock-form-required">*</span></span>
-            <span id="stockDateHint" class="stock-form-note">填写过期日期，或生产日期加保质期</span>
+            <span id="stockDateHint" class="stock-form-note">填写到期日期，或生产日期加保质期</span>
           </div>
           <div id="stockDateMode" role="group" aria-label="日期类型">
             <button type="button" data-stock-date="production">生产日期</button>
-            <button type="button" data-stock-date="expiry">过期日期</button>
+            <button type="button" data-stock-date="expiry">到期日期</button>
           </div>
           <div class="stock-form-grid stock-form-two stock-form-date-inputs">
             <div id="stockProductionField">
@@ -804,7 +803,7 @@
               <div class="ios-date-wrap"><span id="fieldProdDateText" class="ios-date-display">选择日期</span><svg class="stock-date-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#stock-calendar-icon"></use></svg><input id="fieldProdDate" type="date"></div>
             </div>
             <div id="stockExpiryField">
-              <label for="fieldExpDate">过期日期</label>
+              <label for="fieldExpDate">到期日期</label>
               <div class="ios-date-wrap"><span id="fieldExpDateText" class="ios-date-display">选择日期</span><svg class="stock-date-icon" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#stock-calendar-icon"></use></svg><input id="fieldExpDate" type="date"></div>
             </div>
           </div>
@@ -831,7 +830,7 @@
             <span>常用保质期</span>
             <div id="stockShelfPresetOptions" class="stock-form-preset-options"></div>
           </div>
-          <button id="calcProdFromExpBtn" type="button" class="stock-form-link">根据过期日期反推生产日期</button>
+          <button id="calcProdFromExpBtn" type="button" class="stock-form-link">根据到期日期反推生产日期</button>
           <span id="dateCalcHint" class="stock-form-note" role="status"></span>
         </div>
 
@@ -1087,6 +1086,14 @@
           </select>
           <div id="feedMedicationOutcomeChoices" class="feed-outcome-choices" role="group" aria-labelledby="feedMedicationOutcomeLabel"></div>
         </div>
+        <label id="feedMedicationUsageModeWrap" class="hidden-view" for="feedMedicationUsageMode">
+          用药方式
+          <select id="feedMedicationUsageMode" class="ios-input">
+            <option value="">请选择</option>
+            <option value="single">单次使用</option>
+            <option value="continuous">连续使用</option>
+          </select>
+        </label>
         <!-- Indoor Cat Low-Frequency Deworming / Medicine Reminder -->
         <div id="medNextReminderBox" class="hidden-view" style="padding:10px 12px;border-radius:12px;background:var(--ok-soft);border:1px solid var(--positive-border);">
           <div class="feed-reminder-fields" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -1186,7 +1193,7 @@
         <label>开封日期<input type="date" data-open-date-input></label>
         <div class="open-date-presets" aria-label="开封日期快捷选择"><button type="button" data-open-date-offset="0">今天</button><button type="button" data-open-date-offset="-1">昨天</button><button type="button" data-open-date-offset="-3">3天前</button><button type="button" data-open-date-offset="-7">1周前</button></div>
         <p class="open-date-error" data-open-date-error role="alert"></p>
-        <p class="open-date-warning hidden-view" data-open-date-warning role="status">按这个日期，开封保鲜期已过</p>
+        <p class="open-date-warning hidden-view" data-open-date-warning role="status">按这个日期，开封保鲜期已过期</p>
       </div>
       <button id="confirmFlavorOpenBtn" type="button" class="ios-btn ios-btn-primary flavor-open-confirm" disabled>确认开封</button>
     </div>
@@ -1213,11 +1220,19 @@
         <label>开封日期<input id="confirmOpenDateInput" type="date" data-open-date-input></label>
         <div class="open-date-presets" aria-label="开封日期快捷选择"><button type="button" data-open-date-offset="0">今天</button><button type="button" data-open-date-offset="-1">昨天</button><button type="button" data-open-date-offset="-3">3天前</button><button type="button" data-open-date-offset="-7">1周前</button></div>
         <p class="open-date-error" data-open-date-error role="alert"></p>
-        <p class="open-date-warning hidden-view" data-open-date-warning role="status">按这个日期，开封保鲜期已过</p>
+        <p class="open-date-warning hidden-view" data-open-date-warning role="status">按这个日期，开封保鲜期已过期</p>
       </div>
       <label id="confirmStockQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
         核销数量
         <select id="confirmStockQuantity" class="ios-input" style="margin-top:4px;"></select>
+      </label>
+      <label id="confirmMedicationUsageModeWrap" class="hidden-view" for="confirmMedicationUsageMode" style="display:block;margin-bottom:10px;font-size:12px;">
+        用药方式
+        <select id="confirmMedicationUsageMode" class="ios-input">
+          <option value="">请选择</option>
+          <option value="single">单次使用</option>
+          <option value="continuous">连续使用</option>
+        </select>
       </label>
       <label id="confirmDiscardQuantityWrap" class="hidden-view" style="display:block;margin-bottom:10px;font-size:12px;">
         <span id="confirmDiscardQuantityLabel">丢弃数量</span>
@@ -1225,7 +1240,7 @@
       </label>
       <fieldset id="confirmRestoreModeWrap" class="restore-mode-choices hidden-view">
         <legend>选择恢复方式</legend>
-        <label><input type="radio" name="confirmRestoreMode" value="merge" checked><span><strong>智能合并</strong><small>保留本机记录，尝试去重合并；遇到冲突会取消。</small></span></label>
+        <label><input type="radio" name="confirmRestoreMode" value="merge" checked><span><strong>智能合并</strong><small>保留本机记录，尝试去重合并；使用备份中的每日喂食量，其他设置保留本机值。遇到冲突会取消。</small></span></label>
         <label><input type="radio" name="confirmRestoreMode" value="replace"><span><strong>全量覆盖</strong><small>替换本机库存和记录；覆盖前会保存本地快照。</small></span></label>
       </fieldset>
       <label id="confirmExtraOptionWrap" class="hidden-view" style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:14px;border-radius:11px;background:var(--accent-soft);border:1px solid var(--accent-edge);cursor:pointer;">
@@ -1258,18 +1273,18 @@
   </div>
 
   <!-- Modular Local JS Bundle (Loaded in Deterministic Order, Zero Build Step Required on GitHub Pages) -->
-  <script src="./js/covers.js?v=351"></script>
-  <script src="./js/constants.js?v=351"></script>
-  <script src="./js/utils.js?v=351"></script>
-  <script src="./js/forecast.js?v=351"></script>
-  <script src="./js/domain.js?v=351"></script>
-  <script src="./js/storage.js?v=351"></script>
-  <script src="./js/stats.js?v=351"></script>
-  <script src="./js/modal.js?v=351"></script>
-  <script src="./js/ui.js?v=351"></script>
-  <script src="./js/ui-pantry.js?v=351"></script>
-  <script src="./js/ui-daily.js?v=351"></script>
-  <script src="./js/ui-settings.js?v=351"></script>
-  <script src="./js/app.js?v=351"></script>
+  <script src="./js/covers.js?v=370"></script>
+  <script src="./js/constants.js?v=370"></script>
+  <script src="./js/utils.js?v=370"></script>
+  <script src="./js/forecast.js?v=370"></script>
+  <script src="./js/domain.js?v=370"></script>
+  <script src="./js/storage.js?v=370"></script>
+  <script src="./js/stats.js?v=370"></script>
+  <script src="./js/modal.js?v=370"></script>
+  <script src="./js/ui.js?v=370"></script>
+  <script src="./js/ui-pantry.js?v=370"></script>
+  <script src="./js/ui-daily.js?v=370"></script>
+  <script src="./js/ui-settings.js?v=370"></script>
+  <script src="./js/app.js?v=370"></script>
 </body>
 </html>

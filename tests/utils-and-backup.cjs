@@ -29,6 +29,21 @@ for (const [days, label, tone] of [
   assert.equal(Utils.formatDays(days).text, label);
   assert.equal(Utils.formatDays(days).tone, tone);
 }
+for (const [days, label] of [[null, '—'], [-3, '已过期 3 天'], [0, '今天到期'], [7, '还有 7 天到期']]) {
+  assert.equal(Utils.formatExpiryCountdown(days), label);
+}
+for (const [days, packaging, opening, detail] of [
+  [null, '—', '—', '—'], [-3, '过期 3 天', '开封过期 3 天', '开封保鲜期已过 3 天'],
+  [0, '今天到期', '开封今天到期', '开封保鲜期今天到期'],
+  [7, '剩 7 天', '开封剩 7 天', '开封保鲜期剩 7 天']
+]) {
+  assert.equal(Utils.formatExpiryShort(days, false), packaging);
+  assert.equal(Utils.formatExpiryShort(days, true), opening);
+  assert.equal(Utils.formatOpeningExpiry(days), detail);
+}
+assert.equal(Utils.formatStockHistoryNote('create', '新录入库存批次 · 到期 2027-01-02 · 入库时已开封'),
+  '新录入库存批次 · 到期日期 2027-01-02 · 入库时已开封');
+assert.equal(Utils.formatStockHistoryNote('adjust', '手写备注 · 到期 2027-01-02'), '手写备注 · 到期 2027-01-02');
 
 assert.equal(Utils.normalizeDateStr('2024-2-29'), '2024-02-29');
 assert.equal(Utils.normalizeDateStr('2023-02-29'), '');

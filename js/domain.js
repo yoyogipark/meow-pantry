@@ -373,6 +373,16 @@
     clean.lastQuantity = Utils.round2(Math.max(0, Number(raw.lastQuantity) || 0));
     clean.lastEatenDate = Utils.normalizeDateStr(raw.lastEatenDate);
     clean.sourceBatchId = typeof raw.sourceBatchId === 'string' ? raw.sourceBatchId : '';
+    if (cat === 'med' && Array.isArray(raw.medicationUsageEvents)) {
+      clean.medicationUsageEvents = raw.medicationUsageEvents.filter(function (event) {
+        return event && typeof event.id === 'string' && event.id &&
+          ['single', 'continuous'].includes(event.mode) && Utils.normalizeDateStr(event.date) &&
+          Number.isFinite(event.quantity) && event.quantity > 0;
+      }).map(function (event) {
+        return { id: event.id, mode: event.mode, date: Utils.normalizeDateStr(event.date),
+          openedDate: Utils.normalizeDateStr(event.openedDate), quantity: event.quantity, pending: Boolean(event.pending) };
+      });
+    } else delete clean.medicationUsageEvents;
     return clean;
   };
 
@@ -382,6 +392,20 @@
     var name = String(log.name || '').trim();
     var amount = String(log.amount || '').trim();
     return log.itemId || (name && name !== '未命名') || amount ? 'medication' : 'nursing';
+  };
+
+  Domain.validMedicationUsageEvents = function (events) {
+    if (!Array.isArray(events)) return false;
+    var ids = new Set();
+    return events.every(function (event) {
+      if (!event || typeof event.id !== 'string' || !event.id.trim() || ids.has(event.id) ||
+          !['single', 'continuous'].includes(event.mode) || !event.date || Utils.normalizeDateStr(event.date) !== event.date ||
+          (event.openedDate && Utils.normalizeDateStr(event.openedDate) !== event.openedDate) ||
+          (event.pending !== undefined && typeof event.pending !== 'boolean') ||
+          !Number.isFinite(event.quantity) || event.quantity <= 0) return false;
+      ids.add(event.id);
+      return true;
+    });
   };
 
   Domain.nursingLabel = function (log) {
@@ -417,6 +441,8 @@
     clean.amount = String(raw.amount || (careType === 'nursing' ? '' : '1份')).trim();
     clean.note = String(raw.note || '').trim();
     clean.medicationOutcome = Domain.normalizeMedicationOutcome(raw.medicationOutcome);
+    if (cat === 'med' && ['single', 'continuous'].includes(raw.medicationUsageMode)) clean.medicationUsageMode = raw.medicationUsageMode;
+    else delete clean.medicationUsageMode;
     clean.reminderDays = Math.max(0, parseInt(raw.reminderDays, 10) || 0);
     clean.nextDueDate = Utils.normalizeDateStr(raw.nextDueDate);
     clean.reminderDone = Boolean(raw.reminderDone);
@@ -504,6 +530,8 @@
     archiveItem.feedUsagePerItem = activeItem.feedUsagePerItem;
     archiveItem.unit_spec_value = activeItem.unit_spec_value;
     archiveItem.unit_spec_unit = activeItem.unit_spec_unit;
+    if (activeItem.medicationUsageEvents) archiveItem.medicationUsageEvents = activeItem.medicationUsageEvents.map(function (event) { return Object.assign({}, event); });
+    else delete archiveItem.medicationUsageEvents;
     if (activeItem.subtype) archiveItem.subtype = activeItem.subtype;
     else delete archiveItem.subtype;
     archiveItem.unit = activeItem.unit;
@@ -581,7 +609,7 @@
     return true;
   };
 
-  Domain.recordConsumedUnits = function (target, amountConsumed, customDateStr, historyNote, adjustment) {
+  Domain.recordConsumedUnits = function (target, amountConsumed, customDateStr, historyNote, adjustment, medicationUsageMode) {
     if (!target) return 0;
     var curQty = Utils.round2(Number(target.quantity) || 0);
     if (curQty <= 0) return 0;
@@ -589,6 +617,8 @@
     if (used <= 0) return 0;
     var nextRem = Math.max(0, Utils.round2(curQty - used));
     var opDate = Utils.normalizeDateStr(customDateStr) || Utils.getTodayStr();
+    var actualOpenedDate = target.openedDate || '';
+    var actualRemaining = Number(target.openRemainFraction) || 0;
     var unitOpenedDate = target.openedDate || target.archivedOpenedDate || (adjustment === 'discard' ? '' : opDate);
 
     target.eatenCount = Utils.round2((Number(target.eatenCount) || 0) + used);
@@ -651,7 +681,7 @@
       target.openRemainFraction = 0;
     }
 
-    Domain.appendStockHistory({
+    var history = Domain.appendStockHistory({
       date: opDate,
       action: adjustment === 'discard' ? 'discard' : adjustment ? 'adjust' : 'consume',
       itemId: target.id,
@@ -665,7 +695,33 @@
       note: historyNote || (nextRem > 0 ? ('核销 ' + used + (target.unit || '件') + '，余 ' + nextRem + (target.unit || '件')) : '本批次已全部核销归档'),
       isSample: Boolean(target.isSample)
     });
+    if (target.category === 'med' && !adjustment && ['single', 'continuous'].includes(medicationUsageMode)) {
+      var previousEvents = (target.medicationUsageEvents || []).map(function (event) {
+        return actualRemaining > 0 && event.pending ? Object.assign({}, event, { pending: false }) : event;
+      });
+      var event = { id: history.id, mode: medicationUsageMode, date: opDate, openedDate: actualOpenedDate,
+        quantity: actualRemaining > 0 ? used - Math.min(1, used) * (1 - actualRemaining) : used, pending: false };
+      target.medicationUsageEvents = previousEvents.concat(event);
+      if (linkedArchive && nextRem > 0) Domain.copySharedMetadataToArchive(target, linkedArchive);
+      else if (nextRem > 0) {
+        var archive = state.items.find(function (item) { return item.sourceBatchId === target.id && item.quantity <= 0; });
+        if (archive) Domain.copySharedMetadataToArchive(target, archive);
+      }
+    }
     return used;
+  };
+
+  Domain.updateMedicationUsageMode = function (itemId, historyId, mode) {
+    if (!historyId) return;
+    state.items.filter(function (item) { return item.id === itemId || item.sourceBatchId === itemId; }).forEach(function (item) {
+      if (!item.medicationUsageEvents) return;
+      item.medicationUsageEvents = item.medicationUsageEvents.filter(function (event) {
+        if (event.id !== historyId && !event.id.startsWith(historyId + ':')) return true;
+        if (!['single', 'continuous'].includes(mode)) return false;
+        event.mode = mode;
+        return true;
+      });
+    });
   };
 
   // Fixed bug: properly clears finishedDate & recreates empty_<id> shadow archive if restoring final unit of a multi-unit batch!
@@ -729,6 +785,20 @@
           }));
           state.items.push(recreatedArc);
         }
+      }
+      if (target.medicationUsageEvents && lg.consumeHistoryId) {
+        var restoredUsage = dUnit - (restorePartial ? 1 - dFrac : 0);
+        target.medicationUsageEvents = target.medicationUsageEvents.flatMap(function (event) {
+          if (event.id !== lg.consumeHistoryId) return [event];
+          var remaining = event.quantity - restoredUsage;
+          return remaining > 1e-12 ? [Object.assign({}, event, { quantity: remaining })] : [];
+        })
+          .map(function (event) {
+            return restorePartial && Array.isArray(lg.medicationPendingIdsBefore) && lg.medicationPendingIdsBefore.includes(event.id)
+              ? Object.assign({}, event, { pending: true }) : event;
+          });
+        var remainingArchive = state.items.find(function (item) { return item.sourceBatchId === target.id && item.quantity <= 0; });
+        if (remainingArchive) Domain.copySharedMetadataToArchive(target, remainingArchive);
       }
 
       Domain.appendStockHistory({
@@ -890,11 +960,34 @@
     return { used: after === 0 ? remaining : used, after: after };
   };
 
-  Domain.feedBatchPortion = function (item, plan, date, amount) {
+  Domain.feedBatchPortion = function (item, plan, date, amount, medicationUsageMode) {
     var before = {
       revision: item.portionRevision || '', opened: Boolean(item.isOpened),
       openedDate: item.openedDate || '', fraction: item.openRemainFraction || 0
     };
+    var trackMedication = item.category === 'med' && ['single', 'continuous'].includes(medicationUsageMode);
+    if (trackMedication) before.medicationPendingIds = (item.medicationUsageEvents || [])
+      .filter(function (event) { return event.pending; }).map(function (event) { return event.id; });
+    function recordMedicationUse() {
+      if (!trackMedication) return;
+      var events = (item.medicationUsageEvents || []).map(function (event) {
+        return event.pending && (plan.rollover || (!plan.after && (!plan.sealedUnits || plan.consumeOpened)))
+          ? Object.assign({}, event, { pending: false }) : event;
+      });
+      function add(suffix, quantity, pending, openedDate) {
+        if (!(quantity > 0)) return;
+        events.push({ id: item.portionRevision + suffix, mode: medicationUsageMode, date: date,
+          openedDate: openedDate || '', quantity: quantity, pending: pending });
+      }
+      if (plan.rollover) {
+        add(':previous', plan.previous, false, before.openedDate);
+        add(':next', plan.nextUsed, Boolean(plan.after), date);
+      } else {
+        add('', plan.used, Boolean(plan.after), before.openedDate);
+      }
+      item.medicationUsageEvents = events;
+      Domain.syncLinkedArchiveForActiveItem(item);
+    }
     var units = 0;
     if (plan.rollover) {
       units = Domain.recordConsumedUnits(item, plan.units, date, '记喂食（' + amount + '），用完旧' + item.unit + '并开启新' + item.unit);
@@ -903,6 +996,7 @@
         item.openedDate = date;
         item.openRemainFraction = plan.after;
       }
+      recordMedicationUse();
       return { units: units, fraction: plan.used, before: before, revision: item.portionRevision };
     }
     if (plan.sealedUnits) {
@@ -912,6 +1006,7 @@
         item.openedDate = before.openedDate;
         item.openRemainFraction = before.fraction;
       }
+      recordMedicationUse();
       return { units: units, fraction: 1, before: before, revision: item.portionRevision };
     }
     if (!plan.after) {
@@ -929,6 +1024,7 @@
         beforeQty: item.quantity, afterQty: item.quantity, note: '分顿投喂 ' + amount
       });
     }
+    recordMedicationUse();
     return { units: units, fraction: plan.used, before: before, revision: item.portionRevision };
   };
 
@@ -938,6 +1034,9 @@
     return Boolean(log.itemId && !log.flavorId && before &&
       typeof change.revision === 'string' && change.revision && typeof before.revision === 'string' &&
       typeof before.opened === 'boolean' && typeof before.openedDate === 'string' &&
+      (before.medicationPendingIds === undefined || (Array.isArray(before.medicationPendingIds) &&
+        before.medicationPendingIds.every(function (id) { return typeof id === 'string' && id.length > 0; }) &&
+        new Set(before.medicationPendingIds).size === before.medicationPendingIds.length)) &&
       (before.openedDate === '' || Utils.normalizeDateStr(before.openedDate) === before.openedDate) &&
       Number.isFinite(before.fraction) && before.fraction >= 0 && before.fraction < 1 &&
       (before.opened || !before.fraction) && Number.isSafeInteger(change.units) && change.units >= 0 &&
@@ -963,6 +1062,14 @@
     item.openedDate = before.openedDate;
     item.openRemainFraction = before.fraction;
     item.portionRevision = before.revision;
+    if (before.medicationPendingIds) {
+      item.medicationUsageEvents = (item.medicationUsageEvents || []).filter(function (event) {
+        return event.id !== change.revision && !event.id.startsWith(change.revision + ':');
+      }).map(function (event) {
+        return before.medicationPendingIds.includes(event.id) ? Object.assign({}, event, { pending: true }) : event;
+      });
+      Domain.syncLinkedArchiveForActiveItem(item);
+    }
     return true;
   }
 
@@ -1450,6 +1557,8 @@
       flavorName: entry.flavorName || undefined,
       flavorPalatability: entry.flavorPalatability || undefined,
       medicationOutcome: Domain.normalizeMedicationOutcome(entry.medicationOutcome),
+      medicationUsageMode: entry.medicationUsageMode,
+      medicationPendingIdsBefore: entry.medicationPendingIdsBefore,
       flavorChange: entry.flavorChange || undefined,
       portionChange: entry.portionChange || undefined,
       consumeHistoryId: entry.consumeHistoryId || undefined,

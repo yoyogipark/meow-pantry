@@ -6,6 +6,84 @@
   var Domain = MP.Domain;
   var Stats = MP.Stats = {};
   var timelineExpanded = false;
+  var careResizeObserver = null;
+  var careFontsObserved = false;
+
+  Stats.syncFeedingRankExpandability = function () {
+    var box = document.getElementById('recent30PrefBox');
+    if (!box) return;
+    box.querySelectorAll('.feeding-rank-detail').forEach(function (row) {
+      if (!row.getBoundingClientRect().width) return;
+      var expandable = Array.from(row.querySelectorAll('.feeding-rank-brand, .feeding-rank-name'))
+        .some(function (text) { return text.scrollWidth > text.clientWidth; });
+      if (expandable === (row.tagName === 'DETAILS')) return;
+      var heading = row.firstElementChild;
+      var replacement = document.createElement(expandable ? 'details' : 'div');
+      var replacementHeading = document.createElement(expandable ? 'summary' : 'div');
+      replacement.className = row.className;
+      if (!expandable) replacementHeading.className = 'feeding-rank-static';
+      while (heading.firstChild) replacementHeading.appendChild(heading.firstChild);
+      var full = row.querySelector('.feeding-rank-full');
+      full.hidden = !expandable;
+      replacement.appendChild(replacementHeading);
+      replacement.appendChild(full);
+      row.replaceWith(replacement);
+    });
+  };
+
+  function syncRecentExpandability() {
+    Stats.syncCareExpandability();
+    Stats.syncFeedingRankExpandability();
+  }
+
+  Stats.syncCareExpandability = function () {
+    var box = document.getElementById('recent30CareBox');
+    if (!box) return;
+    box.querySelectorAll('[data-care-entries]').forEach(function (row) {
+      var main = row.querySelector('.feeding-care-main');
+      var available = main.getBoundingClientRect().width;
+      if (!available) return;
+      var measure = row.querySelector('.feeding-care-measure');
+      var measureText = measure.querySelector('.feeding-care-measure-text');
+      var entries = Array.from(measure.querySelectorAll('[data-care-count]')).map(function (entry) {
+        return { name: entry.textContent, count: entry.getAttribute('data-care-count') };
+      });
+      var labels = entries.map(function (entry) {
+        return entry.name + (entries.length > 1 ? ' ' + entry.count : '');
+      });
+      function fits(text) {
+        measureText.textContent = text;
+        return measureText.getBoundingClientRect().width <= available;
+      }
+      var expandable = !fits(labels.join(' · '));
+      var shown = labels.length;
+      var abbreviatedFirst = false;
+      if (expandable && labels.length > 1) {
+        shown = 1;
+        for (var i = 1; i < labels.length; i++) {
+          var suffix = ' · 另' + Utils.formatQuantity(labels.length - i, '项');
+          if (fits(labels.slice(0, i).join(' · ') + suffix)) shown = i;
+        }
+        abbreviatedFirst = !fits(labels[0] + ' · 另' + Utils.formatQuantity(labels.length - 1, '项'));
+      }
+      row.querySelector('.feeding-care-preview-name').textContent =
+        abbreviatedFirst ? entries[0].name : labels.slice(0, shown).join(' · ');
+      row.querySelector('.feeding-care-preview-rest').textContent = abbreviatedFirst ? ' ' + entries[0].count : '';
+      row.querySelector('.feeding-care-extra').textContent =
+        shown < labels.length ? ' · 另' + Utils.formatQuantity(labels.length - shown, '项') : '';
+      if (expandable === (row.tagName === 'DETAILS')) return;
+      var heading = row.querySelector('.feeding-care-heading');
+      var replacement = document.createElement(expandable ? 'details' : 'div');
+      var replacementHeading = document.createElement(expandable ? 'summary' : 'div');
+      replacement.className = row.className;
+      replacement.classList.toggle('is-static', !expandable);
+      replacement.setAttribute('data-care-entries', '');
+      replacementHeading.className = heading.className;
+      while (heading.firstChild) replacementHeading.appendChild(heading.firstChild);
+      replacement.appendChild(replacementHeading);
+      row.replaceWith(replacement);
+    });
+  };
 
   function displayEntries(item) {
     return Domain.stockExpiryEntries(item);
@@ -139,7 +217,7 @@
             spec: Utils.formatItemSpec(item), unit: item.unit || '件',
             inStockQty: flavor ? Number(flavor.quantity) || 0 : Number(item.quantity) || 0,
             eatenQty: Number(item.quantity) > 0 ? Number(item.eatenCount) || 0 : Number(item.consumedCount) || Number(item.lastQuantity) || 0,
-            batchLabel: group.length > 1 ? '批次 ' + (index + 1) + (item.batchCode ? ' · 购入渠道 ' + item.batchCode : item.expDate ? ' · 到期 ' + item.expDate : '') : ''
+            batchLabel: group.length > 1 ? '批次 ' + (index + 1) + (item.batchCode ? ' · 购入渠道 ' + item.batchCode : item.expDate ? ' · 到期日期 ' + item.expDate : '') : ''
           });
         });
       });
@@ -439,6 +517,7 @@
       var openWarning = evaluation.openRemaining !== null && evaluation.openRemaining <= Math.min(10, warningDays)
         ? evaluation.openRemaining : null;
       var opening = openWarning !== null && (expWarning === null || openWarning < expWarning);
+      entry.openingDeadline = opening;
       entry.days = opening ? openWarning : expWarning;
       entry.kind = entry.days < 0 ? 'expired' : opening ? 'opening' : 'expiring';
       return entry;
@@ -465,7 +544,7 @@
         '<span class="feeding-task-status feeding-task-status--expired">已过期</span>' +
         '<strong title="' + Utils.escapeHtml(name) + '">' + Utils.escapeHtml(name) + '</strong>' +
         '<span class="feeding-task-quantity">' + Utils.escapeHtml(Utils.formatQuantity(entry.quantity, entry.item.unit || '件')) + '</span>' +
-        '<span class="feeding-task-days">过期' + Utils.formatNumber(Math.abs(entry.days)) + '天</span>' +
+        '<span class="feeding-task-days">' + Utils.formatExpiryShort(entry.days, entry.openingDeadline) + '</span>' +
         '<svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 18 6-6-6-6"/></svg></button>';
     }).join('');
 
@@ -528,7 +607,8 @@
         task.near.evaluation.openRemaining <= (task.near.evaluation.expDays ?? Infinity);
       var neededDays = Math.ceil(task.stock.grams / task.rate);
       var rateLabel = Utils.formatNumber(task.rate, 2) + ' 克';
-      var facts = fact(Utils.formatNumber(days) + ' 天', isOpening ? '开封保鲜剩余' : '距到期') +
+      var facts = '<div class="feeding-risk-fact feeding-risk-fact--expiry"><strong>' + Utils.formatExpiryShort(days, isOpening) +
+        '</strong><span>' + (isOpening ? '开封保鲜期' : '包装期限') + '</span></div>' +
         fact(Utils.formatNumber(neededDays) + ' 天', '按每天 ' + rateLabel + '吃完') +
         (risk ? fact('≈' + Utils.formatNumber(risk.leftoverGrams, 0) + ' 克', '预计浪费', 'danger')
           : fact(Utils.formatNumber(task.stock.grams, 0) + ' 克', '当前余量'));
@@ -552,9 +632,10 @@
       var opened = entry.opened;
       var atRisk = risks.has(item.id);
       var name = displayName(entry);
-      var reason = opened
-        ? '已开封 · ' + (ev.openRemaining === null ? '未填写开封保鲜期' : Utils.formatDays(ev.openRemaining).text + '内吃完')
-        : '未拆封 · ' + (ev.expDays === null ? '未填写过期日期' : '剩 ' + Utils.formatDays(ev.expDays).text);
+      var showOpening = opened && ev.openRemaining !== null && (ev.expDays === null || ev.openRemaining < ev.expDays);
+      var reason = (opened ? '已开封 · ' : '未拆封 · ') + (showOpening
+        ? Utils.formatExpiryShort(ev.openRemaining, true)
+        : ev.expDays === null ? (opened ? '未填写开封保鲜期' : '未填写到期日期') : Utils.formatExpiryShort(ev.expDays, false));
       return '<div class="priority-row' + (opened ? ' priority-row--opened' : '') + (atRisk ? ' priority-row--risk' : '') + '">' +
         '<span class="priority-index">' + Utils.formatNumber(index + 1) + '</span>' +
         '<div class="priority-copy"><div class="priority-name"><span>' + Utils.escapeHtml(item.brand) +
@@ -617,7 +698,7 @@
       bucket.items.sort(function (a, b) { return (a.expDate || '9999').localeCompare(b.expDate || '9999'); });
       var tone = timelineTone(bucket.minDays);
       var ymTitle = Utils.formatMonthLabel(ym);
-      var days = Utils.formatDays(bucket.minDays).text;
+      var days = Utils.formatExpiryShort(bucket.minDays, false);
       var multiple = bucket.items.length > 1;
       var heading = '<span class="feeding-month-name">' + Utils.escapeHtml(ymTitle) + '</span><span>' + Utils.formatQuantity(bucket.items.length, '批') +
         '</span><span class="forecast-days">' + days + '</span><span class="feeding-month-chevron" aria-hidden="true"></span>' +
@@ -626,7 +707,7 @@
         '<span class="forecast-dot" aria-hidden="true"></span>' +
         (multiple ? '<details><summary>' + heading + '</summary><ul class="feeding-month-products">' +
           bucket.items.slice(1).map(function (item) {
-            return '<li>' + timelineProduct(item) + '<time>' + Utils.escapeHtml(Utils.formatListDate(item.expDate, '未填写过期日期')) + '</time></li>';
+            return '<li>' + timelineProduct(item) + '<time>' + Utils.escapeHtml(Utils.formatListDate(item.expDate, '未填写到期日期')) + '</time></li>';
           }).join('') + '</ul></details>' : '<div class="feeding-month-summary">' + heading + '</div>') +
         '</li>';
     }).join('');
@@ -634,7 +715,7 @@
       ? '<ol class="feeding-month-track">' + monthsHtml + '</ol>' +
         (sortedMonths.length > 5 ? '<button type="button" class="feeding-timeline-toggle" data-toggle-timeline aria-expanded="' +
           String(timelineExpanded) + '">' + (timelineExpanded ? '收起' : '展开全部（共 ' + Utils.formatQuantity(sortedMonths.length, '条') + '）') + '</button>' : '')
-      : '<div class="priority-empty">暂无标注过期日期的未过期批次</div>';
+      : '<div class="priority-empty">暂无标注到期日期的未过期批次</div>';
 
     // ==================== SUB-VIEW 2: PALATABILITY & TOLERANCE ARCHIVE (Food vs Supp vs Med Separated!) ====================
     var ratingRecords = Stats.ratingRecords(st.items);
@@ -766,8 +847,8 @@
         foodHtml = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">近 30 天暂无普通食品记录</div>';
       } else {
         var foods = new Map();
-        var counts = { dry: 0, can: 0, freeze: 0, other: 0 };
-        var labels = { dry: '猫粮', can: '湿粮', freeze: '冻干', other: '其他' };
+        var counts = { dry: 0, can: 0, freeze: 0, treat: 0, other: 0 };
+        var labels = { dry: '猫粮', can: '湿粮', freeze: '冻干', treat: '零食', other: '其他' };
         r30.food.forEach(function (log) {
           var category = Object.hasOwn(counts, log.category) ? log.category : 'other';
           counts[category] += 1;
@@ -783,7 +864,7 @@
         });
         var total = Object.values(counts).reduce(function (sum, count) { return sum + count; }, 0);
         var countUnit = total === r30.food.length ? '顿' : '次喂食';
-        var ratioKeys = ['dry', 'can', 'freeze', 'other'].filter(function (key) { return counts[key] > 0; });
+        var ratioKeys = ['dry', 'can', 'freeze', 'treat', 'other'].filter(function (key) { return counts[key] > 0; });
         var legend = ratioKeys.map(function (key) {
           var percent = (counts[key] / total * 100).toLocaleString('zh-CN', { maximumFractionDigits: 1 });
           return '<span class="feeding-ratio-' + key + '">' + labels[key] + ' ' +
@@ -803,12 +884,12 @@
               (brand ? '<span class="feeding-rank-brand">' + Utils.escapeHtml(brand) + '</span>' : '') +
               '<span class="feeding-rank-name">' + Utils.escapeHtml(food.name) + '</span>' +
               (food.spec ? '<span class="feeding-rank-spec">' + Utils.escapeHtml(food.spec) + '</span>' : '') +
-              '</span><span class="feeding-rank-count">' + Utils.formatQuantity(food.count, countUnit) + '</span></span>' +
-              '<span class="feeding-rank-meter" aria-hidden="true"><span style="width:' +
-              food.count / counts[key] * 100 + '%"></span></span></summary>' +
+              '</span><span class="feeding-rank-count"><strong>' + Utils.formatNumber(food.count) +
+              '</strong><span>' + Utils.escapeHtml(countUnit) + '</span></span></span></summary>' +
               '<div class="feeding-rank-full">' + Utils.escapeHtml(full) + '</div></details></li>';
           }
-          return '<section class="feeding-rank-group feeding-ratio-' + key + '"><h3>' + labels[key] + '常喂</h3>' +
+          return '<section class="feeding-rank-group feeding-ratio-' + key + '"><h3>' +
+            Utils.getCategoryIcon(key, 20) + labels[key] + '常喂</h3>' +
             '<ul class="feeding-rank-list">' + rows.slice(0, 2).map(renderFood).join('') + '</ul>' +
             (rows.length > 2 ? '<details class="feeding-rank-more"><summary><span class="feeding-more-open">查看全部</span><span class="feeding-more-close">收起</span></summary>' +
               '<ul class="feeding-rank-list">' + rows.slice(2).map(renderFood).join('') + '</ul></details>' : '') + '</section>';
@@ -826,41 +907,64 @@
           ? (log.careProjects && log.careProjects.length ? log.careProjects : [log.careOther || '护理'])
           : [product.name];
         names.forEach(function (name) {
+          var brand = product && product.brand;
+          if (!brand || ['未命名', '未命名品牌'].includes(brand)) brand = log.brand;
+          if (!brand || ['未命名', '未命名品牌'].includes(brand)) brand = '';
+          var fullName = kind === 'med' && brand ? brand + ' ' + name : name;
           var entry = counts.get(name);
           if (!entry) {
-            var brand = product && product.brand;
-            if (!brand || ['未命名', '未命名品牌'].includes(brand)) brand = log.brand;
-            if (!brand || ['未命名', '未命名品牌'].includes(brand)) brand = '';
-            entry = { name: name, summary: kind === 'med' && brand ? brand + ' ' + name : name, count: 0 };
+            entry = { count: 0, details: new Map() };
             counts.set(name, entry);
           }
           entry.count += 1;
+          entry.details.set(fullName, (entry.details.get(fullName) || 0) + 1);
         });
       });
       var entries = Array.from(counts.values()).sort(function (a, b) { return b.count - a.count; });
       var count = entries.reduce(function (sum, entry) { return sum + entry.count; }, 0);
-      var summary = entries.slice(0, 2).map(function (entry) {
-        return Utils.escapeHtml(entry.summary) + ' ' + Utils.formatNumber(entry.count);
+      var details = entries.flatMap(function (entry) { return Array.from(entry.details); });
+      var sortedDetails = details.slice().sort(function (a, b) { return b[1] - a[1]; });
+      var summary = sortedDetails.map(function (detail) {
+        return Utils.escapeHtml(detail[0]) + (details.length > 1 ? ' ' + Utils.formatNumber(detail[1]) : '');
       }).join(' · ') || '暂无记录';
+      var measurements = sortedDetails.map(function (detail) {
+        return '<span data-care-count="' + Utils.escapeHtml(Utils.formatNumber(detail[1])) + '">' +
+          Utils.escapeHtml(detail[0]) + '</span>';
+      }).join('');
+      var rows = details.map(function (detail) {
+        return '<span role="listitem">' + Utils.escapeHtml(detail[0]) +
+          (details.length > 1 ? ' <span class="feeding-care-item-count">×' + Utils.formatNumber(detail[1]) + '</span>' : '') + '</span>';
+      }).join('');
       var heading = '<span class="feeding-care-icon">' + icon + '</span><span class="feeding-care-main">' +
-        '<span class="feeding-care-label">' + label + '</span><span class="feeding-care-summary-line"><span class="feeding-care-preview">' +
-        summary + '</span>' + (entries.length > 2 ? '<span class="feeding-care-extra"> · 另' + Utils.formatQuantity(entries.length - 2, '项') + '</span>' : '') +
-        '</span></span><span class="feeding-care-count">' + Utils.formatQuantity(count, '次') + '</span>' +
-        (count ? '<span class="feeding-care-arrow" aria-hidden="true"></span>' : '');
+        '<span class="feeding-care-label">' + label + '</span><span class="feeding-care-summary-line"><span class="feeding-care-preview"><span class="feeding-care-preview-name">' +
+        summary + '</span><span class="feeding-care-preview-rest"></span></span><span class="feeding-care-extra"></span>' +
+        '</span>' + (count ? '<span class="feeding-care-measure" aria-hidden="true"><span class="feeding-care-measure-text"></span>' + measurements + '</span>' : '') +
+        (count ? '<span class="feeding-care-items" role="list">' + rows + '</span>' : '') +
+        '</span><span class="feeding-care-meta"><span class="feeding-care-count">' + Utils.formatQuantity(count, '次') + '</span>' +
+        '<span class="' + (count ? 'feeding-care-arrow' : 'feeding-care-arrow-space') + '" aria-hidden="true"></span></span>';
       var className = 'feeding-care-row feeding-care-' + kind;
       if (!count) return '<div class="' + className + '"><div class="feeding-care-heading">' + heading + '</div></div>';
-      var rows = entries.map(function (entry) {
-        return '<li><span>' + Utils.escapeHtml(entry.name) + '</span><span>' + Utils.formatQuantity(entry.count, '次') + '</span></li>';
-      }).join('');
-      return '<details class="' + className + '"><summary class="feeding-care-heading">' + heading +
-        '</summary><ul class="feeding-care-items">' + rows + '</ul></details>';
+      return '<details class="' + className + '" data-care-entries><summary class="feeding-care-heading">' + heading +
+        '</summary></details>';
     }
 
     prefBox.innerHTML = foodHtml;
-    document.getElementById('recent30CareBox').innerHTML =
+    var careBox = document.getElementById('recent30CareBox');
+    careBox.innerHTML =
       renderCareSummary(r30.med, '用药', 'med', Utils.uiIcon('pill', 16)) +
       renderCareSummary(r30.nursing, '护理', 'nursing', Utils.uiIcon('sparkles', 16)) +
       renderCareSummary(r30.supp, '营养品', 'supp', Utils.uiIcon('bottle', 16));
+    if (!careResizeObserver && global.ResizeObserver) {
+      careResizeObserver = new global.ResizeObserver(syncRecentExpandability);
+      careResizeObserver.observe(careBox);
+      careResizeObserver.observe(prefBox);
+    }
+    if (!careFontsObserved && document.fonts) {
+      careFontsObserved = true;
+      document.fonts.addEventListener('loadingdone', syncRecentExpandability);
+      document.fonts.ready.then(syncRecentExpandability);
+    }
+    syncRecentExpandability();
 
     // ==================== SUB-VIEW 3B: BRAND DEEP ARCHIVE (Filterable by Food / Supp / Med) ====================
     var bScope = st.brandScopeFilter || 'all';

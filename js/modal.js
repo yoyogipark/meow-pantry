@@ -129,6 +129,8 @@
       stock.add(new Option('剩余全部 ' + redemption.quantity + redemption.unit, redemption.quantity));
     }
     document.getElementById('confirmStockQuantityWrap').classList.toggle('hidden-view', !redemption || stock.options.length < 2);
+    document.getElementById('confirmMedicationUsageModeWrap').classList.toggle('hidden-view', !(extraOpt && extraOpt.medicationUsageMode));
+    document.getElementById('confirmMedicationUsageMode').value = '';
     var discard = extraOpt && extraOpt.discard;
     var discardWrap = document.getElementById('confirmDiscardQuantityWrap');
     var discardInput = document.getElementById('confirmDiscardQuantity');
@@ -177,6 +179,13 @@
     if (!fn) return;
     var checked = document.getElementById('confirmExtraCheckbox').checked;
     var quantity = Number(document.getElementById('confirmStockQuantity').value);
+    var modeWrap = document.getElementById('confirmMedicationUsageModeWrap');
+    var mode = document.getElementById('confirmMedicationUsageMode');
+    if (!modeWrap.classList.contains('hidden-view') && !mode.value) {
+      UI.showToast('请选择用药方式');
+      mode.focus();
+      return;
+    }
     var discardWrap = document.getElementById('confirmDiscardQuantityWrap');
     if (!discardWrap.classList.contains('hidden-view')) {
       var discardInput = document.getElementById('confirmDiscardQuantity');
@@ -213,6 +222,7 @@
     }
     UI.closeConfirm();
     if (openDate) fn(checked, quantity, mealQuantity, openDate);
+    else if (!modeWrap.classList.contains('hidden-view')) fn(checked, quantity, mealQuantity, mode.value);
     else fn(checked, quantity, mealQuantity);
   };
 })(typeof window !== 'undefined' ? window : globalThis);

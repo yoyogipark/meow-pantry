@@ -16,8 +16,8 @@
     active.forEach(function (it) {
       var ev = Domain.evaluateItem(it);
       var cat = (MP.CATEGORIES[it.category] || MP.CATEGORIES.dry).label;
-      var dayTxt = ev.expDays !== null ? (ev.expDays < 0 ? '已过期' + Utils.formatDays(ev.expDays).text : '剩' + Utils.formatDays(ev.expDays).text) : '';
-      lines.push('• [' + cat + '] ' + it.brand + ' ' + it.name + ' × ' + Utils.formatQuantity(it.quantity, it.unit) + ' ｜ 过期日期 ' + Utils.formatListDate(it.expDate) + ' (' + dayTxt + ')');
+      var dayTxt = ev.expDays !== null ? Utils.formatExpiryCountdown(ev.expDays) : '';
+      lines.push('• [' + cat + '] ' + it.brand + ' ' + it.name + ' × ' + Utils.formatQuantity(it.quantity, it.unit) + ' ｜ 到期日期 ' + Utils.formatListDate(it.expDate) + (dayTxt ? ' (' + dayTxt + ')' : ''));
     });
     var text = lines.join('\n');
 
@@ -554,14 +554,16 @@
         var fraction = target.isOpened && Number(target.openRemainFraction) > 0 ? Number(target.openRemainFraction) : 1;
         UI.openConfirm('确认库存核销？', target.category === 'supplies'
           ? '核销后将减少库存并更新日用品使用周期。'
-          : '核销后将减少库存并更新归档。只有勾选且确认实际份量，才补记今日喂食。', '确认核销', function (alsoLogMeal, quantity, mealQuantity) {
+          : '核销后将减少库存并更新归档。只有勾选且确认实际份量，才补记今日喂食。', '确认核销', function (alsoLogMeal, quantity, mealQuantity, medicationUsageMode) {
           if (target.category === 'supplies') alsoLogMeal = false;
           if (!st.items.includes(target) || Number(target.quantity) !== curQ) {
             UI.showToast('库存已变化，请重新核销');
             return;
           }
           var today = Utils.getTodayStr();
-          var usedCount = Domain.recordConsumedUnits(target, quantity, today);
+          var medicationPendingIdsBefore = target.category === 'med' ? (target.medicationUsageEvents || [])
+            .filter(function (event) { return event.pending; }).map(function (event) { return event.id; }) : undefined;
+          var usedCount = Domain.recordConsumedUnits(target, quantity, today, '', null, medicationUsageMode);
           if (!usedCount) return;
           if (alsoLogMeal) {
             var confirmed = Math.min(usedCount, mealQuantity);
@@ -571,6 +573,8 @@
               mealSlot: target.category === 'med' ? 'care' : Utils.getCurrentMealSlot(),
               itemId: target.id, category: target.category, subtype: target.subtype,
               brand: target.brand, name: target.name, amount: amount,
+              medicationUsageMode: medicationUsageMode,
+              medicationPendingIdsBefore: medicationPendingIdsBefore,
               note: '库存核销 ' + usedCount + unit + '，仅补记确认喂食的份量',
               deductedUnit: confirmed, deductedFrac: fraction, consumeHistoryId: st.stockHistory[0].id
             });
@@ -582,6 +586,7 @@
         }, {
           label: target.category !== 'supplies' && Domain.isSingleServingUnit(target) ? '同时记入今天的每日记录（核销一件时补记 ' + redemptionMealAmount(target, Math.min(1, curQ), fraction) + '）' : '',
           defaultChecked: false,
+          medicationUsageMode: target.category === 'med',
           redemption: { quantity: curQ, unit: unit, all: action === 'mark-empty' }
         });
       } else if (action === 'delete') {
@@ -935,6 +940,8 @@
       var isSupplement = fSlot === 'care' && document.getElementById('feedForm').dataset.careType === 'supplement';
       var isMedication = fSlot === 'care' && !isNursing;
       var medicationOutcome = isMedication ? document.getElementById('feedMedicationOutcome').value : undefined;
+      var medicationUsageMode = fCat === 'med' && !isNursing && !isSupplement
+        ? document.getElementById('feedMedicationUsageMode').value : '';
       var reminderValue = document.getElementById('feedNextReminderDays').value;
       var remDays = reminderValue === 'custom'
         ? Number(document.getElementById('feedCustomReminderDays').value)
@@ -998,6 +1005,11 @@
         UI.showToast(isMedication ? '请填写' + (isSupplement ? '营养品' : '药品') + '名称和用量' : isUnstocked ? '请填写食物名称和投喂份量' : '请填写品牌、品名和投喂份量');
         return;
       }
+      if (fCat === 'med' && !isNursing && !editLogId && !medicationUsageMode) {
+        UI.showToast('请选择用药方式');
+        document.getElementById('feedMedicationUsageMode').focus();
+        return;
+      }
 
       if (editLogId) {
         var preservesDeduction = false;
@@ -1033,6 +1045,8 @@
             st.logs[k].note = fNote;
             st.logs[k].flavorPalatability = isMedication ? undefined : feedPalatabilityField.value || undefined;
             st.logs[k].medicationOutcome = Domain.normalizeMedicationOutcome(medicationOutcome);
+            st.logs[k].medicationUsageMode = medicationUsageMode || undefined;
+            Domain.updateMedicationUsageMode(previousLog.itemId, previousLog.consumeHistoryId || previousLog.portionChange?.revision, medicationUsageMode);
             st.logs[k].reminderDays = remDays;
             st.logs[k].nextDueDate = nextDue;
             break;
@@ -1138,7 +1152,7 @@
           } else if (!plan.after && !plan.rollover) {
             pendingFinishPlan = { item: stItem, plan: plan, amount: fAmount, date: fDate };
           } else {
-            portionChange = Domain.feedBatchPortion(stItem, plan, fDate, fAmount);
+            portionChange = Domain.feedBatchPortion(stItem, plan, fDate, fAmount, medicationUsageMode);
             if (portionChange && beforeAutoOpen) portionChange.before = beforeAutoOpen;
           }
           var change = flavorChange || portionChange;
@@ -1179,6 +1193,7 @@
         flavorName: flavor ? flavor.name : manualFlavor,
         flavorPalatability: flavorPalatability,
         medicationOutcome: medicationOutcome,
+        medicationUsageMode: medicationUsageMode,
         careType: isMedication ? 'medication' : undefined,
         flavorChange: flavorChange,
         portionChange: portionChange,
@@ -1202,7 +1217,7 @@
           : '这' + finishUnit + '已用完，是否核销？';
         UI.openConfirm(finishTitle, '核销后将减少库存并更新归档。', '确认核销', function () {
           if (!st.items.includes(finishItem) || Number(finishItem.quantity) <= 0) return;
-          var finishChange = Domain.feedBatchPortion(finishItem, pendingFinishPlan.plan, pendingFinishPlan.date, pendingFinishPlan.amount);
+          var finishChange = Domain.feedBatchPortion(finishItem, pendingFinishPlan.plan, pendingFinishPlan.date, pendingFinishPlan.amount, medicationUsageMode);
           if (!finishChange) return;
           if (beforeAutoOpen) finishChange.before = beforeAutoOpen;
           savedFeedLog.deductedUnit = finishChange.units;
@@ -1231,7 +1246,11 @@
       Stats.syncScopeScroll(true);
     });
     document.getElementById('statsScopeBar').addEventListener('scroll', function () { Stats.syncScopeScroll(false); });
-    global.addEventListener('resize', function () { Stats.syncScopeScroll(false); });
+    global.addEventListener('resize', function () {
+      Stats.syncScopeScroll(false);
+      Stats.syncCareExpandability();
+      Stats.syncFeedingRankExpandability();
+    });
     document.getElementById('expiryMonthTimelineList').addEventListener('click', function (ev) {
       if (ev.target.closest('[data-toggle-timeline]')) Stats.toggleTimeline();
     });
@@ -1407,6 +1426,9 @@
         .some(function (text) { return text.scrollWidth > text.clientWidth; });
       if (!truncated) ev.preventDefault();
     });
+    document.getElementById('recent30PrefBox').addEventListener('toggle', function (ev) {
+      if (ev.target.matches('.feeding-rank-more')) Stats.syncFeedingRankExpandability();
+    }, true);
 
     document.getElementById('brandScopeBar').addEventListener('click', function (ev) {
       var btn = ev.target.closest('[data-brand-scope]');
@@ -1754,7 +1776,7 @@
       if (production && expiry && expiry < production) {
         changedField.value = changedField.dataset.lastValid || '';
         UI.syncAllDateDisplays();
-        UI.showToast('过期日期不能早于生产日期');
+        UI.showToast('到期日期不能早于生产日期');
         return false;
       }
       changedField.dataset.lastValid = changedField.value;
@@ -1833,14 +1855,14 @@
       var val = document.getElementById('fieldShelfValue').value;
       var unit = document.getElementById('fieldShelfUnit').value;
       if (!exp || !val) {
-        UI.showToast('请先填写「过期日期」和「保质期」');
+        UI.showToast('请先填写「到期日期」和「保质期」');
         return;
       }
       var prod = Utils.subtractShelfLife(exp, val, unit);
       if (prod) {
         document.getElementById('fieldProdDate').value = prod;
         UI.confirmProductionDate();
-        document.getElementById('dateCalcHint').textContent = '已根据过期日期反推出生产日期';
+        document.getElementById('dateCalcHint').textContent = '已根据到期日期反推出生产日期';
         UI.syncOpenedFieldsVisibility();
         UI.showToast('已自动反推生产日期：' + prod);
       }
@@ -1956,15 +1978,15 @@
       }
       if (st.formCat !== 'supplies' && !prodDate && !expDate) {
         var dateField = document.getElementById('stockDateMode').dataset.mode === 'expiry' ? 'fieldExpDate' : 'fieldProdDate';
-        showFieldError(dateField, '填写生产日期或过期日期其一');
+        showFieldError(dateField, '填写生产日期或到期日期其一');
         return;
       }
       if (st.formCat !== 'supplies' && !expDate) {
-        showFieldError(id ? 'fieldExpDate' : 'fieldShelfValue', id ? '请填写有效的过期日期' : '填写保质期以推算过期日期');
+        showFieldError(id ? 'fieldExpDate' : 'fieldShelfValue', id ? '请填写有效的到期日期' : '填写保质期以推算到期日期');
         return;
       }
       if (prodDate && expDate && expDate < prodDate) {
-        showFieldError('fieldExpDate', '过期日期不能早于生产日期');
+        showFieldError('fieldExpDate', '到期日期不能早于生产日期');
         return;
       }
       var original = id && st.items.find(function (item) { return item.id === id; });
@@ -2102,6 +2124,7 @@
         batchCode: document.getElementById('fieldBatch').value.trim(),
         notes: document.getElementById('fieldNotes').value.trim(),
         images: st.formImages.slice(),
+        medicationUsageEvents: original && st.formCat === 'med' ? original.medicationUsageEvents : undefined,
         isSample: false
       });
 

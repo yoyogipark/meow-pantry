@@ -77,9 +77,10 @@
       st.settings.defaultCurrency = pSet.defaultCurrency;
     }
     if (pSet.dailyFeedGrams && typeof pSet.dailyFeedGrams === 'object') {
+      var storedFeedGrams = pSet.dailyFeedGrams;
       st.settings.dailyFeedGrams = {};
       ['dry', 'freeze', 'can'].forEach(function (category) {
-        var storedGrams = pSet.dailyFeedGrams[category];
+        var storedGrams = storedFeedGrams[category];
         var grams = storedGrams == null || storedGrams === '' ? NaN : Number(storedGrams);
         st.settings.dailyFeedGrams[category] = Number.isFinite(grams) && grams >= 0 ? grams : null;
       });
@@ -547,6 +548,10 @@
           item.effectTags.some(function (tag) { return typeof tag !== 'string' || !tag.trim(); }))) {
         return { ok: false, error: '备份中存在无效的功效标签' };
       }
+      if (item.medicationUsageEvents !== undefined &&
+          (item.category !== 'med' || !Domain.validMedicationUsageEvents(item.medicationUsageEvents))) {
+        return { ok: false, error: '备份中存在无效的用药核销记录' };
+      }
       if (item.feedUsageUnit && !MP.FEED_USAGE_UNITS.includes(item.feedUsageUnit)) {
         return { ok: false, error: '备份中存在无效的投喂单位' };
       }
@@ -568,6 +573,16 @@
     }
     for (var log of rawLogs) {
       if (!log || typeof log !== 'object') continue;
+      if (log.medicationUsageMode !== undefined && log.medicationUsageMode !== null &&
+          (log.category !== 'med' || !['single', 'continuous'].includes(log.medicationUsageMode))) {
+        return { ok: false, error: '备份中存在无效的用药方式' };
+      }
+      if (log.medicationPendingIdsBefore !== undefined &&
+          (!Array.isArray(log.medicationPendingIdsBefore) ||
+            log.medicationPendingIdsBefore.some(function (id) { return typeof id !== 'string' || !id; }) ||
+            new Set(log.medicationPendingIdsBefore).size !== log.medicationPendingIdsBefore.length)) {
+        return { ok: false, error: '备份中存在无效的用药扣减凭据' };
+      }
       if (log.portionChange && !Domain.validatePortionReceipt(log)) {
         return { ok: false, error: '备份中存在无效的分顿扣减凭据' };
       }
@@ -629,7 +644,7 @@
   function stockSignature(item) {
     return JSON.stringify([item.quantity, item.unit, item.unit_net_weight_g, item.unit_spec_value || null, item.unit_spec_unit || '', item.feedUsageUnit || '', item.feedUsagePerItem || null, item.isOpened, item.openedDate, item.openRemainFraction,
       item.eatenCount, item.consumedCount, item.discardedCount || 0, item.finishedDate, item.purchasePackaging || null,
-      item.portionRevision || '', (item.flavors || []).map(function (flavor) {
+      item.portionRevision || '', item.medicationUsageEvents || [], (item.flavors || []).map(function (flavor) {
         return [flavor.id, flavor.perPack, flavor.quantity, flavor.openedDate, flavor.openRemainFraction, flavor.revision];
       }).sort()]);
   }
@@ -702,7 +717,10 @@
     }
     logs.sort(function (a, b) { return b.date.localeCompare(a.date); });
     history.sort(function (a, b) { return b.timestamp.localeCompare(a.timestamp); });
-    return { items: Domain.reconcileBatches(items), logs: logs, stockHistory: history };
+    return {
+      items: Domain.reconcileBatches(items), logs: logs, stockHistory: history,
+      dailyFeedGrams: backup.settings && backup.settings.dailyFeedGrams
+    };
   }
 
   var pendingSmartMerge = null;
@@ -721,7 +739,18 @@
       if (pendingSmartMerge !== operation || !db) { finish(false); return; }
       var changed = JSON.stringify([plan.items, plan.logs, plan.stockHistory]) !==
         JSON.stringify([st.items, st.logs, st.stockHistory]);
+      var dailyFeedGrams = plan.dailyFeedGrams;
+      var mergedFeedGrams = st.settings.dailyFeedGrams;
+      if (dailyFeedGrams && typeof dailyFeedGrams === 'object' && !Array.isArray(dailyFeedGrams)) {
+        var mergedSettings = { settings: Object.assign({}, st.settings) };
+        Storage.applyLoadedSettings({
+          dailyFeedGrams: Object.assign({}, st.settings.dailyFeedGrams, dailyFeedGrams)
+        }, mergedSettings);
+        mergedFeedGrams = mergedSettings.settings.dailyFeedGrams;
+        changed = changed || JSON.stringify(mergedFeedGrams) !== JSON.stringify(st.settings.dailyFeedGrams);
+      }
       var mergeSettings = Object.assign({}, st.settings, {
+        dailyFeedGrams: mergedFeedGrams,
         unsavedChangesCount: (Number(st.settings.unsavedChangesCount) || 0) + (changed ? 1 : 0)
       });
       var settings = Object.assign({}, plan.settings || mergeSettings, {
@@ -874,7 +903,7 @@
   }
 
   Storage.exportItemsCsv = function () {
-    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已核销', '单位', '币种', '单价', '生产日期', '保质期', '过期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '购入渠道', '备注', '各口味库存'];
+    var headers = ['属性分组', '分类', '品牌', '品名/口味', '规格', '在库数量', '累计已核销', '单位', '币种', '单价', '生产日期', '保质期', '到期日期', '剩余天数', '是否开封', '开封日期', '拆封余量', '适口性/耐受度', '存放位置', '购入渠道', '备注', '各口味库存'];
     var rows = [headers];
     MP.state.items.forEach(function (it) {
       if (it.sourceBatchId && (Number(it.quantity) || 0) <= 0) return; // avoid duplicating shadow row already counted on active batch's eatenCount
@@ -966,7 +995,7 @@
         String(h.beforeQty),
         String(h.afterQty),
         h.unit || '',
-        h.note || ''
+        Utils.formatStockHistoryNote(h.action, h.note)
       ]);
     });
     Storage.triggerFileDownload('猫咪粮仓库存变动流水_' + Utils.getTodayStr() + '.csv', rowsToCsv(rows), 'text/csv;charset=utf-8');

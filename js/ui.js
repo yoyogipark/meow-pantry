@@ -110,6 +110,10 @@
       if (navs[k]) navs[k].classList.toggle('active', k === tabName);
     });
     if (tabName === 'daily') UI.syncDailyQuickFeedFade();
+    if (tabName === 'stats') {
+      Stats.syncCareExpandability();
+      Stats.syncFeedingRankExpandability();
+    }
     window.scrollTo(0, 0);
   };
 
@@ -237,7 +241,7 @@
     }
     function batchDetail(item) {
       return [Utils.formatItemSpec(item), item.batchCode,
-        item.expDate ? Utils.formatListDate(item.expDate) + '到期' : '',
+        item.expDate ? '到期日期 ' + Utils.formatListDate(item.expDate) : '',
         item.location].filter(Boolean).join(' · ');
     }
     function label(item) { return [displayName(item), summary(item), batchDetail(item)].filter(Boolean).join(' · '); }
@@ -592,6 +596,7 @@
     });
     UI.syncFeedPalatabilityChoices();
     document.getElementById('feedMedicationOutcomeField').classList.toggle('hidden-view', !care || nursing);
+    document.getElementById('feedMedicationUsageModeWrap').classList.toggle('hidden-view', !care || nursing || supplement);
     document.getElementById('feedManualTitle').textContent = unstocked ? '记录自制 / 无品牌食物' :
       care ? (supplement ? '记录未入库营养品' : '记录未入库药品') : '记录未入库商品';
     document.getElementById('feedManualBrandField').classList.toggle('hidden-view', unstocked);
@@ -1183,6 +1188,7 @@
     delete document.getElementById('feedAmountInput').dataset.doseChoice;
     delete document.getElementById('feedAmountInput').dataset.automaticPortion;
     document.getElementById('feedMedicationOutcome').value = '';
+    document.getElementById('feedMedicationUsageMode').value = '';
     document.getElementById('feedCustomReminderDays').value = '';
     document.getElementById('feedAmountInput').placeholder = '如 1/2、1/3、40g';
     delete document.getElementById('feedFlavorPal').dataset.manual;
@@ -1284,6 +1290,7 @@
     delete document.getElementById('feedAmountInput').dataset.doseChoice;
     delete document.getElementById('feedAmountInput').dataset.automaticPortion;
     document.getElementById('feedMedicationOutcome').value = lg.medicationOutcome || '';
+    document.getElementById('feedMedicationUsageMode').value = lg.medicationUsageMode || '';
     document.getElementById('feedCustomReminderDays').value = '';
     document.getElementById('feedDateInput').value = lg.date || Utils.getTodayStr();
     var linkedBatch = MP.state.items.find(function (item) { return item.id === lg.itemId; });
@@ -1430,15 +1437,19 @@
 
     listEl.innerHTML = sliced.map(function (h) {
       var meta = MP.STOCK_ACTION_META[h.action] || MP.STOCK_ACTION_META.adjust;
+      var timestamp = h.timestamp;
+      if (/^\d{4}-\d{2}-\d{2}/.test(timestamp) && timestamp.slice(0, 4) === Utils.getTodayStr().slice(0, 4)) {
+        timestamp = timestamp.slice(5);
+      }
       return (
         '<div style="padding:10px 12px;border-radius:12px;background:var(--control-bg);border:1px solid var(--border-warm);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
           '<div style="min-width:0;flex:1;">' +
             '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">' +
               '<span style="font-size:11px;font-weight:800;padding:1px 7px;border-radius:6px;background:' + meta.bg + ';color:' + meta.text + ';">' + Utils.iconLabel(meta.icon, meta.label) + '</span>' +
-              '<span style="font-size:11px;color:var(--text-muted);">' + Utils.escapeHtml(h.timestamp) + '</span>' +
+              '<span style="font-size:11px;color:var(--text-muted);">' + Utils.escapeHtml(timestamp) + '</span>' +
             '</div>' +
             '<div style="font-size:13px;font-weight:800;color:var(--text-main);">' + Utils.getCategoryIcon(h.category) + ' [' + Utils.escapeHtml(h.brand) + '] ' + Utils.escapeHtml(h.name) + '</div>' +
-            (h.note ? '<div style="margin-top:2px;font-size:11.5px;color:var(--text-muted);">' + Utils.escapeHtml(h.note) + '</div>' : '') +
+            (h.note ? '<div style="margin-top:2px;font-size:11.5px;color:var(--text-muted);">' + Utils.escapeHtml(Utils.formatStockHistoryNote(h.action, h.note)) + '</div>' : '') +
           '</div>' +
           '<div style="text-align:right;flex-shrink:0;">' +
             '<div style="font-size:12.5px;font-weight:800;color:' + meta.text + ';">' + Utils.escapeHtml(h.deltaText || '—') + '</div>' +
@@ -2592,7 +2603,7 @@
     var limit = Number(item && item.openDaysLimit) || 0;
     var expired = !error && limit > 0 && Utils.openShelfDaysRemaining(date, limit) < 0;
     var warning = root.querySelector('[data-open-date-warning]');
-    warning.textContent = [earlyProduction ? '早于生产日期，请确认' : '', expired ? '按这个日期，开封保鲜期已过' : ''].filter(Boolean).join(' · ');
+    warning.textContent = [earlyProduction ? '早于生产日期，请确认' : '', expired ? '按这个日期，开封保鲜期已过期' : ''].filter(Boolean).join(' · ');
     warning.classList.toggle('hidden-view', !earlyProduction && !expired);
     if (root.id === 'confirmOpenDateWrap') document.getElementById('confirmOkBtn').disabled = Boolean(error);
     var message = document.getElementById(root.dataset.messageId);
@@ -2652,7 +2663,7 @@
     var days = count && !error ? Utils.openShelfDaysRemaining(date, validLimit) : null;
     document.getElementById('fieldFreshUntil').value = days === null ? '—' : Utils.formatCnDateText(Utils.openShelfEndDate(date, validLimit));
     var remaining = document.getElementById('openingDaysLeft');
-    remaining.textContent = days === null ? '' : (days < 0 ? '已超 ' : '剩 ') + Utils.formatDays(days).text;
+    remaining.textContent = days === null ? '' : Utils.formatExpiryShort(days, true);
     remaining.classList.toggle('is-urgent', ['expired', 'urgent'].includes(Utils.formatDays(days).tone));
     UI.syncAllDateDisplays();
   };
@@ -2713,7 +2724,7 @@
     estimate.classList.toggle('hidden-view', Boolean(document.getElementById('fieldId').value));
     document.getElementById('stockDateEstimateBadge').classList.toggle('hidden-view', !hasEstimate);
     document.getElementById('stockDateEstimateText').textContent = hasEstimate
-      ? (byExpiry ? '生产日期：' : '过期日期：') + derived.value : '填保质期后自动推算';
+      ? (byExpiry ? '生产日期：' : '到期日期：') + derived.value : '填保质期后自动推算';
     estimate.classList.toggle('is-expired', Boolean(hasEstimate && !byExpiry && expiry.value < Utils.getTodayStr()));
     var unit = document.getElementById('fieldShelfUnit').value;
     var value = shelf.value;
@@ -2744,7 +2755,7 @@
         var expiry = document.getElementById('fieldExpDate');
         expiry.value = computed;
         expiry.dataset.computed = computed;
-        document.getElementById('dateCalcHint').textContent = '已根据生产日期和保质期算出过期日期';
+        document.getElementById('dateCalcHint').textContent = '已根据生产日期和保质期算出到期日期';
         UI.syncAllDateDisplays();
       }
     }
@@ -2924,7 +2935,7 @@
     document.getElementById('fieldExpDate').value = '';
     document.getElementById('fieldExpDate').dataset.lastValid = '';
     UI.autoComputeExpDate();
-    document.getElementById('dateCalcHint').textContent = item.prodDate ? '请核对新批次的生产日期与过期日期' : '';
+    document.getElementById('dateCalcHint').textContent = item.prodDate ? '请核对新批次的生产日期与到期日期' : '';
 
     document.getElementById('fieldIsOpened').checked = false;
     document.getElementById('fieldOpenedDate').value = '';
@@ -3004,7 +3015,7 @@
     document.getElementById('lightboxPosition').classList.toggle('hidden-view', images.length < 2);
     UI.syncLightboxPosition(0);
     document.getElementById('lightboxMeta').textContent =
-      '生产日期：' + Utils.formatListDate(item.prodDate, '未填写') + ' ｜ 过期日期：' + Utils.formatListDate(item.expDate) + (item.batchCode ? (' ｜ 购入渠道：' + item.batchCode) : '');
+      '生产日期：' + Utils.formatListDate(item.prodDate, '未填写') + ' ｜ 到期日期：' + Utils.formatListDate(item.expDate) + (item.batchCode ? (' ｜ 购入渠道：' + item.batchCode) : '');
     UI.showModal('photoPreviewBackdrop', 'closeLightboxBtn');
   };
 
